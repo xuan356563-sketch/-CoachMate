@@ -13,3 +13,5 @@
 - `flutter test test/data/repositories/user_profile_repository_test.dart test/features/onboarding/onboarding_page_test.dart test/features/profile/application/user_profile_controller_test.dart test/features/profile/application/user_profile_training_bridge_test.dart --reporter compact`：9 项通过。
 - `flutter analyze`：通过，无问题。
 - `flutter test --reporter compact`：首次因 AppleDouble `._*` 文件无法解码而中断；清理工作树内全部 `._*` 文件后，53 项全部通过。
+- `flutter test --coverage`：53 项全部通过，并生成覆盖率数据。
+- `flutter build web`：构建通过。构建器提示未找到 `cupertino_icons` 字体，但活跃代码不存在 `CupertinoIcons` 或对应包导入，不影响当前 Web 产物。

@@ -1,6 +1,8 @@
+import 'package:flutter/widgets.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 import 'package:trainflow_ai/app/trainflow_app.dart';
+import 'package:trainflow_ai/data/repositories/user_profile_repository.dart';
 
 import '../../support/test_harness.dart';
 
@@ -31,7 +33,21 @@ void main() {
     await tester.pumpAndSettle();
     expect(find.textContaining('器械条件会参与今日训练替代'), findsOneWidget);
 
-    await tester.tap(find.text('今日训练').last);
+    final Finder saveButton = find.text('确认资料并生成计划');
+    await tester.drag(find.byType(ListView).last, const Offset(0, -300));
     await tester.pumpAndSettle();
+    await tester.tap(saveButton);
+    await tester.pumpAndSettle();
+
+    final Map<String, dynamic>? storedProfile = harness.storageService.readJson(
+      PersistedUserProfileRepository.storageKey,
+    );
+    expect(storedProfile, isNotNull);
+    expect(storedProfile!['profileCompleted'], isTrue);
+    expect(
+      (storedProfile['profile'] as Map<String, dynamic>)['equipmentAccessType'],
+      'none',
+    );
+    expect(find.text('今日训练'), findsWidgets);
   });
 }

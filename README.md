@@ -167,7 +167,7 @@ lib/
     └── self_use_acceptance/self_use_acceptance_page.dart
 ```
 
-旧组件 Demo 源码仍保留在 `lib/features/basic`、`lib/features/component` 等目录中，当前路由不再暴露这些示例页。这样做是为了降低改造风险，后续确认不需要后可以再做清理。
+旧组件 Demo 源码已迁移至 `legacy/zhuque_ui_demo/`，仅作为视觉和组件参考，不参与当前应用编译。
 
 ## 运行
 
@@ -189,7 +189,7 @@ flutter analyze
 flutter test
 ```
 
-测试按功能拆分为 `test/widget_test.dart`、`test/data/repositories/user_profile_repository_test.dart` 和 `test/features/onboarding/onboarding_page_test.dart`；资料状态已独立覆盖资料仓库持久化、旧档案兼容和首次引导交互，实际测试结果以 `flutter test` 输出为准。
+测试已按功能拆分到 `test/widget_test.dart`、`test/data/` 和 `test/features/`；资料状态独立覆盖仓库持久化、旧档案兼容、状态控制器、训练兼容桥和首次引导交互，实际测试结果以 `flutter test` 输出为准。
 测试同时检查计划书当期硬性项：晨间报告、主动提醒、本地 reminder_settings 持久化、精简签到、动态签到项排序、每日调整、本地 daily_context 持久化、规则引擎校验、恢复倒计时、训练状态趋势、CTL/ATL/TSB 训练负荷曲线、成就徽章、本地成就记录表、自动周报、周报 PNG 图片卡片、本地 weekly_report_exports 持久化、用户画像、用户画像三表、周度画像任务、信任回顾、prediction_logs 到期回填、本地 user_profile 持久化、打工人分型选择与旧档案兼容、本地 starter_progress 持久化、本地 formal_ai_plan 持久化、GPX/FIT 导入、本地 imported_workouts 持久化、本地 workout_logs 持久化、训练后会话复盘、主训练动作组数与重量记录、workout_exercises 训练-动作关联、周报按会话完成度计算、本地 rehab_logs 持久化、今日训练五步、每日决策徽章、30 天渐进引导、30 天毕业报告、正式 AI 计划衔接、跟练执行模式、计划训练日一键跟练、训练日手动调整、本地 plan_adjustments 持久化、修改学习信号、跟练真实倒计时、TTS 提示队列、屏幕常亮意图、身体数据 10 秒快录、身体数据补录、异常值确认、身体数据修订留痕、身体截图识别 Mock、身体 CSV 导入、身体数据导出记录、本地 body_metric_exports 持久化、指标目标、数据质量检查、趋势洞察、7/30/90 日趋势窗口与真实趋势图表、书页级训练依据、书库/引文/引用关联、书库全文搜索、书库手动导入、照吃指令卡、本地 meal_preference 持久化、动作纠错 8 动作、Motion Vision Mock 写入决策、本地 motion_analysis_results 持久化、比赛备战 Mock、比赛自动排期、赛事手动导入、本地 races 持久化、健康免责声明，以及疼痛 ≥7 后的康复红线和自动休息决策。
 
 ## 当前约束
