@@ -11,6 +11,7 @@ import '../../data/models/training_log.dart';
 import '../../data/models/user_profile.dart';
 import '../../data/models/weekly_report.dart';
 import '../dashboard/training_mvp_controller.dart';
+import 'application/user_profile_controller.dart';
 
 class ProfilePage extends ConsumerWidget {
   const ProfilePage({super.key});
@@ -18,7 +19,11 @@ class ProfilePage extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final TrainingMvpState state = ref.watch(trainingMvpProvider);
-    final UserProfile profile = state.profile;
+    final UserProfile profile = ref.watch(
+      userProfileControllerProvider.select(
+        (UserProfileState state) => state.profile,
+      ),
+    );
 
     return TrainFlowPage(
       title: '我的',

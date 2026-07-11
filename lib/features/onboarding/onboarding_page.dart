@@ -6,7 +6,7 @@ import '../../app/router/app_routes.dart';
 import '../../core/constants/app_colors.dart';
 import '../../core/widgets/trainflow_widgets.dart';
 import '../../data/models/user_profile.dart';
-import '../dashboard/training_mvp_controller.dart';
+import '../profile/application/user_profile_controller.dart';
 
 class OnboardingPage extends ConsumerStatefulWidget {
   const OnboardingPage({super.key});
@@ -21,7 +21,7 @@ class _OnboardingPageState extends ConsumerState<OnboardingPage> {
   @override
   void initState() {
     super.initState();
-    _draftProfile = ref.read(trainingMvpProvider).profile;
+    _draftProfile = ref.read(userProfileControllerProvider).profile;
   }
 
   @override
@@ -147,7 +147,9 @@ class _OnboardingPageState extends ConsumerState<OnboardingPage> {
                 width: double.infinity,
                 child: FilledButton(
                   onPressed: () {
-                    ref.read(trainingMvpProvider.notifier).saveProfile(profile);
+                    ref
+                        .read(userProfileControllerProvider.notifier)
+                        .save(profile);
                     context.go(AppRoutes.dashboard);
                   },
                   child: const Text('确认资料并生成计划'),

@@ -18,6 +18,7 @@ import '../../data/models/training_load_curve.dart';
 import '../../data/models/training_reminder.dart';
 import '../../data/models/user_profile.dart';
 import '../../data/models/workout_day.dart';
+import '../profile/application/user_profile_controller.dart';
 import 'training_mvp_controller.dart';
 
 class TodayTrainingPage extends ConsumerWidget {
@@ -1151,8 +1152,8 @@ class _OnboardingPromptCard extends ConsumerWidget {
                 child: FilledButton(
                   onPressed: () {
                     ref
-                        .read(trainingMvpProvider.notifier)
-                        .saveProfile(state.profile);
+                        .read(userProfileControllerProvider.notifier)
+                        .save(state.profile);
                   },
                   child: const Text('使用当前资料'),
                 ),

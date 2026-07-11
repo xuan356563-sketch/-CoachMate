@@ -58,7 +58,6 @@ import '../../data/repositories/starter_program_repository.dart';
 import '../../data/repositories/training_log_repository.dart';
 import '../../data/repositories/training_plan_repository.dart';
 import '../../data/repositories/user_insight_repository.dart';
-import '../../data/repositories/user_profile_repository.dart';
 import '../../data/repositories/weekly_report_export_repository.dart';
 import '../../data/repositories/weekly_report_repository.dart';
 import '../../services/activity_import_service.dart';
@@ -86,6 +85,7 @@ import '../../services/user_insight_service.dart';
 import '../../services/user_trust_review_service.dart';
 import '../../services/weekly_report_service.dart';
 import '../../services/workout_platform_service.dart';
+import '../profile/application/user_profile_controller.dart';
 
 const Object _unchanged = Object();
 
@@ -1922,14 +1922,6 @@ class TrainingMvpController extends Notifier<TrainingMvpState> {
     );
   }
 
-  UserProfileRepository? _profileRepositoryInstance;
-
-  UserProfileRepository get _profileRepository {
-    return _profileRepositoryInstance ??= PersistedUserProfileRepository(
-      ref.read(localStorageServiceProvider),
-    );
-  }
-
   final TrainingPlanRepository _planRepository =
       InMemoryTrainingPlanRepository();
   final ExerciseRepository _exerciseRepository = InMemoryExerciseRepository();
@@ -2011,7 +2003,9 @@ class TrainingMvpController extends Notifier<TrainingMvpState> {
       unawaited(_workoutPlatformService.setScreenAwake(false));
     });
 
-    final UserProfile profile = _profileRepository.getProfile();
+    final UserProfileState profileState =
+        ref.watch(userProfileControllerProvider);
+    final UserProfile profile = profileState.profile;
     final List<PlanAdjustment> planAdjustments =
         _planAdjustmentRepository.listAdjustments();
     final List<TrainingPlan> plans = _applyPlanAdjustments(
@@ -2077,7 +2071,7 @@ class TrainingMvpController extends Notifier<TrainingMvpState> {
     );
 
     return TrainingMvpState(
-      profileCompleted: _profileRepository.isProfileCompleted(),
+      profileCompleted: profileState.isCompleted,
       profile: profile,
       plans: plans,
       planAdjustments: planAdjustments,
@@ -2364,21 +2358,6 @@ class TrainingMvpController extends Notifier<TrainingMvpState> {
     state = state.copyWith(
       achievementRecords: records,
       achievementRecordStatusMessage: statusMessage,
-    );
-  }
-
-  void saveProfile(UserProfile profile) {
-    final UserProfile savedProfile = _profileRepository.saveProfile(profile);
-    state = state.copyWith(
-      profileCompleted: true,
-      profile: savedProfile,
-      coachAdvices: _aiTrainingService.buildMockCoachAdvice(
-        profile: savedProfile,
-        todayWorkout: state.todayWorkout,
-        todayMealGuide: state.activeMealGuide,
-        latestLog: state.latestLog,
-        latestPainLog: state.latestPainLog,
-      ),
     );
   }
 
