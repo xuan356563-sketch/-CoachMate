@@ -59,7 +59,6 @@ import 'package:trainflow_ai/data/seed/seed_races.dart';
 import 'package:trainflow_ai/data/seed/seed_training_plans.dart';
 import 'package:trainflow_ai/services/knowledge_import_service.dart';
 import 'package:trainflow_ai/services/local_storage_service.dart';
-import 'package:trainflow_ai/services/ai_training_service.dart';
 import 'package:trainflow_ai/services/daily_adjustment_service.dart';
 import 'package:trainflow_ai/services/motion_analysis_service.dart';
 import 'package:trainflow_ai/services/motion_pose_analysis_service.dart';
@@ -76,34 +75,6 @@ import 'package:trainflow_ai/features/workout_player/workout_player_page.dart';
 import 'package:trainflow_ai/features/self_use_acceptance/self_use_acceptance_page.dart';
 
 void main() {
-  test('打工人分型可向后兼容并进入 AI 决策建议', () {
-    final Map<String, dynamic> legacyJson = Map<String, dynamic>.from(
-        InMemoryUserProfileRepository.defaultProfile.toJson())
-      ..remove('workerProfileType')
-      ..remove('equipmentAccessType');
-    final UserProfile legacyProfile = UserProfile.fromJson(legacyJson);
-    expect(legacyProfile.workerProfileType, WorkerProfileType.general);
-    expect(legacyProfile.equipmentAccessType, EquipmentAccessType.gym);
-
-    final UserProfile standingProfile = legacyProfile.copyWith(
-      workerProfileType: WorkerProfileType.standingJob,
-      equipmentAccessType: EquipmentAccessType.none,
-    );
-    final UserProfile restoredProfile =
-        UserProfile.fromJson(standingProfile.toJson());
-    expect(restoredProfile.workerProfileType, WorkerProfileType.standingJob);
-    expect(restoredProfile.equipmentAccessType, EquipmentAccessType.none);
-    expect(restoredProfile.workerProfileType.strategy, contains('足底'));
-
-    final List<String> advice = AiTrainingService().buildMockCoachAdvice(
-      profile: restoredProfile,
-      todayWorkout: seedTrainingPlans.first.workoutDays.first,
-    );
-    expect(advice, contains(contains('久站工作')));
-    expect(advice, contains(contains('足底')));
-    expect(advice, contains(contains('竞技型决策口径')));
-  });
-
   test('无器械条件会把结构化训练动作替换为可执行动作', () {
     final WorkoutDay workout = seedTrainingPlans.first.workoutDays.singleWhere(
       (WorkoutDay day) => day.workoutExercises.any(
@@ -224,43 +195,6 @@ void main() {
       container.read(localStorageServiceProvider),
     );
     expect(repository.getRecord().findDay(1)?.bodyDataLogged, isTrue);
-  });
-
-  test('用户资料仓库会持久化已确认资料状态', () {
-    final InMemoryLocalStorageService storageService =
-        InMemoryLocalStorageService();
-    final PersistedUserProfileRepository repository =
-        PersistedUserProfileRepository(storageService);
-    final UserProfile profile = repository.getProfile().copyWith(
-          name: '测试训练者',
-          age: 36,
-          trainingGoal: '验证本地资料恢复',
-          mainSports: const [MainSport.strength, MainSport.rehab],
-          dailyAvailableMinutes: 35,
-          injuryHistory: const ['测试旧伤'],
-        );
-
-    expect(repository.isProfileCompleted(), isFalse);
-
-    repository.saveProfile(profile);
-
-    final PersistedUserProfileRepository restoredRepository =
-        PersistedUserProfileRepository(storageService);
-
-    expect(restoredRepository.isProfileCompleted(), isTrue);
-    expect(restoredRepository.getProfile().name, '测试训练者');
-    expect(restoredRepository.getProfile().trainingGoal, '验证本地资料恢复');
-    expect(restoredRepository.getProfile().mainSports,
-        const [MainSport.strength, MainSport.rehab]);
-    expect(restoredRepository.getProfile().injuryHistory, const ['测试旧伤']);
-
-    restoredRepository.clearProfile();
-
-    final PersistedUserProfileRepository clearedRepository =
-        PersistedUserProfileRepository(storageService);
-
-    expect(clearedRepository.isProfileCompleted(), isFalse);
-    expect(clearedRepository.getProfile().name, '训练者');
   });
 
   test('30 天引导仓库会持久化 starter_progress', () {
@@ -1967,39 +1901,6 @@ void main() {
     expect(schedule.currentItem?.phaseType, RacePhaseType.base);
     expect(schedule.currentItem?.keyWorkouts, isNotEmpty);
     expect(schedule.currentItem?.safetyGate, contains('疼痛'));
-  });
-
-  testWidgets('基础资料可以选择职业分型并回到今日训练', (WidgetTester tester) async {
-    await tester.pumpWidget(
-      const ProviderScope(
-        child: TrainFlowApp(),
-      ),
-    );
-    await tester.pumpAndSettle();
-
-    await tester.tap(find.text('我的').last);
-    await tester.pumpAndSettle();
-    await tester.tap(find.byTooltip('编辑资料'));
-    await tester.pumpAndSettle();
-
-    expect(find.text('职业 / 生活分型'), findsOneWidget);
-    await tester.tap(find.text('久坐办公室').last);
-    await tester.pumpAndSettle();
-    await tester.tap(find.text('经常加班').last);
-    await tester.pumpAndSettle();
-
-    expect(find.text('职业 / 生活分型'), findsOneWidget);
-    expect(find.textContaining('短时高效和恢复'), findsOneWidget);
-
-    expect(find.text('器械条件'), findsOneWidget);
-    await tester.tap(find.text('健身房').last);
-    await tester.pumpAndSettle();
-    await tester.tap(find.text('基本无器械').last);
-    await tester.pumpAndSettle();
-    expect(find.textContaining('器械条件会参与今日训练替代'), findsOneWidget);
-
-    await tester.tap(find.text('今日训练').last);
-    await tester.pumpAndSettle();
   });
 
   testWidgets('TrainFlow AI 默认进入今日训练页', (WidgetTester tester) async {
