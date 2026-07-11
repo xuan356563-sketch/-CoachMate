@@ -3,6 +3,8 @@ import 'package:flutter_test/flutter_test.dart';
 
 import 'package:trainflow_ai/app/trainflow_app.dart';
 import 'package:trainflow_ai/data/repositories/user_profile_repository.dart';
+import 'package:trainflow_ai/features/dashboard/today_training_page.dart';
+import 'package:trainflow_ai/features/onboarding/onboarding_page.dart';
 
 import '../../support/test_harness.dart';
 
@@ -48,6 +50,24 @@ void main() {
       (storedProfile['profile'] as Map<String, dynamic>)['equipmentAccessType'],
       'none',
     );
-    expect(find.text('今日训练'), findsWidgets);
+    expect(find.byType(OnboardingPage), findsNothing);
+    expect(find.byType(TodayTrainingPage), findsOneWidget);
+  });
+
+  testWidgets('今日训练可以使用当前资料完成首次设置', (WidgetTester tester) async {
+    final TestHarness harness = TestHarness();
+    await tester.pumpWidget(harness.buildApp(const TrainFlowApp()));
+    await tester.pumpAndSettle();
+
+    expect(find.text('首次进入请填写基础资料'), findsOneWidget);
+    await tester.tap(find.text('使用当前资料'));
+    await tester.pumpAndSettle();
+
+    final Map<String, dynamic>? storedProfile = harness.storageService.readJson(
+      PersistedUserProfileRepository.storageKey,
+    );
+    expect(storedProfile, isNotNull);
+    expect(storedProfile!['profileCompleted'], isTrue);
+    expect(find.text('首次进入请填写基础资料'), findsNothing);
   });
 }
