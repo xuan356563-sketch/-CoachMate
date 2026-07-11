@@ -22,21 +22,6 @@ class AppRoutes {
   static const String profile = '/profile';
   static const String selfUseAcceptance = '/self-use-acceptance';
 
-  // 旧 Demo 常量保留给未删除的示例源码引用。
-  static const String index = dashboard;
-  static const String basic = '/basic';
-  static const String component = '/component';
-  static const String template = '/template';
-  static const String about = '/about';
-  static const String color = '/basic/color';
-  static const String icon = '/basic/icon';
-  static const String button = '/basic/button';
-  static const String typography = '/basic/typography';
-  static const String border = '/basic/border';
-  static const String shadow = '/basic/shadow';
-  static const String flex = '/basic/flex';
-  static const String title = '/basic/title';
-
   static String planDetail(String planId) {
     return '$plans/$planId';
   }

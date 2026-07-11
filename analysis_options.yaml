@@ -5,11 +5,7 @@ include: package:flutter_lints/flutter.yaml
 analyzer:
   exclude:
     - '**/._*'
-    - 'lib/features/about/**'
-    - 'lib/features/basic/**'
-    - 'lib/features/component/**'
-    - 'lib/features/index/**'
-    - 'lib/features/template/**'
+    - 'legacy/**'
 
 linter:
   rules:
