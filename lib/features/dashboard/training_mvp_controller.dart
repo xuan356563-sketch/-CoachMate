@@ -2004,7 +2004,25 @@ class TrainingMvpController extends Notifier<TrainingMvpState> {
     });
 
     final UserProfileState profileState =
-        ref.watch(userProfileControllerProvider);
+        ref.read(userProfileControllerProvider);
+    ref.listen<UserProfileState>(
+      userProfileControllerProvider,
+      (UserProfileState? previous, UserProfileState next) {
+        final TrainingMvpState profileUpdatedState = state.copyWith(
+          profileCompleted: next.isCompleted,
+          profile: next.profile,
+        );
+        state = profileUpdatedState.copyWith(
+          coachAdvices: _aiTrainingService.buildMockCoachAdvice(
+            profile: profileUpdatedState.profile,
+            todayWorkout: profileUpdatedState.todayWorkout,
+            todayMealGuide: profileUpdatedState.activeMealGuide,
+            latestLog: profileUpdatedState.latestLog,
+            latestPainLog: profileUpdatedState.latestPainLog,
+          ),
+        );
+      },
+    );
     final UserProfile profile = profileState.profile;
     final List<PlanAdjustment> planAdjustments =
         _planAdjustmentRepository.listAdjustments();
