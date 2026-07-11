@@ -1,0 +1,54 @@
+name: trainflow_ai
+description: "TrainFlow AI 训练决策辅助系统 MVP，基于现有 Flutter UI 底座改造"
+publish_to: 'none'
+version: 1.0.0+1
+
+environment:
+  sdk: '>=3.0.0 <4.0.0'
+  flutter: ">=3.7.0"
+
+dependencies:
+  flutter:
+    sdk: flutter
+
+  # UI组件库 - 腾讯TDesign Flutter
+  tdesign_flutter: ^0.2.6
+
+  # 状态管理 - Riverpod
+  flutter_riverpod: ^3.0.3
+  riverpod_annotation: ^3.0.3
+
+  # 路由管理
+  go_router: ^17.0.0
+
+  # 存储
+  shared_preferences: ^2.3.4
+
+  # 网络请求
+  dio: ^5.7.0
+
+  # 屏幕适配
+  flutter_screenutil: ^5.9.3
+
+  # 图标
+  cupertino_icons: ^1.0.8
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^6.0.0
+
+  # 代码生成
+  build_runner: ^2.10.3
+  riverpod_generator: ^3.0.3
+  riverpod_lint: ^3.0.3
+
+flutter:
+  uses-material-design: true
+
+  assets:
+    - assets/images/
+    - assets/images/exercises/
+    - assets/images/exercises/free-exercise-db/
+    - assets/images/icons/
+    - assets/fonts/

@@ -1,0 +1,127 @@
+import '../models/knowledge_entry.dart';
+
+final List<TrainingBook> seedTrainingBooks = [
+  TrainingBook(
+    id: 'book-daniels-running-formula',
+    title: 'Daniels\' Running Formula',
+    author: 'Jack Daniels',
+    edition: '方法论摘录',
+    areas: [KnowledgeArea.running, KnowledgeArea.recovery],
+    summary: '用于跑步强度分区、轻松跑、节奏跑和周期安排的依据。',
+  ),
+  TrainingBook(
+    id: 'book-running-rewired',
+    title: 'Running Rewired',
+    author: 'Jay Dicharry',
+    edition: '动作控制摘录',
+    areas: [KnowledgeArea.running, KnowledgeArea.motion],
+    summary: '用于提胯、小腿、跑姿技术和动作控制提示。',
+  ),
+  TrainingBook(
+    id: 'book-starting-strength',
+    title: 'Starting Strength',
+    author: 'Mark Rippetoe',
+    edition: '基础力量摘录',
+    areas: [KnowledgeArea.strength, KnowledgeArea.motion],
+    summary: '用于深蹲、髋铰链、推类动作的稳定发力路径。',
+  ),
+  TrainingBook(
+    id: 'book-tiny-habits',
+    title: 'Tiny Habits',
+    author: 'BJ Fogg',
+    edition: '习惯设计摘录',
+    areas: [KnowledgeArea.habit, KnowledgeArea.nutrition],
+    summary: '用于 30 天引导、照吃卡和低摩擦执行策略。',
+  ),
+];
+
+final List<BookQuote> seedBookQuotes = [
+  BookQuote(
+    id: 'quote-daniels-easy-run',
+    bookId: 'book-daniels-running-formula',
+    chapter: '第 4 章 训练强度',
+    pageRange: 'p. 84-91',
+    quote: '轻松跑应保持可恢复、可持续，并服务下一次关键训练。',
+    note: '用于今日训练的低强度跑和恢复跑安排。',
+    areas: [KnowledgeArea.running, KnowledgeArea.recovery],
+  ),
+  BookQuote(
+    id: 'quote-running-rewired-drill',
+    bookId: 'book-running-rewired',
+    chapter: '第 3 章 跑步动作控制',
+    pageRange: 'p. 61-76',
+    quote: '跑步专项练习要把姿态、弹性和力量输出连接起来。',
+    note: '用于 A Skip、高抬腿、提踵和跑姿纠错。',
+    areas: [KnowledgeArea.running, KnowledgeArea.motion],
+  ),
+  BookQuote(
+    id: 'quote-starting-strength-path',
+    bookId: 'book-starting-strength',
+    chapter: '基础力量动作技术',
+    pageRange: 'p. 9-42',
+    quote: '基础动作先建立稳定路径，再逐步增加负荷。',
+    note: '用于力量动作库和动作纠错的退阶建议。',
+    areas: [KnowledgeArea.strength, KnowledgeArea.motion],
+  ),
+  BookQuote(
+    id: 'quote-tiny-habits-small',
+    bookId: 'book-tiny-habits',
+    chapter: '第 2 章 行为起点',
+    pageRange: 'p. 39-54',
+    quote: '习惯更容易从小到几乎不会失败的行为开始。',
+    note: '用于照吃指令卡和 30 天适应期。',
+    areas: [KnowledgeArea.habit, KnowledgeArea.nutrition],
+  ),
+  BookQuote(
+    id: 'quote-daniels-progressive-load',
+    bookId: 'book-daniels-running-formula',
+    chapter: '周期安排',
+    pageRange: 'p. 112-126',
+    quote: '训练负荷应按阶段推进，并保留恢复日。',
+    note: '用于周计划结构和每日决策类型。',
+    areas: [KnowledgeArea.running, KnowledgeArea.recovery],
+  ),
+];
+
+final List<CitationLink> seedCitationLinks = [
+  CitationLink(
+    id: 'citation-today-easy-run',
+    quoteId: 'quote-daniels-easy-run',
+    targetType: CitationTargetType.workout,
+    targetId: 'workout-day-1',
+    targetTitle: '今日训练：轻松跑 + 技术动作',
+    reason: '解释今日不追配速、优先完成和恢复的原因。',
+  ),
+  CitationLink(
+    id: 'citation-running-drill-exercise',
+    quoteId: 'quote-running-rewired-drill',
+    targetType: CitationTargetType.exercise,
+    targetId: 'exercise-a-skip',
+    targetTitle: 'A Skip 跑姿练习',
+    reason: '解释提胯练习为什么服务跑姿效率。',
+  ),
+  CitationLink(
+    id: 'citation-motion-check',
+    quoteId: 'quote-starting-strength-path',
+    targetType: CitationTargetType.motionCheck,
+    targetId: 'motion-check-squat',
+    targetTitle: '深蹲纠错',
+    reason: '解释动作纠错先看稳定路径，再给负荷建议。',
+  ),
+  CitationLink(
+    id: 'citation-meal-guide',
+    quoteId: 'quote-tiny-habits-small',
+    targetType: CitationTargetType.mealGuide,
+    targetId: 'meal-guide-takeaway-day1',
+    targetTitle: '外卖照吃卡',
+    reason: '解释为什么只给一条最小饮食动作。',
+  ),
+  CitationLink(
+    id: 'citation-plan-progressive',
+    quoteId: 'quote-daniels-progressive-load',
+    targetType: CitationTargetType.plan,
+    targetId: 'plan-hybrid-run-strength-4w',
+    targetTitle: '跑步 + 力量 4 周适应计划',
+    reason: '解释周计划为什么固定轻松日和降级空间。',
+  ),
+];

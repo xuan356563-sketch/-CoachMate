@@ -1,0 +1,17 @@
+# 此文件用于配置 Dart 静态分析器。
+
+include: package:flutter_lints/flutter.yaml
+
+analyzer:
+  exclude:
+    - '**/._*'
+    - 'lib/features/about/**'
+    - 'lib/features/basic/**'
+    - 'lib/features/component/**'
+    - 'lib/features/index/**'
+    - 'lib/features/template/**'
+
+linter:
+  rules:
+    # avoid_print: false
+    # prefer_single_quotes: true
