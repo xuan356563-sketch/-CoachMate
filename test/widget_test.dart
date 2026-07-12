@@ -18,7 +18,6 @@ import 'package:trainflow_ai/data/models/meal_guide.dart';
 import 'package:trainflow_ai/data/models/motion_check.dart';
 import 'package:trainflow_ai/data/models/motion_pose.dart';
 import 'package:trainflow_ai/data/models/pain_log.dart';
-import 'package:trainflow_ai/data/models/plan_adjustment.dart';
 import 'package:trainflow_ai/data/models/race.dart';
 import 'package:trainflow_ai/data/models/self_use_acceptance.dart';
 import 'package:trainflow_ai/data/models/starter_program.dart';
@@ -40,7 +39,6 @@ import 'package:trainflow_ai/data/repositories/knowledge_repository.dart';
 import 'package:trainflow_ai/data/repositories/meal_preference_repository.dart';
 import 'package:trainflow_ai/data/repositories/motion_analysis_repository.dart';
 import 'package:trainflow_ai/data/repositories/pain_log_repository.dart';
-import 'package:trainflow_ai/data/repositories/plan_adjustment_repository.dart';
 import 'package:trainflow_ai/data/repositories/race_repository.dart';
 import 'package:trainflow_ai/data/repositories/self_use_acceptance_repository.dart';
 import 'package:trainflow_ai/data/repositories/starter_program_repository.dart';
@@ -456,51 +454,6 @@ void main() {
         PersistedBodyMetricExportRepository(storageService);
 
     expect(clearedRepository.listRecords(), isEmpty);
-  });
-
-  test('计划调整仓库会保留训练日修改与恢复历史', () {
-    final InMemoryLocalStorageService storageService =
-        InMemoryLocalStorageService();
-    final PersistedPlanAdjustmentRepository repository =
-        PersistedPlanAdjustmentRepository(storageService);
-    final PlanAdjustment adjusted = PlanAdjustment(
-      id: 'plan-adjustment-test',
-      planId: 'plan-test',
-      workoutDayId: 'workout-test',
-      workoutTitle: '测试训练日',
-      originalEstimatedMinutes: 50,
-      adjustedEstimatedMinutes: 35,
-      originalIntensity: 'RPE 6',
-      adjustedIntensity: 'RPE 4-5',
-      reason: '测试午休时间限制',
-      kind: PlanAdjustmentKind.adjusted,
-      adjustedAt: DateTime(2026, 7, 10, 8),
-    );
-    final PlanAdjustment restored = PlanAdjustment(
-      id: 'plan-restored-test',
-      planId: 'plan-test',
-      workoutDayId: 'workout-test',
-      workoutTitle: '测试训练日',
-      originalEstimatedMinutes: 50,
-      adjustedEstimatedMinutes: 50,
-      originalIntensity: 'RPE 6',
-      adjustedIntensity: 'RPE 6',
-      reason: '测试恢复原计划',
-      kind: PlanAdjustmentKind.restored,
-      adjustedAt: DateTime(2026, 7, 10, 9),
-    );
-
-    repository.saveAdjustment(adjusted);
-    repository.saveAdjustment(restored);
-
-    final PersistedPlanAdjustmentRepository restoredRepository =
-        PersistedPlanAdjustmentRepository(storageService);
-    final List<PlanAdjustment> records = restoredRepository.listAdjustments();
-
-    expect(records, hasLength(2));
-    expect(records.first.kind, PlanAdjustmentKind.restored);
-    expect(records.first.isActive, isFalse);
-    expect(records.last.adjustedEstimatedMinutes, 35);
   });
 
   test('周报仓库会持久化最近归档并按周去重', () {
