@@ -1,0 +1,172 @@
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_test/flutter_test.dart';
+
+import 'package:trainflow_ai/data/models/daily_adjustment.dart';
+import 'package:trainflow_ai/data/models/workout_day.dart';
+import 'package:trainflow_ai/data/repositories/daily_context_repository.dart';
+import 'package:trainflow_ai/features/daily_adjustment/application/daily_adjustment_controller.dart';
+import 'package:trainflow_ai/features/profile/application/user_profile_controller.dart';
+import 'package:trainflow_ai/services/local_storage_service.dart';
+
+void main() {
+  ProviderContainer createContainer(InMemoryLocalStorageService storage) {
+    return ProviderContainer(
+      overrides: [
+        localStorageServiceProvider.overrideWithValue(storage),
+      ],
+    );
+  }
+
+  test('初始状态使用资料可训练时长和每日调整默认值', () {
+    final InMemoryLocalStorageService storage = InMemoryLocalStorageService();
+    final ProviderContainer container = createContainer(storage);
+    addTearDown(container.dispose);
+
+    final UserProfileState profileState =
+        container.read(userProfileControllerProvider);
+    final DailyAdjustmentState state =
+        container.read(dailyAdjustmentControllerProvider);
+
+    expect(state.context.availableMinutes,
+        profileState.profile.dailyAvailableMinutes);
+    expect(state.context.workStress, WorkStressLevel.normal);
+    expect(state.context.environment, TrainingEnvironment.gym);
+    expect(state.context.weather, WeatherCondition.good);
+    expect(state.statusMessage, '尚未应用今日现实约束调整。');
+  });
+
+  test('不存在本地上下文时跟随已保存的资料可训练时长', () {
+    final InMemoryLocalStorageService storage = InMemoryLocalStorageService();
+    final ProviderContainer container = createContainer(storage);
+    addTearDown(container.dispose);
+    final UserProfileState profileState =
+        container.read(userProfileControllerProvider);
+
+    container.read(userProfileControllerProvider.notifier).save(
+          profileState.profile.copyWith(dailyAvailableMinutes: 75),
+        );
+
+    expect(
+      container
+          .read(dailyAdjustmentControllerProvider)
+          .context
+          .availableMinutes,
+      75,
+    );
+  });
+
+  test('本地上下文优先于资料默认值，并在更新后规范化和恢复', () {
+    final InMemoryLocalStorageService storage = InMemoryLocalStorageService();
+    final ProviderContainer firstContainer = createContainer(storage);
+    final DailyContextRepository repository =
+        firstContainer.read(dailyContextRepositoryProvider);
+    repository.saveContext(
+      const DailyAdjustmentContext(
+        availableMinutes: 20,
+        workStress: WorkStressLevel.high,
+        environment: TrainingEnvironment.home,
+        weather: WeatherCondition.rain,
+        statusMessage: '已保存本地调整。',
+      ),
+    );
+
+    final UserProfileState profileState =
+        firstContainer.read(userProfileControllerProvider);
+    firstContainer.read(userProfileControllerProvider.notifier).save(
+          profileState.profile.copyWith(dailyAvailableMinutes: 75),
+        );
+    expect(
+      firstContainer
+          .read(dailyAdjustmentControllerProvider)
+          .context
+          .availableMinutes,
+      20,
+    );
+
+    firstContainer
+        .read(dailyAdjustmentControllerProvider.notifier)
+        .setDailyAvailableMinutes(300);
+    expect(
+      firstContainer
+          .read(dailyAdjustmentControllerProvider)
+          .context
+          .availableMinutes,
+      180,
+    );
+    expect(
+      firstContainer.read(dailyAdjustmentControllerProvider).statusMessage,
+      '已更新今日可训练时间为 300 分钟。',
+    );
+    firstContainer.dispose();
+
+    final ProviderContainer restoredContainer = createContainer(storage);
+    addTearDown(restoredContainer.dispose);
+    final DailyAdjustmentState restoredState =
+        restoredContainer.read(dailyAdjustmentControllerProvider);
+
+    expect(restoredState.context.availableMinutes, 180);
+    expect(restoredState.statusMessage, '已更新今日可训练时间为 300 分钟。');
+  });
+
+  test('应用每日调整决策会持久化原控制器状态文案', () {
+    final InMemoryLocalStorageService storage = InMemoryLocalStorageService();
+    final ProviderContainer container = createContainer(storage);
+    addTearDown(container.dispose);
+    const DailyAdjustmentDecision decision = DailyAdjustmentDecision(
+      decisionType: TrainingDecisionType.deload,
+      availableMinutes: 30,
+      workStress: WorkStressLevel.high,
+      environment: TrainingEnvironment.home,
+      weather: WeatherCondition.rain,
+      decisionLabel: '轻松版',
+      reason: '测试原因',
+      adjustedMinutes: 20,
+      planChangeSummary: '减少训练量',
+      constraintBadges: <String>[],
+      adjustments: <String>[],
+    );
+
+    container
+        .read(dailyAdjustmentControllerProvider.notifier)
+        .setDailyWorkStress(WorkStressLevel.high);
+    expect(
+      container.read(dailyAdjustmentControllerProvider).statusMessage,
+      '已更新今日工作压力为高压。',
+    );
+    container
+        .read(dailyAdjustmentControllerProvider.notifier)
+        .setDailyTrainingEnvironment(TrainingEnvironment.home);
+    expect(
+      container.read(dailyAdjustmentControllerProvider).statusMessage,
+      '已更新今日训练场地为家里。',
+    );
+    container
+        .read(dailyAdjustmentControllerProvider.notifier)
+        .setDailyWeather(WeatherCondition.rain);
+    expect(
+      container.read(dailyAdjustmentControllerProvider).statusMessage,
+      '已更新今日天气状态为下雨。',
+    );
+
+    container
+        .read(dailyAdjustmentControllerProvider.notifier)
+        .applyDailyAdjustmentDecision(decision);
+
+    expect(
+      container.read(dailyAdjustmentControllerProvider).statusMessage,
+      '已应用今日调整：轻松版，减少训练量',
+    );
+    expect(
+      container.read(dailyAdjustmentControllerProvider).context.workStress,
+      WorkStressLevel.high,
+    );
+    expect(
+      container.read(dailyAdjustmentControllerProvider).context.environment,
+      TrainingEnvironment.home,
+    );
+    expect(
+      container.read(dailyAdjustmentControllerProvider).context.weather,
+      WeatherCondition.rain,
+    );
+  });
+}
