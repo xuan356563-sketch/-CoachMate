@@ -50,7 +50,6 @@ import '../../data/repositories/meal_preference_repository.dart';
 import '../../data/repositories/motion_analysis_repository.dart';
 import '../../data/repositories/motion_check_repository.dart';
 import '../../data/repositories/pain_log_repository.dart';
-import '../../data/repositories/plan_adjustment_repository.dart';
 import '../../data/repositories/race_repository.dart';
 import '../../data/repositories/starter_program_repository.dart';
 import '../../data/repositories/training_log_repository.dart';
@@ -86,6 +85,7 @@ import '../../services/workout_platform_service.dart';
 import '../daily_adjustment/application/daily_adjustment_controller.dart';
 import '../profile/application/user_profile_controller.dart';
 import '../reminders/application/reminder_settings_controller.dart';
+import '../training_plan/application/plan_adjustment_controller.dart';
 
 const Object _unchanged = Object();
 
@@ -1845,15 +1845,6 @@ class TrainingMvpController extends Notifier<TrainingMvpState> {
     );
   }
 
-  PlanAdjustmentRepository? _planAdjustmentRepositoryInstance;
-
-  PlanAdjustmentRepository get _planAdjustmentRepository {
-    return _planAdjustmentRepositoryInstance ??=
-        PersistedPlanAdjustmentRepository(
-      ref.read(localStorageServiceProvider),
-    );
-  }
-
   WeeklyReportRepository? _weeklyReportRepositoryInstance;
 
   WeeklyReportRepository get _weeklyReportRepository {
@@ -1986,6 +1977,26 @@ class TrainingMvpController extends Notifier<TrainingMvpState> {
       unawaited(_workoutPlatformService.setScreenAwake(false));
     });
 
+    final PlanAdjustmentState planAdjustmentState =
+        ref.read(planAdjustmentControllerProvider);
+    ref.listen<PlanAdjustmentState>(
+      planAdjustmentControllerProvider,
+      (PlanAdjustmentState? previous, PlanAdjustmentState next) {
+        scheduleMicrotask(() {
+          if (!ref.mounted) {
+            return;
+          }
+          state = state.copyWith(
+            plans: _applyPlanAdjustments(
+              _planRepository.listPlans(),
+              next.adjustments,
+            ),
+            planAdjustments: next.adjustments,
+            planAdjustmentStatusMessage: next.statusMessage,
+          );
+        });
+      },
+    );
     final UserProfileState profileState =
         ref.read(userProfileControllerProvider);
     ref.listen<UserProfileState>(
@@ -2045,7 +2056,7 @@ class TrainingMvpController extends Notifier<TrainingMvpState> {
     );
     final UserProfile profile = profileState.profile;
     final List<PlanAdjustment> planAdjustments =
-        _planAdjustmentRepository.listAdjustments();
+        planAdjustmentState.adjustments;
     final List<TrainingPlan> plans = _applyPlanAdjustments(
       _planRepository.listPlans(),
       planAdjustments,
@@ -2107,9 +2118,7 @@ class TrainingMvpController extends Notifier<TrainingMvpState> {
       profile: profile,
       plans: plans,
       planAdjustments: planAdjustments,
-      planAdjustmentStatusMessage: planAdjustments.isEmpty
-          ? '尚未手动调整训练日；可按当天时间和状态微调时长与强度。'
-          : '已读取 ${planAdjustments.length} 条本地计划调整记录。',
+      planAdjustmentStatusMessage: planAdjustmentState.statusMessage,
       exercises: exercises,
       knowledgeBooks: knowledgeBooks,
       bookQuotes: bookQuotes,
@@ -2244,95 +2253,6 @@ class TrainingMvpController extends Notifier<TrainingMvpState> {
     state = state.copyWith(
       bodyMetricExportRecords: _bodyMetricExportRepository.listRecords(),
       bodyMetricExportStatusMessage: '已清除本地身体数据导出记录。',
-    );
-  }
-
-  void saveManualPlanAdjustment({
-    required String workoutDayId,
-    required int adjustedMinutes,
-    required String adjustedIntensity,
-    required String reason,
-  }) {
-    final WorkoutDay? originalWorkout =
-        _planRepository.findWorkoutDayById(workoutDayId);
-    if (originalWorkout == null) {
-      state = state.copyWith(
-        planAdjustmentStatusMessage: '无法保存调整：没有找到对应训练日。',
-      );
-      return;
-    }
-    final String normalizedIntensity = adjustedIntensity.trim();
-    final String normalizedReason = reason.trim();
-    if (adjustedMinutes < 5 || adjustedMinutes > 180) {
-      state = state.copyWith(
-        planAdjustmentStatusMessage: '调整时长需在 5 到 180 分钟之间。',
-      );
-      return;
-    }
-    if (normalizedIntensity.isEmpty || normalizedReason.isEmpty) {
-      state = state.copyWith(
-        planAdjustmentStatusMessage: '请补充调整后的强度和原因。',
-      );
-      return;
-    }
-
-    final DateTime now = DateTime.now();
-    final PlanAdjustment adjustment = PlanAdjustment(
-      id: 'plan-adjustment-${originalWorkout.id}-${now.millisecondsSinceEpoch}',
-      planId: originalWorkout.planId,
-      workoutDayId: originalWorkout.id,
-      workoutTitle: originalWorkout.title,
-      originalEstimatedMinutes: originalWorkout.estimatedMinutes,
-      adjustedEstimatedMinutes: adjustedMinutes,
-      originalIntensity: originalWorkout.intensity,
-      adjustedIntensity: normalizedIntensity,
-      reason: normalizedReason,
-      kind: PlanAdjustmentKind.adjusted,
-      adjustedAt: now,
-    );
-    _planAdjustmentRepository.saveAdjustment(adjustment);
-    _refreshPlanAdjustments(
-      statusMessage:
-          '已记录为本地学习信号：${adjustment.workoutTitle} 调整为 ${adjustment.adjustedEstimatedMinutes} 分钟 · ${adjustment.adjustedIntensity}。',
-    );
-  }
-
-  void restoreOriginalWorkoutPlan(String workoutDayId) {
-    final WorkoutDay? originalWorkout =
-        _planRepository.findWorkoutDayById(workoutDayId);
-    if (originalWorkout == null) {
-      state = state.copyWith(
-        planAdjustmentStatusMessage: '无法恢复原计划：没有找到对应训练日。',
-      );
-      return;
-    }
-    final DateTime now = DateTime.now();
-    final PlanAdjustment adjustment = PlanAdjustment(
-      id: 'plan-restored-${originalWorkout.id}-${now.millisecondsSinceEpoch}',
-      planId: originalWorkout.planId,
-      workoutDayId: originalWorkout.id,
-      workoutTitle: originalWorkout.title,
-      originalEstimatedMinutes: originalWorkout.estimatedMinutes,
-      adjustedEstimatedMinutes: originalWorkout.estimatedMinutes,
-      originalIntensity: originalWorkout.intensity,
-      adjustedIntensity: originalWorkout.intensity,
-      reason: '用户恢复原计划。',
-      kind: PlanAdjustmentKind.restored,
-      adjustedAt: now,
-    );
-    _planAdjustmentRepository.saveAdjustment(adjustment);
-    _refreshPlanAdjustments(
-      statusMessage: '已恢复原计划并记录为本地学习信号：${adjustment.workoutTitle}。',
-    );
-  }
-
-  void _refreshPlanAdjustments({required String statusMessage}) {
-    final List<PlanAdjustment> adjustments =
-        _planAdjustmentRepository.listAdjustments();
-    state = state.copyWith(
-      plans: _applyPlanAdjustments(_planRepository.listPlans(), adjustments),
-      planAdjustments: adjustments,
-      planAdjustmentStatusMessage: statusMessage,
     );
   }
 

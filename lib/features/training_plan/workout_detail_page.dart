@@ -9,6 +9,7 @@ import '../../data/models/exercise.dart';
 import '../../data/models/plan_adjustment.dart';
 import '../../data/models/workout_day.dart';
 import '../dashboard/training_mvp_controller.dart';
+import 'application/plan_adjustment_controller.dart';
 
 class WorkoutDetailPage extends ConsumerWidget {
   final String planId;
@@ -229,8 +230,8 @@ class _PlanAdjustmentSheetState extends ConsumerState<_PlanAdjustmentSheet> {
       });
       return;
     }
-    ref.read(trainingMvpProvider.notifier).saveManualPlanAdjustment(
-          workoutDayId: widget.workout.id,
+    ref.read(planAdjustmentControllerProvider.notifier).saveManualAdjustment(
+          workout: widget.workout,
           adjustedMinutes: adjustedMinutes,
           adjustedIntensity: _selectedIntensity,
           reason: reason,
@@ -240,8 +241,8 @@ class _PlanAdjustmentSheetState extends ConsumerState<_PlanAdjustmentSheet> {
 
   void _restore() {
     ref
-        .read(trainingMvpProvider.notifier)
-        .restoreOriginalWorkoutPlan(widget.workout.id);
+        .read(planAdjustmentControllerProvider.notifier)
+        .restoreOriginalPlan(widget.workout);
     Navigator.of(context).pop();
   }
 
