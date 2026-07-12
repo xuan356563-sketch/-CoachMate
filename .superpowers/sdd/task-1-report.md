@@ -1,19 +1,21 @@
-# Task 1 报告：独立照吃偏好状态管理
+# Task 1 报告：独立身体记录核心状态管理
 
 ## 实际改动
 
-- 新增 `mealPreferenceRepositoryProvider`，使用现有 `localStorageServiceProvider` 创建 `PersistedMealPreferenceRepository`。
-- 新增 `mealPreferenceControllerProvider` 与 `MealPreferenceController`，状态类型保持为既有 `MealPreference`。
-- 新增 `saveScenario()` 保存照吃场景，新增 `clear()` 清除后从仓库重新读取默认外卖场景。
-- 新增控制器测试，覆盖初始外卖默认值、保存后状态更新、同一 `InMemoryLocalStorageService` 下重启恢复、清除后回到外卖默认值。
+- 新增 `bodyMetricRepositoryProvider`，使用现有 `localStorageServiceProvider` 创建 `PersistedBodyMetricRepository`。
+- 新增 `bodyMetricControllerProvider`、`BodyMetricState` 和 `BodyMetricController`，独立管理身体记录列表、修订、待确认指标、CSV 导入历史、状态文案和 `persistenceVersion`。
+- 从 `TrainingMvpController` 的身体记录段迁入 `saveManualMetric()`、`confirmPendingMetric()`、`recognizeSnapshotText()`、`confirmDailyCheckInSameAsYesterday()`、`recordTiredDailyCheckIn()`、`importCsv()`、`clear()` 规则。
+- 保留原有默认种子、状态文案、同日修订、异常阈值、CSV/截图解析行为、仓库 JSON 结构和清除后保留本次会话 CSV 导入历史。
+- 每日偏累签到无历史指标时，按要求通过 `userProfileControllerProvider` 读取用户画像体重兜底。
+- 新增独立控制器测试，覆盖初始种子/文案、保存与重启恢复、同日修订、异常待确认与确认、无待确认提示、截图识别成功/失败、CSV 成功/失败、两种每日签到、清除保留导入历史和版本递增规则。
 
 ## 测试命令及结果
 
-- `flutter test test/features/meal_guide/application/meal_preference_controller_test.dart`
-  - 第一次运行在编译前被已有/生成的 macOS `._*` 原生资源临时文件阻断。
-- `find . -name '._*' -delete && flutter test test/features/meal_guide/application/meal_preference_controller_test.dart`
-  - 通过，`2` 个测试全部通过。
-- `flutter analyze`
+- `find . -name '._*' -delete && flutter test test/features/data_center/application/body_metric_controller_test.dart`
+  - 预期红灯：缺少 `lib/features/data_center/application/body_metric_controller.dart`、`BodyMetricState` 和 `bodyMetricControllerProvider`。
+- `find . -name '._*' -delete && flutter test test/features/data_center/application/body_metric_controller_test.dart`
+  - 通过，`11` 个测试全部通过。
+- `find . -name '._*' -delete && flutter analyze`
   - 通过，`No issues found!`。
 
 ## 提交号
@@ -23,7 +25,11 @@
 ## 自检结论
 
 - 未新增依赖。
-- 未修改模型、仓库实现、训练控制器、页面或其他任务文件。
-- 保持 `trainflow.meal_preference.v1`、`schemaVersion: 1`、`preference.scenario` 与外卖默认值不变。
-- 新增注释与测试名称均为中文。
-- 变更范围仅限 Task 1 指定文件与本报告。
+- 未修改模型、仓库、服务、训练控制器或页面。
+- 未改动数据库/存储 JSON schema，仍使用 `trainflow.body_metrics.v1`。
+- `persistenceVersion` 只在仓库真实写入或清除后递增；待确认、无待确认、截图解析失败和 CSV 解析失败不递增。
+- 变更范围仅限 `lib/features/data_center/application/body_metric_controller.dart`、`test/features/data_center/application/body_metric_controller_test.dart` 和 `.superpowers/sdd/task-1-report.md`。
+
+## Concern
+
+- 报告无法自包含最终提交哈希，否则会形成 Git 哈希自引用；最终提交号以完成回复中的 `git rev-parse HEAD` 结果为准。
