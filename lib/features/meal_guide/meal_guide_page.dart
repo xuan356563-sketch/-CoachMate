@@ -6,6 +6,7 @@ import '../../core/widgets/trainflow_widgets.dart';
 import '../../data/models/evidence_source.dart';
 import '../../data/models/meal_guide.dart';
 import '../dashboard/training_mvp_controller.dart';
+import 'application/meal_preference_controller.dart';
 
 class MealGuidePage extends ConsumerWidget {
   const MealGuidePage({super.key});
@@ -13,6 +14,11 @@ class MealGuidePage extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final TrainingMvpState state = ref.watch(trainingMvpProvider);
+    final MealScenario mealScenario = ref.watch(
+      mealPreferenceControllerProvider.select(
+        (MealPreference preference) => preference.scenario,
+      ),
+    );
     final MealGuide activeGuide = state.activeMealGuide;
 
     return TrainFlowPage(
@@ -32,7 +38,7 @@ class MealGuidePage extends ConsumerWidget {
               ),
               const SizedBox(height: 12),
               DropdownButtonFormField<MealScenario>(
-                initialValue: state.mealScenario,
+                initialValue: mealScenario,
                 decoration: const InputDecoration(labelText: '今天怎么吃'),
                 items: [
                   for (final MealScenario scenario in MealScenario.values)
@@ -44,8 +50,8 @@ class MealGuidePage extends ConsumerWidget {
                 onChanged: (MealScenario? value) {
                   if (value != null) {
                     ref
-                        .read(trainingMvpProvider.notifier)
-                        .setMealScenario(value);
+                        .read(mealPreferenceControllerProvider.notifier)
+                        .saveScenario(value);
                   }
                 },
               ),

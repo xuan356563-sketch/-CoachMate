@@ -1,36 +1,39 @@
-# Task 2 实施报告
+# Task 2 报告：照吃偏好状态迁移
 
-## 完成内容
+## 修改内容
 
-- `TrainingMvpController` 不再直接读取或写入每日调整、提醒设置仓库。
-- 控制器初始读取每日调整和提醒设置 provider，并通过 `ref.listen` 局部投影兼容字段；投影在微任务执行，避免 widget 构建期间修改 provider。
-- 每日调整页和提醒页写入改由对应独立控制器处理，展示、路由和文案保持不变。
-- 新增每日调整与提醒设置的训练状态桥接测试，覆盖派生决策、提醒列表、跟练会话、日志和搜索临时输入保持。
+- 训练控制器移除对 `MealPreferenceRepository` 的直接依赖，不再持有私有仓库实例，不再暴露 `setMealScenario()`。
+- 训练控制器在 `build()` 中直接读取并监听 `mealPreferenceControllerProvider`，把独立照吃偏好投影到旧 `TrainingMvpState.mealScenario`。
+- 照吃偏好变化时仅同步 `mealScenario` 和基于当前 `activeMealGuide` 的 `coachAdvices`，不重置跟练会话、日志、知识搜索或其他训练状态。
+- 照吃页改为选择性订阅 `mealPreferenceControllerProvider` 的当前场景，下拉框写入独立偏好控制器。
+- 新增桥接测试和页面交互测试，覆盖偏好写入、旧状态投影、照吃卡同步、建议同步和跟练状态保留。
 
-## RED
+## 修改文件
 
-新增桥接测试后执行：
+- `lib/features/dashboard/training_mvp_controller.dart`
+- `lib/features/meal_guide/meal_guide_page.dart`
+- `test/features/meal_guide/application/meal_preference_training_bridge_test.dart`
+- `test/features/meal_guide/meal_guide_page_test.dart`
+- `.superpowers/sdd/task-2-report.md`
 
-```bash
-flutter test test/features/daily_adjustment/application/daily_adjustment_training_bridge_test.dart test/features/reminders/application/reminder_settings_training_bridge_test.dart --reporter compact
-```
+## 测试结果
 
-结果：失败。每日调整更新后训练状态仍为 `45` 分钟；提醒开关更新后训练状态仍为启用，证明旧训练控制器尚未监听新 provider。
+- 已先执行 `find . -name '._*' -delete` 清理 AppleDouble 副文件。
+- `flutter test test/features/meal_guide/application/meal_preference_training_bridge_test.dart`：通过，`All tests passed!`
+- 已再次执行 `find . -name '._*' -delete`。
+- `flutter test test/features/meal_guide/meal_guide_page_test.dart`：通过，`All tests passed!`
+- 已再次执行 `find . -name '._*' -delete`。
+- `flutter analyze`：通过，`No issues found!`
+- 验证结束后已再次清理 `._*` 副文件。
 
-## GREEN
+## 提交号
 
-首次完整测试发现首页构建期间的 Riverpod 状态写入断言。将两个兼容字段投影调整为微任务后，目标测试、首页 widget 测试和完整测试均通过。
+- 最终提交号见完成回复；提交哈希依赖报告文件内容，无法在同一个提交内可靠写入自身哈希。
 
-执行命令：
+## 自检
 
-```bash
-flutter test test/features/daily_adjustment/application/daily_adjustment_controller_test.dart test/features/daily_adjustment/application/daily_adjustment_training_bridge_test.dart test/features/reminders/application/reminder_settings_controller_test.dart test/features/reminders/application/reminder_settings_training_bridge_test.dart --reporter compact
-flutter analyze
-flutter test --reporter compact
-```
-
-结果：全部通过，`flutter analyze` 报告 `No issues found!`。
-
-## 环境处理
-
-外接卷生成的 `._*` AppleDouble 侧车文件会干扰 Flutter native assets 清理；每次 Flutter 验证前后均已清理。
+- 未修改三种照吃模板、路由、文案、AI 算法、存储键或 schema。
+- 未新增依赖。
+- 受限代码文件中已无 `setMealScenario` 调用。
+- 训练控制器受限文件中已无 `MealPreferenceRepository` / `meal_preference_repository.dart` 直接依赖。
+- 当前变更限定在任务允许的 5 个文件内。

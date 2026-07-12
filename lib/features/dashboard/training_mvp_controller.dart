@@ -46,7 +46,6 @@ import '../../data/repositories/formal_ai_plan_repository.dart';
 import '../../data/repositories/imported_workout_repository.dart';
 import '../../data/repositories/knowledge_repository.dart';
 import '../../data/repositories/meal_guide_repository.dart';
-import '../../data/repositories/meal_preference_repository.dart';
 import '../../data/repositories/motion_analysis_repository.dart';
 import '../../data/repositories/motion_check_repository.dart';
 import '../../data/repositories/pain_log_repository.dart';
@@ -83,6 +82,7 @@ import '../../services/user_trust_review_service.dart';
 import '../../services/weekly_report_service.dart';
 import '../../services/workout_platform_service.dart';
 import '../daily_adjustment/application/daily_adjustment_controller.dart';
+import '../meal_guide/application/meal_preference_controller.dart';
 import '../profile/application/user_profile_controller.dart';
 import '../reminders/application/reminder_settings_controller.dart';
 import '../training_plan/application/plan_adjustment_controller.dart';
@@ -1878,15 +1878,6 @@ class TrainingMvpController extends Notifier<TrainingMvpState> {
     );
   }
 
-  MealPreferenceRepository? _mealPreferenceRepositoryInstance;
-
-  MealPreferenceRepository get _mealPreferenceRepository {
-    return _mealPreferenceRepositoryInstance ??=
-        PersistedMealPreferenceRepository(
-      ref.read(localStorageServiceProvider),
-    );
-  }
-
   MotionAnalysisRepository? _motionAnalysisRepositoryInstance;
 
   MotionAnalysisRepository get _motionAnalysisRepository {
@@ -2054,6 +2045,30 @@ class TrainingMvpController extends Notifier<TrainingMvpState> {
         }));
       },
     );
+    final MealPreference mealPreference =
+        ref.read(mealPreferenceControllerProvider);
+    ref.listen<MealPreference>(
+      mealPreferenceControllerProvider,
+      (MealPreference? previous, MealPreference next) {
+        scheduleMicrotask(() {
+          if (!ref.mounted) {
+            return;
+          }
+          final TrainingMvpState nextState = state.copyWith(
+            mealScenario: next.scenario,
+          );
+          state = nextState.copyWith(
+            coachAdvices: _aiTrainingService.buildMockCoachAdvice(
+              profile: nextState.profile,
+              todayWorkout: nextState.todayWorkout,
+              todayMealGuide: nextState.activeMealGuide,
+              latestLog: nextState.latestLog,
+              latestPainLog: nextState.latestPainLog,
+            ),
+          );
+        });
+      },
+    );
     final UserProfile profile = profileState.profile;
     final List<PlanAdjustment> planAdjustments =
         planAdjustmentState.adjustments;
@@ -2069,8 +2084,6 @@ class TrainingMvpController extends Notifier<TrainingMvpState> {
     final List<MealGuide> mealGuides = _mealGuideRepository.listMealGuides();
     final List<MotionCheckRule> motionChecks =
         _motionCheckRepository.listMotionChecks();
-    final MealPreference mealPreference =
-        _mealPreferenceRepository.getPreference();
     final List<RacePlan> races = _raceRepository.listRaces();
     final List<BodyMetric> bodyMetrics = _bodyMetricRepository.listMetrics();
     final List<BodyMetricRevision> bodyMetricRevisions =
@@ -2309,24 +2322,6 @@ class TrainingMvpController extends Notifier<TrainingMvpState> {
     state = state.copyWith(
       achievementRecords: records,
       achievementRecordStatusMessage: statusMessage,
-    );
-  }
-
-  void setMealScenario(MealScenario scenario) {
-    final MealPreference preference = _mealPreferenceRepository.savePreference(
-      MealPreference(scenario: scenario),
-    );
-    final TrainingMvpState nextState = state.copyWith(
-      mealScenario: preference.scenario,
-    );
-    state = nextState.copyWith(
-      coachAdvices: _aiTrainingService.buildMockCoachAdvice(
-        profile: nextState.profile,
-        todayWorkout: nextState.todayWorkout,
-        todayMealGuide: nextState.activeMealGuide,
-        latestLog: nextState.latestLog,
-        latestPainLog: nextState.latestPainLog,
-      ),
     );
   }
 
