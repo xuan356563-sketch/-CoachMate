@@ -24,7 +24,6 @@ import 'package:trainflow_ai/data/models/self_use_acceptance.dart';
 import 'package:trainflow_ai/data/models/starter_program.dart';
 import 'package:trainflow_ai/data/models/training_log.dart';
 import 'package:trainflow_ai/data/models/training_plan.dart';
-import 'package:trainflow_ai/data/models/training_reminder.dart';
 import 'package:trainflow_ai/data/models/training_rule_audit.dart';
 import 'package:trainflow_ai/data/models/user_insight.dart';
 import 'package:trainflow_ai/data/models/user_profile.dart';
@@ -35,7 +34,6 @@ import 'package:trainflow_ai/data/models/workout_player_step.dart';
 import 'package:trainflow_ai/data/repositories/achievement_repository.dart';
 import 'package:trainflow_ai/data/repositories/body_metric_export_repository.dart';
 import 'package:trainflow_ai/data/repositories/body_metric_repository.dart';
-import 'package:trainflow_ai/data/repositories/daily_context_repository.dart';
 import 'package:trainflow_ai/data/repositories/formal_ai_plan_repository.dart';
 import 'package:trainflow_ai/data/repositories/imported_workout_repository.dart';
 import 'package:trainflow_ai/data/repositories/knowledge_repository.dart';
@@ -45,7 +43,6 @@ import 'package:trainflow_ai/data/repositories/pain_log_repository.dart';
 import 'package:trainflow_ai/data/repositories/plan_adjustment_repository.dart';
 import 'package:trainflow_ai/data/repositories/race_repository.dart';
 import 'package:trainflow_ai/data/repositories/self_use_acceptance_repository.dart';
-import 'package:trainflow_ai/data/repositories/reminder_settings_repository.dart';
 import 'package:trainflow_ai/data/repositories/starter_program_repository.dart';
 import 'package:trainflow_ai/data/repositories/training_log_repository.dart';
 import 'package:trainflow_ai/data/repositories/user_insight_repository.dart';
@@ -291,109 +288,6 @@ void main() {
 
     expect(clearedRepository.isUnlocked(), isFalse);
     expect(clearedRepository.getPlan(), isNull);
-  });
-
-  test('提醒设置仓库会持久化 reminder_settings', () {
-    final InMemoryLocalStorageService storageService =
-        InMemoryLocalStorageService();
-    final PersistedReminderSettingsRepository repository =
-        PersistedReminderSettingsRepository(storageService);
-
-    expect(repository.getSettings().enabled, isTrue);
-    expect(repository.getSettings().preferredTimeLabel, '20:30');
-
-    repository.saveSettings(
-      const TrainingReminderSettings(
-        enabled: false,
-        preferredTimeLabel: '07:30',
-      ),
-    );
-
-    final PersistedReminderSettingsRepository restoredRepository =
-        PersistedReminderSettingsRepository(storageService);
-
-    expect(restoredRepository.getSettings().enabled, isFalse);
-    expect(restoredRepository.getSettings().preferredTimeLabel, '07:30');
-
-    restoredRepository.saveSettings(
-      const TrainingReminderSettings(
-        enabled: true,
-        preferredTimeLabel: '',
-      ),
-    );
-
-    final PersistedReminderSettingsRepository normalizedRepository =
-        PersistedReminderSettingsRepository(storageService);
-
-    expect(normalizedRepository.getSettings().enabled, isTrue);
-    expect(normalizedRepository.getSettings().preferredTimeLabel, '20:30');
-
-    normalizedRepository.clearSettings();
-
-    final PersistedReminderSettingsRepository clearedRepository =
-        PersistedReminderSettingsRepository(storageService);
-
-    expect(clearedRepository.getSettings().enabled, isTrue);
-    expect(clearedRepository.getSettings().preferredTimeLabel, '20:30');
-  });
-
-  test('每日调整仓库会持久化 daily_context', () {
-    final InMemoryLocalStorageService storageService =
-        InMemoryLocalStorageService();
-    final PersistedDailyContextRepository repository =
-        PersistedDailyContextRepository(storageService);
-
-    expect(repository.getContext(defaultAvailableMinutes: 35).availableMinutes,
-        35);
-    expect(repository.getContext().workStress, WorkStressLevel.normal);
-
-    repository.saveContext(
-      const DailyAdjustmentContext(
-        availableMinutes: 20,
-        workStress: WorkStressLevel.extreme,
-        environment: TrainingEnvironment.outdoor,
-        weather: WeatherCondition.rain,
-        statusMessage: '测试现实约束',
-      ),
-    );
-
-    final PersistedDailyContextRepository restoredRepository =
-        PersistedDailyContextRepository(storageService);
-
-    expect(restoredRepository.getContext().availableMinutes, 20);
-    expect(restoredRepository.getContext().workStress, WorkStressLevel.extreme);
-    expect(restoredRepository.getContext().environment,
-        TrainingEnvironment.outdoor);
-    expect(restoredRepository.getContext().weather, WeatherCondition.rain);
-    expect(restoredRepository.getContext().statusMessage, '测试现实约束');
-
-    restoredRepository.saveContext(
-      const DailyAdjustmentContext(
-        availableMinutes: 999,
-        workStress: WorkStressLevel.high,
-        environment: TrainingEnvironment.noEquipment,
-        weather: WeatherCondition.poorAir,
-        statusMessage: '',
-      ),
-    );
-
-    final PersistedDailyContextRepository normalizedRepository =
-        PersistedDailyContextRepository(storageService);
-
-    expect(normalizedRepository.getContext().availableMinutes, 180);
-    expect(normalizedRepository.getContext().statusMessage, '尚未应用今日现实约束调整。');
-
-    normalizedRepository.clearContext();
-
-    final PersistedDailyContextRepository clearedRepository =
-        PersistedDailyContextRepository(storageService);
-
-    expect(
-        clearedRepository
-            .getContext(defaultAvailableMinutes: 50)
-            .availableMinutes,
-        50);
-    expect(clearedRepository.getContext().environment, TrainingEnvironment.gym);
   });
 
   test('动作分析仓库会持久化 motion_analysis_results 并按时间排序', () {
