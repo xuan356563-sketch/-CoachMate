@@ -1725,7 +1725,8 @@ void main() {
   testWidgets('TrainFlow AI 默认进入今日训练页', (WidgetTester tester) async {
     final InMemoryLocalStorageService storageService =
         InMemoryLocalStorageService();
-    final DateTime yesterday = DateTime.now().subtract(const Duration(days: 1));
+    final DateTime yesterday =
+        DateTime.now().subtract(const Duration(days: 1));
     final BodyMetric yesterdayMetric = BodyMetric(
       id: 'body-metric-test-yesterday',
       measuredAt: DateTime(
