@@ -14,7 +14,6 @@ import 'package:trainflow_ai/data/models/exercise.dart';
 import 'package:trainflow_ai/data/models/formal_ai_plan.dart';
 import 'package:trainflow_ai/data/models/imported_workout.dart';
 import 'package:trainflow_ai/data/models/knowledge_entry.dart';
-import 'package:trainflow_ai/data/models/meal_guide.dart';
 import 'package:trainflow_ai/data/models/motion_check.dart';
 import 'package:trainflow_ai/data/models/motion_pose.dart';
 import 'package:trainflow_ai/data/models/pain_log.dart';
@@ -36,7 +35,6 @@ import 'package:trainflow_ai/data/repositories/body_metric_repository.dart';
 import 'package:trainflow_ai/data/repositories/formal_ai_plan_repository.dart';
 import 'package:trainflow_ai/data/repositories/imported_workout_repository.dart';
 import 'package:trainflow_ai/data/repositories/knowledge_repository.dart';
-import 'package:trainflow_ai/data/repositories/meal_preference_repository.dart';
 import 'package:trainflow_ai/data/repositories/motion_analysis_repository.dart';
 import 'package:trainflow_ai/data/repositories/pain_log_repository.dart';
 import 'package:trainflow_ai/data/repositories/race_repository.dart';
@@ -345,32 +343,6 @@ void main() {
         PersistedMotionAnalysisRepository(storageService);
 
     expect(clearedRepository.listResults(), isEmpty);
-  });
-
-  test('照吃场景仓库会持久化 meal_preference', () {
-    final InMemoryLocalStorageService storageService =
-        InMemoryLocalStorageService();
-    final PersistedMealPreferenceRepository repository =
-        PersistedMealPreferenceRepository(storageService);
-
-    expect(repository.getPreference().scenario, MealScenario.takeaway);
-
-    repository.savePreference(
-      const MealPreference(scenario: MealScenario.homeCooking),
-    );
-
-    final PersistedMealPreferenceRepository restoredRepository =
-        PersistedMealPreferenceRepository(storageService);
-
-    expect(
-        restoredRepository.getPreference().scenario, MealScenario.homeCooking);
-
-    restoredRepository.clearPreference();
-
-    final PersistedMealPreferenceRepository clearedRepository =
-        PersistedMealPreferenceRepository(storageService);
-
-    expect(clearedRepository.getPreference().scenario, MealScenario.takeaway);
   });
 
   test('身体数据仓库会持久化指标和修订留痕', () {
@@ -1753,8 +1725,7 @@ void main() {
   testWidgets('TrainFlow AI 默认进入今日训练页', (WidgetTester tester) async {
     final InMemoryLocalStorageService storageService =
         InMemoryLocalStorageService();
-    final DateTime yesterday =
-        DateTime.now().subtract(const Duration(days: 1));
+    final DateTime yesterday = DateTime.now().subtract(const Duration(days: 1));
     final BodyMetric yesterdayMetric = BodyMetric(
       id: 'body-metric-test-yesterday',
       measuredAt: DateTime(
