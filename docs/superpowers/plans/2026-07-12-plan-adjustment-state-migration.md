@@ -25,7 +25,7 @@
 - 新建：`test/features/training_plan/application/plan_adjustment_controller_test.dart`
 
 **接口：**
-- 使用：`PlanAdjustmentRepository`、`PersistedPlanAdjustmentRepository`、`WorkoutDay`、`PlanAdjustment`、`localStorageServiceProvider`。
+- 使用：`PlanAdjustmentRepository`、`PersistedPlanAdjustmentRepository`、`TrainingPlanRepository`、`InMemoryTrainingPlanRepository`、`WorkoutDay`、`PlanAdjustment`、`localStorageServiceProvider`。
 - 产出：`planAdjustmentRepositoryProvider`、`planAdjustmentControllerProvider`、`PlanAdjustmentState`、`PlanAdjustmentController.saveManualAdjustment()`、`PlanAdjustmentController.restoreOriginalPlan()`。
 
 - [ ] **步骤 1：编写会失败的控制器测试**
@@ -105,18 +105,24 @@ void saveManualAdjustment({
     _setStatus('请补充调整后的强度和原因。');
     return;
   }
-  final PlanAdjustment? previous = _latestFor(workout.id);
+  final WorkoutDay? canonicalWorkout =
+      _planRepository.findWorkoutDayById(workout.id);
+  if (canonicalWorkout == null) {
+    _setStatus('无法保存调整：没有找到对应训练日。');
+    return;
+  }
+  final PlanAdjustment? previous = _latestFor(canonicalWorkout.id);
   final int originalMinutes =
-      previous?.originalEstimatedMinutes ?? workout.estimatedMinutes;
+      previous?.originalEstimatedMinutes ?? canonicalWorkout.estimatedMinutes;
   final String originalIntensity =
-      previous?.originalIntensity ?? workout.intensity;
+      previous?.originalIntensity ?? canonicalWorkout.intensity;
   final DateTime now = DateTime.now();
   ref.read(planAdjustmentRepositoryProvider).saveAdjustment(
     PlanAdjustment(
-      id: 'plan-adjustment-\${workout.id}-\${now.millisecondsSinceEpoch}',
-      planId: workout.planId,
-      workoutDayId: workout.id,
-      workoutTitle: workout.title,
+      id: 'plan-adjustment-\${canonicalWorkout.id}-\${now.millisecondsSinceEpoch}',
+      planId: canonicalWorkout.planId,
+      workoutDayId: canonicalWorkout.id,
+      workoutTitle: canonicalWorkout.title,
       originalEstimatedMinutes: originalMinutes,
       adjustedEstimatedMinutes: adjustedMinutes,
       originalIntensity: originalIntensity,
@@ -127,13 +133,13 @@ void saveManualAdjustment({
     ),
   );
   _refresh(
-    '已记录为本地学习信号：\${workout.title} 调整为 '
+    '已记录为本地学习信号：\${canonicalWorkout.title} 调整为 '
     '\$adjustedMinutes 分钟 · \$intensity。',
   );
 }
 ~~~
 
-使用相同的 `_latestFor` 回退逻辑实现 `restoreOriginalPlan(WorkoutDay workout)`，使用 `PlanAdjustmentKind.restored`、原因“用户恢复原计划。”和现有恢复成功文案。`_refresh` 必须重新读取仓库并保持记录排序。
+`restoreOriginalPlan(WorkoutDay workout)` 也必须先按 ID 查询 `canonicalWorkout`；找不到时写入“无法恢复原计划：没有找到对应训练日。”且不持久化。找到后使用相同的 `_latestFor` 回退逻辑、`PlanAdjustmentKind.restored`、原因“用户恢复原计划。”和现有恢复成功文案。`_refresh` 必须重新读取仓库并保持记录排序。
 
 - [ ] **步骤 5：运行定向测试和静态分析**
 
