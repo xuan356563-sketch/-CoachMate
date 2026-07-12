@@ -6,6 +6,7 @@ import '../../core/widgets/trainflow_widgets.dart';
 import '../../data/models/daily_adjustment.dart';
 import '../../data/models/workout_day.dart';
 import '../dashboard/training_mvp_controller.dart';
+import 'application/daily_adjustment_controller.dart';
 
 class DailyAdjustmentPage extends ConsumerWidget {
   const DailyAdjustmentPage({super.key});
@@ -99,8 +100,8 @@ class _RealityConstraintCard extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final TrainingMvpController controller =
-        ref.read(trainingMvpProvider.notifier);
+    final DailyAdjustmentController controller =
+        ref.read(dailyAdjustmentControllerProvider.notifier);
 
     return TrainFlowCard(
       child: Column(
@@ -370,8 +371,9 @@ class _ApplyAdjustmentCard extends ConsumerWidget {
             child: FilledButton.icon(
               onPressed: () {
                 ref
-                    .read(trainingMvpProvider.notifier)
-                    .applyDailyAdjustmentDecision();
+                    .read(dailyAdjustmentControllerProvider.notifier)
+                    .applyDailyAdjustmentDecision(
+                        state.dailyAdjustmentDecision);
               },
               icon: const Icon(Icons.task_alt),
               label: const Text('应用今日调整'),

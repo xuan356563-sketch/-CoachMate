@@ -41,7 +41,6 @@ import '../../data/models/workout_player_step.dart';
 import '../../data/repositories/achievement_repository.dart';
 import '../../data/repositories/body_metric_export_repository.dart';
 import '../../data/repositories/body_metric_repository.dart';
-import '../../data/repositories/daily_context_repository.dart';
 import '../../data/repositories/exercise_repository.dart';
 import '../../data/repositories/formal_ai_plan_repository.dart';
 import '../../data/repositories/imported_workout_repository.dart';
@@ -53,7 +52,6 @@ import '../../data/repositories/motion_check_repository.dart';
 import '../../data/repositories/pain_log_repository.dart';
 import '../../data/repositories/plan_adjustment_repository.dart';
 import '../../data/repositories/race_repository.dart';
-import '../../data/repositories/reminder_settings_repository.dart';
 import '../../data/repositories/starter_program_repository.dart';
 import '../../data/repositories/training_log_repository.dart';
 import '../../data/repositories/training_plan_repository.dart';
@@ -85,7 +83,9 @@ import '../../services/user_insight_service.dart';
 import '../../services/user_trust_review_service.dart';
 import '../../services/weekly_report_service.dart';
 import '../../services/workout_platform_service.dart';
+import '../daily_adjustment/application/daily_adjustment_controller.dart';
 import '../profile/application/user_profile_controller.dart';
+import '../reminders/application/reminder_settings_controller.dart';
 
 const Object _unchanged = Object();
 
@@ -1887,23 +1887,6 @@ class TrainingMvpController extends Notifier<TrainingMvpState> {
     );
   }
 
-  ReminderSettingsRepository? _reminderSettingsRepositoryInstance;
-
-  ReminderSettingsRepository get _reminderSettingsRepository {
-    return _reminderSettingsRepositoryInstance ??=
-        PersistedReminderSettingsRepository(
-      ref.read(localStorageServiceProvider),
-    );
-  }
-
-  DailyContextRepository? _dailyContextRepositoryInstance;
-
-  DailyContextRepository get _dailyContextRepository {
-    return _dailyContextRepositoryInstance ??= PersistedDailyContextRepository(
-      ref.read(localStorageServiceProvider),
-    );
-  }
-
   MealPreferenceRepository? _mealPreferenceRepositoryInstance;
 
   MealPreferenceRepository get _mealPreferenceRepository {
@@ -2023,6 +2006,43 @@ class TrainingMvpController extends Notifier<TrainingMvpState> {
         );
       },
     );
+    final DailyAdjustmentState dailyAdjustmentState =
+        ref.read(dailyAdjustmentControllerProvider);
+    ref.listen<DailyAdjustmentState>(
+      dailyAdjustmentControllerProvider,
+      (DailyAdjustmentState? previous, DailyAdjustmentState next) {
+        unawaited(Future<void>.microtask(() {
+          if (!ref.mounted) {
+            return;
+          }
+          final DailyAdjustmentContext context = next.context;
+          state = state.copyWith(
+            dailyAvailableMinutesOverride: context.availableMinutes,
+            dailyWorkStress: context.workStress,
+            dailyTrainingEnvironment: context.environment,
+            dailyWeather: context.weather,
+            dailyAdjustmentStatusMessage: next.statusMessage,
+          );
+        }));
+      },
+    );
+    final ReminderSettingsState reminderSettingsState =
+        ref.read(reminderSettingsControllerProvider);
+    ref.listen<ReminderSettingsState>(
+      reminderSettingsControllerProvider,
+      (ReminderSettingsState? previous, ReminderSettingsState next) {
+        unawaited(Future<void>.microtask(() {
+          if (!ref.mounted) {
+            return;
+          }
+          state = state.copyWith(
+            remindersEnabled: next.settings.enabled,
+            reminderTimeLabel: next.settings.preferredTimeLabel,
+            reminderStatusMessage: next.statusMessage,
+          );
+        }));
+      },
+    );
     final UserProfile profile = profileState.profile;
     final List<PlanAdjustment> planAdjustments =
         _planAdjustmentRepository.listAdjustments();
@@ -2067,12 +2087,6 @@ class TrainingMvpController extends Notifier<TrainingMvpState> {
     final FormalAiPlan? savedFormalAiPlan = _formalAiPlanRepository.getPlan();
     final bool savedFormalPlanUnlocked =
         _formalAiPlanRepository.isUnlocked() && savedFormalAiPlan != null;
-    final TrainingReminderSettings reminderSettings =
-        _reminderSettingsRepository.getSettings();
-    final DailyAdjustmentContext dailyContext =
-        _dailyContextRepository.getContext(
-      defaultAvailableMinutes: profile.dailyAvailableMinutes,
-    );
     final List<MotionAnalysisResult> savedMotionAnalysisResults =
         _motionAnalysisRepository.listResults();
     final int initialWorkoutPlayerRemainingSeconds = buildWorkoutPlayerSteps(
@@ -2139,17 +2153,16 @@ class TrainingMvpController extends Notifier<TrainingMvpState> {
               ? '毕业报告已生成，可以一键切换到正式 AI 个性化周期。'
               : '30 天毕业后可切换到正式 AI 个性化周期。',
       formalAiPlan: savedFormalAiPlan,
-      remindersEnabled: reminderSettings.enabled,
-      reminderTimeLabel: reminderSettings.preferredTimeLabel,
-      reminderStatusMessage: reminderSettings.enabled
-          ? '已读取本地提醒设置：固定时间 ${reminderSettings.preferredTimeLabel}。'
-          : '提醒已暂停：今日训练和周报入口仍可手动打开。',
+      remindersEnabled: reminderSettingsState.settings.enabled,
+      reminderTimeLabel: reminderSettingsState.settings.preferredTimeLabel,
+      reminderStatusMessage: reminderSettingsState.statusMessage,
       dailyCheckInStatusMessage: '根据当前画像，今天可以先使用预填签到。',
-      dailyAvailableMinutesOverride: dailyContext.availableMinutes,
-      dailyWorkStress: dailyContext.workStress,
-      dailyTrainingEnvironment: dailyContext.environment,
-      dailyWeather: dailyContext.weather,
-      dailyAdjustmentStatusMessage: dailyContext.statusMessage,
+      dailyAvailableMinutesOverride:
+          dailyAdjustmentState.context.availableMinutes,
+      dailyWorkStress: dailyAdjustmentState.context.workStress,
+      dailyTrainingEnvironment: dailyAdjustmentState.context.environment,
+      dailyWeather: dailyAdjustmentState.context.weather,
+      dailyAdjustmentStatusMessage: dailyAdjustmentState.statusMessage,
       workoutPlayerStepIndex: 0,
       workoutPlayerDeloaded: false,
       workoutPlayerFinished: false,
@@ -2755,66 +2768,6 @@ class TrainingMvpController extends Notifier<TrainingMvpState> {
     );
   }
 
-  void setDailyAvailableMinutes(int minutes) {
-    final TrainingMvpState nextState = state.copyWith(
-      dailyAvailableMinutesOverride: minutes,
-      dailyAdjustmentStatusMessage: '已更新今日可训练时间为 $minutes 分钟。',
-    );
-    state = _saveDailyContext(nextState);
-  }
-
-  void setDailyWorkStress(WorkStressLevel value) {
-    final TrainingMvpState nextState = state.copyWith(
-      dailyWorkStress: value,
-      dailyAdjustmentStatusMessage: '已更新今日工作压力为${value.label}。',
-    );
-    state = _saveDailyContext(nextState);
-  }
-
-  void setDailyTrainingEnvironment(TrainingEnvironment value) {
-    final TrainingMvpState nextState = state.copyWith(
-      dailyTrainingEnvironment: value,
-      dailyAdjustmentStatusMessage: '已更新今日训练场地为${value.label}。',
-    );
-    state = _saveDailyContext(nextState);
-  }
-
-  void setDailyWeather(WeatherCondition value) {
-    final TrainingMvpState nextState = state.copyWith(
-      dailyWeather: value,
-      dailyAdjustmentStatusMessage: '已更新今日天气状态为${value.label}。',
-    );
-    state = _saveDailyContext(nextState);
-  }
-
-  void applyDailyAdjustmentDecision() {
-    final DailyAdjustmentDecision decision = state.dailyAdjustmentDecision;
-    final TrainingMvpState nextState = state.copyWith(
-      dailyAdjustmentStatusMessage:
-          '已应用今日调整：${decision.decisionLabel}，${decision.planChangeSummary}',
-    );
-    state = _saveDailyContext(nextState);
-  }
-
-  TrainingMvpState _saveDailyContext(TrainingMvpState nextState) {
-    final DailyAdjustmentContext context = _dailyContextRepository.saveContext(
-      DailyAdjustmentContext(
-        availableMinutes: nextState.dailyAvailableMinutesOverride,
-        workStress: nextState.dailyWorkStress,
-        environment: nextState.dailyTrainingEnvironment,
-        weather: nextState.dailyWeather,
-        statusMessage: nextState.dailyAdjustmentStatusMessage,
-      ),
-    );
-    return nextState.copyWith(
-      dailyAvailableMinutesOverride: context.availableMinutes,
-      dailyWorkStress: context.workStress,
-      dailyTrainingEnvironment: context.environment,
-      dailyWeather: context.weather,
-      dailyAdjustmentStatusMessage: context.statusMessage,
-    );
-  }
-
   void clearBodyMetrics() {
     _bodyMetricRepository.clearMetrics();
     state = state.copyWith(
@@ -2985,40 +2938,6 @@ class TrainingMvpController extends Notifier<TrainingMvpState> {
       formalAiPlan: formalPlan,
       formalPlanStatusMessage: '已生成正式 AI 个性化周期：${formalPlan.title}。',
       reminderStatusMessage: '提醒已切换为正式 AI 周期确认，不再推送新手引导任务。',
-    );
-  }
-
-  void toggleTrainingReminders() {
-    final bool nextEnabled = !state.remindersEnabled;
-    final TrainingReminderSettings settings =
-        _reminderSettingsRepository.saveSettings(
-      TrainingReminderSettings(
-        enabled: nextEnabled,
-        preferredTimeLabel: state.reminderTimeLabel,
-      ),
-    );
-    state = state.copyWith(
-      remindersEnabled: settings.enabled,
-      reminderTimeLabel: settings.preferredTimeLabel,
-      reminderStatusMessage: settings.enabled
-          ? '提醒已开启：会继续按本地编排生成下一条主动提醒。'
-          : '提醒已暂停：今日训练和周报入口仍可手动打开。',
-    );
-  }
-
-  void setReminderTimeLabel(String value) {
-    final TrainingReminderSettings settings =
-        _reminderSettingsRepository.saveSettings(
-      TrainingReminderSettings(
-        enabled: state.remindersEnabled,
-        preferredTimeLabel: value,
-      ),
-    );
-    state = state.copyWith(
-      remindersEnabled: settings.enabled,
-      reminderTimeLabel: settings.preferredTimeLabel,
-      reminderStatusMessage:
-          '固定提醒时间已更新为 ${settings.preferredTimeLabel}，后续主动服务会使用这个时间。',
     );
   }
 

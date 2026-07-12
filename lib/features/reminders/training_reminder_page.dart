@@ -7,6 +7,7 @@ import '../../core/constants/app_colors.dart';
 import '../../core/widgets/trainflow_widgets.dart';
 import '../../data/models/training_reminder.dart';
 import '../dashboard/training_mvp_controller.dart';
+import 'application/reminder_settings_controller.dart';
 
 class TrainingReminderPage extends ConsumerWidget {
   const TrainingReminderPage({super.key});
@@ -81,7 +82,7 @@ class _ReminderSettingsCard extends ConsumerWidget {
             onChanged: (String? value) {
               if (value != null) {
                 ref
-                    .read(trainingMvpProvider.notifier)
+                    .read(reminderSettingsControllerProvider.notifier)
                     .setReminderTimeLabel(value);
               }
             },
@@ -99,7 +100,7 @@ class _ReminderSettingsCard extends ConsumerWidget {
             child: OutlinedButton.icon(
               onPressed: () {
                 ref
-                    .read(trainingMvpProvider.notifier)
+                    .read(reminderSettingsControllerProvider.notifier)
                     .toggleTrainingReminders();
               },
               icon: Icon(
