@@ -3,6 +3,7 @@ import 'package:flutter_test/flutter_test.dart';
 
 import 'package:trainflow_ai/data/models/plan_adjustment.dart';
 import 'package:trainflow_ai/data/models/workout_day.dart';
+import 'package:trainflow_ai/data/seed/seed_training_plans.dart';
 import 'package:trainflow_ai/features/training_plan/application/plan_adjustment_controller.dart';
 import 'package:trainflow_ai/services/local_storage_service.dart';
 
@@ -47,11 +48,11 @@ void main() {
     final PlanAdjustment adjustment = state.adjustments.single;
     expect(adjustment.originalEstimatedMinutes, 45);
     expect(adjustment.adjustedEstimatedMinutes, 30);
-    expect(adjustment.originalIntensity, '中等');
+    expect(adjustment.originalIntensity, 'RPE 4-5');
     expect(adjustment.adjustedIntensity, '轻松');
     expect(adjustment.reason, '加班');
     expect(adjustment.kind, PlanAdjustmentKind.adjusted);
-    expect(state.statusMessage, '已记录为本地学习信号：测试训练日 调整为 30 分钟 · 轻松。');
+    expect(state.statusMessage, '已记录为本地学习信号：低强度有氧跑 调整为 30 分钟 · 轻松。');
   });
 
   test('连续调整始终保留首条记录的原始计划值', () {
@@ -78,7 +79,7 @@ void main() {
     final PlanAdjustment latest =
         container.read(planAdjustmentControllerProvider).adjustments.first;
     expect(latest.originalEstimatedMinutes, 45);
-    expect(latest.originalIntensity, '中等');
+    expect(latest.originalIntensity, 'RPE 4-5');
     expect(latest.adjustedEstimatedMinutes, 20);
     expect(latest.adjustedIntensity, '恢复');
   });
@@ -107,10 +108,10 @@ void main() {
     expect(restored.kind, PlanAdjustmentKind.restored);
     expect(restored.originalEstimatedMinutes, 45);
     expect(restored.adjustedEstimatedMinutes, 45);
-    expect(restored.originalIntensity, '中等');
-    expect(restored.adjustedIntensity, '中等');
+    expect(restored.originalIntensity, 'RPE 4-5');
+    expect(restored.adjustedIntensity, 'RPE 4-5');
     expect(restored.reason, '用户恢复原计划。');
-    expect(state.statusMessage, '已恢复原计划并记录为本地学习信号：测试训练日。');
+    expect(state.statusMessage, '已恢复原计划并记录为本地学习信号：低强度有氧跑。');
   });
 
   test('调整时长超出范围不会写入记录', () {
@@ -182,27 +183,71 @@ void main() {
     expect(restoredState.adjustments.single.adjustedEstimatedMinutes, 30);
     expect(restoredState.statusMessage, '已读取 1 条本地计划调整记录。');
   });
+
+  test('保存调整只使用基础训练日的规范字段', () {
+    final InMemoryLocalStorageService storage = InMemoryLocalStorageService();
+    final ProviderContainer container = createContainer(storage);
+    addTearDown(container.dispose);
+    final WorkoutDay canonical = seedTrainingPlans.first.workoutDays.first;
+    final WorkoutDay projected = canonical.copyWith(
+      planId: '伪造计划',
+      title: '伪造训练日',
+      estimatedMinutes: 90,
+      intensity: '极高',
+    );
+
+    container
+        .read(planAdjustmentControllerProvider.notifier)
+        .saveManualAdjustment(
+          workout: projected,
+          adjustedMinutes: 30,
+          adjustedIntensity: '轻松',
+          reason: '加班',
+        );
+
+    final PlanAdjustment adjustment =
+        container.read(planAdjustmentControllerProvider).adjustments.single;
+    expect(adjustment.planId, canonical.planId);
+    expect(adjustment.workoutDayId, canonical.id);
+    expect(adjustment.workoutTitle, canonical.title);
+    expect(adjustment.originalEstimatedMinutes, canonical.estimatedMinutes);
+    expect(adjustment.originalIntensity, canonical.intensity);
+  });
+
+  test('训练日不存在时不会保存或恢复调整', () {
+    final InMemoryLocalStorageService storage = InMemoryLocalStorageService();
+    final ProviderContainer container = createContainer(storage);
+    addTearDown(container.dispose);
+    final WorkoutDay missingWorkout = _workoutDay(
+      minutes: 45,
+      intensity: '中等',
+    ).copyWith(id: 'missing-workout');
+    final PlanAdjustmentController controller =
+        container.read(planAdjustmentControllerProvider.notifier);
+
+    controller.saveManualAdjustment(
+      workout: missingWorkout,
+      adjustedMinutes: 30,
+      adjustedIntensity: '轻松',
+      reason: '加班',
+    );
+
+    PlanAdjustmentState state =
+        container.read(planAdjustmentControllerProvider);
+    expect(state.adjustments, isEmpty);
+    expect(state.statusMessage, '无法保存调整：没有找到对应训练日。');
+
+    controller.restoreOriginalPlan(missingWorkout);
+
+    state = container.read(planAdjustmentControllerProvider);
+    expect(state.adjustments, isEmpty);
+    expect(state.statusMessage, '无法恢复原计划：没有找到对应训练日。');
+  });
 }
 
 WorkoutDay _workoutDay({required int minutes, required String intensity}) {
-  return WorkoutDay(
-    id: 'workout-test',
-    planId: 'plan-test',
-    weekIndex: 1,
-    dayIndex: 1,
-    title: '测试训练日',
-    trainingType: TrainingType.easyRun,
-    decisionType: TrainingDecisionType.normal,
+  return seedTrainingPlans.first.workoutDays.first.copyWith(
     estimatedMinutes: minutes,
     intensity: intensity,
-    foamRollingSteps: const [],
-    dynamicStretchSteps: const [],
-    activationSteps: const [],
-    warmupSteps: const [],
-    mainSets: const [],
-    accessoryWork: const [],
-    cooldownSteps: const [],
-    coachNotes: '',
-    evidenceSources: const [],
   );
 }

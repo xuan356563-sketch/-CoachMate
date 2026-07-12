@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../data/models/plan_adjustment.dart';
 import '../../../data/models/workout_day.dart';
 import '../../../data/repositories/plan_adjustment_repository.dart';
+import '../../../data/repositories/training_plan_repository.dart';
 import '../../../services/local_storage_service.dart';
 
 /// 提供当前本地存储对应的计划调整仓库。
@@ -31,6 +32,9 @@ class PlanAdjustmentState {
 
 /// 负责读取、校验、保存和恢复训练计划调整记录。
 class PlanAdjustmentController extends Notifier<PlanAdjustmentState> {
+  final TrainingPlanRepository _planRepository =
+      InMemoryTrainingPlanRepository();
+
   @override
   PlanAdjustmentState build() {
     final List<PlanAdjustment> adjustments =
@@ -61,18 +65,25 @@ class PlanAdjustmentController extends Notifier<PlanAdjustmentState> {
       return;
     }
 
-    final PlanAdjustment? previous = _latestFor(workout.id);
+    final WorkoutDay? canonicalWorkout =
+        _planRepository.findWorkoutDayById(workout.id);
+    if (canonicalWorkout == null) {
+      _setStatus('无法保存调整：没有找到对应训练日。');
+      return;
+    }
+
+    final PlanAdjustment? previous = _latestFor(canonicalWorkout.id);
     final int originalMinutes =
-        previous?.originalEstimatedMinutes ?? workout.estimatedMinutes;
+        previous?.originalEstimatedMinutes ?? canonicalWorkout.estimatedMinutes;
     final String originalIntensity =
-        previous?.originalIntensity ?? workout.intensity;
+        previous?.originalIntensity ?? canonicalWorkout.intensity;
     final DateTime now = DateTime.now();
     ref.read(planAdjustmentRepositoryProvider).saveAdjustment(
           PlanAdjustment(
-            id: 'plan-adjustment-${workout.id}-${now.millisecondsSinceEpoch}',
-            planId: workout.planId,
-            workoutDayId: workout.id,
-            workoutTitle: workout.title,
+            id: 'plan-adjustment-${canonicalWorkout.id}-${now.millisecondsSinceEpoch}',
+            planId: canonicalWorkout.planId,
+            workoutDayId: canonicalWorkout.id,
+            workoutTitle: canonicalWorkout.title,
             originalEstimatedMinutes: originalMinutes,
             adjustedEstimatedMinutes: adjustedMinutes,
             originalIntensity: originalIntensity,
@@ -83,25 +94,32 @@ class PlanAdjustmentController extends Notifier<PlanAdjustmentState> {
           ),
         );
     _refresh(
-      '已记录为本地学习信号：${workout.title} 调整为 '
+      '已记录为本地学习信号：${canonicalWorkout.title} 调整为 '
       '$adjustedMinutes 分钟 · $intensity。',
     );
   }
 
   /// 保存恢复原始计划的本地学习信号。
   void restoreOriginalPlan(WorkoutDay workout) {
-    final PlanAdjustment? previous = _latestFor(workout.id);
+    final WorkoutDay? canonicalWorkout =
+        _planRepository.findWorkoutDayById(workout.id);
+    if (canonicalWorkout == null) {
+      _setStatus('无法恢复原计划：没有找到对应训练日。');
+      return;
+    }
+
+    final PlanAdjustment? previous = _latestFor(canonicalWorkout.id);
     final int originalMinutes =
-        previous?.originalEstimatedMinutes ?? workout.estimatedMinutes;
+        previous?.originalEstimatedMinutes ?? canonicalWorkout.estimatedMinutes;
     final String originalIntensity =
-        previous?.originalIntensity ?? workout.intensity;
+        previous?.originalIntensity ?? canonicalWorkout.intensity;
     final DateTime now = DateTime.now();
     ref.read(planAdjustmentRepositoryProvider).saveAdjustment(
           PlanAdjustment(
-            id: 'plan-restored-${workout.id}-${now.millisecondsSinceEpoch}',
-            planId: workout.planId,
-            workoutDayId: workout.id,
-            workoutTitle: workout.title,
+            id: 'plan-restored-${canonicalWorkout.id}-${now.millisecondsSinceEpoch}',
+            planId: canonicalWorkout.planId,
+            workoutDayId: canonicalWorkout.id,
+            workoutTitle: canonicalWorkout.title,
             originalEstimatedMinutes: originalMinutes,
             adjustedEstimatedMinutes: originalMinutes,
             originalIntensity: originalIntensity,
@@ -111,7 +129,7 @@ class PlanAdjustmentController extends Notifier<PlanAdjustmentState> {
             adjustedAt: now,
           ),
         );
-    _refresh('已恢复原计划并记录为本地学习信号：${workout.title}。');
+    _refresh('已恢复原计划并记录为本地学习信号：${canonicalWorkout.title}。');
   }
 
   PlanAdjustment? _latestFor(String workoutDayId) {
