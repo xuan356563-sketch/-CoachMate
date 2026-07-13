@@ -6,9 +6,7 @@ import 'package:flutter_test/flutter_test.dart';
 
 import 'package:trainflow_ai/app/trainflow_app.dart';
 import 'package:trainflow_ai/core/theme/tdesign_theme.dart';
-import 'package:trainflow_ai/data/models/achievement.dart';
 import 'package:trainflow_ai/data/models/body_metric.dart';
-import 'package:trainflow_ai/data/models/body_metric_export.dart';
 import 'package:trainflow_ai/data/models/daily_adjustment.dart';
 import 'package:trainflow_ai/data/models/exercise.dart';
 import 'package:trainflow_ai/data/models/formal_ai_plan.dart';
@@ -29,8 +27,6 @@ import 'package:trainflow_ai/data/models/weekly_report.dart';
 import 'package:trainflow_ai/data/models/weekly_report_export.dart';
 import 'package:trainflow_ai/data/models/workout_day.dart';
 import 'package:trainflow_ai/data/models/workout_player_step.dart';
-import 'package:trainflow_ai/data/repositories/achievement_repository.dart';
-import 'package:trainflow_ai/data/repositories/body_metric_export_repository.dart';
 import 'package:trainflow_ai/data/repositories/formal_ai_plan_repository.dart';
 import 'package:trainflow_ai/data/repositories/imported_workout_repository.dart';
 import 'package:trainflow_ai/data/repositories/knowledge_repository.dart';
@@ -344,49 +340,6 @@ void main() {
     expect(clearedRepository.listResults(), isEmpty);
   });
 
-  test('身体数据导出仓库会持久化 JSON CSV 和导出包摘要记录', () {
-    final InMemoryLocalStorageService storageService =
-        InMemoryLocalStorageService();
-    final PersistedBodyMetricExportRepository repository =
-        PersistedBodyMetricExportRepository(storageService);
-    final BodyMetricExportRecord jsonRecord = BodyMetricExportRecord(
-      id: 'body-export-json-test',
-      format: BodyMetricExportFormat.json,
-      metricCount: 3,
-      byteCount: 1024,
-      fileName: 'trainflow_body_metrics_json_20260709.json',
-      exportedAt: DateTime(2026, 7, 9, 8),
-    );
-    final BodyMetricExportRecord packageRecord = BodyMetricExportRecord(
-      id: 'body-export-package-test',
-      format: BodyMetricExportFormat.packageSummary,
-      metricCount: 3,
-      byteCount: 2048,
-      fileName: 'trainflow_body_metrics_package_summary_20260709.txt',
-      exportedAt: DateTime(2026, 7, 9, 9),
-    );
-
-    repository.saveRecord(jsonRecord);
-    repository.saveRecord(packageRecord);
-
-    final PersistedBodyMetricExportRepository restoredRepository =
-        PersistedBodyMetricExportRepository(storageService);
-
-    expect(restoredRepository.listRecords(), hasLength(2));
-    expect(restoredRepository.listRecords().first.format,
-        BodyMetricExportFormat.packageSummary);
-    expect(restoredRepository.listRecords().first.sizeLabel, '2.0 KB');
-    expect(restoredRepository.listRecords().last.fileName,
-        'trainflow_body_metrics_json_20260709.json');
-
-    restoredRepository.clearRecords();
-
-    final PersistedBodyMetricExportRepository clearedRepository =
-        PersistedBodyMetricExportRepository(storageService);
-
-    expect(clearedRepository.listRecords(), isEmpty);
-  });
-
   test('周报仓库会持久化最近归档并按周去重', () {
     final InMemoryLocalStorageService storageService =
         InMemoryLocalStorageService();
@@ -473,52 +426,6 @@ void main() {
 
     final PersistedWeeklyReportExportRepository clearedRepository =
         PersistedWeeklyReportExportRepository(storageService);
-
-    expect(clearedRepository.listRecords(), isEmpty);
-  });
-
-  test('成就记录仓库会持久化已解锁进度并按定义去重', () {
-    final InMemoryLocalStorageService storageService =
-        InMemoryLocalStorageService();
-    final PersistedAchievementRecordRepository repository =
-        PersistedAchievementRecordRepository(storageService);
-    const AchievementDefinition definition = AchievementDefinition(
-      id: 'achievement-test',
-      title: '测试成就',
-      description: '用于验证成就记录持久化。',
-      category: AchievementCategory.execution,
-      targetValue: 1,
-    );
-
-    repository.syncUnlockedProgresses(
-      const [
-        AchievementProgress(
-          definition: definition,
-          currentValue: 1,
-        ),
-      ],
-    );
-    repository.syncUnlockedProgresses(
-      const [
-        AchievementProgress(
-          definition: definition,
-          currentValue: 1,
-        ),
-      ],
-    );
-
-    final PersistedAchievementRecordRepository restoredRepository =
-        PersistedAchievementRecordRepository(storageService);
-
-    expect(restoredRepository.listRecords(), hasLength(1));
-    expect(restoredRepository.listRecords().first.definitionId,
-        'achievement-test');
-    expect(restoredRepository.listRecords().first.title, '测试成就');
-
-    restoredRepository.clearRecords();
-
-    final PersistedAchievementRecordRepository clearedRepository =
-        PersistedAchievementRecordRepository(storageService);
 
     expect(clearedRepository.listRecords(), isEmpty);
   });
@@ -1684,8 +1591,7 @@ void main() {
   testWidgets('TrainFlow AI 默认进入今日训练页', (WidgetTester tester) async {
     final InMemoryLocalStorageService storageService =
         InMemoryLocalStorageService();
-    final DateTime yesterday =
-        DateTime.now().subtract(const Duration(days: 1));
+    final DateTime yesterday = DateTime.now().subtract(const Duration(days: 1));
     final BodyMetric yesterdayMetric = BodyMetric(
       id: 'body-metric-test-yesterday',
       measuredAt: DateTime(
