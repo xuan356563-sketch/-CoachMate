@@ -73,7 +73,6 @@ import '../../services/training_rule_audit_service.dart';
 import '../../services/user_insight_service.dart';
 import '../../services/user_trust_review_service.dart';
 import '../../services/weekly_report_service.dart';
-import '../../services/workout_platform_service.dart';
 import '../daily_adjustment/application/daily_adjustment_controller.dart';
 import '../data_center/application/body_metric_controller.dart';
 import '../data_center/application/body_metric_export_controller.dart';
@@ -83,6 +82,7 @@ import '../profile/application/user_profile_controller.dart';
 import '../reminders/application/reminder_settings_controller.dart';
 import '../training_log/application/training_log_controller.dart';
 import '../training_plan/application/plan_adjustment_controller.dart';
+import '../workout_player/application/workout_player_assist_controller.dart';
 
 const Object _unchanged = Object();
 
@@ -1914,15 +1914,10 @@ class TrainingMvpController extends Notifier<TrainingMvpState> {
   final MotionAnalysisService _motionAnalysisService = MotionAnalysisService();
   final MotionPoseImportService _motionPoseImportService =
       MotionPoseImportService();
-  final WorkoutPlatformService _workoutPlatformService =
-      WorkoutPlatformService();
-
   @override
   TrainingMvpState build() {
     ref.onDispose(() {
       _stopWorkoutPlayerTimer();
-      unawaited(_workoutPlatformService.stopSpeech());
-      unawaited(_workoutPlatformService.setScreenAwake(false));
     });
 
     final PlanAdjustmentState planAdjustmentState =
@@ -2074,6 +2069,19 @@ class TrainingMvpController extends Notifier<TrainingMvpState> {
         });
       },
     );
+    final WorkoutPlayerAssistState workoutPlayerAssistState =
+        ref.read(workoutPlayerAssistControllerProvider);
+    ref.listen<WorkoutPlayerAssistState>(
+      workoutPlayerAssistControllerProvider,
+      (WorkoutPlayerAssistState? previous, WorkoutPlayerAssistState next) {
+        scheduleMicrotask(() {
+          if (!ref.mounted) {
+            return;
+          }
+          _projectWorkoutPlayerAssist(next);
+        });
+      },
+    );
     ref.listen<BodyMetricState>(
       bodyMetricControllerProvider,
       (BodyMetricState? previous, BodyMetricState next) {
@@ -2218,11 +2226,14 @@ class TrainingMvpController extends Notifier<TrainingMvpState> {
       workoutPlayerStatusMessage: '点击“开始跟练”后，按步骤完成今日训练。',
       workoutPlayerRemainingSeconds: initialWorkoutPlayerRemainingSeconds,
       workoutPlayerTimerRunning: false,
-      workoutPlayerVoiceEnabled: true,
-      workoutPlayerVoiceQueue: const [],
-      workoutPlayerVoiceStatusMessage: 'TTS 提示队列已准备；开始跟练后会生成当前步骤播报文案。',
-      workoutPlayerScreenAwakeRequested: false,
-      workoutPlayerScreenAwakeStatusMessage: '尚未请求屏幕常亮；进入跟练后会启用本地常亮意图。',
+      workoutPlayerVoiceEnabled: workoutPlayerAssistState.voiceEnabled,
+      workoutPlayerVoiceQueue: workoutPlayerAssistState.voiceQueue,
+      workoutPlayerVoiceStatusMessage:
+          workoutPlayerAssistState.voiceStatusMessage,
+      workoutPlayerScreenAwakeRequested:
+          workoutPlayerAssistState.screenAwakeRequested,
+      workoutPlayerScreenAwakeStatusMessage:
+          workoutPlayerAssistState.screenAwakeStatusMessage,
       mealScenario: mealPreference.scenario,
       logs: logs,
       painLogs: painLogs,
@@ -2647,60 +2658,53 @@ class TrainingMvpController extends Notifier<TrainingMvpState> {
   }
 
   List<String> _nextWorkoutPlayerVoiceQueue(String cue) {
-    final String trimmedCue = cue.trim();
-    if (!state.workoutPlayerVoiceEnabled || trimmedCue.isEmpty) {
-      return state.workoutPlayerVoiceQueue;
-    }
-    final List<String> nextQueue = [
-      trimmedCue,
-      ...state.workoutPlayerVoiceQueue,
-    ];
-    if (nextQueue.length > 6) {
-      nextQueue.removeRange(6, nextQueue.length);
-    }
-    return List<String>.unmodifiable(nextQueue);
+    ref.read(workoutPlayerAssistControllerProvider.notifier).enqueueCue(cue);
+    final WorkoutPlayerAssistState assist =
+        ref.read(workoutPlayerAssistControllerProvider);
+    _projectWorkoutPlayerAssist(assist);
+    return assist.voiceQueue;
   }
 
   String _voiceStatusFor(String cue) {
-    if (!state.workoutPlayerVoiceEnabled) {
-      return 'TTS 提示队列已关闭；当前只显示文字动作提示。';
-    }
-    return '已加入 TTS 提示队列：$cue';
-  }
-
-  void _speakWorkoutCue(String cue) {
-    if (!state.workoutPlayerVoiceEnabled || cue.trim().isEmpty) {
-      return;
-    }
-    unawaited(_workoutPlatformService.speak(cue));
+    return ref.read(workoutPlayerAssistControllerProvider).voiceStatusMessage;
   }
 
   void _requestScreenAwake(bool requested) {
-    unawaited(_workoutPlatformService.setScreenAwake(requested));
+    final String message = state.workoutPlayerScreenAwakeStatusMessage;
+    ref.read(workoutPlayerAssistControllerProvider.notifier).setScreenAwake(
+          requested,
+          enabledMessage: message,
+          disabledMessage: message,
+        );
+    _projectWorkoutPlayerAssist(
+      ref.read(workoutPlayerAssistControllerProvider),
+    );
+  }
+
+  void _projectWorkoutPlayerAssist(WorkoutPlayerAssistState assist) {
+    state = state.copyWith(
+      workoutPlayerVoiceEnabled: assist.voiceEnabled,
+      workoutPlayerVoiceQueue: assist.voiceQueue,
+      workoutPlayerVoiceStatusMessage: assist.voiceStatusMessage,
+      workoutPlayerScreenAwakeRequested: assist.screenAwakeRequested,
+      workoutPlayerScreenAwakeStatusMessage: assist.screenAwakeStatusMessage,
+    );
   }
 
   void toggleWorkoutPlayerVoice() {
-    final bool nextEnabled = !state.workoutPlayerVoiceEnabled;
-    if (!nextEnabled) {
-      unawaited(_workoutPlatformService.stopSpeech());
-    }
-    state = state.copyWith(
-      workoutPlayerVoiceEnabled: nextEnabled,
-      workoutPlayerVoiceStatusMessage: nextEnabled
-          ? 'TTS 提示队列已开启；后续步骤会调用浏览器语音播报。'
-          : 'TTS 提示队列已关闭；当前只显示文字动作提示。',
+    ref.read(workoutPlayerAssistControllerProvider.notifier).toggleVoice();
+    _projectWorkoutPlayerAssist(
+      ref.read(workoutPlayerAssistControllerProvider),
     );
   }
 
   void toggleWorkoutPlayerScreenAwake() {
-    final bool nextRequested = !state.workoutPlayerScreenAwakeRequested;
-    state = state.copyWith(
-      workoutPlayerScreenAwakeRequested: nextRequested,
-      workoutPlayerScreenAwakeStatusMessage: nextRequested
-          ? '已请求浏览器屏幕常亮；不支持 Wake Lock 的环境会保持普通显示。'
-          : '已取消屏幕常亮意图；系统可能按默认策略熄屏。',
+    ref
+        .read(workoutPlayerAssistControllerProvider.notifier)
+        .toggleScreenAwake();
+    _projectWorkoutPlayerAssist(
+      ref.read(workoutPlayerAssistControllerProvider),
     );
-    _requestScreenAwake(nextRequested);
   }
 
   void startWorkoutPlayer({String? workoutDayId}) {
@@ -2716,6 +2720,12 @@ class TrainingMvpController extends Notifier<TrainingMvpState> {
     final WorkoutPlayerStep firstStep = steps.first;
     final int remainingSeconds = firstStep.estimatedSeconds;
     final String voiceCue = '准备开始：${workout.title}。${firstStep.voiceCue}';
+    ref
+        .read(workoutPlayerAssistControllerProvider.notifier)
+        .replaceQueueWithCue(voiceCue);
+    _projectWorkoutPlayerAssist(
+      ref.read(workoutPlayerAssistControllerProvider),
+    );
     state = state.copyWith(
       workoutPlayerStepIndex: 0,
       workoutPlayerDeloaded: false,
@@ -2724,8 +2734,7 @@ class TrainingMvpController extends Notifier<TrainingMvpState> {
       workoutPlayerEvents: const [],
       workoutPlayerRemainingSeconds: remainingSeconds,
       workoutPlayerTimerRunning: false,
-      workoutPlayerVoiceQueue:
-          state.workoutPlayerVoiceEnabled ? [voiceCue] : const [],
+      workoutPlayerVoiceQueue: state.workoutPlayerVoiceQueue,
       workoutPlayerVoiceStatusMessage: _voiceStatusFor(voiceCue),
       workoutPlayerScreenAwakeRequested: true,
       workoutPlayerScreenAwakeStatusMessage:
@@ -2733,7 +2742,6 @@ class TrainingMvpController extends Notifier<TrainingMvpState> {
       workoutPlayerStatusMessage: '已进入跟练模式：可启动真实倒计时，动作、休息和语音提示按步骤推进。',
     );
     _requestScreenAwake(true);
-    _speakWorkoutCue(voiceCue);
   }
 
   void startWorkoutPlayerCountdown() {
@@ -2753,7 +2761,6 @@ class TrainingMvpController extends Notifier<TrainingMvpState> {
       workoutPlayerStatusMessage:
           '倒计时进行中：${state.activeWorkoutPlayerStep.title} 剩余 ${_formatCountdownSeconds(remainingSeconds)}。',
     );
-    _speakWorkoutCue(voiceCue);
     _workoutPlayerTimer?.cancel();
     _workoutPlayerTimer = Timer.periodic(
       const Duration(seconds: 1),
@@ -2772,7 +2779,6 @@ class TrainingMvpController extends Notifier<TrainingMvpState> {
       workoutPlayerStatusMessage:
           '已暂停倒计时：${state.activeWorkoutPlayerStep.title} 剩余 ${state.workoutPlayerRemainingLabel}。',
     );
-    _speakWorkoutCue(voiceCue);
   }
 
   void resetWorkoutPlayerCountdown() {
@@ -2787,7 +2793,6 @@ class TrainingMvpController extends Notifier<TrainingMvpState> {
       workoutPlayerStatusMessage:
           '已重置当前步骤倒计时：${state.activeWorkoutPlayerStep.title}。',
     );
-    _speakWorkoutCue(voiceCue);
   }
 
   void _tickWorkoutPlayerCountdown() {
@@ -2809,7 +2814,6 @@ class TrainingMvpController extends Notifier<TrainingMvpState> {
         workoutPlayerStatusMessage:
             '倒计时进行中：${state.activeWorkoutPlayerStep.title} 剩余 ${_formatCountdownSeconds(nextRemaining)}。',
       );
-      _speakWorkoutCue(countdownCue);
       return;
     }
     state = state.copyWith(
@@ -2875,7 +2879,6 @@ class TrainingMvpController extends Notifier<TrainingMvpState> {
               ? '${step.title}倒计时结束，已自动进入下一步。'
               : '已完成${step.title}，自动进入下一步。',
     );
-    _speakWorkoutCue(voiceCue);
     if (isLastStep) {
       _requestScreenAwake(false);
     }
@@ -2931,7 +2934,6 @@ class TrainingMvpController extends Notifier<TrainingMvpState> {
           ? '本次跟练已结束，跳过记录已写入 workout_logs。'
           : '已跳过${step.title}，继续下一步。',
     );
-    _speakWorkoutCue(voiceCue);
     if (isLastStep) {
       _requestScreenAwake(false);
     }
@@ -2974,7 +2976,6 @@ class TrainingMvpController extends Notifier<TrainingMvpState> {
       ],
       workoutPlayerStatusMessage: '已一键降级剩余内容：改为低强度版，优先保住安全和连续性。',
     );
-    _speakWorkoutCue(voiceCue);
     _syncAchievementRecordsForCurrentState();
   }
 
