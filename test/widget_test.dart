@@ -31,7 +31,6 @@ import 'package:trainflow_ai/data/models/workout_day.dart';
 import 'package:trainflow_ai/data/models/workout_player_step.dart';
 import 'package:trainflow_ai/data/repositories/achievement_repository.dart';
 import 'package:trainflow_ai/data/repositories/body_metric_export_repository.dart';
-import 'package:trainflow_ai/data/repositories/body_metric_repository.dart';
 import 'package:trainflow_ai/data/repositories/formal_ai_plan_repository.dart';
 import 'package:trainflow_ai/data/repositories/imported_workout_repository.dart';
 import 'package:trainflow_ai/data/repositories/knowledge_repository.dart';
@@ -343,46 +342,6 @@ void main() {
         PersistedMotionAnalysisRepository(storageService);
 
     expect(clearedRepository.listResults(), isEmpty);
-  });
-
-  test('身体数据仓库会持久化指标和修订留痕', () {
-    final InMemoryLocalStorageService storageService =
-        InMemoryLocalStorageService();
-    final PersistedBodyMetricRepository repository =
-        PersistedBodyMetricRepository(storageService);
-    final BodyMetric originalMetric = repository.listMetrics().first;
-    final BodyMetric revisedMetric = BodyMetric(
-      id: 'body-metric-test-revised',
-      measuredAt: originalMetric.measuredAt,
-      weightKg: originalMetric.weightKg + 1.2,
-      bodyFatPercentage: originalMetric.bodyFatPercentage,
-      restingHeartRate: originalMetric.restingHeartRate + 3,
-      hrvMs: originalMetric.hrvMs,
-      sleepHours: originalMetric.sleepHours,
-      fatigueLevel: originalMetric.fatigueLevel,
-      sorenessLevel: originalMetric.sorenessLevel,
-      moodLabel: '测试修订',
-      source: BodyMetricSource.manual,
-      note: '测试持久化覆盖',
-    );
-
-    repository.saveMetric(revisedMetric, reason: '测试同日覆盖');
-
-    final PersistedBodyMetricRepository restoredRepository =
-        PersistedBodyMetricRepository(storageService);
-
-    expect(restoredRepository.listMetrics().first.weightKg,
-        revisedMetric.weightKg);
-    expect(restoredRepository.listRevisions(), hasLength(1));
-    expect(restoredRepository.listRevisions().first.reason, '测试同日覆盖');
-
-    restoredRepository.clearMetrics();
-
-    final PersistedBodyMetricRepository clearedRepository =
-        PersistedBodyMetricRepository(storageService);
-
-    expect(clearedRepository.listMetrics(), isEmpty);
-    expect(clearedRepository.listRevisions(), isEmpty);
   });
 
   test('身体数据导出仓库会持久化 JSON CSV 和导出包摘要记录', () {

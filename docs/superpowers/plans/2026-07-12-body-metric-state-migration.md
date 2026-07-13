@@ -30,7 +30,7 @@
 - 输出：`bodyMetricRepositoryProvider`、`bodyMetricControllerProvider`、`BodyMetricState` 和七个身体记录写入方法。
 - 兼容：状态持有既有 `BodyMetric`、`BodyMetricRevision`、`BodyMetricImportResult`，不改模型或仓库 JSON。
 
-- [ ] **步骤 1：写出独立控制器测试。**
+- [x] **步骤 1：写出独立控制器测试。**
 
 ```dart
 test('保存和重启会保留指标与同日修订', () {
@@ -61,13 +61,13 @@ test('保存和重启会保留指标与同日修订', () {
 另写独立测试覆盖：异常值先进入 `pendingMetric` 且版本不变；确认后写入并递增版本；截图识别
 只待确认；有效和无效 CSV；两种每日签到；清除指标/修订但保留导入历史。
 
-- [ ] **步骤 2：先运行新测试，确认 Provider 尚不存在。**
+- [x] **步骤 2：先运行新测试，确认 Provider 尚不存在。**
 
 运行：`flutter test test/features/data_center/application/body_metric_controller_test.dart`
 
 预期：无法编译，提示未定义 `bodyMetricControllerProvider`。
 
-- [ ] **步骤 3：实现状态、Provider 和控制器。**
+- [x] **步骤 3：实现状态、Provider 和控制器。**
 
 ```dart
 final bodyMetricRepositoryProvider = Provider<BodyMetricRepository>(
@@ -149,7 +149,7 @@ void clear();
 `ref.read(userProfileControllerProvider).profile.weightKg` 取得体重兜底。`clear()` 必须保留
 `importResults`，并设置文案“身体数据已清除，CSV 导入历史仍保留在本次会话状态中。”。
 
-- [ ] **步骤 4：运行控制器测试和静态检查。**
+- [x] **步骤 4：运行控制器测试和静态检查。**
 
 运行：
 
@@ -161,7 +161,7 @@ flutter analyze
 
 预期：测试通过，静态检查无问题。
 
-- [ ] **步骤 5：提交独立控制器。**
+- [x] **步骤 5：提交独立控制器。**
 
 ```bash
 git add lib/features/data_center/application/body_metric_controller.dart
@@ -184,7 +184,7 @@ git commit -m "refactor: 独立身体记录核心状态管理"
 - 输出：旧身体字段投影和既有成就同步。
 - 删除：训练控制器中的 `BodyMetricRepository` 实例/getter、身体指标导入和七个已迁移写入方法。
 
-- [ ] **步骤 1：写出训练兼容桥回归测试。**
+- [x] **步骤 1：写出训练兼容桥回归测试。**
 
 ```dart
 test('身体记录控制器同步旧状态和成就并保留训练会话', () async {
@@ -226,7 +226,7 @@ test('身体记录控制器同步旧状态和成就并保留训练会话', () as
 
 另写截图识别测试：待确认指标同步旧状态但成就记录数量不变；确认后成就同步。
 
-- [ ] **步骤 2：先运行桥接和页面测试，确认旧写入路径无法满足新断言。**
+- [x] **步骤 2：先运行桥接和页面测试，确认旧写入路径无法满足新断言。**
 
 运行：
 
@@ -238,7 +238,7 @@ flutter test test/features/daily_check_in/daily_check_in_page_test.dart
 
 预期：新 Provider 或页面写入断言失败。
 
-- [ ] **步骤 3：将训练控制器改为兼容桥。**
+- [x] **步骤 3：将训练控制器改为兼容桥。**
 
 删除 `body_metric_repository.dart` 导入、`_bodyMetricRepositoryInstance`、
 `_bodyMetricRepository`、`_bodyMetricSnapshotService`、`_bodyMetricImportService` 和七个已迁移
@@ -279,7 +279,7 @@ ref.listen<BodyMetricState>(
 初始 `TrainingMvpState` 必须使用 `bodyMetricState` 的全部八个投影字段；导出审计初始读取
 和字段保持原样。
 
-- [ ] **步骤 4：迁移数据中心和每日签到页写入入口。**
+- [x] **步骤 4：迁移数据中心和每日签到页写入入口。**
 
 `DataCenterPage` 新增控制器导入，并把以下调用替换为
 `ref.read(bodyMetricControllerProvider.notifier)`：
@@ -303,13 +303,13 @@ ref.read(bodyMetricControllerProvider.notifier).recordTiredDailyCheckIn();
 
 数据读取继续使用 `trainingMvpProvider`，导出审计按钮继续使用原训练控制器。
 
-- [ ] **步骤 5：实现页面交互测试。**
+- [x] **步骤 5：实现页面交互测试。**
 
 数据中心测试挂载 `DataCenterPage`，触发“保存身体数据”或“确认保存异常值”，断言独立
 控制器和旧训练投影的指标/待确认状态一致。每日签到测试挂载 `DailyCheckInPage`，点击
 “今天偏累，建议轻松版”，断言控制器指标、旧每日签到文案和训练投影同步。
 
-- [ ] **步骤 6：运行定向测试和静态检查。**
+- [x] **步骤 6：运行定向测试和静态检查。**
 
 运行：
 
@@ -323,7 +323,7 @@ flutter analyze
 
 预期：全部通过；桥接不会重置无关训练状态。
 
-- [ ] **步骤 7：提交兼容桥和页面迁移。**
+- [x] **步骤 7：提交兼容桥和页面迁移。**
 
 ```bash
 git add lib/features/dashboard/training_mvp_controller.dart
@@ -346,7 +346,7 @@ git commit -m "refactor: 将身体记录写入迁出训练控制器"
 - 继续验证既有 `PersistedBodyMetricRepository` 的指标、修订和 `trainflow.body_metrics.v1` JSON。
 - `test/widget_test.dart` 不再包含身体记录仓库测试或仅由它使用的导入。
 
-- [ ] **步骤 1：迁出仓库测试并补齐旧 JSON 覆盖。**
+- [x] **步骤 1：迁出仓库测试并补齐旧 JSON 覆盖。**
 
 ```dart
 test('身体记录仓库会兼容缺少列表的旧 JSON', () {
@@ -365,7 +365,7 @@ test('身体记录仓库会兼容缺少列表的旧 JSON', () {
 另加 `revisions` 存在但 `metrics` 缺失的旧 JSON；保留并迁出已有种子指标、同日覆盖、修订、
 重新读取和清除断言。
 
-- [ ] **步骤 2：从 `test/widget_test.dart` 删除已迁出的测试和无用导入。**
+- [x] **步骤 2：从 `test/widget_test.dart` 删除已迁出的测试和无用导入。**
 
 运行：
 
@@ -376,12 +376,12 @@ flutter test test/widget_test.dart
 
 预期：两个入口均通过，导出审计测试仍留在 `widget_test.dart`。
 
-- [ ] **步骤 3：更新 README 测试说明。**
+- [x] **步骤 3：更新 README 测试说明。**
 
 在测试说明中补充身体记录仓库、控制器、兼容桥和页面写入覆盖；不写死测试总数，不改变功能
 描述或未完成边界。
 
-- [ ] **步骤 4：运行完整验收和迁移断言。**
+- [x] **步骤 4：运行完整验收和迁移断言。**
 
 运行：
 
@@ -398,7 +398,7 @@ git status --short
 预期：所有 Flutter 命令成功；`rg` 无输出；导出审计的 `BodyMetricExportRepository` 与相关方法
 仍在；工作目录只包含本计划内文件。
 
-- [ ] **步骤 5：提交测试拆分和验收说明。**
+- [x] **步骤 5：提交测试拆分和验收说明。**
 
 ```bash
 git add test/data/repositories/body_metric_repository_test.dart
