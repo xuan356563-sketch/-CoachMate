@@ -11,6 +11,7 @@ import '../../data/models/training_log.dart';
 import '../../data/models/user_profile.dart';
 import '../../data/models/weekly_report.dart';
 import '../dashboard/training_mvp_controller.dart';
+import 'application/achievement_controller.dart';
 import 'application/user_profile_controller.dart';
 
 class ProfilePage extends ConsumerWidget {
@@ -173,7 +174,10 @@ class ProfilePage extends ConsumerWidget {
         _AchievementSummaryCard(
           state: state,
           onSyncRecords: () =>
-              ref.read(trainingMvpProvider.notifier).syncAchievementRecords(),
+              ref.read(achievementControllerProvider.notifier).sync(
+                    state.achievementProgressList,
+                    showNoChangeMessage: true,
+                  ),
         ),
         const SectionTitle(title: '康复状态'),
         _RehabStatusCard(state: state),

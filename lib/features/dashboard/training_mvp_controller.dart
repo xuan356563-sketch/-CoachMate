@@ -37,8 +37,6 @@ import '../../data/models/weekly_report.dart';
 import '../../data/models/weekly_report_export.dart';
 import '../../data/models/workout_day.dart';
 import '../../data/models/workout_player_step.dart';
-import '../../data/repositories/achievement_repository.dart';
-import '../../data/repositories/body_metric_export_repository.dart';
 import '../../data/repositories/exercise_repository.dart';
 import '../../data/repositories/formal_ai_plan_repository.dart';
 import '../../data/repositories/imported_workout_repository.dart';
@@ -79,7 +77,9 @@ import '../../services/weekly_report_service.dart';
 import '../../services/workout_platform_service.dart';
 import '../daily_adjustment/application/daily_adjustment_controller.dart';
 import '../data_center/application/body_metric_controller.dart';
+import '../data_center/application/body_metric_export_controller.dart';
 import '../meal_guide/application/meal_preference_controller.dart';
+import '../profile/application/achievement_controller.dart';
 import '../profile/application/user_profile_controller.dart';
 import '../reminders/application/reminder_settings_controller.dart';
 import '../training_plan/application/plan_adjustment_controller.dart';
@@ -1814,26 +1814,6 @@ class TrainingMvpState {
 class TrainingMvpController extends Notifier<TrainingMvpState> {
   Timer? _workoutPlayerTimer;
 
-  final AchievementRepository _achievementRepository =
-      InMemoryAchievementRepository();
-  AchievementRecordRepository? _achievementRecordRepositoryInstance;
-
-  AchievementRecordRepository get _achievementRecordRepository {
-    return _achievementRecordRepositoryInstance ??=
-        PersistedAchievementRecordRepository(
-      ref.read(localStorageServiceProvider),
-    );
-  }
-
-  BodyMetricExportRepository? _bodyMetricExportRepositoryInstance;
-
-  BodyMetricExportRepository get _bodyMetricExportRepository {
-    return _bodyMetricExportRepositoryInstance ??=
-        PersistedBodyMetricExportRepository(
-      ref.read(localStorageServiceProvider),
-    );
-  }
-
   WeeklyReportRepository? _weeklyReportRepositoryInstance;
 
   WeeklyReportRepository get _weeklyReportRepository {
@@ -2056,6 +2036,39 @@ class TrainingMvpController extends Notifier<TrainingMvpState> {
     );
     final BodyMetricState bodyMetricState =
         ref.read(bodyMetricControllerProvider);
+    final BodyMetricExportState bodyMetricExportState =
+        ref.read(bodyMetricExportControllerProvider);
+    ref.listen<BodyMetricExportState>(
+      bodyMetricExportControllerProvider,
+      (BodyMetricExportState? previous, BodyMetricExportState next) {
+        scheduleMicrotask(() {
+          if (!ref.mounted) {
+            return;
+          }
+          state = state.copyWith(
+            bodyMetricExportRecords: next.records,
+            bodyMetricExportStatusMessage: next.statusMessage,
+          );
+        });
+      },
+    );
+    final AchievementState achievementState =
+        ref.read(achievementControllerProvider);
+    ref.listen<AchievementState>(
+      achievementControllerProvider,
+      (AchievementState? previous, AchievementState next) {
+        scheduleMicrotask(() {
+          if (!ref.mounted) {
+            return;
+          }
+          state = state.copyWith(
+            achievementDefinitions: next.definitions,
+            achievementRecords: next.records,
+            achievementRecordStatusMessage: next.statusMessage,
+          );
+        });
+      },
+    );
     ref.listen<BodyMetricState>(
       bodyMetricControllerProvider,
       (BodyMetricState? previous, BodyMetricState next) {
@@ -2101,11 +2114,10 @@ class TrainingMvpController extends Notifier<TrainingMvpState> {
     final List<BodyMetricRevision> bodyMetricRevisions =
         bodyMetricState.revisions;
     final List<BodyMetricExportRecord> bodyMetricExportRecords =
-        _bodyMetricExportRepository.listRecords();
+        bodyMetricExportState.records;
     final List<AchievementDefinition> achievementDefinitions =
-        _achievementRepository.listAchievements();
-    final List<AchievementRecord> achievementRecords =
-        _achievementRecordRepository.listRecords();
+        achievementState.definitions;
+    final List<AchievementRecord> achievementRecords = achievementState.records;
     final List<StarterProgramDay> starterProgramDays =
         _starterProgramRepository.listDays();
     final StarterProgramProgress starterProgramProgress =
@@ -2162,14 +2174,10 @@ class TrainingMvpController extends Notifier<TrainingMvpState> {
       bodyMetricImportStatusMessage: bodyMetricState.importStatusMessage,
       bodyMetricSnapshotStatusMessage: bodyMetricState.snapshotStatusMessage,
       bodyMetricExportRecords: bodyMetricExportRecords,
-      bodyMetricExportStatusMessage: bodyMetricExportRecords.isEmpty
-          ? '尚未登记身体数据导出；导出 JSON、CSV 或导出包后会写入本地记录。'
-          : '已登记 ${bodyMetricExportRecords.length} 条身体数据导出记录。',
+      bodyMetricExportStatusMessage: bodyMetricExportState.statusMessage,
       achievementDefinitions: achievementDefinitions,
       achievementRecords: achievementRecords,
-      achievementRecordStatusMessage: achievementRecords.isEmpty
-          ? '尚未同步成就记录；解锁后会写入本地 achievements 表。'
-          : '已从本地 achievements 表读取 ${achievementRecords.length} 条记录。',
+      achievementRecordStatusMessage: achievementState.statusMessage,
       importedWorkouts: importedWorkouts,
       activityImportStatusMessage: importedWorkouts.isEmpty
           ? '粘贴 GPX 或 FIT 摘要后，可写入 workout_logs。'
@@ -2249,92 +2257,13 @@ class TrainingMvpController extends Notifier<TrainingMvpState> {
     }
   }
 
-  void recordBodyMetricJsonExport(String jsonText) {
-    _saveBodyMetricExportRecord(
-      format: BodyMetricExportFormat.json,
-      byteCount: utf8.encode(jsonText).length,
-      extension: 'json',
-    );
-  }
-
-  void recordBodyMetricCsvExport(String csvText) {
-    _saveBodyMetricExportRecord(
-      format: BodyMetricExportFormat.csv,
-      byteCount: utf8.encode(csvText).length,
-      extension: 'csv',
-    );
-  }
-
-  void recordBodyMetricPackageExport(String packageSummary) {
-    _saveBodyMetricExportRecord(
-      format: BodyMetricExportFormat.packageSummary,
-      byteCount: utf8.encode(packageSummary).length,
-      extension: 'txt',
-    );
-  }
-
-  void clearBodyMetricExportRecords() {
-    _bodyMetricExportRepository.clearRecords();
-    state = state.copyWith(
-      bodyMetricExportRecords: _bodyMetricExportRepository.listRecords(),
-      bodyMetricExportStatusMessage: '已清除本地身体数据导出记录。',
-    );
-  }
-
-  void _saveBodyMetricExportRecord({
-    required BodyMetricExportFormat format,
-    required int byteCount,
-    required String extension,
-  }) {
-    final DateTime now = DateTime.now();
-    final BodyMetricExportRecord record = BodyMetricExportRecord(
-      id: 'body-metric-export-${format.jsonValue}-${now.millisecondsSinceEpoch}',
-      format: format,
-      metricCount: state.bodyMetrics.length,
-      byteCount: byteCount,
-      fileName: _bodyMetricExportFileName(format, extension),
-      exportedAt: now,
-    );
-    _bodyMetricExportRepository.saveRecord(record);
-    final List<BodyMetricExportRecord> records =
-        _bodyMetricExportRepository.listRecords();
-    final String statusPrefix = format == BodyMetricExportFormat.packageSummary
-        ? '已登记导出包摘要'
-        : '已登记 ${record.format.label} 导出';
-    state = state.copyWith(
-      bodyMetricExportRecords: records,
-      bodyMetricExportStatusMessage:
-          '$statusPrefix：${record.metricCount} 条，${record.sizeLabel}，后续可接系统保存或分享。',
-    );
-  }
-
-  void syncAchievementRecords() {
-    _syncAchievementRecordsForCurrentState(showNoChangeMessage: true);
-  }
-
   void _syncAchievementRecordsForCurrentState({
     bool showNoChangeMessage = false,
   }) {
-    final int previousCount = state.achievementRecords.length;
-    final int unlockedCount = state.unlockedAchievementCount;
-    final List<AchievementRecord> records =
-        _achievementRecordRepository.syncUnlockedProgresses(
-      state.achievementProgressList,
-    );
-    final int addedCount = records.length - previousCount;
-    String statusMessage = state.achievementRecordStatusMessage;
-    if (addedCount > 0) {
-      statusMessage =
-          '已写入 $addedCount 条新成就记录，本地 achievements 表共 ${records.length} 条。';
-    } else if (showNoChangeMessage && unlockedCount == 0) {
-      statusMessage = '还没有可写入的已解锁成就。';
-    } else if (showNoChangeMessage) {
-      statusMessage = '本地 achievements 表已是最新，共 ${records.length} 条。';
-    }
-    state = state.copyWith(
-      achievementRecords: records,
-      achievementRecordStatusMessage: statusMessage,
-    );
+    ref.read(achievementControllerProvider.notifier).sync(
+          state.achievementProgressList,
+          showNoChangeMessage: showNoChangeMessage,
+        );
   }
 
   void setKnowledgeSearchQuery(String query) {
@@ -3222,16 +3151,6 @@ String _exportSafeLabel(String value) {
       .replaceAll(RegExp(r'[^a-z0-9]+'), '_')
       .replaceAll(RegExp(r'^_+|_+$'), '');
   return normalized.isEmpty ? 'report' : normalized;
-}
-
-String _bodyMetricExportFileName(
-  BodyMetricExportFormat format,
-  String extension,
-) {
-  final DateTime now = DateTime.now();
-  final String month = now.month.toString().padLeft(2, '0');
-  final String day = now.day.toString().padLeft(2, '0');
-  return 'trainflow_body_metrics_${format.jsonValue}_${now.year}$month$day.$extension';
 }
 
 List<TrainingPlan> _applyPlanAdjustments(

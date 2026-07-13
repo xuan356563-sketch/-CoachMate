@@ -16,6 +16,7 @@ import '../../data/models/body_metric_revision.dart';
 import '../../data/models/body_trend_insight.dart';
 import '../../data/models/imported_workout.dart';
 import 'application/body_metric_controller.dart';
+import 'application/body_metric_export_controller.dart';
 import '../dashboard/training_mvp_controller.dart';
 
 class DataCenterPage extends ConsumerWidget {
@@ -393,8 +394,8 @@ class _BodyMetricExportCard extends ConsumerWidget {
                       .read(bodyMetricExportTextProvider.notifier)
                       .setValue(exportText);
                   ref
-                      .read(trainingMvpProvider.notifier)
-                      .recordBodyMetricJsonExport(exportText);
+                      .read(bodyMetricExportControllerProvider.notifier)
+                      .recordJsonExport(exportText);
                 },
                 icon: const Icon(Icons.data_object),
                 label: const Text('导出 JSON'),
@@ -406,8 +407,8 @@ class _BodyMetricExportCard extends ConsumerWidget {
                       .read(bodyMetricExportTextProvider.notifier)
                       .setValue(exportText);
                   ref
-                      .read(trainingMvpProvider.notifier)
-                      .recordBodyMetricCsvExport(exportText);
+                      .read(bodyMetricExportControllerProvider.notifier)
+                      .recordCsvExport(exportText);
                 },
                 icon: const Icon(Icons.table_chart_outlined),
                 label: const Text('导出 CSV'),
@@ -420,8 +421,8 @@ class _BodyMetricExportCard extends ConsumerWidget {
                       .read(bodyMetricExportPackageStatusProvider.notifier)
                       .setValue(packageSummary);
                   ref
-                      .read(trainingMvpProvider.notifier)
-                      .recordBodyMetricPackageExport(packageSummary);
+                      .read(bodyMetricExportControllerProvider.notifier)
+                      .recordPackageExport(packageSummary);
                 },
                 icon: const Icon(Icons.archive_outlined),
                 label: const Text('生成导出包'),
@@ -457,8 +458,8 @@ class _BodyMetricExportCard extends ConsumerWidget {
                           return;
                         }
                         ref
-                            .read(trainingMvpProvider.notifier)
-                            .clearBodyMetricExportRecords();
+                            .read(bodyMetricExportControllerProvider.notifier)
+                            .clear();
                       },
                 icon: const Icon(Icons.delete_sweep_outlined),
                 label: const Text('清除导出记录'),
