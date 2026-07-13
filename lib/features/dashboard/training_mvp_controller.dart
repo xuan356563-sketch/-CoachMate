@@ -47,7 +47,6 @@ import '../../data/repositories/motion_check_repository.dart';
 import '../../data/repositories/pain_log_repository.dart';
 import '../../data/repositories/race_repository.dart';
 import '../../data/repositories/starter_program_repository.dart';
-import '../../data/repositories/training_log_repository.dart';
 import '../../data/repositories/training_plan_repository.dart';
 import '../../data/repositories/user_insight_repository.dart';
 import '../../data/repositories/weekly_report_export_repository.dart';
@@ -82,6 +81,7 @@ import '../meal_guide/application/meal_preference_controller.dart';
 import '../profile/application/achievement_controller.dart';
 import '../profile/application/user_profile_controller.dart';
 import '../reminders/application/reminder_settings_controller.dart';
+import '../training_log/application/training_log_controller.dart';
 import '../training_plan/application/plan_adjustment_controller.dart';
 
 const Object _unchanged = Object();
@@ -1888,14 +1888,6 @@ class TrainingMvpController extends Notifier<TrainingMvpState> {
     );
   }
 
-  TrainingLogRepository? _logRepositoryInstance;
-
-  TrainingLogRepository get _logRepository {
-    return _logRepositoryInstance ??= PersistedTrainingLogRepository(
-      ref.read(localStorageServiceProvider),
-    );
-  }
-
   ImportedWorkoutRepository? _importedWorkoutRepositoryInstance;
 
   ImportedWorkoutRepository get _importedWorkoutRepository {
@@ -2069,6 +2061,19 @@ class TrainingMvpController extends Notifier<TrainingMvpState> {
         });
       },
     );
+    final List<TrainingLog> trainingLogs =
+        ref.read(trainingLogControllerProvider);
+    ref.listen<List<TrainingLog>>(
+      trainingLogControllerProvider,
+      (List<TrainingLog>? previous, List<TrainingLog> next) {
+        scheduleMicrotask(() {
+          if (!ref.mounted) {
+            return;
+          }
+          state = state.copyWith(logs: next);
+        });
+      },
+    );
     ref.listen<BodyMetricState>(
       bodyMetricControllerProvider,
       (BodyMetricState? previous, BodyMetricState next) {
@@ -2122,7 +2127,7 @@ class TrainingMvpController extends Notifier<TrainingMvpState> {
         _starterProgramRepository.listDays();
     final StarterProgramProgress starterProgramProgress =
         _starterProgramRepository.getProgress();
-    final List<TrainingLog> logs = _logRepository.listLogs();
+    final List<TrainingLog> logs = trainingLogs;
     final List<ImportedWorkout> importedWorkouts =
         _importedWorkoutRepository.listWorkouts();
     final List<PainLog> painLogs = _painLogRepository.listPainLogs();
@@ -2469,8 +2474,8 @@ class TrainingMvpController extends Notifier<TrainingMvpState> {
                     importedWorkout.distanceKm)
                 .round(),
       );
-      _logRepository.saveLog(log);
-      final List<TrainingLog> logs = _logRepository.listLogs();
+      final List<TrainingLog> logs =
+          ref.read(trainingLogControllerProvider.notifier).save(log);
       _importedWorkoutRepository.saveWorkout(importedWorkout);
       final List<ImportedWorkout> importedWorkouts =
           _importedWorkoutRepository.listWorkouts();
@@ -2992,8 +2997,8 @@ class TrainingMvpController extends Notifier<TrainingMvpState> {
       createdAt: now,
       kind: TrainingLogKind.manual,
     );
-    _logRepository.saveLog(log);
-    final List<TrainingLog> logs = _logRepository.listLogs();
+    final List<TrainingLog> logs =
+        ref.read(trainingLogControllerProvider.notifier).save(log);
     state = state.copyWith(
       logs: logs,
       coachAdvices: _aiTrainingService.buildMockCoachAdvice(
@@ -3071,8 +3076,8 @@ class TrainingMvpController extends Notifier<TrainingMvpState> {
       interruptionReason: reason.isEmpty ? null : reason,
       exerciseRecords: safeExerciseRecords,
     );
-    _logRepository.saveLog(log);
-    final List<TrainingLog> logs = _logRepository.listLogs();
+    final List<TrainingLog> logs =
+        ref.read(trainingLogControllerProvider.notifier).save(log);
     state = state.copyWith(
       logs: logs,
       coachAdvices: _aiTrainingService.buildMockCoachAdvice(
@@ -3108,8 +3113,7 @@ class TrainingMvpController extends Notifier<TrainingMvpState> {
       createdAt: now,
       kind: TrainingLogKind.playerStep,
     );
-    _logRepository.saveLog(log);
-    return _logRepository.listLogs();
+    return ref.read(trainingLogControllerProvider.notifier).save(log);
   }
 }
 
