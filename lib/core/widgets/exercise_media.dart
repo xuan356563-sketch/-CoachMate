@@ -31,6 +31,7 @@ class ExerciseMedia extends StatelessWidget {
     }
 
     final String path = paths.first;
+    final bool isGif = _isGif(path);
     final bool isReference =
         exercise.mediaStatus == ExerciseMediaStatus.reference;
     final String statusLabel = exercise.mediaStatus.label;
@@ -58,7 +59,11 @@ class ExerciseMedia extends StatelessWidget {
             const SizedBox(width: 6),
             Expanded(
               child: Text(
-                isReference ? '$statusLabel，精确纠错示范待补充' : statusLabel,
+                isReference
+                    ? '$statusLabel，精确动作动图待补充'
+                    : isGif
+                        ? '$statusLabel · GIF 动图'
+                        : statusLabel,
                 style: Theme.of(context).textTheme.bodySmall?.copyWith(
                       color: isReference
                           ? AppColors.warning
@@ -81,6 +86,9 @@ class ExerciseMedia extends StatelessWidget {
   }
 
   Widget _buildMedia(BuildContext context, String path) {
+    if (!_isSupportedImage(path)) {
+      return const _MediaFallback(label: '仅支持图片或 GIF 动图');
+    }
     if (path.startsWith('assets/')) {
       return Image.asset(
         path,
@@ -103,6 +111,20 @@ class ExerciseMedia extends StatelessWidget {
   }
 }
 
+bool _isGif(String path) {
+  return Uri.tryParse(path)?.path.toLowerCase().endsWith('.gif') ?? false;
+}
+
+bool _isSupportedImage(String path) {
+  if (path.startsWith('placeholder://')) {
+    return true;
+  }
+  final String normalized = Uri.tryParse(path)?.path.toLowerCase() ?? '';
+  return const ['.gif', '.webp', '.png', '.jpg', '.jpeg'].any(
+    normalized.endsWith,
+  );
+}
+
 class _MediaFallback extends StatelessWidget {
   final String label;
 
@@ -117,7 +139,7 @@ class _MediaFallback extends StatelessWidget {
         mainAxisSize: MainAxisSize.min,
         children: [
           const Icon(
-            Icons.movie_filter_outlined,
+            Icons.animation_outlined,
             color: AppColors.primary,
             size: 36,
           ),

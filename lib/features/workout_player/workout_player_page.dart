@@ -752,14 +752,14 @@ class _PlayerMediaFallback extends StatelessWidget {
       child: const Column(
         children: [
           Icon(
-            Icons.ondemand_video_outlined,
+            Icons.animation_outlined,
             color: AppColors.primary,
             size: 42,
           ),
           SizedBox(height: 8),
-          Text('动作演示占位'),
+          Text('动作动图占位'),
           SizedBox(height: 4),
-          Text('当前步骤未关联动作媒体'),
+          Text('当前步骤未关联动作动图'),
         ],
       ),
     );
