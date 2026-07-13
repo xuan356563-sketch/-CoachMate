@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../core/constants/app_colors.dart';
 import '../../core/widgets/trainflow_widgets.dart';
 import '../../data/models/daily_check_in.dart';
+import '../data_center/application/body_metric_controller.dart';
 import '../dashboard/training_mvp_controller.dart';
 
 class DailyCheckInPage extends ConsumerWidget {
@@ -186,7 +187,7 @@ class _DailyCheckInActionCard extends ConsumerWidget {
               onPressed: summary.canUseYesterday
                   ? () {
                       ref
-                          .read(trainingMvpProvider.notifier)
+                          .read(bodyMetricControllerProvider.notifier)
                           .confirmDailyCheckInSameAsYesterday();
                     }
                   : null,
@@ -200,7 +201,7 @@ class _DailyCheckInActionCard extends ConsumerWidget {
             child: OutlinedButton.icon(
               onPressed: () {
                 ref
-                    .read(trainingMvpProvider.notifier)
+                    .read(bodyMetricControllerProvider.notifier)
                     .recordTiredDailyCheckIn();
               },
               icon: const Icon(Icons.battery_saver_outlined),

@@ -10,7 +10,6 @@ import '../../data/models/body_metric_goal.dart';
 import '../../data/models/body_metric.dart';
 import '../../data/models/body_metric_import.dart';
 import '../../data/models/body_metric_revision.dart';
-import '../../data/models/body_metric_snapshot.dart';
 import '../../data/models/body_trend_insight.dart';
 import '../../data/models/daily_adjustment.dart';
 import '../../data/models/daily_check_in.dart';
@@ -40,7 +39,6 @@ import '../../data/models/workout_day.dart';
 import '../../data/models/workout_player_step.dart';
 import '../../data/repositories/achievement_repository.dart';
 import '../../data/repositories/body_metric_export_repository.dart';
-import '../../data/repositories/body_metric_repository.dart';
 import '../../data/repositories/exercise_repository.dart';
 import '../../data/repositories/formal_ai_plan_repository.dart';
 import '../../data/repositories/imported_workout_repository.dart';
@@ -60,8 +58,6 @@ import '../../services/activity_import_service.dart';
 import '../../services/ai_training_service.dart';
 import '../../services/body_data_quality_service.dart';
 import '../../services/body_metric_goal_service.dart';
-import '../../services/body_metric_import_service.dart';
-import '../../services/body_metric_snapshot_service.dart';
 import '../../services/body_trend_insight_service.dart';
 import '../../services/daily_adjustment_service.dart';
 import '../../services/daily_check_in_service.dart';
@@ -82,6 +78,7 @@ import '../../services/user_trust_review_service.dart';
 import '../../services/weekly_report_service.dart';
 import '../../services/workout_platform_service.dart';
 import '../daily_adjustment/application/daily_adjustment_controller.dart';
+import '../data_center/application/body_metric_controller.dart';
 import '../meal_guide/application/meal_preference_controller.dart';
 import '../profile/application/user_profile_controller.dart';
 import '../reminders/application/reminder_settings_controller.dart';
@@ -1828,14 +1825,6 @@ class TrainingMvpController extends Notifier<TrainingMvpState> {
     );
   }
 
-  BodyMetricRepository? _bodyMetricRepositoryInstance;
-
-  BodyMetricRepository get _bodyMetricRepository {
-    return _bodyMetricRepositoryInstance ??= PersistedBodyMetricRepository(
-      ref.read(localStorageServiceProvider),
-    );
-  }
-
   BodyMetricExportRepository? _bodyMetricExportRepositoryInstance;
 
   BodyMetricExportRepository get _bodyMetricExportRepository {
@@ -1950,10 +1939,6 @@ class TrainingMvpController extends Notifier<TrainingMvpState> {
   final RaceImportService _raceImportService = RaceImportService();
   final KnowledgeImportService _knowledgeImportService =
       KnowledgeImportService();
-  final BodyMetricImportService _bodyMetricImportService =
-      BodyMetricImportService();
-  final BodyMetricSnapshotRecognitionService _bodyMetricSnapshotService =
-      BodyMetricSnapshotRecognitionService();
   final MotionAnalysisService _motionAnalysisService = MotionAnalysisService();
   final MotionPoseImportService _motionPoseImportService =
       MotionPoseImportService();
@@ -2069,6 +2054,33 @@ class TrainingMvpController extends Notifier<TrainingMvpState> {
         });
       },
     );
+    final BodyMetricState bodyMetricState =
+        ref.read(bodyMetricControllerProvider);
+    ref.listen<BodyMetricState>(
+      bodyMetricControllerProvider,
+      (BodyMetricState? previous, BodyMetricState next) {
+        final bool persisted = previous == null ||
+            previous.persistenceVersion != next.persistenceVersion;
+        scheduleMicrotask(() {
+          if (!ref.mounted) {
+            return;
+          }
+          state = state.copyWith(
+            bodyMetrics: next.metrics,
+            bodyMetricRevisions: next.revisions,
+            pendingBodyMetric: next.pendingMetric,
+            bodyMetricManualStatusMessage: next.manualStatusMessage,
+            bodyMetricSnapshotStatusMessage: next.snapshotStatusMessage,
+            bodyMetricImportResults: next.importResults,
+            bodyMetricImportStatusMessage: next.importStatusMessage,
+            dailyCheckInStatusMessage: next.dailyCheckInStatusMessage,
+          );
+          if (persisted) {
+            _syncAchievementRecordsForCurrentState();
+          }
+        });
+      },
+    );
     final UserProfile profile = profileState.profile;
     final List<PlanAdjustment> planAdjustments =
         planAdjustmentState.adjustments;
@@ -2085,9 +2097,9 @@ class TrainingMvpController extends Notifier<TrainingMvpState> {
     final List<MotionCheckRule> motionChecks =
         _motionCheckRepository.listMotionChecks();
     final List<RacePlan> races = _raceRepository.listRaces();
-    final List<BodyMetric> bodyMetrics = _bodyMetricRepository.listMetrics();
+    final List<BodyMetric> bodyMetrics = bodyMetricState.metrics;
     final List<BodyMetricRevision> bodyMetricRevisions =
-        _bodyMetricRepository.listRevisions();
+        bodyMetricState.revisions;
     final List<BodyMetricExportRecord> bodyMetricExportRecords =
         _bodyMetricExportRepository.listRecords();
     final List<AchievementDefinition> achievementDefinitions =
@@ -2144,11 +2156,11 @@ class TrainingMvpController extends Notifier<TrainingMvpState> {
       raceImportStatusMessage: '已读取本地 races ${races.length} 场；可粘贴赛事信息导入。',
       bodyMetrics: bodyMetrics,
       bodyMetricRevisions: bodyMetricRevisions,
-      pendingBodyMetric: null,
-      bodyMetricManualStatusMessage: '默认预填上次值；可选择今天、昨天或前天补录。',
-      bodyMetricImportResults: const [],
-      bodyMetricImportStatusMessage: '可粘贴 Apple 健康、手表或表格导出的身体数据 CSV。',
-      bodyMetricSnapshotStatusMessage: '可粘贴体脂秤、手表或健康 App 截图中的文字，识别后需确认入库。',
+      pendingBodyMetric: bodyMetricState.pendingMetric,
+      bodyMetricManualStatusMessage: bodyMetricState.manualStatusMessage,
+      bodyMetricImportResults: bodyMetricState.importResults,
+      bodyMetricImportStatusMessage: bodyMetricState.importStatusMessage,
+      bodyMetricSnapshotStatusMessage: bodyMetricState.snapshotStatusMessage,
       bodyMetricExportRecords: bodyMetricExportRecords,
       bodyMetricExportStatusMessage: bodyMetricExportRecords.isEmpty
           ? '尚未登记身体数据导出；导出 JSON、CSV 或导出包后会写入本地记录。'
@@ -2178,7 +2190,7 @@ class TrainingMvpController extends Notifier<TrainingMvpState> {
       remindersEnabled: reminderSettingsState.settings.enabled,
       reminderTimeLabel: reminderSettingsState.settings.preferredTimeLabel,
       reminderStatusMessage: reminderSettingsState.statusMessage,
-      dailyCheckInStatusMessage: '根据当前画像，今天可以先使用预填签到。',
+      dailyCheckInStatusMessage: bodyMetricState.dailyCheckInStatusMessage,
       dailyAvailableMinutesOverride:
           dailyAdjustmentState.context.availableMinutes,
       dailyWorkStress: dailyAdjustmentState.context.workStress,
@@ -2385,213 +2397,6 @@ class TrainingMvpController extends Notifier<TrainingMvpState> {
     _syncAchievementRecordsForCurrentState();
   }
 
-  void saveBodyMetric({
-    required double weightKg,
-    required int restingHeartRate,
-    required int hrvMs,
-    required double sleepHours,
-    required int fatigueLevel,
-    DateTime? measuredAt,
-    bool forceSave = false,
-  }) {
-    final DateTime selectedDate = _dateOnly(measuredAt ?? DateTime.now());
-    final DateTime now = DateTime.now();
-    final DateTime capturedAt = DateTime(
-      selectedDate.year,
-      selectedDate.month,
-      selectedDate.day,
-      now.hour,
-      now.minute,
-    );
-    final BodyMetric metric = BodyMetric(
-      id: 'body-metric-${now.millisecondsSinceEpoch}',
-      measuredAt: capturedAt,
-      weightKg: weightKg,
-      bodyFatPercentage: state.latestBodyMetric?.bodyFatPercentage ?? 18.6,
-      restingHeartRate: restingHeartRate,
-      hrvMs: hrvMs,
-      sleepHours: sleepHours,
-      fatigueLevel: fatigueLevel,
-      sorenessLevel: state.latestBodyMetric?.sorenessLevel ?? 3,
-      moodLabel: fatigueLevel >= 7 ? '偏疲劳' : '稳定',
-      source: BodyMetricSource.manual,
-      note: '数据中心 10 秒快录',
-    );
-
-    final List<String> warnings = _bodyMetricOutlierWarnings(metric);
-    if (warnings.isNotEmpty && !forceSave) {
-      state = state.copyWith(
-        pendingBodyMetric: metric,
-        bodyMetricManualStatusMessage:
-            '异常值确认：${warnings.join('；')}。请确认不是手误后再保存。',
-      );
-      return;
-    }
-
-    _bodyMetricRepository.saveMetric(
-      metric,
-      reason: forceSave ? '确认异常值覆盖同日记录' : '10 秒快录覆盖同日记录',
-    );
-    state = state.copyWith(
-      bodyMetrics: _bodyMetricRepository.listMetrics(),
-      bodyMetricRevisions: _bodyMetricRepository.listRevisions(),
-      pendingBodyMetric: null,
-      bodyMetricManualStatusMessage: forceSave
-          ? '已确认并保存异常值：${metric.measuredDateLabel} 的身体数据。'
-          : '已保存 ${metric.measuredDateLabel} 的身体数据；质量、趋势和目标已刷新。',
-    );
-    _syncAchievementRecordsForCurrentState();
-  }
-
-  void confirmPendingBodyMetric() {
-    final BodyMetric? metric = state.pendingBodyMetric;
-    if (metric == null) {
-      state = state.copyWith(
-        bodyMetricManualStatusMessage: '没有待确认的身体数据。',
-        bodyMetricSnapshotStatusMessage: '没有待确认的截图识别数据。',
-      );
-      return;
-    }
-
-    final bool isScreenshot = metric.source == BodyMetricSource.screenshot;
-    _bodyMetricRepository.saveMetric(
-      metric,
-      reason: isScreenshot ? '截图识别确认覆盖同日记录' : '确认异常值覆盖同日记录',
-    );
-    state = state.copyWith(
-      bodyMetrics: _bodyMetricRepository.listMetrics(),
-      bodyMetricRevisions: _bodyMetricRepository.listRevisions(),
-      pendingBodyMetric: null,
-      bodyMetricManualStatusMessage: isScreenshot
-          ? state.bodyMetricManualStatusMessage
-          : '已确认并保存异常值：${metric.measuredDateLabel} 的身体数据。',
-      bodyMetricSnapshotStatusMessage: isScreenshot
-          ? '已确认截图识别数据：${metric.measuredDateLabel} 已写入 body_metrics。'
-          : state.bodyMetricSnapshotStatusMessage,
-    );
-    _syncAchievementRecordsForCurrentState();
-  }
-
-  void recognizeBodyMetricSnapshotText(String rawText) {
-    try {
-      final BodyMetricSnapshotRecognitionResult result =
-          _bodyMetricSnapshotService.recognize(
-        rawText,
-        fallback: state.latestBodyMetric,
-      );
-      state = state.copyWith(
-        pendingBodyMetric: result.metric,
-        bodyMetricSnapshotStatusMessage:
-            '${result.summary} 请确认后写入 body_metrics。',
-      );
-    } on FormatException catch (error) {
-      state = state.copyWith(bodyMetricSnapshotStatusMessage: error.message);
-    } catch (_) {
-      state = state.copyWith(bodyMetricSnapshotStatusMessage: '识别失败：请检查截图文字。');
-    }
-  }
-
-  List<String> _bodyMetricOutlierWarnings(BodyMetric metric) {
-    final List<BodyMetric> baselines = state.bodyMetrics
-        .where((BodyMetric item) =>
-            !_isSameDate(item.measuredAt, metric.measuredAt))
-        .take(7)
-        .toList();
-    if (baselines.isEmpty) {
-      return const [];
-    }
-
-    final List<String> warnings = [];
-    final BodyMetric reference = baselines.first;
-    final double weightDelta = metric.weightKg - reference.weightKg;
-    if (weightDelta.abs() > 2.0) {
-      warnings.add(
-        '体重较最近记录变化 ${weightDelta.toStringAsFixed(1)} kg，超过 2 kg',
-      );
-    }
-
-    final double averageRestingHr = baselines
-            .map((BodyMetric item) => item.restingHeartRate)
-            .reduce((int total, int value) => total + value) /
-        baselines.length;
-    final double restingHrDelta = metric.restingHeartRate - averageRestingHr;
-    if (restingHrDelta.abs() >= 20) {
-      warnings.add(
-        '静息心率较 7 日均值偏离 ${restingHrDelta.toStringAsFixed(0)} bpm',
-      );
-    }
-    return warnings;
-  }
-
-  void confirmDailyCheckInSameAsYesterday() {
-    final BodyMetric? latestMetric = state.latestBodyMetric;
-    if (latestMetric == null) {
-      state = state.copyWith(
-        dailyCheckInStatusMessage: '还没有可预填的身体数据，请先完成一次完整签到。',
-      );
-      return;
-    }
-
-    final DateTime now = DateTime.now();
-    final BodyMetric metric = BodyMetric(
-      id: 'daily-check-in-${now.millisecondsSinceEpoch}',
-      measuredAt: now,
-      weightKg: latestMetric.weightKg,
-      bodyFatPercentage: latestMetric.bodyFatPercentage,
-      restingHeartRate: latestMetric.restingHeartRate,
-      hrvMs: latestMetric.hrvMs,
-      sleepHours: latestMetric.sleepHours,
-      fatigueLevel: latestMetric.fatigueLevel,
-      sorenessLevel: latestMetric.sorenessLevel,
-      moodLabel: latestMetric.moodLabel,
-      source: BodyMetricSource.manual,
-      note: '精简签到：和昨天一样',
-    );
-    _bodyMetricRepository.saveMetric(
-      metric,
-      reason: '精简签到确认覆盖同日记录',
-    );
-    state = state.copyWith(
-      bodyMetrics: _bodyMetricRepository.listMetrics(),
-      bodyMetricRevisions: _bodyMetricRepository.listRevisions(),
-      dailyCheckInStatusMessage: '已按画像预填完成今日签到：和昨天一样。',
-    );
-    _syncAchievementRecordsForCurrentState();
-  }
-
-  void recordTiredDailyCheckIn() {
-    final BodyMetric? latestMetric = state.latestBodyMetric;
-    final DateTime now = DateTime.now();
-    final int fatigueLevel =
-        ((latestMetric?.fatigueLevel ?? 6) + 2).clamp(1, 10).toInt();
-    final BodyMetric metric = BodyMetric(
-      id: 'daily-check-in-tired-${now.millisecondsSinceEpoch}',
-      measuredAt: now,
-      weightKg: latestMetric?.weightKg ?? state.profile.weightKg,
-      bodyFatPercentage: latestMetric?.bodyFatPercentage ?? 18.6,
-      restingHeartRate: latestMetric?.restingHeartRate ?? 62,
-      hrvMs: ((latestMetric?.hrvMs ?? 48) - 4).clamp(25, 85).toInt(),
-      sleepHours:
-          ((latestMetric?.sleepHours ?? 6.4) - 0.8).clamp(4.0, 9.0).toDouble(),
-      fatigueLevel: fatigueLevel,
-      sorenessLevel:
-          ((latestMetric?.sorenessLevel ?? 4) + 1).clamp(1, 10).toInt(),
-      moodLabel: '偏疲劳',
-      source: BodyMetricSource.manual,
-      note: '精简签到：今天偏累，建议轻松版',
-    );
-    _bodyMetricRepository.saveMetric(
-      metric,
-      reason: '精简签到偏累覆盖同日记录',
-    );
-    state = state.copyWith(
-      bodyMetrics: _bodyMetricRepository.listMetrics(),
-      bodyMetricRevisions: _bodyMetricRepository.listRevisions(),
-      dailyCheckInStatusMessage: '已记录偏累，今日建议切轻松版；晨报和提醒会按新身体数据更新。',
-    );
-    _syncAchievementRecordsForCurrentState();
-  }
-
   void analyzeMotionCheck(String ruleId) {
     final MotionCheckRule? rule = state.findMotionCheck(ruleId);
     if (rule == null) {
@@ -2681,40 +2486,6 @@ class TrainingMvpController extends Notifier<TrainingMvpState> {
       dailyAdjustmentStatusMessage:
           '关键点几何风险已更新：${result.suggestedImpact.label}。打开每日调整可查看重算结果。',
     );
-  }
-
-  void clearBodyMetrics() {
-    _bodyMetricRepository.clearMetrics();
-    state = state.copyWith(
-      bodyMetrics: _bodyMetricRepository.listMetrics(),
-      bodyMetricRevisions: _bodyMetricRepository.listRevisions(),
-      bodyMetricImportStatusMessage: '身体数据已清除，CSV 导入历史仍保留在本次会话状态中。',
-    );
-  }
-
-  void importBodyMetricCsv(String rawText) {
-    try {
-      final BodyMetricImportResult result =
-          _bodyMetricImportService.parseCsv(rawText);
-      for (final BodyMetric metric in result.metrics) {
-        _bodyMetricRepository.saveMetric(
-          metric,
-          reason: 'CSV 导入覆盖同日记录',
-        );
-      }
-      state = state.copyWith(
-        bodyMetrics: _bodyMetricRepository.listMetrics(),
-        bodyMetricRevisions: _bodyMetricRepository.listRevisions(),
-        bodyMetricImportResults: [result, ...state.bodyMetricImportResults],
-        bodyMetricImportStatusMessage:
-            '${result.summary} 已写入 body_metrics，并会刷新趋势、质量和指标目标。',
-      );
-      _syncAchievementRecordsForCurrentState();
-    } on FormatException catch (error) {
-      state = state.copyWith(bodyMetricImportStatusMessage: error.message);
-    } catch (_) {
-      state = state.copyWith(bodyMetricImportStatusMessage: '导入失败：请检查 CSV 字段。');
-    }
   }
 
   void markInsightNeedsCorrection(UserProfileInsight insight) {

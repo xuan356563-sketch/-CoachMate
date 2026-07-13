@@ -15,6 +15,7 @@ import '../../data/models/body_metric_import.dart';
 import '../../data/models/body_metric_revision.dart';
 import '../../data/models/body_trend_insight.dart';
 import '../../data/models/imported_workout.dart';
+import 'application/body_metric_controller.dart';
 import '../dashboard/training_mvp_controller.dart';
 
 class DataCenterPage extends ConsumerWidget {
@@ -181,7 +182,7 @@ class _BodyMetricCsvImportCard extends ConsumerWidget {
             width: double.infinity,
             child: FilledButton.icon(
               onPressed: () {
-                ref.read(trainingMvpProvider.notifier).importBodyMetricCsv(
+                ref.read(bodyMetricControllerProvider.notifier).importCsv(
                       ref.read(bodyMetricCsvImportTextProvider),
                     );
               },
@@ -293,8 +294,8 @@ class _BodyMetricSnapshotCard extends ConsumerWidget {
             child: FilledButton.icon(
               onPressed: () {
                 ref
-                    .read(trainingMvpProvider.notifier)
-                    .recognizeBodyMetricSnapshotText(
+                    .read(bodyMetricControllerProvider.notifier)
+                    .recognizeSnapshotText(
                       ref.read(bodyMetricSnapshotTextProvider),
                     );
               },
@@ -309,8 +310,8 @@ class _BodyMetricSnapshotCard extends ConsumerWidget {
               child: OutlinedButton.icon(
                 onPressed: () {
                   ref
-                      .read(trainingMvpProvider.notifier)
-                      .confirmPendingBodyMetric();
+                      .read(bodyMetricControllerProvider.notifier)
+                      .confirmPendingMetric();
                 },
                 icon: const Icon(Icons.check_circle_outline),
                 label: const Text('确认写入截图识别数据'),
@@ -464,7 +465,7 @@ class _BodyMetricExportCard extends ConsumerWidget {
               ),
               OutlinedButton.icon(
                 onPressed: () {
-                  ref.read(trainingMvpProvider.notifier).clearBodyMetrics();
+                  ref.read(bodyMetricControllerProvider.notifier).clear();
                   ref
                       .read(bodyMetricExportTextProvider.notifier)
                       .setValue('身体数据已清除，当前记录 0 条。');
@@ -1087,7 +1088,9 @@ class _QuickBodyMetricCard extends ConsumerWidget {
             width: double.infinity,
             child: FilledButton.icon(
               onPressed: () {
-                ref.read(trainingMvpProvider.notifier).saveBodyMetric(
+                ref
+                    .read(bodyMetricControllerProvider.notifier)
+                    .saveManualMetric(
                       weightKg: weight,
                       restingHeartRate: restingHr,
                       hrvMs: hrv,
@@ -1107,8 +1110,8 @@ class _QuickBodyMetricCard extends ConsumerWidget {
               child: OutlinedButton.icon(
                 onPressed: () {
                   ref
-                      .read(trainingMvpProvider.notifier)
-                      .confirmPendingBodyMetric();
+                      .read(bodyMetricControllerProvider.notifier)
+                      .confirmPendingMetric();
                 },
                 icon: const Icon(Icons.warning_amber_outlined),
                 label: const Text('确认保存异常值'),
