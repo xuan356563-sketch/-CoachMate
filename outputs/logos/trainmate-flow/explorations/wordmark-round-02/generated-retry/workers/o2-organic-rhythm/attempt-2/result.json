@@ -1,0 +1,7 @@
+{
+  "id": "o2-organic-rhythm",
+  "status": "failed",
+  "image_path": null,
+  "error": "原生图片生成工具未提供可保存到本地路径的图片文件句柄。",
+  "caveats": ""
+}

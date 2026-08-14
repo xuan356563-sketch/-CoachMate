@@ -1,0 +1,312 @@
+{
+  "schemaVersion": 1,
+  "brand": {
+    "consumerName": "智练 TrainMate",
+    "technicalName": "TrainFlow AI",
+    "technicalRenameInScope": false
+  },
+  "selection": {
+    "status": "confirmed",
+    "confirmedOn": "2026-07-14",
+    "latestRevisionOn": "2026-07-15",
+    "option": "C",
+    "routeId": "character-wordmark-family",
+    "routeLabel": "角色字标同频",
+    "explorerStage": "closed",
+    "sourceConcept": "outputs/logos/trainmate-flow/concepts/03-character-wordmark-family.png",
+    "sourceConceptSha256": "5fdc89e03882588c2a60f3997ebd1e7757eb6314e32c7af2ad53b31faba6b56a",
+    "selectedConceptPreview": "outputs/logos/trainmate-flow/explorations/avatar-face-round-02/generated/b1-capsule-family-ribbon-preview.png",
+    "selectedConceptPreviewSha256": "5fdc89e03882588c2a60f3997ebd1e7757eb6314e32c7af2ad53b31faba6b56a",
+    "currentPreview": "outputs/logos/trainmate-flow/vector-review/presentation/lockup.png",
+    "currentPreviewSha256": "4d5ed858b486bb3840dd4c1e066d92342996be68f2d8579e70639d12d53045cb",
+    "currentReviewSheet": "outputs/logos/trainmate-flow/brand-sheet.png",
+    "currentReviewSheetSha256": "88159bf95fdecb2f5de93e50c5cf10b898414b21dd8c2f67fdb80042a42569cb"
+  },
+  "userConfirmations": [
+    {
+      "kind": "direction",
+      "text": "c"
+    },
+    {
+      "kind": "character_limbs",
+      "text": "给这个脑袋安装一样的细线手脚动作"
+    },
+    {
+      "kind": "headband_motion",
+      "text": "桃色头带 后面要加上感觉有一种奋斗 努力的样式"
+    },
+    {
+      "kind": "flow_character_ribbon",
+      "text": "flow角色上也要带着桃色软结短飘带，表达奋斗、努力"
+    },
+    {
+      "kind": "main_brand_ribbon",
+      "text": "主品牌上的flow角色也添加桃色软结短飘带"
+    },
+    {
+      "kind": "face_language",
+      "text": "主品牌头像的 不要现在这种"
+    },
+    {
+      "kind": "ribbon_identity_lock",
+      "text": "桃色奋斗头带、软结和双短飘带全部保留"
+    },
+    {
+      "kind": "face_capsule_revision",
+      "text": "不对 需要胶囊"
+    },
+    {
+      "kind": "mouth_position",
+      "text": "橙色的嘴 在下面"
+    },
+    {
+      "kind": "mouth_outside_capsule",
+      "text": "橙色的嘴不在胶囊里面 在下方"
+    },
+    {
+      "kind": "mouth_vertical_spacing",
+      "text": "桃色嘴的位置往下挪"
+    },
+    {
+      "kind": "platform_icon_replacement",
+      "text": "修改平台图标"
+    },
+    {
+      "kind": "platform_icon_angle",
+      "text": "给logo 添加一个角度  类似参考图的样式"
+    },
+    {
+      "kind": "main_brand_angle_direct_edit",
+      "text": "直接修改吧"
+    },
+    {
+      "kind": "wordmark_chinese_ratio",
+      "text": "文字logo 的比例有问题 中文字小一点"
+    },
+    {
+      "kind": "wordmark_reference_layout",
+      "text": "文字排版按照参考图的方式 1比1复刻"
+    }
+  ],
+  "productionRules": {
+    "fixedElements": [
+      "深墨有机头型",
+      "桃色运动头带",
+      "纸白软胶囊面部显示区",
+      "胶囊内 B1 有机不对称表情",
+      "胶囊内左侧深墨眼点与右侧深墨弯眼",
+      "位于胶囊正下方并与胶囊保持明显间隔的桃色短嘴",
+      "桃色软结",
+      "两条不等长短飘带"
+    ],
+    "requiredRibbonSurfaces": [
+      "brandmark",
+      "avatar_lockup",
+      "standard_character",
+      "full_action_character",
+      "character_lockup",
+      "large_brand_mark",
+      "app_icon",
+      "submark",
+      "reverse_lockup",
+      "app_flow"
+    ],
+    "ribbon": {
+      "color": "#FFB27D",
+      "tailCount": 2,
+      "unequalLengths": true,
+      "runningPose": "向后拉开",
+      "staticPose": "短幅垂落",
+      "forbidden": [
+        "文字",
+        "火焰",
+        "尖锐长尾",
+        "忍者感"
+      ]
+    },
+    "fullCharacter": {
+      "recommendedMinPx": 96,
+      "thinLineLimbs": true,
+      "ribbonRequired": true
+    },
+    "compactAvatar": {
+      "appliesTo": [
+        "app_icon",
+        "favicon",
+        "marks_below_64px"
+      ],
+      "limbs": false,
+      "simplifiedRibbonRequired": true,
+      "ribbonHideOnlyAtPx": 16,
+      "ribbonHideConditions": [
+        "原始像素实测粘连",
+        "原始像素实测裁切"
+      ],
+      "evidenceRequired": true
+    },
+    "compressedSubmark": {
+      "ribbonMayBeOmitted": false,
+      "isStandardFlowCharacter": true,
+      "mayReplaceBrandmarkOrAppIcon": false
+    },
+    "face": {
+      "capsuleOrFacePanelAllowed": true,
+      "capsuleRequired": true,
+      "capsuleFill": "#FFFDFC",
+      "featuresDirectlyOnHead": false,
+      "eyesInsideCapsule": true,
+      "mouthInsideCapsule": false,
+      "leftEye": "深墨有机眼点",
+      "rightEye": "深墨圆头弯眼",
+      "mouth": "位于胶囊正下方头像主体上的桃色短嘴",
+      "mouthVerticalSpacing": "与胶囊下缘保持明显间隔",
+      "reverseCapsuleFill": "#19172C",
+      "reverseEyeColor": "#FFFDFC"
+    },
+    "platformIconAngle": {
+      "degrees": 5,
+      "direction": "clockwise",
+      "backgroundRotated": false,
+      "scope": [
+        "app_icon",
+        "app_icon_maskable",
+        "favicon"
+      ]
+    },
+    "brandMotionAngle": {
+      "avatarDegrees": 5,
+      "smallAvatarDegrees": 3,
+      "submarkDegrees": 4,
+      "chineseWordmarkDegrees": 5,
+      "englishWordmarkDegrees": 7,
+      "direction": "right_leaning",
+      "baselineRotated": false,
+      "scope": [
+        "brandmark",
+        "brandmark_reverse",
+        "brandmark_mono",
+        "avatar_lockup",
+        "wordmark",
+        "full_character",
+        "character_lockup",
+        "submark"
+      ]
+    },
+    "wordmark": {
+      "deterministicRedrawRequired": true,
+      "glyphPathsUnchanged": true,
+      "chineseWordmarkDegrees": 5,
+      "englishWordmarkDegrees": 7,
+      "baselineRotated": false,
+      "layouts": {
+        "horizontal": {
+          "source": "assets/branding/source/trainmate-flow-wordmark-horizontal.svg",
+          "canvas": [
+            1492,
+            550
+          ],
+          "reference": "截屏2026-07-15 08.34.20.png",
+          "arrangement": "智、练同顶边横排；TrainMate 按底边与基线对齐",
+          "measuredBounds": {
+            "zhi": [
+              116,
+              201,
+              288,
+              376
+            ],
+            "lian": [
+              396,
+              201,
+              577,
+              379
+            ],
+            "english": [
+              629,
+              264,
+              1403,
+              383
+            ]
+          }
+        },
+        "stacked": {
+          "source": "assets/branding/source/trainmate-flow-wordmark.svg",
+          "canvas": [
+            1204,
+            720
+          ],
+          "reference": "截屏2026-07-15 08.33.47.png",
+          "arrangement": "智、练并排居中；TrainMate 在下方居中",
+          "measuredBounds": {
+            "zhi": [
+              328,
+              135,
+              500,
+              310
+            ],
+            "lian": [
+              655,
+              135,
+              837,
+              313
+            ],
+            "english": [
+              192,
+              377,
+              966,
+              496
+            ]
+          }
+        }
+      },
+      "generatedTypographyIsFinal": false,
+      "generatedGradientIsFinal": false,
+      "generatedGlowIsFinal": false
+    }
+  },
+  "deliverables": {
+    "characterSvg": "assets/branding/source/trainmate-flow-character.svg",
+    "characterLockupSvg": "assets/branding/source/trainmate-flow-character-lockup.svg",
+    "characterPreview128": "outputs/logos/trainmate-flow/vector-review/character-128.png",
+    "characterLockupPreview": "outputs/logos/trainmate-flow/vector-review/character-lockup.png",
+    "platformAppIconSvg": "assets/branding/source/trainmate-flow-app-icon.svg",
+    "platformMaskableSvg": "assets/branding/source/trainmate-flow-app-icon-maskable.svg",
+    "platformReview": "outputs/logos/trainmate-flow/platform-icons/review-board.html",
+    "brandAngleReview": "outputs/logos/trainmate-flow/vector-review/review-board.html",
+    "brandAngleExportManifest": "outputs/logos/trainmate-flow/vector-review/export-manifest.json",
+    "wordmarkStackedSvg": "assets/branding/source/trainmate-flow-wordmark.svg",
+    "wordmarkHorizontalSvg": "assets/branding/source/trainmate-flow-wordmark-horizontal.svg",
+    "wordmarkStackedPreview": "outputs/logos/trainmate-flow/vector-review/wordmark.png",
+    "wordmarkHorizontalPreview": "outputs/logos/trainmate-flow/vector-review/wordmark-horizontal.png"
+  },
+  "implementationBoundary": {
+    "allowedProductFiles": [
+      "lib/core/widgets/flow_mascot.dart",
+      "test/core/trainflow_visual_system_test.dart"
+    ],
+    "allowedProductChange": "仅同步桃色软结与两条短飘带及对应测试",
+    "allowedPlatformFiles": [
+      "ios/Runner/Assets.xcassets/AppIcon.appiconset/*.png",
+      "android/app/src/main/res/mipmap-*/ic_launcher.png",
+      "android/app/src/main/res/drawable-*/ic_launcher_foreground.png",
+      "android/app/src/main/res/mipmap-anydpi-v26/ic_launcher.xml",
+      "android/app/src/main/res/values/colors.xml",
+      "web/favicon.png",
+      "web/icons/*.png"
+    ],
+    "allowedPlatformChange": "仅替换用户明确授权的 iOS、Android 与 Web 平台图标资源",
+    "themeTokenChangeAllowed": false,
+    "dependencyChangeAllowed": false
+  },
+  "gates": {
+    "firstDirectionApproval": "passed",
+    "secondVectorApproval": "implementation_complete_pending_visual_confirmation",
+    "platformReplacement": "completed_by_explicit_user_request",
+    "platformReplacementInCurrentRound": "authorized_and_completed",
+    "wordmarkReferenceLayout": "implementation_complete_pending_visual_confirmation"
+  },
+  "assurance": {
+    "originalityReview": "pending",
+    "trademarkSearch": "not_completed",
+    "legalReview": "not_completed"
+  }
+}

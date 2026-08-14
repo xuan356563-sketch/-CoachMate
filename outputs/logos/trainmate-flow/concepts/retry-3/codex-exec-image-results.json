@@ -1,0 +1,16 @@
+{
+  "status": "complete",
+  "total": 1,
+  "complete": 1,
+  "failed": 0,
+  "pending": 0,
+  "results": [
+    {
+      "id": "character-wordmark-family-r3",
+      "status": "complete",
+      "image_path": "outputs/logos/trainmate-flow/concepts/retry-3/03-character-wordmark-family.png",
+      "error": null,
+      "caveats": ""
+    }
+  ]
+}

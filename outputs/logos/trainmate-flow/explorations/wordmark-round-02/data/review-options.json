@@ -1,0 +1,7 @@
+{
+  "preset": "image-wall",
+  "showCaptions": true,
+  "title": "智练 TrainMate｜字标重设计第 2 轮",
+  "summary": "只比较字形性格，不改 Flow 角色与平台图标。优先比较 O1 的角色同频感与 S2 的正式耐用性；S1 更适合作为竖版辅助标。",
+  "minTileWidth": 320
+}

@@ -1,0 +1,9 @@
+已完成。
+
+生成并保存了 1 张 PNG：
+`outputs/logos/trainmate-flow/concepts/retry-3/workers/character-wordmark-family-r3/attempt-1/image.png`
+
+结果 JSON 已写入：
+`outputs/logos/trainmate-flow/concepts/retry-3/workers/character-wordmark-family-r3/attempt-1/result.json`
+
+验证结果：两个文件均存在，JSON 内容符合指定结构。

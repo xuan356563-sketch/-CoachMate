@@ -1,0 +1,51 @@
+{
+  "status": "partial",
+  "total": 6,
+  "complete": 5,
+  "failed": 1,
+  "pending": 0,
+  "results": [
+    {
+      "id": "o1-soft-stack",
+      "status": "complete",
+      "image_path": "outputs/logos/trainmate-flow/explorations/wordmark-round-02/generated/4ad3da39ee319f2790383a3441299fe1.png",
+      "error": null,
+      "caveats": ""
+    },
+    {
+      "id": "o2-organic-rhythm",
+      "status": "failed",
+      "image_path": null,
+      "error": "\u539f\u751f\u56fe\u50cf\u751f\u6210\u5de5\u5177\u672a\u8fd4\u56de\u53ef\u4fdd\u5b58\u7684 PNG \u6587\u4ef6\u8def\u5f84\u6216\u4e8c\u8fdb\u5236\u6570\u636e\uff0c\u65e0\u6cd5\u5199\u5165\u6307\u5b9a image.png\u3002",
+      "caveats": ""
+    },
+    {
+      "id": "f1-forward-script",
+      "status": "complete",
+      "image_path": "outputs/logos/trainmate-flow/explorations/wordmark-round-02/generated/a3ce6d83f611134f48bf75cb467beddf.png",
+      "error": null,
+      "caveats": ""
+    },
+    {
+      "id": "f2-loop-ribbon",
+      "status": "complete",
+      "image_path": "outputs/logos/trainmate-flow/explorations/wordmark-round-02/generated/26e735bf475c1d9c15c30eca01f6e001.png",
+      "error": null,
+      "caveats": ""
+    },
+    {
+      "id": "s1-vertical-structure",
+      "status": "complete",
+      "image_path": "outputs/logos/trainmate-flow/explorations/wordmark-round-02/generated/8352589da7ba758b14d2c5eaf37d8d10.png",
+      "error": null,
+      "caveats": ""
+    },
+    {
+      "id": "s2-horizontal-negative-space",
+      "status": "complete",
+      "image_path": "outputs/logos/trainmate-flow/explorations/wordmark-round-02/generated/ca589f930f3453ce55c14462c0de5d49.png",
+      "error": null,
+      "caveats": ""
+    }
+  ]
+}

@@ -1,0 +1,7 @@
+已按要求只调用了一次 `image_gen.imagegen`，并检查了三张参考图。
+
+但原生图片生成工具没有提供可保存到文件系统的 PNG 路径或二进制输出，因此无法把生成图写入指定 `image.png`。我已按规则写入失败状态 JSON：
+
+`outputs/logos/trainmate-flow/explorations/avatar-face-round-02/generated/workers/b1-friendly-companion/attempt-1/result.json`
+
+未伪造 PNG 文件。

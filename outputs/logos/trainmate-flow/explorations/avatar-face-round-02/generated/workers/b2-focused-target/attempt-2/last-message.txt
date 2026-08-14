@@ -1,0 +1,7 @@
+已执行一次 `image_gen.imagegen` 生成请求。
+
+但原生图片工具没有返回可复制到工作区的 PNG 文件路径或文件句柄，因此无法保存到指定 `image.png`。已按规则写入失败结果：
+
+`outputs/logos/trainmate-flow/explorations/avatar-face-round-02/generated/workers/b2-focused-target/attempt-2/result.json`
+
+状态为 `failed`，未额外生成或写入其他文件。

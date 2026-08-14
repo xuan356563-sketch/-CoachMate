@@ -1,0 +1,7 @@
+{
+  "preset": "image-wall",
+  "showCaptions": true,
+  "title": "智练 TrainMate｜平台图标接入检查",
+  "summary": "同一确定性 SVG 母版采用 5° 向右前倾动态斜势，已导出至 iOS、Android 与 Web；下方同时展示 16／24／32／48px 原始尺寸检查样本。",
+  "minTileWidth": 220
+}

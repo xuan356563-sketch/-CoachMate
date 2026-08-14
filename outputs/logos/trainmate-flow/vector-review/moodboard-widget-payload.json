@@ -1,0 +1,6 @@
+{
+  "title": "智练 TrainMate｜参考图横排与上下排确认",
+  "summary": "字标按两张参考图建立一套同字号双版式：1492×550 横排版采用中文同顶边、英文按底边与基线对齐；1204×720 上下排版采用中文并排居中、英文下方居中。所有字形路径保持不变，中文右倾 5°、英文右倾 7°；Flow 胶囊脸与桃色奋斗飘带全部保留。",
+  "runDirectory": "/Volumes/AI strongho/XunLian/zhuque-flutter-main/outputs/logos/trainmate-flow/vector-review",
+  "streamPath": "data/stream.json"
+}

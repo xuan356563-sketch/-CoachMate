@@ -1,0 +1,74 @@
+[
+  {
+    "id": "ios-standard",
+    "index": 1,
+    "title": "iOS｜标准图标 1024px",
+    "label": "iOS 标准图标",
+    "src": "full/ios-app-icon-1024.png",
+    "href": "full/ios-app-icon-1024.png",
+    "caption": "完整浅桃底，不预切圆角；角色整体向右前倾 5°，胶囊内保留左眼点和右弯眼，桃色短嘴位于胶囊下方。"
+  },
+  {
+    "id": "android-legacy",
+    "index": 2,
+    "title": "Android｜旧式图标 192px",
+    "label": "Android 旧式图标",
+    "src": "full/android-legacy-192.png",
+    "href": "full/android-legacy-192.png",
+    "caption": "完整不透明浅桃底，保留 5° 动态斜势，覆盖 mdpi 至 xxxhdpi 五档资源。"
+  },
+  {
+    "id": "android-adaptive",
+    "index": 3,
+    "title": "Android｜自适应前景 432px",
+    "label": "Android 自适应前景",
+    "src": "full/android-adaptive-foreground-432.png",
+    "href": "full/android-adaptive-foreground-432.png",
+    "caption": "透明前景层使用更保守安全区，背景由 #FFE2B8 颜色资源提供。"
+  },
+  {
+    "id": "web-maskable",
+    "index": 4,
+    "title": "Web｜Maskable 512px",
+    "label": "Web Maskable 图标",
+    "src": "full/web-maskable-512.png",
+    "href": "full/web-maskable-512.png",
+    "caption": "完整不透明并缩小头像安全区，适配 PWA 多种裁切形状。"
+  },
+  {
+    "id": "small-16",
+    "index": 5,
+    "title": "原始像素｜16px",
+    "label": "16px favicon",
+    "src": "small/app-icon-16.png",
+    "href": "small/app-icon-16.png",
+    "caption": "采用紧凑裁切，保留胶囊、B1 眼形、头带与软结短飘带的核心轮廓。"
+  },
+  {
+    "id": "small-24",
+    "index": 6,
+    "title": "原始像素｜24px",
+    "label": "24px 检查",
+    "src": "small/app-icon-24.png",
+    "href": "small/app-icon-24.png",
+    "caption": "用于检查胶囊与头带在通知级尺寸下是否粘连。"
+  },
+  {
+    "id": "small-32",
+    "index": 7,
+    "title": "原始像素｜32px",
+    "label": "32px 检查",
+    "src": "small/app-icon-32.png",
+    "href": "small/app-icon-32.png",
+    "caption": "左眼点、右弯眼与胶囊边界可分辨。"
+  },
+  {
+    "id": "small-48",
+    "index": 8,
+    "title": "原始像素｜48px",
+    "label": "48px Android mdpi",
+    "src": "small/app-icon-48.png",
+    "href": "small/app-icon-48.png",
+    "caption": "Android mdpi 实际交付尺寸，头带、软结和双短飘带均保留。"
+  }
+]

@@ -1,0 +1,57 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1024 1024" role="img" aria-labelledby="title">
+  <title id="title">智练 TrainMate 角色头像版 Maskable App 图标</title>
+  <defs>
+    <linearGradient id="icon-background-gradient" x1="8%" y1="5%" x2="92%" y2="94%">
+      <stop offset="0%" stop-color="#FFFDFC"/>
+      <stop offset="58%" stop-color="#FFE2B8"/>
+      <stop offset="100%" stop-color="#FFE2B8"/>
+    </linearGradient>
+    <linearGradient id="flow-body-gradient" x1="18%" y1="6%" x2="78%" y2="96%">
+      <stop offset="0%" stop-color="#19172C"/>
+      <stop offset="56%" stop-color="#11101F"/>
+      <stop offset="100%" stop-color="#19172C"/>
+    </linearGradient>
+    <linearGradient id="headband-gradient" x1="4%" y1="10%" x2="94%" y2="88%">
+      <stop offset="0%" stop-color="#EAA93A"/>
+      <stop offset="100%" stop-color="#C65F14"/>
+    </linearGradient>
+  </defs>
+
+  <rect id="icon-background" width="1024" height="1024" fill="url(#icon-background-gradient)"/>
+  <g id="app-icon-layout" transform="translate(192 156) scale(.67)">
+    <g id="flow-avatar" transform="rotate(2 512 540)">
+      <g id="headband-ribbons">
+        <path d="M219 397C181 358 132 339 83 349C57 354 40 369 38 386C36 404 55 418 76 413C118 403 154 416 204 457Z" fill="#11101F" opacity=".16" transform="translate(0 9)"/>
+        <path id="ribbon-long" d="M219 388C181 349 132 330 83 340C57 345 40 360 38 377C36 395 55 409 76 404C118 394 154 407 204 448Z" fill="url(#headband-gradient)"/>
+        <path d="M217 433C174 441 131 464 101 502C89 517 93 537 108 547C123 557 142 552 153 537C176 508 196 496 228 491Z" fill="#11101F" opacity=".16" transform="translate(0 9)"/>
+        <path id="ribbon-short" d="M217 424C174 432 131 455 101 493C89 508 93 528 108 538C123 548 142 543 153 528C176 499 196 487 228 482Z" fill="url(#headband-gradient)"/>
+      </g>
+
+      <path d="M178 720C133 568 167 374 257 259C319 180 403 132 476 160C536 183 565 235 645 251C742 270 826 313 866 393C921 504 905 708 819 818C730 931 487 930 301 872C230 850 190 803 178 720Z" fill="#11101F" opacity=".14" transform="translate(10 15)"/>
+      <path id="flow-head" d="M178 720C133 568 167 374 257 259C319 180 403 132 476 160C536 183 565 235 645 251C742 270 826 313 866 393C921 504 905 708 819 818C730 931 487 930 301 872C230 850 190 803 178 720Z" fill="url(#flow-body-gradient)"/>
+      <path d="M220 510C252 367 346 259 458 222C509 205 551 218 587 246" fill="none" stroke="#FFFDFC" stroke-width="17" stroke-linecap="round" opacity=".075"/>
+
+      <g id="training-headband-layer">
+        <path d="M199 443C207 404 246 382 302 371C441 343 626 348 785 385C835 397 860 421 855 451C850 481 823 493 786 483C624 443 433 442 274 480C231 490 192 475 199 443Z" fill="#11101F" opacity=".16" transform="translate(0 9)"/>
+        <path id="training-headband" d="M199 443C207 404 246 382 302 371C441 343 626 348 785 385C835 397 860 421 855 451C850 481 823 493 786 483C624 443 433 442 274 480C231 490 192 475 199 443Z" fill="url(#headband-gradient)"/>
+        <path d="M220 430C373 385 576 386 776 426" fill="none" stroke="#FFFDFC" stroke-width="10" stroke-linecap="round" opacity=".19"/>
+      </g>
+
+      <g id="headband-knot-layer">
+        <path d="M165 399C177 374 208 366 229 381C244 371 268 378 279 399C291 421 280 445 263 458C260 481 241 497 217 497C192 497 174 481 170 460C149 450 145 425 165 399Z" fill="#11101F" opacity=".16"/>
+        <path id="headband-knot" d="M165 390C177 365 208 357 229 372C244 362 268 369 279 390C291 412 280 436 263 449C260 472 241 488 217 488C192 488 174 472 170 451C149 441 145 416 165 390Z" fill="url(#headband-gradient)"/>
+        <path d="M177 389C194 372 216 372 232 385" fill="none" stroke="#FFFDFC" stroke-width="8" stroke-linecap="round" opacity=".2"/>
+        <path d="M231 382C242 390 247 402 246 415" fill="none" stroke="#11101F" stroke-width="8" stroke-linecap="round" opacity=".22"/>
+      </g>
+
+      <g id="flow-face">
+        <path d="M270 563C270 519 303 494 354 494L690 496C742 497 771 522 769 564L767 601C765 644 731 668 681 669L354 667C301 666 270 640 270 597Z" fill="#11101F" opacity=".12"/>
+        <path id="face-capsule" d="M270 553C270 509 303 484 354 484L690 486C742 487 771 512 769 554L767 591C765 634 731 658 681 659L354 657C301 656 270 630 270 587Z" fill="#FFFDFC"/>
+        <circle id="face-eye-dot" cx="405" cy="565" r="21" fill="#19172C"/>
+        <circle id="face-eye-arc" cx="635" cy="565" r="21" fill="#19172C"/>
+      </g>
+
+      <path id="face-mouth" d="M475 719Q516 742 557 717" fill="none" stroke="#FFB27D" stroke-width="15" stroke-linecap="round"/>
+    </g>
+  </g>
+</svg>

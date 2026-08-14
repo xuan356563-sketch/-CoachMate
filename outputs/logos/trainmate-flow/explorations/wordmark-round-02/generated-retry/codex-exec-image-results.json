@@ -1,0 +1,23 @@
+{
+  "status": "partial",
+  "total": 2,
+  "complete": 0,
+  "failed": 2,
+  "pending": 0,
+  "results": [
+    {
+      "id": "o2-organic-rhythm",
+      "status": "failed",
+      "image_path": null,
+      "error": "\u539f\u751f\u56fe\u7247\u751f\u6210\u5de5\u5177\u672a\u63d0\u4f9b\u53ef\u4fdd\u5b58\u5230\u672c\u5730\u8def\u5f84\u7684\u56fe\u7247\u6587\u4ef6\u53e5\u67c4\u3002",
+      "caveats": ""
+    },
+    {
+      "id": "s2-horizontal-negative-space",
+      "status": "failed",
+      "image_path": null,
+      "error": "\u539f\u751f\u56fe\u50cf\u751f\u6210\u5de5\u5177\u672a\u63d0\u4f9b\u53ef\u4fdd\u5b58\u5230\u6587\u4ef6\u7cfb\u7edf\u7684 PNG \u8def\u5f84\u6216\u5b57\u8282\u53e5\u67c4",
+      "caveats": ""
+    }
+  ]
+}

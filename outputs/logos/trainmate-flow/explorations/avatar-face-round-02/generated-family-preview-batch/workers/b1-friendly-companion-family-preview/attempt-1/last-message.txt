@@ -1,0 +1,7 @@
+已按规则只调用了一次 `image_gen.imagegen`。但原生图像工具没有提供可保存到指定本地路径的 PNG 文件句柄，因此无法写入目标 `image.png`。
+
+已写入失败结果 JSON：
+
+`outputs/logos/trainmate-flow/explorations/avatar-face-round-02/generated-family-preview-batch/workers/b1-friendly-companion-family-preview/attempt-1/result.json`
+
+状态为 `failed`，错误原因：原生图像生成工具未提供可保存到本地 PNG 的文件句柄。

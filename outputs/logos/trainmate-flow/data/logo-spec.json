@@ -1,0 +1,182 @@
+{
+  "meta": {
+    "title": "智练 TrainMate｜B1 Flow 原生头像风格精修",
+    "stage": "Logo exploration",
+    "brand_name": "智练 TrainMate",
+    "anchor": "AI 智能训练计划应用中的 Flow 训练伙伴",
+    "summary": "比较三种受参考图启发但保持原创的 B1 Flow 品牌系统方向。",
+    "category": "AI 智能训练计划",
+    "audience": "希望每天快速获得可信训练安排的中文运动用户",
+    "usage_contexts": [
+      "iOS 与 Android App 图标",
+      "Web favicon",
+      "应用商店展示图",
+      "品牌官网与社交媒体"
+    ],
+    "reference_images": [
+      "/Users/gaoxiaopang/Desktop/截屏2026-07-14 04.56.18.png",
+      "/Users/gaoxiaopang/Desktop/截屏2026-07-14 04.57.38.png",
+      "/Users/gaoxiaopang/Desktop/截屏2026-07-14 04.58.27.png",
+      "/Users/gaoxiaopang/Desktop/截屏2026-07-14 04.58.59.png"
+    ]
+  },
+  "constraints": {
+    "preserve": [
+      "品牌名称意图：智练 TrainMate；生成文字仅作方向预览",
+      "非动物的单体有机深墨色软块头像，顶部高点略偏左、右侧更饱满、底部宽圆",
+      "桃橙运动头带位于面罩上方且比面罩更宽",
+      "纸白横向胶囊 AI 面罩位于中央",
+      "两只深墨圆点眼睛只出现在面罩内部",
+      "固定配色 #19172C、#11101F、#FFFDFC、#FFB27D、#FFE2B8",
+      "白色检查背景和品牌系统板结构",
+      "App 图标中只有头像，不放文字"
+    ],
+    "avoid": [
+      "复制参考图中的可颂、泪滴人物、羊、水果角色、发型、首字母副标、字形连接或版式",
+      "出现参考品牌名称或近似字标",
+      "动物耳朵、角、毛发、机器人天线、头盔、耳机、麦克风、哨子、手脚或器械",
+      "T、M、TM、ZT 字母图形、箭头、对勾、心电图、数据曲线或医疗符号",
+      "蓝色、绿色、红色、荧光色、渐变、玻璃高光、3D、阴影或科技发光",
+      "把头带变成刘海、眉毛、帽檐或屏幕状态条",
+      "把 Flow 角色嵌入文字或替换任何中文笔画、英文字母",
+      "依赖嘴部、纹理或文字才能识别头像"
+    ]
+  },
+  "routes": [
+    {
+      "id": "warm-handmade-companion",
+      "label": "A｜温暖手绘伙伴",
+      "family": "playful-adaptive",
+      "prompt_family": [
+        "reference-grounded logo-board",
+        "lockup-board",
+        "derivation-sheet",
+        "risk-review"
+      ],
+      "usage_contexts": [
+        "App 图标",
+        "启动页",
+        "官网头部",
+        "训练建议卡片"
+      ],
+      "prompt": "创建一张正方形、白色检查背景的原创 Logo 品牌系统方向板，品牌为中国 AI 智能训练计划应用‘智练 TrainMate’。这是已确认的 B1 Flow 原生头像精修，不是重新发明角色。必须保留一个非动物、单体、有机的深墨色软块头像：顶部隆起略偏左，右侧稍饱满，底部宽圆，左右轻微不对称但轮廓受控、圆润、厚实。头像上方有独立的桃橙色运动头带，头带比中央面罩更宽；中央是纯纸白、横向胶囊形 AI 面罩；面罩内只有两只深墨圆点眼睛；无嘴、无鼻子、无眉毛、无手脚。只使用 #19172C、#11101F、#FFFDFC、#FFB27D、#FFE2B8。方向 A 强调温暖、克制的手绘亲和力：轮廓像人工绘制但不抖动，字标圆润粗体、紧凑、轻微不齐，角色和字标气质统一。板面清楚展示：大号 Brandmark、浅桃底 App icon、独立 Logotype‘智练 TrainMate’方向、左头像右字标 Lockup、由头带切片＋面罩＋双眼构成且不含字母的 Submark、单色反白小样。核心标志区域必须纯净无纹理；可以在角落放一个与核心分离的小型原创纸张质感示意。不要复刻参考图里的任何角色、字形、首字母、构图、色值或颗粒。不要出现参考品牌名称，不要把角色嵌入文字，不要生成动物、食物、水果、人类、机器人头盔、器械、箭头、对勾、波形、T、M 或 TM。平面矢量感的真实栅格概念板，无摄影 mockup、无 3D、无渐变、无阴影。生成文字仅用于方向预览，但尽量准确显示‘智练 TrainMate’，不添加口号或其他文案。",
+      "rationale": "最接近四张参考图共同的亲和力，同时对现有 Flow 角色改动最小。",
+      "best_for": "需要长期作为主 App 图标，并兼顾品牌温度和专业可信度。",
+      "decision_advice": "如果希望一眼看出是有性格的训练伙伴，同时不显幼稚，优先选择。",
+      "watch_out": "手绘起伏必须克制，避免小尺寸变糊或像儿童品牌。",
+      "next_step": "锁定头型曲率与字标笔画节奏，再做 16–1024px 矢量适配。",
+      "final_owner": "external-production-identity",
+      "referenceImages": [
+        {
+          "file_path": "/Users/gaoxiaopang/Desktop/截屏2026-07-14 04.56.18.png",
+          "role": "圆润字标、角色与字标系统、印刷展示感"
+        },
+        {
+          "file_path": "/Users/gaoxiaopang/Desktop/截屏2026-07-14 04.57.38.png",
+          "role": "角色表情与字标气质统一、有限配色"
+        },
+        {
+          "file_path": "/Users/gaoxiaopang/Desktop/截屏2026-07-14 04.58.27.png",
+          "role": "单色反白、小尺寸与粗印刷表现"
+        },
+        {
+          "file_path": "/Users/gaoxiaopang/Desktop/截屏2026-07-14 04.58.59.png",
+          "role": "角色亲和力、圆润字标与延展动作语言"
+        }
+      ],
+      "next_prompt_hints": []
+    },
+    {
+      "id": "bold-print-companion",
+      "label": "B｜粗印训练印记",
+      "family": "heritage-utility",
+      "prompt_family": [
+        "reference-grounded logo-board",
+        "single-color lockup-board",
+        "small-size risk-review"
+      ],
+      "usage_contexts": [
+        "App 图标",
+        "训练海报",
+        "运动服饰",
+        "单色印刷"
+      ],
+      "prompt": "创建一张正方形、白色检查背景的原创 Logo 品牌系统方向板，品牌为中国 AI 智能训练计划应用‘智练 TrainMate’。这是已确认的 B1 Flow 原生头像精修，必须保留同一角色：非动物的单体深墨有机软块，顶部高点略偏左、右侧更饱满、底部宽圆；上方独立桃橙运动头带且比面罩宽；中央纯纸白横向胶囊 AI 面罩；面罩内仅两只深墨圆点眼睛；无嘴、无鼻子、无眉毛、无手脚。只使用 #19172C、#11101F、#FFFDFC、#FFB27D、#FFE2B8。方向 B 强调强识别的粗实色块、运动印记和单色反白能力：主轮廓更饱满、更像可盖章的原创训练伙伴标志，圆润但不机械；字标为原创粗圆手绘感，视觉更有力量但保持准确阅读。板面展示：大号纯净 Brandmark、浅桃底 App icon、独立 Logotype‘智练 TrainMate’方向、横向 Lockup、无字母 Submark、深墨单色反白版本，以及一个严格分开的营销印刷示例。复古丝网颗粒只能出现在营销示例区域，不能侵蚀主 Brandmark、头带、面罩、双眼或 App icon；无纹理主稿必须完整可见。不要复刻参考图中的羊毛刷斑、圆形徽章、可颂、人物、果实、字形、首字母副标、构图或颗粒分布。不要出现参考品牌名称，不要生成动物、食物、人类、机器人头盔、器械、箭头、对勾、心电波、T、M、TM。平面矢量感的真实栅格概念板，无摄影 mockup、无 3D、无渐变、无阴影。生成文字只作方向预览，尽量准确显示‘智练 TrainMate’，不添加口号。",
+      "rationale": "测试更强的运动印记和单色应用能力，同时把复古纹理限定在营销层。",
+      "best_for": "训练社群、服饰周边、海报和需要强单色识别的场景。",
+      "decision_advice": "如果希望品牌更有运动力量和印章感，但仍保留 AI 伙伴识别，可选择。",
+      "watch_out": "粗实轮廓不能变成羊毛刷斑或复刻参考图；纹理不得进入平台图标。",
+      "next_step": "先去除全部纹理检查基础轮廓，再测试 24px 与单色反白。",
+      "final_owner": "external-production-identity",
+      "referenceImages": [
+        {
+          "file_path": "/Users/gaoxiaopang/Desktop/截屏2026-07-14 04.56.18.png",
+          "role": "单色丝网印刷展示与品牌家族"
+        },
+        {
+          "file_path": "/Users/gaoxiaopang/Desktop/截屏2026-07-14 04.57.38.png",
+          "role": "有限配色和粗圆字形"
+        },
+        {
+          "file_path": "/Users/gaoxiaopang/Desktop/截屏2026-07-14 04.58.27.png",
+          "role": "反白、粗印轮廓和多场景适配"
+        },
+        {
+          "file_path": "/Users/gaoxiaopang/Desktop/截屏2026-07-14 04.58.59.png",
+          "role": "角色亲和力与消费级圆润字标"
+        }
+      ],
+      "next_prompt_hints": []
+    },
+    {
+      "id": "character-wordmark-family",
+      "label": "C｜角色字标同频",
+      "family": "adaptive-wordmark",
+      "prompt_family": [
+        "reference-grounded lockup-board",
+        "wordmark derivation-sheet",
+        "separation risk-review"
+      ],
+      "usage_contexts": [
+        "App 图标",
+        "官网导航",
+        "应用商店标题区",
+        "社交媒体头像与页眉"
+      ],
+      "prompt": "创建一张正方形、白色检查背景的原创 Logo 品牌系统方向板，品牌为中国 AI 智能训练计划应用‘智练 TrainMate’。这是已确认的 B1 Flow 原生头像精修，角色固定不变：一个非动物、单体、深墨色的有机软块头像，顶部隆起略偏左，右侧更饱满，底部宽圆；桃橙运动头带独立位于纸白横向胶囊面罩上方且更宽；面罩居中，内部只有两只深墨圆点眼睛；无嘴、无鼻子、无眉毛、无四肢。只使用 #19172C、#11101F、#FFFDFC、#FFB27D、#FFE2B8。方向 C 强调角色与字标同频：原创‘智练 TrainMate’字标采用与头像相同的柔软、圆厚、受控不规则笔画，中文视觉重量略高于英文，轻微基线起伏但清晰稳定；头像始终完整独立，放在文字左侧，绝不替代字符、嵌入单词或遮挡文字。板面展示：大号 Brandmark、独立 Logotype 方向、左头像右字标的主 Lockup、纵向紧凑 Lockup、浅桃底纯头像 App icon、无字母 Submark、单色反白小样。核心全部纯净无纹理，可在独立角落给一个小型营销纸张质感示意。不要复刻参考图的字符连接、上下叠字、角色嵌字、可颂、泪滴人物、羊、水果、发型、首字母、配色或构图。不要出现参考品牌名称，不要生成动物、食物、人类、机器人头盔、器械、箭头、对勾、心电波、T、M、TM。平面矢量感的真实栅格概念板，无摄影 mockup、无 3D、无渐变、无阴影。生成文字仅用于方向预览，但尽量准确显示‘智练 TrainMate’，不添加口号或其他文案。",
+      "rationale": "测试角色和名称能否形成更完整、更有温度的消费级品牌家族。",
+      "best_for": "官网、应用商店、社交媒体等头像与品牌名称经常同时出现的场景。",
+      "decision_advice": "如果最看重完整品牌感和字标记忆点，而不只看 App 图标，可选择。",
+      "watch_out": "生成式中文可能不准确；评审只看字形气质，最终必须确定性重绘。",
+      "next_step": "锁定头像与字标的比例、间距和笔画性格，再重绘准确中英文字标。",
+      "final_owner": "external-production-identity",
+      "referenceImages": [
+        {
+          "file_path": "/Users/gaoxiaopang/Desktop/截屏2026-07-14 04.56.18.png",
+          "role": "胖圆字标与角色品牌家族"
+        },
+        {
+          "file_path": "/Users/gaoxiaopang/Desktop/截屏2026-07-14 04.57.38.png",
+          "role": "角色与字标气质一致"
+        },
+        {
+          "file_path": "/Users/gaoxiaopang/Desktop/截屏2026-07-14 04.58.27.png",
+          "role": "横向、纵向和单色系统适配"
+        },
+        {
+          "file_path": "/Users/gaoxiaopang/Desktop/截屏2026-07-14 04.58.59.png",
+          "role": "圆润字标和角色亲和力"
+        }
+      ],
+      "next_prompt_hints": []
+    }
+  ],
+  "handoff": {
+    "default_owner": "external-production-identity",
+    "next_prompt_hints": [
+      "保持现有 Flow 固定元素，不扩展到新角色",
+      "生成字形只看气质，最终中英文字标确定性矢量重绘",
+      "用户选定方向后再进入 16–1024px 小尺寸适配"
+    ]
+  }
+}

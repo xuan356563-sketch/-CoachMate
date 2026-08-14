@@ -1,0 +1,7 @@
+已完成。
+
+生成图片已保存到：
+`outputs/logos/trainmate-flow/explorations/avatar-face-round-01/generated/workers/a-forward-seed-eyes/attempt-1/image.png`
+
+结果 JSON 已写入：
+`outputs/logos/trainmate-flow/explorations/avatar-face-round-01/generated/workers/a-forward-seed-eyes/attempt-1/result.json`

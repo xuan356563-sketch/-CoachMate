@@ -1,0 +1,97 @@
+# TrainMate 双配色 20 动作表情差异化校验清单
+
+## 交付结论
+
+- 墨兰源图：20 张 `1254×1254` 透明 PNG。
+- 浅蜜桃源图：20 张 `1254×1254` 透明 PNG。
+- App 墨兰副本：20 张 `512×512` 透明 PNG。
+- App 浅蜜桃副本：20 张 `512×512` 透明 PNG。
+- 正式总览：两张 `1254×1254` 纸白 `#FFFDFC` 背景、5×4、无文字 PNG。
+- 两套覆盖前正式图分别保存在 `action-set-20/attempts/pre-expression-v2/` 与 `action-set-20-peach-light/attempts/pre-expression-v2/`。
+- 正式文件名与 App 资源路径未变化；未修改 Flutter 组件、资源解析器、业务状态或 `pubspec.yaml`。
+
+## 参考文件
+
+| 文件 | SHA-256 |
+| --- | --- |
+| `action-expression-v2-reference/main-ninja-reference.png` | `8370687c15f3ffa5c131906853ceb845e87ee9b052c759abafc9cd8a2492d365` |
+| `action-expression-v2-reference/expression-grid.png` | `8ecc782e41af0005bc9e1a1445c5f8cd1433c6d0939b41f6e91d26a93cf5c928` |
+| `action-set-20/reference/reference-source.png` | `39972027bb300b9a54b1d1d64f6a6a49bcc0a052af73e271e2005b2749fa087a` |
+| `action-set-20-peach-light/reference/target-palette-screenshot.png` | `83e4c88f790069b37537aae3f5a1b3c82b28f4f825e7372f04fdf74c38303138` |
+
+## 总览校验值
+
+| 文件 | SHA-256 |
+| --- | --- |
+| `action-set-20/trainmate-flow-action-set-20-overview.png` | `cbd384dc448c087514aacdc85d5e525c85f3029ff01def98f2928c2dd65247a6` |
+| `action-set-20-peach-light/trainmate-flow-action-set-20-peach-light-overview.png` | `99c8c7d808c9654918c311b7836419877ca5302173ffc0a9c7b9c80e36e86951` |
+| `action-expression-v2-pilot-overview.png` | `857e069ea6eafbdbf0f97ac6de0da576c0e5c998749a7d56e56e0f2a90b25f77` |
+
+## 墨兰版逐文件校验值
+
+| 文件 | 覆盖前 1254px | 当前 1254px | App 512px |
+| --- | --- | --- | --- |
+| `01-pointing-guide.png` | `d691c1e8dd11d2c74cef107bf43dcd77663292f9c84a295a7fe4fb4e54544df3` | `0fe57bab78091d24241a94819bd1d5edef47581b2dffdbed1fab2697904aa2a0` | `b3e78f56f121f9d1ddae47a29893130bc3c661e146587e838083a01520bc407a` |
+| `02-running.png` | `2b5be13f523d33b2ff7002b7004a564599bab659bfad888737df3214cf33b05d` | `bd12d894547f5ff170aec22c7bfb0d0d899e6ba77ddb66d38b285f58456f5ad4` | `b999db4b2cc494259ea868d962a93da16fa49c44e14e0ae4136d681d7f96e656` |
+| `03-side-lunge-stretch.png` | `4d982e53348ea3ea7608126bc05c60f39795332fb9a314816681beea14437ffa` | `65f1161f238f8324de3f434698422c9f9b6c51a8b63d5dabd7662ff35e105ba0` | `0e26ccb1985e4e8f432ca6145ad5ecf790fce90adf694e61a726ea06aef8b4f6` |
+| `04-seated-meditation.png` | `1a771b71a8b896b6cd9ce2301d41c9f4bae6a7434dce15176334a5bd46c5adf6` | `2c65bb0424165716e3fedbcd0a4f502badcc03f8dcd9ecbdb515055d914296b3` | `e1a99a61bcfa2e31e5d9894d62f697d59c596de3648d106c0b7debf7acb58eab` |
+| `05-jumping-jack.png` | `1f3f1d0956776c9555ec7d784b088b2b73d9399ca1c5c39837f91c785ddc4bb0` | `3f1c61f8a7782db3757605c39a8988f2ffe85d1502b2cff582aaeddc012a7658` | `281c7e9600acc6300f8f6be8aff446eec9e3c12be5059b009e8892b3527a9393` |
+| `06-high-knees.png` | `04fa316e3b4241761aa6cd6fdbadb692203f20a2a0203b8f1f38ec208b4a3fe0` | `ed07c41c4325911b357fab8f404af5fbbef4875cf93cbb448d823b101d2b88ea` | `1ee8be6dc8636961118599a11f5c81162f221433b2f3098e1f9cebf69b27a3ff` |
+| `07-sprint.png` | `18b1e1e21c0a639368df7d59f66f09de29b88519e15c68cdee6a80b6b35f930b` | `e542732f0a4a3c9c5427e0477f8c6914b66fdab3d0971f3e2b6ceb436630a6f8` | `c12792d2c124119125806dc1a901d90101073ef48c5c4558f61438615e700037` |
+| `08-jump-rope.png` | `ce983db6ff961a2a37aaf35327bc3da06b2a3135344045f79a07cfc6946b4cbe` | `679645ffb53d87e97627a26a3b8ed40e5e8c01191ee91515fc6cc025a344e1a7` | `50a07fa0c18aaa2e60d5d46b593db94c2371186709417799d6ef4cda46651023` |
+| `09-burpee.png` | `d443be73c3ad7bf9db95897abcd51f8d52178d6b00d70e3b8890a2034f962513` | `cd5ea2d27023684d8edd971108dfcb8fe4e77eea003737245ea15bad9a4cf5ec` | `d85efc0ae89ff3e20b6714218abb7baf4b3060e6b1f1cf52887434a936e5a490` |
+| `10-squat.png` | `b46d088b17ecfe9a6becbe2e9934bc50b19bfe8fd54b29de6d7a00d112c0f497` | `30d8342522921606f920940ad02eacee0a812ad09076b9d4ab054e3916fe2aba` | `04a38708c864a4877400a42643641ea91eeca31117a2b3c06628ea1aee8ea1ec` |
+| `11-forward-lunge.png` | `6bd86665e13ab152c17650d4b15c02bbe0160f1c5293d4fb158295e2cd8ed11b` | `19993a33d8ca32443719f15f46827c5cc5851de85eb238779e350aa252113a3f` | `34afab0a85c2270055962beaee369ac3223694ce5c97cc8b594caf12ea5bf737` |
+| `12-push-up.png` | `c8820b97de81fb83705b8a456f749be1c93a5aaba9315165e7c0ee7e8c9bb3ae` | `e0dcb9c579ca7ae5fbaefac52d9c9d8ab616da0c7a6b57310e0afff1604cae66` | `60506d5e2e35681b028ee3ac02f97893362964d36f5d575f5c5570caf53ae4d0` |
+| `13-plank.png` | `b63584363422271d64b5cd792815bc9ee861266331c7de298cc0a23996e1394e` | `d4b8afa2e331457a4949abb50f3b6ca9bec301a038ab4231d6e8e9a88fced6c9` | `8968ac40ab362f51d428a9499cc7c532196ff7a6661dfe54fd01d05f3a5149ba` |
+| `14-mountain-climber.png` | `1066fca926aa5bd3af32a39774e41a5ca8ab7d9eac3ab3c4b7c667434e239b08` | `f9c310ba1f0849414ed4ad350a2bda2b4f2a1b2bfe0b56bf14cae21b017bc064` | `55ce17ab037c84d195107b4b53892e483cfd0e526617913f5f6a354eba6d5a72` |
+| `15-sit-up-crunch.png` | `b54196c104bb1533edaf695307733c6b3d125a76bb0d58529f893d951e9c74e5` | `278bc1ea89a9ba3c31f4403460ff7d59058e968b2d1370ba542d4ef83ea7b465` | `3294ef9a9a4fa1470e8135312de2b4c4eb59a4e6f760a47ca7c476c79a4e0125` |
+| `16-dumbbell-curl.png` | `114bb7d94159fda794b03b45ee96ac08de55af9e12cf0d517fc2e0eeb4447d6e` | `cb2069acece0a2fae6ed5f0aecf507fb4d1611dd29565505fb8af226977ffa2e` | `e2a7d6d21d4872db682c53d2c0d66944c4898ae34bc500d3410923cdd575f105` |
+| `17-dumbbell-overhead-press.png` | `025880c9b3b46d8a081aeb1e3e6360df4e48521c36e40079764554f77ecd2c8d` | `6cfcb042e138664659c492ce007d95253b07f4de85c261484cf67f3e6d6584fc` | `74b64056fa245726b3d043ed81a7c2e7e42335500ad3a370f8acb141b236074d` |
+| `18-standing-side-stretch.png` | `e77fc7a16992c7e776dc820b6ec99f3dbaf90335783f01468f894a71fde32e55` | `6f40081ae0c0f00bccc72ffd8e939cf5ab75006827693684028ab5c8d2de6740` | `d22e235e17d4fafad05dbc9c3c02a24d5d65a1e42303089566fe9905f0635b87` |
+| `19-seated-forward-fold.png` | `70d51378db4db9e37ae1b8a38da014f522be16edf59c06d9ef0c4d4bf3a4f6aa` | `e317ec19af007a03ab8db16ad19e603d11600b6bfc9cf9a5fc2ba0d95be58cdb` | `f296eb0c0451a3e423684d590ef2126c237bff648ff1f3b0db35098be9c48942` |
+| `20-tree-pose-balance.png` | `2af1cf6cf6a3b69ebe62ef0fb23121433656656ef37dc4059843415363f808f3` | `f3ad979b9c22155ee06203793d62f6d6bfbc2a87eaaf58e6f283ef66f0a070fb` | `05295894a072d42e6256c61d74dac9954317e53f9b4d37440deb35d4ead3621d` |
+
+## 浅蜜桃版逐文件校验值
+
+| 文件 | 覆盖前 1254px | 当前 1254px | App 512px |
+| --- | --- | --- | --- |
+| `01-pointing-guide.png` | `4fcaf3a9ba3c6250b26c692a9e382e87887fb39c08e63fb9b3a3fd6295961aff` | `bd8d558a7c61fca5237fe8efe7ee0a7b41c2c68a5e5878abeaea75c2d5ae2455` | `7c1639bb1c3ece16bb46efead96be626c42a50934b9056202eef5036b25c40ad` |
+| `02-running.png` | `1f1d682045de7e4af6090cf9689d00ebb384950a7f4c432b920d32ea1a6d69ae` | `3ef835a662db9f02ff4167782935b3ab67b2f2817865c69eda2b81cfda1230a5` | `16d2db898897a168b1af022f38222a5a68b2ead6b3c8c0f4e2e33fcf845e9631` |
+| `03-side-lunge-stretch.png` | `e45141d19bbfee2f7aa6c9a0936292478809d65ca02200ca3d1afbb97ef78d1e` | `25009cd7163da0a126505e6a0d1e5b8f95a9749101b482c11d22a9700fd4f11a` | `d54580e2238e11ec620e4118e2b1e7d9ff2d4c52fdae4439bb3fd3ba63b1e307` |
+| `04-seated-meditation.png` | `b44c473af0d5c7c427fda19ee7d12233957118fce597e3268aef15484c0625a2` | `d244ef005a427be08a13b6b8e4639b26a756f85cb07b52de254abef2f9055ad2` | `0e6f87f3e887426e0c82ce42e56922b62dc76ff154b447ebfb7f31bb92e4406f` |
+| `05-jumping-jack.png` | `f87b5aed290c575b2736cd8a6aa8fda8cb0654a3e8501dc754f2bd1b65069067` | `ccf9724ecc68527af6726d05121762fd67a65c10cdea08c170188523463a06ac` | `281053c148bb529f60d3d2569bf2b933bf51fe3505520e583b46d3a534a67827` |
+| `06-high-knees.png` | `4e56aa7bb8ff6075ed1d73474e2d14425de380012248da70d72e1d08be53058f` | `97cdb331253e58b2b8f39e9048ff4f68af2ade2bb9e2409f4ec7be7dabe831cb` | `7e868b9a9c972b09083d8a1d108b197f11a543c8f337b9edd54c88df30e5b23d` |
+| `07-sprint.png` | `7cd1416db4b759351c5ce608076105834583d72960ec6f0b9de3670632f72ea4` | `69d24d9979d14274c84ebbbbb6b06ea1a71c9d047bf30d68170032b56e7d8157` | `a5c8ba7af1ca4200b7697650ce7b5a7023182922342fe3e6a8366b29b908bbb0` |
+| `08-jump-rope.png` | `9eb6557d9541c193fbc1929840f242b25c4d412b82c8cc5cfefec2403cd5672d` | `3894b098bb8f06139f729d134fa2520565a165cdd624e5a42aa1bafacb623118` | `885e9028e5dddf3911408007a6d4fa48a10f6ed23b192e35e3adfc10ed87ce55` |
+| `09-burpee.png` | `8d8ed761491778f408cb59455a8ee3289f1c0ba8c426e37a083d5fdbe7bd01fa` | `94490aadad5c98cd912af1e645d4a4f9a8087c891fd86594d92eb08a3b3bac77` | `1ec8d5adaf396aa8dd2754083bfc585d4fac52935fa53a8bf2046392934af746` |
+| `10-squat.png` | `0415e435ce920b2a608595378aff535ca5a6fba56bed97dc1a32f4b069a558b6` | `f747b768c583f3bdda368c64c7885c962fba0fc8b8734997e90d51f2ccf62cfd` | `725c8655bede1b740ee7fbe2c2361b1addc1c374d0d7dd545fd1d448722c7122` |
+| `11-forward-lunge.png` | `6a221b9939a054c6b86e5e9ad6f22bef90078a2b0358e85ca21ea408a19ea4b0` | `8d8d0dcba5eb6aa16f3122e06b06a22387693607182e5e1e417abff8e64c34a0` | `40fc7584bcd9e60153ee63023674737737603da31338f8fcd6547fb84509adee` |
+| `12-push-up.png` | `0d75b3cbb94db0129c4a7c7c67a0fc2909c60d2796eec1c51dcc5450d6e0eec4` | `924e88268c36492415e2497eb1b7a12af821b27fede48fd55539cb1105f29f5b` | `252a06bac15381f22025beab759a5bf23262358953b6ebfd8b551a5517d8539f` |
+| `13-plank.png` | `196c16c8eb4489ea8a8582b387b30d1b6e028a4b6597f979a6ac48d3fc4102af` | `7adcddca2e25998e5e071dde36bbaa8dd4f4efcce598832b6351eb72b0fad87e` | `ac5681f3bd395c29e402d40fdb60ce786cb7e0655fccbe6c38e3d162a727e0ee` |
+| `14-mountain-climber.png` | `561fb6889b359188ee1427b7bc126b2a517f4d3c3d3e5094e703954a56ae2818` | `c02df2663ac64600baa94fe7eecbf428b728828c1ca2044d8bee8c0cde5e94f7` | `038ce18f66fd9c076bbad1b06ebbb6e67fda6e4c42193ac9314b5b7b570ddd8e` |
+| `15-sit-up-crunch.png` | `f425f16433b47cd37b6e073cfc1b69f2d00baf24e40f3f7368cc7e786823e0fb` | `4801480b9488231d6916002bd47ce43be6a1140454cdc04eb2ba6a2dd7d63af7` | `7f94d2795e405c0764f8ab26044970d1606e085d7dc6f379515be311e344e79a` |
+| `16-dumbbell-curl.png` | `53df50c0454c7bb75f10d3f5431552783b6be4dcdd948f4c35e0fa90c965b27e` | `68980314c2bbf6ccdaa2b923b7dbd5bae495281a2ad52df69942df912f01ec6c` | `53c4c5893af4a8906f595ec0031ac0ceac1c03c28118789cc3fd6ca6316e3b85` |
+| `17-dumbbell-overhead-press.png` | `c16df155643441862973759a73d46261d3aca62f71f633b10963865aec3b57b4` | `bdad64a12eca0cb9c8ecb11fd3276d4d32ff7b9fbecddd8401446f8e3b19a7d4` | `c7e8734e33902944fae53d2623ffdb1484602188bede0d2d62846fa476c7e4d7` |
+| `18-standing-side-stretch.png` | `0058cc6a328ef5012c7144fee0f9aaf7ce0cdda0768f7ec22e8a4e354d369185` | `597587d17426da5c935c7c4634932e19ed5068a674910de3ca42df8a2f8a68d0` | `4e2a5445ef34220936f6d015fc2abd4b818de46547d7d73c40a504891fab01af` |
+| `19-seated-forward-fold.png` | `628b02f721d27249ab0010541f4b18427e0e625588171f0a7e449613a85290dc` | `a285b28afdcaa08e3551e2c67e9fde972c3a4039cb25aedae9d7746e58677a74` | `a8618ee4d5f89a2c29f5c5e8c25f47464c56ff0ec1cc151003f68e9bea8ad44d` |
+| `20-tree-pose-balance.png` | `4198eff88211bf7f8c4063c7dc4c2953c1fb9cc86ecc1e8209c331be1f068e6c` | `54c163a85ccbb64e351cd71fddc108d31a5956d77847615e7a3624d037098e89` | `2f703a00ad8951c5776a716dc611dc6f8c46d4666ec0ea1ae5560f67a188703e` |
+
+## 重试与异常处理
+
+- 图像生成重试：40 项均为 `0`；没有项目超过一次原生生成。
+- 合成校验迭代：03 与 08 仅重新执行确定性眼罩定位与 Alpha 合成，没有重新生成角色。
+- 青绿符号对齐迭代：按原眼罩边界统一仿射对齐汗滴与灵感线，只重新执行确定性合成，没有重新生成角色。
+- 生成器返回的棋盘格 RGB 由源图锁定合成流程处理；正式图只沿用原动作主体，表情、嘴、头带桃橙强化及允许的青绿符号来自生成结果。
+- `._*` AppleDouble 元数据已从人物源图、App 副本和相关暂存目录清除。
+
+## Flutter 验证
+
+| 命令 | 结果 |
+| --- | --- |
+| `flutter test --no-pub test/core/trainmate_action_character_test.dart test/core/trainflow_visual_system_test.dart test/core/flow_mascot_mapping_test.dart` | 通过，`24/24` |
+| `flutter test --no-pub` | 通过，`450/450`；外置卷需使用 `COPYFILE_DISABLE=1` 避免 AppleDouble 缓存竞态 |
+| `flutter analyze --no-pub` | 通过，`No issues found` |
+| `flutter build web --no-pub` | 通过，输出 `build/web`；现有 `flutter_secure_storage_web` Wasm 兼容性与 Cupertino 字体提示不影响 JavaScript Web 构建成功 |
+
+393×852 的五个页头人物与动画不溢出由定向 Widget 测试覆盖；两张 5×4 总览已逐张目视复核。

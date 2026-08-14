@@ -1,0 +1,5 @@
+已按规则调用了一次 `image_gen.imagegen`，但工具没有提供可保存到指定路径的本地图片文件句柄，因此无法写入目标 PNG。
+
+已写入失败结果 JSON：
+
+`outputs/logos/trainmate-flow/explorations/wordmark-round-02/generated-retry/workers/o2-organic-rhythm/attempt-2/result.json`

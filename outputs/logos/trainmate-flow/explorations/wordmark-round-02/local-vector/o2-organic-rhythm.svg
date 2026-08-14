@@ -1,0 +1,72 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1024 1024" role="img" aria-label="智练 TrainMate">
+  <rect width="1024" height="1024" fill="#FFFDFC"/>
+
+  <g id="wordmark-zh" fill="none" stroke="#19172C" stroke-linecap="round" stroke-linejoin="round">
+    <g id="glyph-zhi">
+      <path id="zhi-top-slash" d="M191 205C180 239 163 270 141 296" stroke-width="50"/>
+      <path id="zhi-short-horizontal" d="M178 251C230 247 286 250 336 252" stroke-width="52"/>
+      <path id="zhi-long-horizontal" d="M130 329C199 324 278 327 346 333" stroke-width="56"/>
+      <path id="zhi-left-sweep" d="M256 252C255 311 237 359 198 393C177 411 151 424 125 435" stroke-width="58"/>
+      <path id="zhi-right-sweep" d="M251 337C279 357 311 382 341 406" stroke-width="50"/>
+      <path id="zhi-mouth" d="M389 247C420 242 463 243 492 248C499 282 500 339 495 375C463 380 419 380 387 375C382 339 382 284 389 247Z" stroke-width="50"/>
+      <path id="zhi-sun-outline" d="M195 462C274 454 405 455 478 463C485 503 484 570 478 611C397 617 274 616 194 610C188 568 188 505 195 462Z" stroke-width="60"/>
+      <path id="zhi-sun-middle" d="M197 535C277 530 399 533 478 535" stroke-width="52"/>
+    </g>
+
+    <g id="glyph-lian">
+      <path id="lian-silk-one" d="M635 154C620 198 596 242 574 270C594 276 620 269 647 263" stroke-width="48"/>
+      <path id="lian-silk-two" d="M658 248C635 300 606 344 580 383C608 382 646 373 677 365" stroke-width="50"/>
+      <path id="lian-silk-rise" d="M575 457C610 453 651 444 691 431" stroke-width="52"/>
+      <path id="lian-east-top" d="M706 228C758 222 825 224 884 230" stroke-width="54"/>
+      <path id="lian-east-turn" d="M795 153C777 211 750 278 720 338C760 336 812 338 859 340" stroke-width="56"/>
+      <path id="lian-east-hook" d="M802 330C807 404 810 485 806 556C804 587 789 601 757 600" stroke-width="58"/>
+      <path id="lian-east-left" d="M765 430C743 482 716 528 691 559" stroke-width="48"/>
+      <path id="lian-east-right" d="M860 428C883 468 901 513 917 558" stroke-width="46"/>
+    </g>
+  </g>
+
+  <g id="wordmark-en" fill="none" stroke="#19172C" stroke-linecap="round" stroke-linejoin="round">
+    <g id="glyph-T">
+      <path d="M96 716C118 712 149 713 173 717" stroke-width="34"/>
+      <path d="M135 719C132 765 134 817 138 860" stroke-width="34"/>
+    </g>
+
+    <g id="glyph-r">
+      <path d="M207 777C205 804 206 833 208 858" stroke-width="31"/>
+      <path d="M207 793C218 770 235 765 249 780" stroke-width="29"/>
+    </g>
+
+    <g id="glyph-a-first">
+      <path d="M343 783C330 765 302 764 284 781C266 798 268 832 285 849C304 868 333 855 344 836C352 821 352 798 343 783Z" stroke-width="31"/>
+      <path d="M346 783C346 809 346 836 356 857" stroke-width="30"/>
+    </g>
+
+    <g id="glyph-i">
+      <path d="M387 782C385 808 386 835 389 858" stroke-width="31"/>
+      <circle cx="384" cy="735" r="17" fill="#19172C" stroke="none"/>
+    </g>
+
+    <g id="glyph-n">
+      <path d="M435 784C434 808 435 834 437 858" stroke-width="31"/>
+      <path d="M438 800C449 773 472 766 489 781C501 792 503 817 504 857" stroke-width="31"/>
+    </g>
+
+    <g id="glyph-M" transform="translate(-8 0)">
+      <path d="M548 858C547 807 548 751 552 714C554 696 567 695 575 713L606 793C612 810 621 811 628 793L654 713C661 692 675 698 678 718C682 760 681 813 684 858" stroke-width="33"/>
+    </g>
+
+    <g id="glyph-a-second" transform="translate(-8 0)">
+      <path d="M754 786C738 766 708 768 691 786C675 804 678 837 696 851C715 867 743 854 754 835C763 819 763 800 754 786Z" stroke-width="32"/>
+      <path d="M757 783C757 810 756 836 766 857" stroke-width="30"/>
+    </g>
+
+    <g id="glyph-t" transform="translate(-8 0)">
+      <path d="M810 741C807 780 807 818 812 844C815 854 823 859 835 857" stroke-width="29"/>
+      <path d="M788 786C806 783 827 784 845 787" stroke-width="29"/>
+    </g>
+
+    <g id="glyph-e" transform="translate(-8 0)">
+      <path d="M866 817C886 814 911 812 932 811C932 789 915 774 894 775C866 776 854 797 857 820C860 848 881 861 904 855C918 852 929 846 938 839" stroke-width="30"/>
+    </g>
+  </g>
+</svg>

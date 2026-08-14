@@ -1,0 +1,5 @@
+已按规则调用 `image_gen.imagegen` 生成了 exactly one image，但工具没有返回可保存到工作区的 PNG 路径或二进制内容，所以无法写入指定 `image.png`。
+
+已写入失败结果 JSON：
+
+`outputs/logos/trainmate-flow/explorations/avatar-face-round-02/generated/workers/b2-focused-target/attempt-1/result.json`

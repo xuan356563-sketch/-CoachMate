@@ -1,0 +1,7 @@
+{
+  "id": "character-wordmark-family-r2",
+  "status": "failed",
+  "image_path": null,
+  "error": "原生图片生成工具未返回可保存到文件系统的图片路径或二进制数据",
+  "caveats": ""
+}

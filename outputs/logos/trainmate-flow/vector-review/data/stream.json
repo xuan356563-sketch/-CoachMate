@@ -1,0 +1,190 @@
+{
+  "meta": {
+    "title": "智练 TrainMate｜参考图横排与上下排确认",
+    "summary": "字标按两张参考图建立一套同字号双版式：1492×550 横排版采用中文同顶边、英文按底边与基线对齐；1204×720 上下排版采用中文并排居中、英文下方居中。所有字形路径保持不变，中文右倾 5°、英文右倾 7°；Flow 胶囊脸与桃色奋斗飘带全部保留。",
+    "source": "review_renderer",
+    "itemCount": 15
+  },
+  "items": [
+    {
+      "id": "app-icon-review",
+      "title": "App 图标｜5° 动态倾角",
+      "label": "App 图标｜5° 动态倾角",
+      "caption": "平台图标已同步；头像顺时针倾斜 5°，背景保持端正。",
+      "tone": "应用图标",
+      "bestFor": "已同步至 iOS、Android 与 Web 的 Flow 图标；头像整体顺时针倾斜 5°，背景保持端正，B1 胶囊脸、桃色软结和两条不等长短飘带完整保留。",
+      "prompt": "",
+      "imageUrl": "/generated/mcp-thumbs/app-icon-review.jpg",
+      "previewImageUrl": "/generated/mcp-thumbs/app-icon-review.jpg",
+      "sourceImageUrl": "/generated/app-icon-review.png"
+    },
+    {
+      "id": "primary-flow-brandmark",
+      "title": "主品牌 Flow 头像",
+      "label": "主品牌 Flow 头像",
+      "caption": "标准 Flow 头像顺时针倾斜 5°，B1 胶囊脸与奋斗飘带完整保留。",
+      "tone": "主品牌",
+      "bestFor": "标准主品牌 Flow 整体顺时针倾斜 5°；保留 B1 胶囊脸、胶囊下方桃色短嘴、桃色软结与两条不等长短飘带。",
+      "prompt": "",
+      "imageUrl": "/generated/mcp-thumbs/primary-flow-brandmark.jpg",
+      "previewImageUrl": "/generated/mcp-thumbs/primary-flow-brandmark.jpg",
+      "sourceImageUrl": "/generated/primary-flow-brandmark.png"
+    },
+    {
+      "id": "avatar-lockup",
+      "title": "头像横排组合标｜智练 TrainMate",
+      "label": "头像横排组合标｜智练 TrainMate",
+      "caption": "参考图横排结构；中文同顶边，英文按底边与基线对齐。",
+      "tone": "组合标",
+      "bestFor": "左侧 Flow 头像顺时针倾斜 5°；右侧文字严格采用参考图横排结构：“智”“练”同顶边，TrainMate 按底边与基线对齐。",
+      "prompt": "",
+      "imageUrl": "/generated/mcp-thumbs/avatar-lockup.jpg",
+      "previewImageUrl": "/generated/mcp-thumbs/avatar-lockup.jpg",
+      "sourceImageUrl": "/generated/avatar-lockup.png"
+    },
+    {
+      "id": "character-lockup",
+      "title": "完整角色上下排组合标｜智练 TrainMate",
+      "label": "完整角色上下排组合标｜智练 TrainMate",
+      "caption": "参考图上下排结构；中文并排居中，英文居中置于下方。",
+      "tone": "组合标",
+      "bestFor": "左侧完整 Flow 角色连同细线四肢整体顺时针倾斜 5°；右侧采用参考图上下排结构，两个中文字并排居中，TrainMate 居中置于下方。",
+      "prompt": "",
+      "imageUrl": "/generated/mcp-thumbs/character-lockup.jpg",
+      "previewImageUrl": "/generated/mcp-thumbs/character-lockup.jpg",
+      "sourceImageUrl": "/generated/character-lockup.png"
+    },
+    {
+      "id": "standalone-wordmark-horizontal",
+      "title": "横排字标｜智练 TrainMate",
+      "label": "横排字标｜智练 TrainMate",
+      "caption": "1492×550 横排参考结构，原字形路径保持不变。",
+      "tone": "字标",
+      "bestFor": "按 1492×550 参考图几何复刻：“智”“练”同顶边排布，TrainMate 按底边与基线对齐；保留原有确定性路径与 5°／7°笔画倾角。",
+      "prompt": "",
+      "imageUrl": "/generated/mcp-thumbs/standalone-wordmark-horizontal.jpg",
+      "previewImageUrl": "/generated/mcp-thumbs/standalone-wordmark-horizontal.jpg",
+      "sourceImageUrl": "/generated/standalone-wordmark-horizontal.png"
+    },
+    {
+      "id": "standalone-wordmark",
+      "title": "上下排字标｜智练 TrainMate",
+      "label": "上下排字标｜智练 TrainMate",
+      "caption": "1204×720 上下排参考结构，原字形路径保持不变。",
+      "tone": "字标",
+      "bestFor": "按 1204×720 参考图几何复刻：两个中文字并排居中，TrainMate 在下方居中；保留原有确定性路径与 5°／7°笔画倾角。",
+      "prompt": "",
+      "imageUrl": "/generated/mcp-thumbs/standalone-wordmark.jpg",
+      "previewImageUrl": "/generated/mcp-thumbs/standalone-wordmark.jpg",
+      "sourceImageUrl": "/generated/standalone-wordmark.png"
+    },
+    {
+      "id": "full-character-128",
+      "title": "完整 Flow 角色｜128px",
+      "label": "完整 Flow 角色｜128px",
+      "caption": "128px 完整角色整体倾斜 5°，四肢连接与奋斗飘带清楚。",
+      "tone": "完整角色",
+      "bestFor": "128px 完整动作角色整体顺时针倾斜 5°；细线四肢、错步姿势、桃色软结及两条不等长短飘带清楚可辨。",
+      "prompt": "",
+      "imageUrl": "/generated/mcp-thumbs/full-character-128.jpg",
+      "previewImageUrl": "/generated/mcp-thumbs/full-character-128.jpg",
+      "sourceImageUrl": "/generated/full-character-128.png"
+    },
+    {
+      "id": "full-character-96",
+      "title": "完整 Flow 角色｜96px",
+      "label": "完整 Flow 角色｜96px",
+      "caption": "96px 完整角色倾斜 5°，动作轮廓与双短飘带均可辨。",
+      "tone": "完整角色",
+      "bestFor": "96px 完整动作角色整体顺时针倾斜 5°；准备训练姿势、桃色软结及两条不等长短飘带仍保持连续。",
+      "prompt": "",
+      "imageUrl": "/generated/mcp-thumbs/full-character-96.jpg",
+      "previewImageUrl": "/generated/mcp-thumbs/full-character-96.jpg",
+      "sourceImageUrl": "/generated/full-character-96.png"
+    },
+    {
+      "id": "small-flow-48",
+      "title": "Flow 小尺寸｜48px",
+      "label": "Flow 小尺寸｜48px",
+      "caption": "48px 简化头像倾斜 3°，B1 眼形与双短飘带可辨。",
+      "tone": "小尺寸",
+      "bestFor": "48px 简化 Flow 头像顺时针倾斜 3°；胶囊、左眼点、右弯眼、桃色软结及两条不等长短飘带完整可辨。",
+      "prompt": "",
+      "imageUrl": "/generated/mcp-thumbs/small-flow-48.jpg",
+      "previewImageUrl": "/generated/mcp-thumbs/small-flow-48.jpg",
+      "sourceImageUrl": "/generated/small-flow-48.png"
+    },
+    {
+      "id": "small-flow-32",
+      "title": "Flow 小尺寸｜32px",
+      "label": "Flow 小尺寸｜32px",
+      "caption": "32px 简化头像倾斜 3°，B1 眼形与双短飘带保持分离。",
+      "tone": "小尺寸",
+      "bestFor": "32px 简化 Flow 头像顺时针倾斜 3°；胶囊、左眼点、右弯眼、软结与双短飘带保持分离。",
+      "prompt": "",
+      "imageUrl": "/generated/mcp-thumbs/small-flow-32.jpg",
+      "previewImageUrl": "/generated/mcp-thumbs/small-flow-32.jpg",
+      "sourceImageUrl": "/generated/small-flow-32.png"
+    },
+    {
+      "id": "small-flow-24",
+      "title": "Flow 小尺寸｜24px",
+      "label": "Flow 小尺寸｜24px",
+      "caption": "24px 简化头像倾斜 3°，B1 眼形与两条短飘带仍可辨。",
+      "tone": "小尺寸",
+      "bestFor": "24px 简化 Flow 头像顺时针倾斜 3°；胶囊、B1 两种眼形、软结与双短飘带仍可辨识。",
+      "prompt": "",
+      "imageUrl": "/generated/mcp-thumbs/small-flow-24.jpg",
+      "previewImageUrl": "/generated/mcp-thumbs/small-flow-24.jpg",
+      "sourceImageUrl": "/generated/small-flow-24.png"
+    },
+    {
+      "id": "small-flow-16",
+      "title": "Flow 小尺寸｜16px 无裁切",
+      "label": "Flow 小尺寸｜16px 无裁切",
+      "caption": "16px 头像倾斜 3°，软结与双短飘带无裁切。",
+      "tone": "小尺寸",
+      "bestFor": "16px 简化 Flow 头像顺时针倾斜 3°，仍保留桃色软结与两条不等长短飘带；四周有安全余量，无裁切。",
+      "prompt": "",
+      "imageUrl": "/generated/mcp-thumbs/small-flow-16.jpg",
+      "previewImageUrl": "/generated/mcp-thumbs/small-flow-16.jpg",
+      "sourceImageUrl": "/generated/small-flow-16.png"
+    },
+    {
+      "id": "reverse-flow-brandmark",
+      "title": "反白主品牌 Flow",
+      "label": "反白主品牌 Flow",
+      "caption": "反白主品牌倾斜 5°，B1 胶囊脸与奋斗飘带完整保留。",
+      "tone": "反白",
+      "bestFor": "深墨展示背景上的反白主品牌 Flow 整体顺时针倾斜 5°；B1 胶囊脸、桃色短嘴与奋斗飘带层级保持清楚。",
+      "prompt": "",
+      "imageUrl": "/generated/mcp-thumbs/reverse-flow-brandmark.jpg",
+      "previewImageUrl": "/generated/mcp-thumbs/reverse-flow-brandmark.jpg",
+      "sourceImageUrl": "/generated/reverse-flow-brandmark.png"
+    },
+    {
+      "id": "mono-flow-brandmark",
+      "title": "单色主品牌 Flow",
+      "label": "单色主品牌 Flow",
+      "caption": "单色主品牌倾斜 5°，胶囊脸与双短飘带轮廓完整。",
+      "tone": "单色",
+      "bestFor": "纸白展示背景上的单色主品牌 Flow 整体顺时针倾斜 5°；胶囊脸、软结与两条不等长短飘带以单色轮廓保留。",
+      "prompt": "",
+      "imageUrl": "/generated/mcp-thumbs/mono-flow-brandmark.jpg",
+      "previewImageUrl": "/generated/mcp-thumbs/mono-flow-brandmark.jpg",
+      "sourceImageUrl": "/generated/mono-flow-brandmark.png"
+    },
+    {
+      "id": "flow-submark",
+      "title": "Flow 副标｜4° 动态倾角",
+      "label": "Flow 副标｜4° 动态倾角",
+      "caption": "副标倾斜 4°，B1 胶囊脸与奋斗飘带完整保留。",
+      "tone": "副标",
+      "bestFor": "高压缩 Flow 副标顺时针倾斜 4°；保留 B1 胶囊脸、胶囊下方桃色短嘴、软结与两条不等长短飘带。",
+      "prompt": "",
+      "imageUrl": "/generated/mcp-thumbs/flow-submark.jpg",
+      "previewImageUrl": "/generated/mcp-thumbs/flow-submark.jpg",
+      "sourceImageUrl": "/generated/flow-submark.png"
+    }
+  ]
+}

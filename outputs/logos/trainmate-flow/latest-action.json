@@ -1,0 +1,18 @@
+{
+  "id": "append-trainmate-flow-effort-headband-v1-20260714",
+  "action": "append_moodboard_board_items",
+  "label": "Appended mood-board images",
+  "createdAt": "2026-07-14T13:03:49.396Z",
+  "timestamp": "2026-07-14T13:03:49.396Z",
+  "sourceActionId": "user-effort-headband-tail",
+  "idempotencyKey": "trainmate-flow-effort-headband-v1-20260714",
+  "appendedItemIds": [
+    "05-effort-headband-tails"
+  ],
+  "appendedCount": 1,
+  "itemCount": 5,
+  "runDirectory": "/Volumes/AI strongho/XunLian/zhuque-flutter-main/outputs/logos/trainmate-flow",
+  "streamPath": "/Volumes/AI strongho/XunLian/zhuque-flutter-main/outputs/logos/trainmate-flow/data/stream.json",
+  "runStatePath": "/Volumes/AI strongho/XunLian/zhuque-flutter-main/outputs/logos/trainmate-flow/run-state.json",
+  "latestActionPath": "/Volumes/AI strongho/XunLian/zhuque-flutter-main/outputs/logos/trainmate-flow/latest-action.json"
+}

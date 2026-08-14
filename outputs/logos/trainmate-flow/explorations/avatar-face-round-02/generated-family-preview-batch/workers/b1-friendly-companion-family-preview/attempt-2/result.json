@@ -1,0 +1,7 @@
+{
+  "id": "b1-friendly-companion-family-preview",
+  "status": "failed",
+  "image_path": null,
+  "error": "原生图像生成工具未返回可保存到指定路径的 PNG 文件或二进制数据",
+  "caveats": ""
+}

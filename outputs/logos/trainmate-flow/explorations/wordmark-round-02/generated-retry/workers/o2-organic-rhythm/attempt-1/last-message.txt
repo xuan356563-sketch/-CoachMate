@@ -1,0 +1,7 @@
+已按规则调用 `image_gen.imagegen` 生成了 exactly one image，并检查了两张参考图。
+
+但当前原生图像生成工具没有返回可保存到指定路径的 PNG 文件或字节流，因此无法写入 `image.png`。我已按要求写入失败结果 JSON：
+
+`outputs/logos/trainmate-flow/explorations/wordmark-round-02/generated-retry/workers/o2-organic-rhythm/attempt-1/result.json`
+
+状态为 `failed`，未伪造图片文件。

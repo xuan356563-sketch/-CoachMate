@@ -1,0 +1,8 @@
+{
+  "id": "b2-focused-target-retry",
+  "status": "failed",
+  "attempt": 1,
+  "pid": 13231,
+  "startedAt": "2026-07-14T17:09:06.553781+00:00",
+  "lastHeartbeatAt": "2026-07-14T17:11:09.110426+00:00"
+}

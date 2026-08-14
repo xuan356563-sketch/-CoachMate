@@ -1,0 +1,16 @@
+{
+  "status": "partial",
+  "total": 1,
+  "complete": 0,
+  "failed": 1,
+  "pending": 0,
+  "results": [
+    {
+      "id": "b2-focused-target-retry",
+      "status": "failed",
+      "image_path": null,
+      "error": "\u539f\u751f\u56fe\u50cf\u751f\u6210\u5de5\u5177\u672a\u8fd4\u56de\u53ef\u4fdd\u5b58\u5230\u6307\u5b9a\u8def\u5f84\u7684\u56fe\u7247\u6587\u4ef6\u6216\u672c\u5730\u8def\u5f84",
+      "caveats": ""
+    }
+  ]
+}

@@ -1,0 +1,57 @@
+{
+  "schemaVersion": 1,
+  "generatedOn": "2026-07-15",
+  "brand": "智练 TrainMate",
+  "sources": [
+    {
+      "path": "assets/branding/source/trainmate-flow-app-icon.svg",
+      "sha256": "a4115377f5f1586ad2b233575d1ad09c1d46deb34873fdc6ed456a37483cf481"
+    },
+    {
+      "path": "assets/branding/source/trainmate-flow-app-icon-maskable.svg",
+      "sha256": "df8a6bc22df4d3595a81bfc90fcc734fc688b932951ad923304555fb21f61569"
+    }
+  ],
+  "platforms": {
+    "ios": {
+      "pngCount": 15,
+      "contentsJsonChanged": false,
+      "alphaAllowed": false,
+      "sampleSha256": "dcfd5dc8a4306cb15136047c0b8994299974c7f3d34bd0b45fdda1d667483ddc"
+    },
+    "android": {
+      "legacyPngCount": 5,
+      "adaptiveForegroundPngCount": 5,
+      "adaptiveXml": "android/app/src/main/res/mipmap-anydpi-v26/ic_launcher.xml",
+      "backgroundColor": "#FFE2B8",
+      "legacySampleSha256": "910f0adacdaa4d8f76e5faec9f616241315089076ecdada1f6bd53429d17ffef",
+      "adaptiveSampleSha256": "b49478c6310afa196972d9a76d605532eab63ec889435e97182753638a3ac53e"
+    },
+    "web": {
+      "pngCount": 5,
+      "manifestJsonChanged": false,
+      "faviconSha256": "b58042dba96f7bbfe31b5ffc08f2f195910088b77f7cb1a0c29c4d2ddb10f79f",
+      "standard512Sha256": "6d5a34de96db5cf9e077e0b5c84707561ce6e344b1a6200e9f494754a3ffd41f",
+      "maskable512Sha256": "97ab7c94e04d970aad14960788decfc6d3ddb59fa28c9169b5ba0b9edef691d5"
+    }
+  },
+  "smallSizeAudit": {
+    "16": "b58042dba96f7bbfe31b5ffc08f2f195910088b77f7cb1a0c29c4d2ddb10f79f",
+    "24": "620efd5a0347fca588d06c40bfd584cf75581cb388d03eb7478675271c6d5582",
+    "32": "9ccb36546e505cdcada09404631249a4431b4a6060749f487159f65a51104d62",
+    "48": "2a002d16408f761b1e6d150fcd82d1654a03f437c6eb9ccf69625a8cd5ff2bd2"
+  },
+  "visualAdjustment": {
+    "avatarTiltDegrees": 5,
+    "direction": "clockwise",
+    "backgroundRotated": false,
+    "referenceIntent": "向右前倾的动态斜势"
+  },
+  "validationStatus": {
+    "resourceContract": "passed",
+    "iosAssetCatalog": "passed",
+    "iosSimulatorBuild": "failed_on_preexisting_native_assets_packaging",
+    "androidBuild": "not_run_android_sdk_missing",
+    "webBuild": "failed_on_preexisting_dart_constructor_mismatch"
+  }
+}

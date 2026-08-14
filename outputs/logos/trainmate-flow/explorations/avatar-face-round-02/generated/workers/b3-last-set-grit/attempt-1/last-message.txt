@@ -1,0 +1,7 @@
+已按要求只调用了一次 `image_gen.imagegen`。
+
+结果：生成工具未返回可保存到本地文件系统的图片路径或二进制句柄，因此无法写入目标 PNG。我已按失败分支写入：
+
+`outputs/logos/trainmate-flow/explorations/avatar-face-round-02/generated/workers/b3-last-set-grit/attempt-1/result.json`
+
+未写入伪造 PNG，也未再次生成图片。

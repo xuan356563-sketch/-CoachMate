@@ -1,0 +1,7 @@
+{
+  "id": "s2-horizontal-negative-space",
+  "status": "failed",
+  "image_path": null,
+  "error": "原生图像生成工具未提供可保存到文件系统的 PNG 路径或字节句柄",
+  "caveats": ""
+}

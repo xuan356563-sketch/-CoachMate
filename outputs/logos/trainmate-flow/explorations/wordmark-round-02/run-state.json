@@ -1,0 +1,76 @@
+{
+  "version": 1,
+  "runDirectory": "/Volumes/AI strongho/XunLian/zhuque-flutter-main/outputs/logos/trainmate-flow/explorations/wordmark-round-02",
+  "streamPath": "/Volumes/AI strongho/XunLian/zhuque-flutter-main/outputs/logos/trainmate-flow/explorations/wordmark-round-02/data/stream.json",
+  "runStatePath": "/Volumes/AI strongho/XunLian/zhuque-flutter-main/outputs/logos/trainmate-flow/explorations/wordmark-round-02/run-state.json",
+  "latestActionPath": "/Volumes/AI strongho/XunLian/zhuque-flutter-main/outputs/logos/trainmate-flow/explorations/wordmark-round-02/latest-action.json",
+  "paths": {
+    "streamPath": "/Volumes/AI strongho/XunLian/zhuque-flutter-main/outputs/logos/trainmate-flow/explorations/wordmark-round-02/data/stream.json",
+    "runStatePath": "/Volumes/AI strongho/XunLian/zhuque-flutter-main/outputs/logos/trainmate-flow/explorations/wordmark-round-02/run-state.json",
+    "latestActionPath": "/Volumes/AI strongho/XunLian/zhuque-flutter-main/outputs/logos/trainmate-flow/explorations/wordmark-round-02/latest-action.json"
+  },
+  "itemCount": 5,
+  "items": [
+    {
+      "id": "o1-soft-stack",
+      "title": "O1\uff5c\u8f6f\u56e2\u4e0a\u4e0b\u5b57\u56e2",
+      "caption": "\u6700\u63a5\u8fd1 Take a Break \u53c2\u8003\u4e2d\u7684\u8f6f\u539a\u5b57\u56e2\u903b\u8f91\uff0c\u4e2d\u6587\u5b57\u8154\u548c\u82f1\u6587\u8282\u594f\u90fd\u5f88\u5f3a\uff1b\u4e5f\u662f\u4e0e Flow \u89d2\u8272\u6700\u5bb9\u6613\u540c\u9891\u7684\u4e00\u6b3e\u3002",
+      "tone": "\u539a\u8f6f\u3001\u7d27\u51d1\u3001\u6709\u89d2\u8272\u611f",
+      "prompt": "\u539a\u5b9e\u67d4\u8f6f\u7684\u4e0a\u4e0b\u5b57\u56e2\uff1b\u5938\u5f20\u4f46\u6e05\u695a\u7684\u5b57\u8154\uff1b\u4e2d\u82f1\u6587\u5b57\u5f62\u540c\u6e90\u3002",
+      "imageUrl": "/generated/mcp-thumbs/o1-soft-stack.jpg",
+      "previewImageUrl": "/generated/mcp-thumbs/o1-soft-stack.jpg",
+      "sourceImageUrl": "/generated/o1-soft-stack.png"
+    },
+    {
+      "id": "o2-organic-rhythm",
+      "title": "O2\uff5c\u80d6\u7626\u9ad8\u4f4e\u62fc\u5b57",
+      "caption": "\u7528\u5b57\u7b26\u5bbd\u7a84\u3001\u9ad8\u4f4e\u548c\u5b57\u8154\u5dee\u5f02\u5236\u9020\u4f19\u4f34\u7fa4\u8282\u594f\uff0c\u6bd4 O1 \u66f4\u677e\u3001\u66f4\u5e74\u8f7b\uff0c\u540c\u65f6\u4fdd\u6301\u7a33\u5b9a\u57fa\u7ebf\u3002",
+      "tone": "\u6d3b\u6cfc\u3001\u677e\u5f1b\u3001\u6709\u4f19\u4f34\u611f",
+      "prompt": "\u80d6\u7626\u9ad8\u4f4e\u4e0d\u540c\u4f46\u540c\u6e90\u7684\u6709\u673a\u7c97\u5b57\uff1b\u7a33\u5b9a\u57fa\u7ebf\uff1b\u65e0\u73b0\u6210\u5706\u4f53\u611f\u3002",
+      "imageUrl": "/generated/mcp-thumbs/o2-organic-rhythm.jpg",
+      "previewImageUrl": "/generated/mcp-thumbs/o2-organic-rhythm.jpg",
+      "sourceImageUrl": "/generated/o2-organic-rhythm.png"
+    },
+    {
+      "id": "f3-controlled-sport-brush",
+      "title": "F3\uff5c\u514b\u5236\u8fd0\u52a8\u8f6f\u7b14",
+      "caption": "\u4fdd\u7559 Choco Taste \u53c2\u8003\u4e2d\u7684\u7edf\u4e00\u7c97\u7b14\u52bf\uff0c\u4f46\u53bb\u6389\u957f\u5f27\u3001\u82b1\u4f53\u5c3e\u548c\u8fde\u7eed\u7b7e\u540d\u611f\uff0c\u7528\u77ed\u4fc3\u6536\u7b14\u8868\u8fbe\u8bad\u7ec3\u7684\u53d1\u529b\u4e0e\u5411\u524d\u3002",
+      "tone": "\u5411\u524d\u3001\u52aa\u529b\u3001\u77ed\u4fc3\u6709\u529b",
+      "prompt": "\u539a\u8f6f\u5fae\u53f3\u503e\uff1b\u77ed\u4fc3\u53d1\u529b\u6536\u7b14\uff1b\u4e2d\u82f1\u6587\u4e0d\u505a\u8fde\u7eed\u7b7e\u540d\u8fde\u5199\u3002",
+      "imageUrl": "/generated/mcp-thumbs/f3-controlled-sport-brush.jpg",
+      "previewImageUrl": "/generated/mcp-thumbs/f3-controlled-sport-brush.jpg",
+      "sourceImageUrl": "/generated/f3-controlled-sport-brush.png"
+    },
+    {
+      "id": "s1-vertical-structure",
+      "title": "S1\uff5c\u7eb5\u8f74\u53e0\u6784",
+      "caption": "\u6700\u63a5\u8fd1\u201c\u559c\u91cc\u201d\u53c2\u8003\u7684\u7eb5\u8f74\u4e0e\u8d1f\u7a7a\u95f4\u65b9\u6cd5\uff0c\u4e2d\u6587\u672c\u8eab\u6210\u4e3a\u6784\u6210\u56fe\u5f62\uff0c\u9002\u5408\u53d1\u5c55\u4e3a\u7ad6\u5411\u8f85\u52a9\u6807\u3002",
+      "tone": "\u96c6\u4e2d\u3001\u7a33\u5b9a\u3001\u6784\u6210\u611f\u5f3a",
+      "prompt": "\u667a\u7ec3\u6cbf\u4e2d\u5fc3\u8f74\u7eb5\u5411\u53e0\u6784\uff1b\u6a2a\u5411\u767d\u69fd\u5f62\u6210\u8282\u594f\uff1b\u82f1\u6587\u4f5c\u4e3a\u7a33\u5b9a\u57fa\u5ea7\u3002",
+      "imageUrl": "/generated/mcp-thumbs/s1-vertical-structure.jpg",
+      "previewImageUrl": "/generated/mcp-thumbs/s1-vertical-structure.jpg",
+      "sourceImageUrl": "/generated/s1-vertical-structure.png"
+    },
+    {
+      "id": "s2-horizontal-negative-space",
+      "title": "S2\uff5c\u6a2a\u6865\u8d1f\u7a7a\u95f4",
+      "caption": "\u628a\u7ed3\u6784\u5316\u6c49\u5b57\u65b9\u6cd5\u8f6c\u6210\u53ef\u957f\u671f\u4f7f\u7528\u7684\u6a2a\u7248\u4e3b\u5b57\u6807\uff1b\u667a\u4e0e\u7ec3\u5404\u81ea\u72ec\u7acb\uff0c\u89c6\u89c9\u8054\u7cfb\u53ea\u7531\u5b57\u5185\u6a2a\u753b\u548c\u767d\u69fd\u5bf9\u9f50\u4ea7\u751f\u3002",
+      "tone": "\u539f\u521b\u3001\u6b63\u5f0f\u3001\u8010\u7528",
+      "prompt": "\u667a\u548c\u7ec3\u6a2a\u6392\u72ec\u7acb\uff1b\u7eaf\u767d\u5b57\u95f4\u7559\u7a7a\uff1b\u4ee5\u5b57\u5185\u6a2a\u69fd\u5bf9\u9f50\u5f62\u6210\u89c6\u89c9\u6865\u6881\u3002",
+      "imageUrl": "/generated/mcp-thumbs/s2-horizontal-negative-space.jpg",
+      "previewImageUrl": "/generated/mcp-thumbs/s2-horizontal-negative-space.jpg",
+      "sourceImageUrl": "/generated/s2-horizontal-negative-space.png"
+    }
+  ],
+  "visibleItemIds": [
+    "o1-soft-stack",
+    "o2-organic-rhythm",
+    "f3-controlled-sport-brush",
+    "s1-vertical-structure",
+    "s2-horizontal-negative-space"
+  ],
+  "hiddenImageIds": [],
+  "selectedImageIds": [],
+  "currentImageId": "o1-soft-stack",
+  "updatedAt": "2026-07-14T16:37:35.676444Z"
+}

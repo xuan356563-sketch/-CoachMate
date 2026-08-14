@@ -1,0 +1,53 @@
+{
+  "schemaVersion": 1,
+  "source": {
+    "file": "trainmate-flow-logo-final-20260717.png",
+    "sha256": "8370687c15f3ffa5c131906853ceb845e87ee9b052c759abafc9cd8a2492d365",
+    "dimensions": [
+      1254,
+      1254
+    ],
+    "mode": "RGB"
+  },
+  "rules": {
+    "standard": "保持完整构图，使用 Pillow LANCZOS 等比缩放",
+    "maskable": "在 #FEFEFE 底色上居中缩放至 90%",
+    "platformBackgroundRemoval": false,
+    "inAppDisplay": "仅移除与画布边缘连通的近白底，保留胶囊脸与高光",
+    "recolor": false
+  },
+  "files": [
+    {
+      "file": "trainmate-flow-logo-final-20260717.png",
+      "sha256": "8370687c15f3ffa5c131906853ceb845e87ee9b052c759abafc9cd8a2492d365"
+    },
+    {
+      "file": "trainmate-flow-logo-final-16.png",
+      "sha256": "e7c0279dd98afca7ecf19fd4f87baaa7f44d13acfbcfb7403b93e8546227bdf7"
+    },
+    {
+      "file": "trainmate-flow-logo-final-32.png",
+      "sha256": "0981835923aea9651e308766e5bbb3585e1631369e013b62d31d719219278e55"
+    },
+    {
+      "file": "trainmate-flow-logo-final-60.png",
+      "sha256": "20dd4c3d9148352cb4d320d5957a512078dbe55e0f6ec84aa9bf3f700c085c27"
+    },
+    {
+      "file": "trainmate-flow-logo-final-120.png",
+      "sha256": "c8a7905585bd9b4b9cc936bedc84eb9fa182ae5df66a0aea025d83b1ad4e436c"
+    },
+    {
+      "file": "trainmate-flow-logo-final-180.png",
+      "sha256": "bb85f9f5d0cb4d1e6fe201832aa0774a821dd311948fd4baf0cc086f98fc866a"
+    },
+    {
+      "file": "trainmate-flow-logo-final-1024.png",
+      "sha256": "c2089741e59aacdb8a94aab57ee26f4f30f98ee116eb8997f35fd2fd2dc8e6d3"
+    },
+    {
+      "file": "trainmate-flow-logo-final-maskable-512.png",
+      "sha256": "a7ee9d37c9a6d939ee9b0ffbd540eb2d94fb43430082ff372dca01f1b4d5fe36"
+    }
+  ]
+}

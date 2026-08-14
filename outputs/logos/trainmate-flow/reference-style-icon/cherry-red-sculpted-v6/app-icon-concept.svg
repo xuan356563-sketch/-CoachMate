@@ -1,0 +1,57 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1024 1024" role="img" aria-labelledby="title">
+  <title id="title">智练 TrainMate V6 雕塑感 App 图标概念稿</title>
+  <defs>
+    <linearGradient id="icon-background-gradient" x1="8%" y1="5%" x2="92%" y2="94%">
+      <stop offset="0%" stop-color="#FFFDFC"/>
+      <stop offset="58%" stop-color="#FFE2B8"/>
+      <stop offset="100%" stop-color="#FFE2B8"/>
+    </linearGradient>
+    <linearGradient id="flow-body-gradient" x1="18%" y1="6%" x2="78%" y2="96%">
+      <stop offset="0%" stop-color="#19172C"/>
+      <stop offset="54%" stop-color="#11101F"/>
+      <stop offset="100%" stop-color="#19172C"/>
+    </linearGradient>
+    <linearGradient id="headband-gradient" x1="4%" y1="10%" x2="94%" y2="88%">
+      <stop offset="0%" stop-color="#E43D52"/>
+      <stop offset="100%" stop-color="#B5122F"/>
+    </linearGradient>
+  </defs>
+
+  <rect id="icon-background" width="1024" height="1024" fill="url(#icon-background-gradient)"/>
+  <g id="app-icon-layout" transform="translate(0 0) scale(1)">
+    <path d="M42 984C20 822 34 632 91 448C145 273 260 135 405 88C516 51 614 87 686 167C730 216 770 246 821 269C890 300 922 373 925 482C929 636 887 798 797 904C711 1006 567 1035 390 1027C221 1020 73 1001 42 984Z" fill="#11101F" opacity=".15" transform="translate(9 16)"/>
+
+    <path id="flow-head" d="M-24 1014C-35 832 3 623 77 433C143 264 263 135 408 91C512 59 603 90 672 164C719 214 759 244 815 269C883 299 914 372 917 478C921 627 881 787 790 894C706 993 563 1028 379 1025C203 1022 43 994-24 1014Z" fill="url(#flow-body-gradient)"/>
+
+    <path d="M78 513C126 326 260 177 409 139C483 120 548 134 604 180" fill="none" stroke="#FFFDFC" stroke-width="18" stroke-linecap="round" opacity=".075"/>
+
+    <g id="headband-ribbons">
+      <path d="M800 327C858 278 923 263 979 290C997 299 1002 320 992 337C982 353 962 356 944 347C907 328 872 338 822 380Z" fill="#11101F" opacity=".18" transform="translate(0 9)"/>
+      <path id="ribbon-long" d="M800 318C858 269 923 254 979 281C997 290 1002 311 992 328C982 344 962 347 944 338C907 319 872 329 822 371Z" fill="url(#headband-gradient)"/>
+      <path d="M802 377C859 383 913 414 947 463C959 480 953 502 936 512C920 522 899 515 889 498C864 461 838 447 798 443Z" fill="#11101F" opacity=".18" transform="translate(0 9)"/>
+      <path id="ribbon-short" d="M802 368C859 374 913 405 947 454C959 471 953 493 936 503C920 513 899 506 889 489C864 452 838 438 798 434Z" fill="url(#headband-gradient)"/>
+    </g>
+
+    <g id="training-headband-layer">
+      <path d="M91 337C228 270 430 253 654 290C713 300 758 316 791 339C814 355 820 382 805 403C789 425 760 429 737 416C682 387 621 376 555 371C392 358 241 379 119 426C86 439 55 423 50 394C46 370 62 352 91 337Z" fill="#11101F" opacity=".18" transform="translate(0 10)"/>
+      <path id="training-headband" d="M91 327C228 260 430 243 654 280C713 290 758 306 791 329C814 345 820 372 805 393C789 415 760 419 737 406C682 377 621 366 555 361C392 348 241 369 119 416C86 429 55 413 50 384C46 360 62 342 91 327Z" fill="url(#headband-gradient)"/>
+      <path d="M98 344C235 288 423 274 640 305" fill="none" stroke="#FFFDFC" stroke-width="12" stroke-linecap="round" opacity=".18"/>
+    </g>
+
+    <g id="headband-knot-layer">
+      <path d="M746 328C756 303 784 296 802 310C815 300 834 305 843 322C853 340 844 360 831 370C829 388 813 402 793 402C773 402 758 389 754 372C736 364 732 343 746 328Z" fill="#11101F" opacity=".18" transform="translate(0 9)"/>
+      <path id="headband-knot" d="M746 319C756 294 784 287 802 301C815 291 834 296 843 313C853 331 844 351 831 361C829 379 813 393 793 393C773 393 758 380 754 363C736 355 732 334 746 319Z" fill="url(#headband-gradient)"/>
+      <path d="M758 317C772 302 791 301 805 312" fill="none" stroke="#FFFDFC" stroke-width="8" stroke-linecap="round" opacity=".2"/>
+      <path d="M804 311C813 318 818 329 817 341" fill="none" stroke="#11101F" stroke-width="8" stroke-linecap="round" opacity=".22"/>
+    </g>
+
+    <g id="flow-face" transform="rotate(2.5 454 505)">
+      <path d="M214 455C236 424 273 408 322 410L616 423C666 425 695 448 694 486L692 553C691 592 659 614 609 612L310 598C261 596 228 575 219 539Z" fill="#11101F" opacity=".13" transform="translate(0 10)"/>
+      <path id="face-capsule" d="M214 445C236 414 273 398 322 400L616 413C666 415 695 438 694 476L692 543C691 582 659 604 609 602L310 588C261 586 228 565 219 529Z" fill="#FFFDFC"/>
+      <circle id="face-eye-dot" cx="330" cy="493" r="22" fill="#19172C"/>
+      <path id="face-eye-arc" d="M494 520Q552 478 611 513" fill="none" stroke="#19172C" stroke-width="25" stroke-linecap="round"/>
+    </g>
+
+    <path id="face-mouth" d="M414 683Q454 714 496 680" fill="none" stroke="#FFB27D" stroke-width="21" stroke-linecap="round"/>
+  </g>
+</svg>

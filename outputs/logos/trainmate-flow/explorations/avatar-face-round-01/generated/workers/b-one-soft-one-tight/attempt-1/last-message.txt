@@ -1,0 +1,9 @@
+已完成。
+
+生成文件：
+`outputs/logos/trainmate-flow/explorations/avatar-face-round-01/generated/workers/b-one-soft-one-tight/attempt-1/image.png`
+
+结果 JSON：
+`outputs/logos/trainmate-flow/explorations/avatar-face-round-01/generated/workers/b-one-soft-one-tight/attempt-1/result.json`
+
+已确认两个文件都存在。

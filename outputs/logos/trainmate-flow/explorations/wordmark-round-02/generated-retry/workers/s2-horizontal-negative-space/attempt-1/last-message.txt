@@ -1,0 +1,5 @@
+已执行唯一一次 `image_gen.imagegen` 生成。
+
+但原生图像工具未返回可保存到工作区的 PNG 文件路径或二进制数据，因此无法写入指定的 `image.png`。已按规则写入失败结果：
+
+`outputs/logos/trainmate-flow/explorations/wordmark-round-02/generated-retry/workers/s2-horizontal-negative-space/attempt-1/result.json`

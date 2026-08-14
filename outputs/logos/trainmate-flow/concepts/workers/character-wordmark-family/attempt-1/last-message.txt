@@ -1,0 +1,6 @@
+完成。已生成并保存：
+
+- `outputs/logos/trainmate-flow/concepts/workers/character-wordmark-family/attempt-1/image.png`
+- `outputs/logos/trainmate-flow/concepts/workers/character-wordmark-family/attempt-1/result.json`
+
+`result.json` 已按要求写入 `complete` 状态。

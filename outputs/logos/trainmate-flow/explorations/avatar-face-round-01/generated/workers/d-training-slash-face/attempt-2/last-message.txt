@@ -1,0 +1,9 @@
+已完成。生成图已保存到：
+
+`outputs/logos/trainmate-flow/explorations/avatar-face-round-01/generated/workers/d-training-slash-face/attempt-2/image.png`
+
+结果 JSON 已保存到：
+
+`outputs/logos/trainmate-flow/explorations/avatar-face-round-01/generated/workers/d-training-slash-face/attempt-2/result.json`
+
+验证结果：两个文件均存在，`result.json` 内容符合指定结构。

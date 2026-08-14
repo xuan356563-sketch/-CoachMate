@@ -1,0 +1,7 @@
+{
+  "id": "b3-last-set-grit",
+  "status": "failed",
+  "image_path": null,
+  "error": "原生图片生成工具未提供可保存到本地文件系统的图片路径或二进制输出",
+  "caveats": ""
+}

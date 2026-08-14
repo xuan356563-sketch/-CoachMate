@@ -1,0 +1,7 @@
+{
+  "id": "o2-organic-rhythm",
+  "status": "failed",
+  "image_path": null,
+  "error": "原生图像生成工具未返回可保存的 PNG 文件路径或二进制数据，无法写入指定 image.png。",
+  "caveats": ""
+}

@@ -1,0 +1,14 @@
+{
+  "id": "review-renderer-materialized",
+  "action": "write_moodboard_widget_payload",
+  "label": "Materialized Creative Production image review",
+  "createdAt": "2026-07-15T12:50:37.040303Z",
+  "timestamp": "2026-07-15T12:50:37.040303Z",
+  "title": "\u667a\u7ec3 TrainMate\uff5cFlow \u80f6\u56ca\u8138\u4e0e\u594b\u6597\u98d8\u5e26\u5bb6\u65cf",
+  "summary": "\u7b2c 5 \u5f20\u4e3a\u5f53\u524d\u63a8\u8350\u7a3f\uff1a\u56db\u5904\u4fdd\u7559\u8f6f\u80f6\u56ca\uff0c\u80f6\u56ca\u5185\u4e3a B1 \u5de6\u70b9\u773c\u4e0e\u53f3\u5f2f\u773c\uff0c\u6843\u8272\u77ed\u5634\u4e0b\u79fb\u5e76\u4e0e\u80f6\u56ca\u4e0b\u7f18\u4fdd\u6301\u660e\u663e\u7559\u767d\uff1b\u594b\u6597\u5934\u5e26\u3001\u8f6f\u7ed3\u3001\u53cc\u77ed\u98d8\u5e26\u53ca\u5b57\u6807\u7248\u5f0f\u5168\u90e8\u4fdd\u7559\u3002",
+  "itemCount": 5,
+  "runDirectory": "/Volumes/AI strongho/XunLian/zhuque-flutter-main/outputs/logos/trainmate-flow/explorations/avatar-face-round-02",
+  "streamPath": "/Volumes/AI strongho/XunLian/zhuque-flutter-main/outputs/logos/trainmate-flow/explorations/avatar-face-round-02/data/stream.json",
+  "runStatePath": "/Volumes/AI strongho/XunLian/zhuque-flutter-main/outputs/logos/trainmate-flow/explorations/avatar-face-round-02/run-state.json",
+  "latestActionPath": "/Volumes/AI strongho/XunLian/zhuque-flutter-main/outputs/logos/trainmate-flow/explorations/avatar-face-round-02/latest-action.json"
+}

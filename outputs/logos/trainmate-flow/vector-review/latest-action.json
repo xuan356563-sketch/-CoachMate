@@ -1,0 +1,18 @@
+{
+  "id": "append-trainmate-wordmark-horizontal-reference-v1",
+  "action": "append_moodboard_board_items",
+  "label": "Appended mood-board images",
+  "createdAt": "2026-07-15T16:11:38.533Z",
+  "timestamp": "2026-07-15T16:11:38.533Z",
+  "sourceActionId": "wordmark-reference-layout-20260715",
+  "idempotencyKey": "trainmate-wordmark-horizontal-reference-v1",
+  "appendedItemIds": [
+    "standalone-wordmark-horizontal"
+  ],
+  "appendedCount": 1,
+  "itemCount": 15,
+  "runDirectory": "/Volumes/AI strongho/XunLian/zhuque-flutter-main/outputs/logos/trainmate-flow/vector-review",
+  "streamPath": "/Volumes/AI strongho/XunLian/zhuque-flutter-main/outputs/logos/trainmate-flow/vector-review/data/stream.json",
+  "runStatePath": "/Volumes/AI strongho/XunLian/zhuque-flutter-main/outputs/logos/trainmate-flow/vector-review/run-state.json",
+  "latestActionPath": "/Volumes/AI strongho/XunLian/zhuque-flutter-main/outputs/logos/trainmate-flow/vector-review/latest-action.json"
+}

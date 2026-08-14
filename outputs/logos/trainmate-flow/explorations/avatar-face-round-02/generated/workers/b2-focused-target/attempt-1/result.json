@@ -1,0 +1,7 @@
+{
+  "id": "b2-focused-target",
+  "status": "failed",
+  "image_path": null,
+  "error": "原生图片生成工具未返回可保存到工作区的 PNG 文件路径或二进制内容",
+  "caveats": ""
+}

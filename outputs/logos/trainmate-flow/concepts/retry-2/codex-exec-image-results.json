@@ -1,0 +1,23 @@
+{
+  "status": "complete",
+  "total": 2,
+  "complete": 2,
+  "failed": 0,
+  "pending": 0,
+  "results": [
+    {
+      "id": "bold-print-companion-r2",
+      "status": "complete",
+      "image_path": "outputs/logos/trainmate-flow/concepts/retry-2/02-bold-print-companion.png",
+      "error": null,
+      "caveats": ""
+    },
+    {
+      "id": "character-wordmark-family-r2",
+      "status": "complete",
+      "image_path": "outputs/logos/trainmate-flow/concepts/retry-2/03-character-wordmark-family.png",
+      "error": null,
+      "caveats": ""
+    }
+  ]
+}

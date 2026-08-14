@@ -1,0 +1,7 @@
+{
+  "id": "d-training-slash-face",
+  "status": "failed",
+  "image_path": null,
+  "error": "原生图片生成工具未提供可保存到指定路径的本地文件或二进制输出",
+  "caveats": ""
+}

@@ -1,0 +1,7 @@
+已按规则只调用了一次 `image_gen.imagegen` 生成图像。
+
+但原生图像工具没有返回可保存到文件系统的 PNG 路径或字节句柄，因此无法把图片写入指定的 `image.png`。我已按要求写入失败结果 JSON：
+
+`outputs/logos/trainmate-flow/explorations/wordmark-round-02/generated-retry/workers/s2-horizontal-negative-space/attempt-2/result.json`
+
+状态为 `failed`，错误原因已写入 `error` 字段。

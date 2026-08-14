@@ -1,0 +1,7 @@
+{
+  "id": "b1-friendly-companion-family-preview",
+  "status": "failed",
+  "image_path": null,
+  "error": "原生图像生成工具未提供可保存到本地 PNG 的文件句柄",
+  "caveats": ""
+}

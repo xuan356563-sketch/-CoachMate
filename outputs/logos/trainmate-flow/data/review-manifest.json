@@ -1,0 +1,53 @@
+[
+  {
+    "id": "warm-handmade-companion",
+    "index": 1,
+    "title": "A｜温暖手绘伙伴",
+    "label": "A｜温暖手绘伙伴",
+    "family": "playful-adaptive",
+    "tone": "温暖、克制、亲和",
+    "src": "concepts/01-warm-handmade-companion.png",
+    "href": "concepts/01-warm-handmade-companion.png",
+    "output": "01-warm-handmade-companion.png",
+    "caption": "最均衡、最稳妥：角色亲和、系统完整，对现有 Flow 改动最小。注意副标和反白关系仍需重做。",
+    "best_for": "App 图标、启动页、官网头部、训练建议卡片",
+    "decision_advice": "如果希望一眼看出是有性格的 AI 训练伙伴，同时不显幼稚，优先选择。",
+    "watch_out": "头型顶部略像运动帽，矢量阶段需继续减少帽子联想。",
+    "next_step": "锁定头型曲率与字标笔画节奏，制作 16–1024px 矢量适配。",
+    "prompt": "B1 Flow 原生头像；克制手绘曲率、温暖亲和、圆润中英文字标、完整 Brandmark／App icon／Lockup／Submark 系统。"
+  },
+  {
+    "id": "bold-print-companion",
+    "index": 2,
+    "title": "B｜粗印训练印记",
+    "label": "B｜粗印训练印记",
+    "family": "heritage-utility",
+    "tone": "运动、粗实、强识别",
+    "src": "concepts/02-bold-print-companion.png",
+    "href": "concepts/02-bold-print-companion.png",
+    "output": "02-bold-print-companion.png",
+    "caption": "最强调运动印记和单色传播：大色块强、适合周边与社群。核心标志无纹理，颗粒只在独立营销小样。",
+    "best_for": "训练海报、社群头像、服饰周边、单色印刷",
+    "decision_advice": "如果希望品牌更有力量、更像能盖章和印在训练装备上的标志，可选择。",
+    "watch_out": "大轮廓较厚重，反白版本与极小尺寸仍需重新校正。",
+    "next_step": "去除营销纹理后锁定单色轮廓，并验证 24／32／48px。",
+    "prompt": "B1 Flow 原生头像；粗实大色块、运动印记、单色反白优先，丝网颗粒仅作独立营销示例。"
+  },
+  {
+    "id": "character-wordmark-family",
+    "index": 3,
+    "title": "C｜角色字标同频（推荐）",
+    "label": "C｜角色字标同频（推荐）",
+    "family": "adaptive-wordmark",
+    "tone": "品牌化、圆润、传播友好",
+    "src": "concepts/03-character-wordmark-family.png",
+    "href": "concepts/03-character-wordmark-family.png",
+    "output": "03-character-wordmark-family.png",
+    "caption": "最接近参考图的“角色＋手绘字标＋完整品牌家族”，也是三张中差异最明确的一张。生成式中文只看气质。",
+    "best_for": "官网、应用商店标题区、启动页、社交媒体页眉",
+    "decision_advice": "如果最看重参考图中的角色品牌感和中英文字标记忆点，推荐选择。",
+    "watch_out": "生成式中文并非正式字标；矢量阶段必须按准确字形重绘。",
+    "next_step": "锁定头像与字标比例、间距和笔画性格，再确定性重绘中英文字标。",
+    "prompt": "B1 Flow 原生头像；头像与原创圆厚中英文字标同频，头像保持独立，不替代或嵌入任何字符。"
+  }
+]

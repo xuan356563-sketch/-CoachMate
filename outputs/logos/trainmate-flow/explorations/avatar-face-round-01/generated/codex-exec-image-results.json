@@ -1,0 +1,37 @@
+{
+  "status": "complete",
+  "total": 4,
+  "complete": 4,
+  "failed": 0,
+  "pending": 0,
+  "results": [
+    {
+      "id": "a-forward-seed-eyes",
+      "status": "complete",
+      "image_path": "outputs/logos/trainmate-flow/explorations/avatar-face-round-01/generated/d7ae3ee1d761c37374200be68330d8b2.png",
+      "error": null,
+      "caveats": ""
+    },
+    {
+      "id": "b-one-soft-one-tight",
+      "status": "complete",
+      "image_path": "outputs/logos/trainmate-flow/explorations/avatar-face-round-01/generated/d58a408486c0f06d51251a7952890594.png",
+      "error": null,
+      "caveats": ""
+    },
+    {
+      "id": "c-open-line-profile",
+      "status": "complete",
+      "image_path": "outputs/logos/trainmate-flow/explorations/avatar-face-round-01/generated/54aa2fb75c83d84bf823d2181cb29dc1.png",
+      "error": null,
+      "caveats": ""
+    },
+    {
+      "id": "d-training-slash-face",
+      "status": "complete",
+      "image_path": "outputs/logos/trainmate-flow/explorations/avatar-face-round-01/generated/bfdee8c1ea534fbba68db626d7dbf801.png",
+      "error": null,
+      "caveats": ""
+    }
+  ]
+}

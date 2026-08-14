@@ -1,0 +1,30 @@
+{
+  "status": "complete",
+  "total": 3,
+  "complete": 3,
+  "failed": 0,
+  "pending": 0,
+  "results": [
+    {
+      "id": "warm-handmade-companion",
+      "status": "complete",
+      "image_path": "outputs/logos/trainmate-flow/concepts/01-warm-handmade-companion.png",
+      "error": null,
+      "caveats": ""
+    },
+    {
+      "id": "bold-print-companion",
+      "status": "complete",
+      "image_path": "outputs/logos/trainmate-flow/concepts/02-bold-print-companion.png",
+      "error": null,
+      "caveats": ""
+    },
+    {
+      "id": "character-wordmark-family",
+      "status": "complete",
+      "image_path": "outputs/logos/trainmate-flow/concepts/03-character-wordmark-family.png",
+      "error": null,
+      "caveats": ""
+    }
+  ]
+}
