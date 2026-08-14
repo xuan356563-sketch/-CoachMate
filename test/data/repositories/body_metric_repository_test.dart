@@ -6,12 +6,11 @@ import 'package:trainflow_ai/data/seed/seed_body_metrics.dart';
 import 'package:trainflow_ai/services/local_storage_service.dart';
 
 void main() {
-  test('没有本地 JSON 时身体数据仓库读取默认种子指标', () {
+  test('没有本地 JSON 时身体数据仓库保持空数据', () {
     final PersistedBodyMetricRepository repository =
         PersistedBodyMetricRepository(InMemoryLocalStorageService());
 
-    expect(repository.listMetrics(), hasLength(seedBodyMetrics.length));
-    expect(repository.listMetrics().first.id, seedBodyMetrics.first.id);
+    expect(repository.listMetrics(), isEmpty);
     expect(repository.listRevisions(), isEmpty);
   });
 
@@ -42,6 +41,7 @@ void main() {
         InMemoryLocalStorageService();
     final PersistedBodyMetricRepository repository =
         PersistedBodyMetricRepository(storageService);
+    repository.saveMetric(seedBodyMetrics.first, reason: '测试基线');
     final BodyMetric originalMetric = repository.listMetrics().first;
     final BodyMetric revisedMetric = BodyMetric(
       id: 'body-metric-test-revised',

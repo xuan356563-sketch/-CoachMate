@@ -104,6 +104,62 @@ MainSport mainSportFromJson(String? value) {
   }
 }
 
+enum TrainingExperienceLevel {
+  unknown,
+  beginner,
+  intermediate,
+  advanced,
+  elite,
+}
+
+extension TrainingExperienceLevelJson on TrainingExperienceLevel {
+  String get jsonValue {
+    switch (this) {
+      case TrainingExperienceLevel.unknown:
+        return 'unknown';
+      case TrainingExperienceLevel.beginner:
+        return 'beginner';
+      case TrainingExperienceLevel.intermediate:
+        return 'intermediate';
+      case TrainingExperienceLevel.advanced:
+        return 'advanced';
+      case TrainingExperienceLevel.elite:
+        return 'elite';
+    }
+  }
+
+  String get label {
+    switch (this) {
+      case TrainingExperienceLevel.unknown:
+        return '待补充';
+      case TrainingExperienceLevel.beginner:
+        return '初学者';
+      case TrainingExperienceLevel.intermediate:
+        return '进阶训练者';
+      case TrainingExperienceLevel.advanced:
+        return '高阶训练者';
+      case TrainingExperienceLevel.elite:
+        return '竞技训练者';
+    }
+  }
+}
+
+TrainingExperienceLevel trainingExperienceLevelFromJson(String? value) {
+  switch (value) {
+    case 'beginner':
+      return TrainingExperienceLevel.beginner;
+    case 'intermediate':
+      return TrainingExperienceLevel.intermediate;
+    case 'advanced':
+      return TrainingExperienceLevel.advanced;
+    case 'elite':
+      return TrainingExperienceLevel.elite;
+    case 'unknown':
+    default:
+      return TrainingExperienceLevel.unknown;
+  }
+}
+
 enum WorkScheduleType {
   regularOffice,
   overtimeHeavy,
@@ -312,16 +368,27 @@ class UserProfile {
   final String name;
   final Gender gender;
   final int age;
+  final DateTime? birthDate;
   final double heightCm;
   final double weightKg;
+  final int? maxHeartRate;
   final String trainingGoal;
   final List<MainSport> mainSports;
+  final TrainingExperienceLevel trainingExperienceLevel;
   final int weeklyTrainingDays;
   final int dailyAvailableMinutes;
   final List<String> injuryHistory;
   final WorkScheduleType workScheduleType;
   final EquipmentAccessType equipmentAccessType;
   final WorkerProfileType workerProfileType;
+
+  /// 是否允许把生理性别用于云端 AI 计划生成。
+  ///
+  /// **默认 false，必须由用户主动打开。** 关闭时性别只在本地使用（例如 TRIMP 的
+  /// 性别系数），不会进入处方请求体、提示词和缓存摘要，也不会离开设备。
+  /// 旧档案反序列化时该键不存在，会落到 false —— 没表态即视为未同意。
+  final bool allowBiologicalSexInAiPlanning;
+
   final DateTime createdAt;
   final DateTime updatedAt;
 
@@ -330,33 +397,61 @@ class UserProfile {
     required this.name,
     required this.gender,
     required this.age,
+    this.birthDate,
     required this.heightCm,
     required this.weightKg,
+    this.maxHeartRate,
     required this.trainingGoal,
     required this.mainSports,
+    this.trainingExperienceLevel = TrainingExperienceLevel.unknown,
     required this.weeklyTrainingDays,
     required this.dailyAvailableMinutes,
     required this.injuryHistory,
     required this.workScheduleType,
     this.equipmentAccessType = EquipmentAccessType.gym,
     this.workerProfileType = WorkerProfileType.general,
+    this.allowBiologicalSexInAiPlanning = false,
     required this.createdAt,
     required this.updatedAt,
   });
 
+  /// 可以发往云端处方接口的性别代码。
+  ///
+  /// 同时满足两个条件才返回非空：用户已明确同意，且性别是 male / female。
+  /// 「其他」「暂不填写」没有可用于训练处方的确定含义，一律返回 null。
+  /// 这是唯一的判定入口，请求体与本地陈旧指纹都必须走它，避免两边逻辑漂移。
+  String? get aiPlanningBiologicalSexCode {
+    if (!allowBiologicalSexInAiPlanning) return null;
+    return switch (gender) {
+      Gender.male => 'male',
+      Gender.female => 'female',
+      Gender.other || Gender.unknown => null,
+    };
+  }
+
   factory UserProfile.fromJson(Map<String, dynamic> json) {
     final List<dynamic> sportsJson = json['mainSports'] as List<dynamic>? ?? [];
+    final int? storedMaxHeartRate = (json['maxHeartRate'] as num?)?.toInt();
     return UserProfile(
       id: json['id'] as String? ?? '',
       name: json['name'] as String? ?? '',
       gender: genderFromJson(json['gender'] as String?),
       age: (json['age'] as num?)?.toInt() ?? 0,
+      birthDate: DateTime.tryParse(json['birthDate'] as String? ?? ''),
       heightCm: (json['heightCm'] as num?)?.toDouble() ?? 0,
       weightKg: (json['weightKg'] as num?)?.toDouble() ?? 0,
+      maxHeartRate: storedMaxHeartRate != null &&
+              storedMaxHeartRate >= 80 &&
+              storedMaxHeartRate <= 240
+          ? storedMaxHeartRate
+          : null,
       trainingGoal: json['trainingGoal'] as String? ?? '',
       mainSports: sportsJson
           .map((dynamic value) => mainSportFromJson(value as String?))
           .toList(),
+      trainingExperienceLevel: trainingExperienceLevelFromJson(
+        json['trainingExperienceLevel'] as String?,
+      ),
       weeklyTrainingDays: (json['weeklyTrainingDays'] as num?)?.toInt() ?? 0,
       dailyAvailableMinutes:
           (json['dailyAvailableMinutes'] as num?)?.toInt() ?? 0,
@@ -370,6 +465,9 @@ class UserProfile {
       workerProfileType: workerProfileTypeFromJson(
         json['workerProfileType'] as String?,
       ),
+      // 只有显式为 true 才算同意；键缺失或类型异常都落到 false。
+      allowBiologicalSexInAiPlanning:
+          json['allowBiologicalSexInAiPlanning'] == true,
       createdAt: DateTime.tryParse(json['createdAt'] as String? ?? '') ??
           DateTime.fromMillisecondsSinceEpoch(0),
       updatedAt: DateTime.tryParse(json['updatedAt'] as String? ?? '') ??
@@ -383,16 +481,20 @@ class UserProfile {
       'name': name,
       'gender': gender.jsonValue,
       'age': age,
+      'birthDate': birthDate == null ? null : _dateOnlyKey(birthDate!),
       'heightCm': heightCm,
       'weightKg': weightKg,
+      'maxHeartRate': maxHeartRate,
       'trainingGoal': trainingGoal,
       'mainSports': mainSports.map((MainSport item) => item.jsonValue).toList(),
+      'trainingExperienceLevel': trainingExperienceLevel.jsonValue,
       'weeklyTrainingDays': weeklyTrainingDays,
       'dailyAvailableMinutes': dailyAvailableMinutes,
       'injuryHistory': injuryHistory,
       'workScheduleType': workScheduleType.jsonValue,
       'equipmentAccessType': equipmentAccessType.jsonValue,
       'workerProfileType': workerProfileType.jsonValue,
+      'allowBiologicalSexInAiPlanning': allowBiologicalSexInAiPlanning,
       'createdAt': createdAt.toIso8601String(),
       'updatedAt': updatedAt.toIso8601String(),
     };
@@ -403,16 +505,22 @@ class UserProfile {
     String? name,
     Gender? gender,
     int? age,
+    DateTime? birthDate,
+    bool clearBirthDate = false,
     double? heightCm,
     double? weightKg,
+    int? maxHeartRate,
+    bool clearMaxHeartRate = false,
     String? trainingGoal,
     List<MainSport>? mainSports,
+    TrainingExperienceLevel? trainingExperienceLevel,
     int? weeklyTrainingDays,
     int? dailyAvailableMinutes,
     List<String>? injuryHistory,
     WorkScheduleType? workScheduleType,
     EquipmentAccessType? equipmentAccessType,
     WorkerProfileType? workerProfileType,
+    bool? allowBiologicalSexInAiPlanning,
     DateTime? createdAt,
     DateTime? updatedAt,
   }) {
@@ -421,10 +529,15 @@ class UserProfile {
       name: name ?? this.name,
       gender: gender ?? this.gender,
       age: age ?? this.age,
+      birthDate: clearBirthDate ? null : birthDate ?? this.birthDate,
       heightCm: heightCm ?? this.heightCm,
       weightKg: weightKg ?? this.weightKg,
+      maxHeartRate:
+          clearMaxHeartRate ? null : maxHeartRate ?? this.maxHeartRate,
       trainingGoal: trainingGoal ?? this.trainingGoal,
       mainSports: mainSports ?? this.mainSports,
+      trainingExperienceLevel:
+          trainingExperienceLevel ?? this.trainingExperienceLevel,
       weeklyTrainingDays: weeklyTrainingDays ?? this.weeklyTrainingDays,
       dailyAvailableMinutes:
           dailyAvailableMinutes ?? this.dailyAvailableMinutes,
@@ -432,8 +545,15 @@ class UserProfile {
       workScheduleType: workScheduleType ?? this.workScheduleType,
       equipmentAccessType: equipmentAccessType ?? this.equipmentAccessType,
       workerProfileType: workerProfileType ?? this.workerProfileType,
+      allowBiologicalSexInAiPlanning: allowBiologicalSexInAiPlanning ??
+          this.allowBiologicalSexInAiPlanning,
       createdAt: createdAt ?? this.createdAt,
       updatedAt: updatedAt ?? this.updatedAt,
     );
   }
 }
+
+String _dateOnlyKey(DateTime value) =>
+    '${value.year.toString().padLeft(4, '0')}-'
+    '${value.month.toString().padLeft(2, '0')}-'
+    '${value.day.toString().padLeft(2, '0')}';

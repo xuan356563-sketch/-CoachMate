@@ -2,13 +2,23 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 import 'package:trainflow_ai/data/models/body_metric.dart';
+import 'package:trainflow_ai/data/repositories/body_metric_repository.dart';
+import 'package:trainflow_ai/data/seed/seed_body_metrics.dart';
 import 'package:trainflow_ai/features/data_center/application/body_metric_controller.dart';
 import 'package:trainflow_ai/features/dashboard/training_mvp_controller.dart';
 import 'package:trainflow_ai/services/local_storage_service.dart';
 
 void main() {
+  void seedStorage(InMemoryLocalStorageService storage) {
+    PersistedBodyMetricRepository(storage).saveMetric(
+      seedBodyMetrics.first,
+      reason: '测试同步基线',
+    );
+  }
+
   test('身体记录控制器同步旧状态和成就并保留训练会话', () async {
     final InMemoryLocalStorageService storage = InMemoryLocalStorageService();
+    seedStorage(storage);
     final ProviderContainer container = ProviderContainer(
       overrides: [
         localStorageServiceProvider.overrideWithValue(storage),
@@ -51,6 +61,7 @@ void main() {
 
   test('截图待确认只同步旧待确认状态，确认后才同步成就', () async {
     final InMemoryLocalStorageService storage = InMemoryLocalStorageService();
+    seedStorage(storage);
     final ProviderContainer container = ProviderContainer(
       overrides: [
         localStorageServiceProvider.overrideWithValue(storage),

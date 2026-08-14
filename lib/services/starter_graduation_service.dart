@@ -66,7 +66,7 @@ class StarterGraduationService {
       return '已进入第 4 周成型阶段，剩余重点是完成 28-30 天毕业测试。';
     }
     if (completedDays >= 7) {
-      return '已建立基本连续性，当前第 $starterProgramDayIndex 天仍以稳定执行优先。';
+      return '已建立基本执行节奏，当前第 $starterProgramDayIndex 天仍以稳定执行优先。';
     }
     return '当前还在冷启动阶段，能力评估先保守，只看完成率和恢复信号。';
   }
@@ -146,8 +146,8 @@ class StarterGraduationService {
     if (logs.isEmpty) {
       if (starterProgramStreak > 0) {
         return _SubjectiveTrend(
-          label: '连续性形成',
-          detail: '已连续完成 $starterProgramStreak 天；主观量表记录不足，仍按保守坡度衔接。',
+          label: '执行积累',
+          detail: '已累计完成 $starterProgramStreak 天；主观量表记录不足，仍按保守坡度衔接。',
         );
       }
       return const _SubjectiveTrend(

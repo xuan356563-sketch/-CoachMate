@@ -1,696 +1,1005 @@
-import 'dart:typed_data';
-import 'dart:ui' as ui;
+import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 
+import '../../app/router/app_routes.dart';
 import '../../core/constants/app_colors.dart';
+import '../../core/widgets/trainmate_action_character.dart';
+import '../../core/widgets/trainmate_showcase_widgets.dart';
 import '../../core/widgets/trainflow_widgets.dart';
+import '../../data/models/growth_evidence.dart';
+import '../../data/models/exercise_training_profile.dart';
+import '../../data/models/monthly_summary.dart';
+import '../../data/models/training_log.dart';
+import '../../data/models/training_metrics.dart';
 import '../../data/models/weekly_report.dart';
-import '../../data/models/weekly_report_export.dart';
+import '../../data/models/weekly_psych_check_in.dart';
+import '../../services/local_report_generation_coordinator.dart';
 import '../dashboard/training_mvp_controller.dart';
+import '../growth/application/growth_evidence_controller.dart';
+import '../growth/application/training_metrics_provider.dart';
+import '../profile/application/health_sync_controller.dart';
 
-class WeeklyReportPage extends ConsumerWidget {
+enum _ReportPeriodView { week, month }
+
+class WeeklyReportPage extends ConsumerStatefulWidget {
   const WeeklyReportPage({super.key});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<WeeklyReportPage> createState() => _WeeklyReportPageState();
+}
+
+class _WeeklyReportPageState extends ConsumerState<WeeklyReportPage> {
+  _ReportPeriodView _selectedPeriod = _ReportPeriodView.week;
+
+  @override
+  Widget build(BuildContext context) {
     final TrainingMvpState state = ref.watch(trainingMvpProvider);
-    final WeeklyReport report = state.weeklyReport;
-    final String exportText = ref.watch(weeklyReportExportTextProvider);
-    final String imageExportStatus =
-        ref.watch(weeklyReportImageExportStatusProvider);
+    final GrowthEvidenceState growthState =
+        ref.watch(growthEvidenceControllerProvider);
+    final DateTime weekStart = growthWeekStart(DateTime.now()).subtract(
+      const Duration(days: 7),
+    );
+    final DateTime currentMonthStart =
+        DateTime(DateTime.now().year, DateTime.now().month);
+    final DateTime monthStart =
+        DateTime(currentMonthStart.year, currentMonthStart.month - 1);
+    final String athleteProfileId = resolveTrainingMetricsAthleteProfileId(
+      growthEvidenceAthleteProfileId: growthState.athleteProfileId,
+      profileAthleteProfileId: state.profile.id,
+    );
+    final bool showingMonth = _selectedPeriod == _ReportPeriodView.month;
+    final TrainingReportQuery reportQuery = TrainingReportQuery(
+      athleteProfileId: athleteProfileId,
+      period: showingMonth ? MetricPeriod.month : MetricPeriod.week,
+      periodStart: showingMonth ? monthStart : weekStart,
+    );
+    final AsyncValue<List<ReportRevision>> reportRevisions =
+        ref.watch(trainingReportRevisionsProvider(reportQuery));
 
     return TrainFlowPage(
-      title: '自动周报',
-      subtitle: '训练周报 Agent Mock：完成率、负荷趋势、决策回顾和下周重点。',
+      title: '最近结束周期报告',
+      layout: TrainFlowPageLayout.report,
+      subtitle: '只为已结束周期生成本地确定性修订，不依赖云端定时任务。',
+      leading: const TrainMateBackButton(
+        fallbackRoute: AppRoutes.profile,
+      ),
+      artwork: const TrainMateIllustration(
+        assetPath: 'assets/images/trainmate_growth_scene.png',
+        semanticLabel: '周期报告与训练成长插画',
+        fallback: TrainMateActionCharacter(
+          action: TrainMateAction.plank,
+          backgroundColor: AppColors.primary,
+        ),
+      ),
       children: [
-        _WeeklyReportSummaryCard(report: report),
-        _WeeklyReportInsightCard(report: report),
-        _WeeklyReportFocusCard(report: report),
-        _WeeklyReportExportCard(
-          state: state,
-          report: report,
-          exportText: exportText,
-          imageExportStatus: imageExportStatus,
+        SegmentedButton<_ReportPeriodView>(
+          key: const ValueKey<String>('report-period-selector'),
+          segments: const <ButtonSegment<_ReportPeriodView>>[
+            ButtonSegment<_ReportPeriodView>(
+              value: _ReportPeriodView.week,
+              label: Text('周报'),
+              icon: Icon(Icons.calendar_view_week_outlined),
+            ),
+            ButtonSegment<_ReportPeriodView>(
+              value: _ReportPeriodView.month,
+              label: Text('月报'),
+              icon: Icon(Icons.calendar_month_outlined),
+            ),
+          ],
+          selected: <_ReportPeriodView>{_selectedPeriod},
+          onSelectionChanged: (Set<_ReportPeriodView> value) {
+            setState(() => _selectedPeriod = value.single);
+          },
+        ),
+        LocalReportRevisionCard(
+          reports: reportRevisions,
+          reportTitle: showingMonth ? '本地确定性月报' : '本地确定性周报',
+          emptyMessage: showingMonth ? '上一完整自然月的数据仍在积累，达到门槛后会生成不可变月报修订。' : null,
+          onGenerate: () async {
+            final bool generated = await LocalReportGenerationCoordinator(
+              repository: ref.read(trainingMetricsRepositoryProvider),
+              metricsPipeline: ref.read(healthSyncMetricsPipelineProvider),
+              monthlySummaryLoader: ref.read(monthlySummaryLoaderProvider),
+            ).ensureClosedPeriod(
+              athleteProfileId: athleteProfileId,
+              period: showingMonth ? MetricPeriod.month : MetricPeriod.week,
+              periodStart: showingMonth ? monthStart : weekStart,
+            );
+            ref.invalidate(trainingReportRevisionsProvider(reportQuery));
+            return generated;
+          },
+        ),
+        if (showingMonth)
+          _MonthlySummaryCard(
+            reports: reportRevisions,
+            monthStart: monthStart,
+          )
+        else ...[
+          _GrowthWeeklyReportCard(
+            state: state,
+            growthState: growthState,
+            weekStart: weekStart,
+          ),
+          _PsychologyWeeklyCheckInCard(state: state),
+          _LockedGrowthReportsCard(growthState: growthState),
+        ],
+      ],
+    );
+  }
+}
+
+class _MonthlySummaryCard extends StatelessWidget {
+  const _MonthlySummaryCard({
+    required this.reports,
+    required this.monthStart,
+  });
+
+  final AsyncValue<List<ReportRevision>> reports;
+  final DateTime monthStart;
+
+  @override
+  Widget build(BuildContext context) {
+    return reports.when(
+      data: (List<ReportRevision> values) {
+        final MonthlySummary? summary =
+            values.isEmpty ? null : values.first.monthlySummarySnapshot;
+        return TrainFlowCard(
+          key: const ValueKey<String>('monthly-summary-card'),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                '${monthStart.year} 年 ${monthStart.month} 月总结',
+                style: Theme.of(context)
+                    .textTheme
+                    .titleLarge
+                    ?.copyWith(fontWeight: FontWeight.w900),
+              ),
+              const SizedBox(height: 6),
+              const Text('仅统计已结束的完整自然月；不会自动修改训练计划。'),
+              const SizedBox(height: 18),
+              Text(
+                '核心能力变化',
+                style: Theme.of(context)
+                    .textTheme
+                    .titleMedium
+                    ?.copyWith(fontWeight: FontWeight.w800),
+              ),
+              const SizedBox(height: 10),
+              if (summary == null)
+                const Text('训练执行、耐力 / 专项、力量和恢复数据仍在积累。')
+              else
+                for (final MonthlyDimensionSummary dimension
+                    in summary.dimensions)
+                  _MonthlyDimensionRow(dimension: dimension),
+              if (summary != null &&
+                  summary.trainingDimensionExposure.isNotEmpty) ...[
+                const SizedBox(height: 18),
+                Text(
+                  '五维训练暴露',
+                  style: Theme.of(context)
+                      .textTheme
+                      .titleMedium
+                      ?.copyWith(fontWeight: FontWeight.w800),
+                ),
+                const SizedBox(height: 10),
+                _TrainingDimensionRadar(
+                  exposure: summary.trainingDimensionExposure,
+                ),
+              ],
+              const SizedBox(height: 18),
+              Text(
+                '身体变化',
+                style: Theme.of(context)
+                    .textTheme
+                    .titleMedium
+                    ?.copyWith(fontWeight: FontWeight.w800),
+              ),
+              const SizedBox(height: 10),
+              if (summary == null)
+                const Text('体重、体脂、静息心率、HRV、睡眠和疲劳仍在积累有效日。')
+              else
+                for (final MonthlyMetricChange change in summary.bodyChanges)
+                  _MonthlyMetricRow(change: change),
+              const SizedBox(height: 8),
+              Text(
+                '体重和体脂只描述变化，不判断好坏；其余结论使用固定阈值，不能替代医疗判断。',
+                style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                      color: AppColors.textSecondary,
+                    ),
+              ),
+              if (summary != null) ...[
+                const SizedBox(height: 16),
+                SizedBox(
+                  width: double.infinity,
+                  child: FilledButton.icon(
+                    onPressed: () => context.push(AppRoutes.planGenerate),
+                    icon: const Icon(Icons.auto_awesome_outlined),
+                    label: const Text('基于月报生成下个四周计划'),
+                  ),
+                ),
+                const SizedBox(height: 6),
+                const Text('只进入待确认草稿流程，不会自动替换当前计划。'),
+              ],
+            ],
+          ),
+        );
+      },
+      error: (Object error, StackTrace stackTrace) => const TrainFlowCard(
+        child: Text('月度总结读取失败；本地历史数据未被修改。'),
+      ),
+      loading: () => const TrainFlowCard(
+        child: Text('正在读取月度总结。'),
+      ),
+    );
+  }
+}
+
+class _MonthlyDimensionRow extends StatelessWidget {
+  const _MonthlyDimensionRow({required this.dimension});
+
+  final MonthlyDimensionSummary dimension;
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 12),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Expanded(
+                child: Text(
+                  dimension.dimension.label,
+                  style: const TextStyle(fontWeight: FontWeight.w700),
+                ),
+              ),
+              ToneBadge(label: dimension.state.label),
+            ],
+          ),
+          const SizedBox(height: 4),
+          for (final MonthlyMetricChange change in dimension.metrics)
+            _MonthlyMetricRow(change: change, compact: true),
+        ],
+      ),
+    );
+  }
+}
+
+class _MonthlyMetricRow extends StatelessWidget {
+  const _MonthlyMetricRow({
+    required this.change,
+    this.compact = false,
+  });
+
+  final MonthlyMetricChange change;
+  final bool compact;
+
+  @override
+  Widget build(BuildContext context) {
+    final TextStyle? detailStyle =
+        Theme.of(context).textTheme.bodySmall?.copyWith(
+              color: AppColors.textSecondary,
+            );
+    return Padding(
+      padding: EdgeInsets.only(bottom: compact ? 4 : 12),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Expanded(
+                child: Text(
+                  '${change.label}  ${_currentValueLabel(change)}',
+                  style: compact
+                      ? detailStyle
+                      : const TextStyle(fontWeight: FontWeight.w700),
+                ),
+              ),
+              if (!compact) ToneBadge(label: change.state.label),
+            ],
+          ),
+          const SizedBox(height: 2),
+          Text(_changeDetail(change), style: detailStyle),
+        ],
+      ),
+    );
+  }
+}
+
+String _currentValueLabel(MonthlyMetricChange change) {
+  final double? value = change.currentValue;
+  if (value == null) return '数据积累中';
+  if (change.code == 'completionRate') {
+    return '${(value * 100).round()}%';
+  }
+  return '${value.toStringAsFixed(_decimalPlaces(change))} ${change.unit}';
+}
+
+String _changeDetail(MonthlyMetricChange change) {
+  if (change.state == MonthlyChangeState.accumulating) return change.reason;
+  final String month = _deltaLabel(
+    change.monthOverMonthDelta,
+    change,
+    prefix: '月环比',
+  );
+  final String within = _deltaLabel(
+    change.withinMonthDelta,
+    change,
+    prefix: '月内',
+  );
+  return '$month · $within';
+}
+
+String _deltaLabel(
+  double? delta,
+  MonthlyMetricChange change, {
+  required String prefix,
+}) {
+  if (delta == null) return '$prefix：样本不足';
+  final double display = change.code == 'completionRate' ? delta * 100 : delta;
+  final String sign = display > 0 ? '+' : '';
+  final String unit = change.code == 'completionRate' ? '个百分点' : change.unit;
+  return '$prefix：$sign${display.toStringAsFixed(_decimalPlaces(change))} $unit';
+}
+
+int _decimalPlaces(MonthlyMetricChange change) {
+  return change.code == 'weight' ||
+          change.code == 'bodyFat' ||
+          change.code == 'sleep' ||
+          change.code == 'completionRate'
+      ? 1
+      : 0;
+}
+
+class _PsychologyWeeklyCheckInCard extends ConsumerStatefulWidget {
+  const _PsychologyWeeklyCheckInCard({required this.state});
+
+  final TrainingMvpState state;
+
+  @override
+  ConsumerState<_PsychologyWeeklyCheckInCard> createState() =>
+      _PsychologyWeeklyCheckInCardState();
+}
+
+class _PsychologyWeeklyCheckInCardState
+    extends ConsumerState<_PsychologyWeeklyCheckInCard> {
+  final TextEditingController _noteController = TextEditingController();
+  int? _motivation;
+  int? _stress;
+  int? _recovery;
+
+  @override
+  void dispose() {
+    _noteController.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final WeeklyReport? report = widget.state.savedWeeklyReports.isEmpty
+        ? null
+        : widget.state.savedWeeklyReports.first;
+    return TrainFlowCard(
+      key: const ValueKey<String>('weekly-psych-check-in-card'),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              const Icon(Icons.psychology_alt_outlined,
+                  color: AppColors.primary),
+              const SizedBox(width: 8),
+              Expanded(
+                child: Text(
+                  '本周状态复盘',
+                  style: Theme.of(context)
+                      .textTheme
+                      .titleLarge
+                      ?.copyWith(fontWeight: FontWeight.w900),
+                ),
+              ),
+              if (report != null) ToneBadge(label: report.psychRiskLevel.label),
+            ],
+          ),
+          const SizedBox(height: 8),
+          const Text('三项均可跳过；未选择会保存为未采集，不会自动填中间值。'),
+          const SizedBox(height: 14),
+          _FivePointSelector(
+            label: '训练动机',
+            value: _motivation,
+            onChanged: (int? value) => setState(() => _motivation = value),
+          ),
+          _FivePointSelector(
+            label: '感知压力',
+            value: _stress,
+            onChanged: (int? value) => setState(() => _stress = value),
+          ),
+          _FivePointSelector(
+            label: '恢复感',
+            value: _recovery,
+            onChanged: (int? value) => setState(() => _recovery = value),
+          ),
+          TextField(
+            key: const ValueKey<String>('weekly-psych-note'),
+            controller: _noteController,
+            maxLines: 2,
+            decoration: const InputDecoration(labelText: '本周备注（可选）'),
+          ),
+          const SizedBox(height: 12),
+          SizedBox(
+            width: double.infinity,
+            child: FilledButton(
+              key: const ValueKey<String>('weekly-psych-save'),
+              onPressed: _save,
+              child: const Text('保存本周状态并生成教练周报'),
+            ),
+          ),
+          if (report != null) ...[
+            const SizedBox(height: 16),
+            Text(report.goalSummary),
+            const SizedBox(height: 6),
+            Text(report.realityObservation),
+            if (report.dimensionExposure.isNotEmpty) ...[
+              const SizedBox(height: 10),
+              Wrap(
+                spacing: 8,
+                runSpacing: 8,
+                children: <Widget>[
+                  for (final TrainingDimensionExposure exposure
+                      in report.dimensionExposure)
+                    ToneBadge(
+                      label:
+                          '${exposure.dimension.label} ${exposure.completedSessions}/${exposure.plannedSessions}',
+                    ),
+                ],
+              ),
+            ],
+            const SizedBox(height: 10),
+            Text(
+              '下周方向',
+              style: Theme.of(context)
+                  .textTheme
+                  .titleMedium
+                  ?.copyWith(fontWeight: FontWeight.w800),
+            ),
+            const SizedBox(height: 6),
+            Wrap(
+              spacing: 8,
+              runSpacing: 8,
+              children: [
+                for (final WeeklyReportOption option in report.options)
+                  ChoiceChip(
+                    key: ValueKey<String>('weekly-option-${option.id}'),
+                    label: Text(option.label),
+                    selected: report.selectedOptionId == option.id,
+                    onSelected: (_) {
+                      ref
+                          .read(trainingMvpProvider.notifier)
+                          .selectWeeklyReportOption(
+                            reportId: report.id,
+                            optionId: option.id,
+                          );
+                    },
+                  ),
+              ],
+            ),
+            Text(report.reflectionQuestion),
+          ],
+          const SizedBox(height: 8),
+          Text(
+            widget.state.weeklyReportSaveStatusMessage,
+            style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                  color: AppColors.textSecondary,
+                ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _save() {
+    ref.read(trainingMvpProvider.notifier).savePsychologyWeeklyReport(
+          psychCheckIn: WeeklyPsychCheckIn(
+            motivation: _motivation,
+            perceivedStress: _stress,
+            recoveryFeel: _recovery,
+            weekNote: _noteController.text.trim().isEmpty
+                ? null
+                : _noteController.text.trim(),
+          ),
+        );
+  }
+}
+
+class _TrainingDimensionRadar extends StatelessWidget {
+  const _TrainingDimensionRadar({required this.exposure});
+
+  final List<TrainingDimensionExposure> exposure;
+
+  @override
+  Widget build(BuildContext context) {
+    final bool hasPlan = exposure
+        .any((TrainingDimensionExposure item) => item.plannedSessions > 0);
+    if (!hasPlan) return const Text('五维计划暴露仍在积累。');
+    return Column(
+      children: <Widget>[
+        SizedBox(
+          width: 190,
+          height: 190,
+          child: CustomPaint(
+            painter: _TrainingDimensionRadarPainter(exposure),
+          ),
+        ),
+        const SizedBox(height: 8),
+        Wrap(
+          spacing: 8,
+          runSpacing: 8,
+          alignment: WrapAlignment.center,
+          children: <Widget>[
+            for (final TrainingDimensionExposure item in exposure)
+              ToneBadge(
+                label:
+                    '${item.dimension.label} ${item.completedSessions}/${item.plannedSessions}',
+              ),
+          ],
         ),
       ],
     );
   }
 }
 
-class _WeeklyReportSummaryCard extends StatelessWidget {
-  final WeeklyReport report;
+class _TrainingDimensionRadarPainter extends CustomPainter {
+  const _TrainingDimensionRadarPainter(this.exposure);
 
-  const _WeeklyReportSummaryCard({required this.report});
+  final List<TrainingDimensionExposure> exposure;
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final Offset center = size.center(Offset.zero);
+    final double radius = math.min(size.width, size.height) * 0.38;
+    final Paint grid = Paint()
+      ..color = AppColors.textSecondary.withValues(alpha: 0.25)
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = 1;
+    final Paint fill = Paint()
+      ..color = AppColors.primary.withValues(alpha: 0.20)
+      ..style = PaintingStyle.fill;
+    final Paint stroke = Paint()
+      ..color = AppColors.primary
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = 2;
+    final int count = TrainingDimension.values.length;
+
+    List<Offset> points(double Function(int index) scaleFor) => <Offset>[
+          for (int index = 0; index < count; index += 1)
+            Offset(
+              center.dx +
+                  math.cos(-math.pi / 2 + index * math.pi * 2 / count) *
+                      radius *
+                      scaleFor(index),
+              center.dy +
+                  math.sin(-math.pi / 2 + index * math.pi * 2 / count) *
+                      radius *
+                      scaleFor(index),
+            ),
+        ];
+
+    Path polygon(List<Offset> values) {
+      final Path path = Path()..moveTo(values.first.dx, values.first.dy);
+      for (final Offset point in values.skip(1)) {
+        path.lineTo(point.dx, point.dy);
+      }
+      return path..close();
+    }
+
+    for (final double scale in <double>[0.25, 0.5, 0.75, 1]) {
+      canvas.drawPath(polygon(points((int _) => scale)), grid);
+    }
+    final Map<TrainingDimension, TrainingDimensionExposure> byDimension =
+        <TrainingDimension, TrainingDimensionExposure>{
+      for (final TrainingDimensionExposure item in exposure)
+        item.dimension: item,
+    };
+    final List<Offset> actual = points((int index) {
+      final TrainingDimensionExposure? item =
+          byDimension[TrainingDimension.values[index]];
+      if (item == null || item.plannedSessions <= 0) return 0;
+      return (item.completedSessions / item.plannedSessions).clamp(0, 1);
+    });
+    canvas
+      ..drawPath(polygon(actual), fill)
+      ..drawPath(polygon(actual), stroke);
+  }
+
+  @override
+  bool shouldRepaint(covariant _TrainingDimensionRadarPainter oldDelegate) {
+    return oldDelegate.exposure != exposure;
+  }
+}
+
+class _FivePointSelector extends StatelessWidget {
+  const _FivePointSelector({
+    required this.label,
+    required this.value,
+    required this.onChanged,
+  });
+
+  final String label;
+  final int? value;
+  final ValueChanged<int?> onChanged;
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 12),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(label),
+          const SizedBox(height: 6),
+          Wrap(
+            spacing: 6,
+            children: [
+              for (int score = 1; score <= 5; score += 1)
+                ChoiceChip(
+                  label: Text('$score'),
+                  selected: value == score,
+                  onSelected: (bool selected) =>
+                      onChanged(selected ? score : null),
+                ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class LocalReportRevisionCard extends StatefulWidget {
+  const LocalReportRevisionCard({
+    required this.reports,
+    this.onGenerate,
+    this.reportTitle = '本地确定性周报',
+    this.emptyMessage,
+    super.key,
+  });
+
+  final AsyncValue<List<ReportRevision>> reports;
+  final Future<bool> Function()? onGenerate;
+  final String reportTitle;
+  final String? emptyMessage;
+
+  @override
+  State<LocalReportRevisionCard> createState() =>
+      _LocalReportRevisionCardState();
+}
+
+class _LocalReportRevisionCardState extends State<LocalReportRevisionCard> {
+  bool _isGenerating = false;
+  String? _actionMessage;
 
   @override
   Widget build(BuildContext context) {
     return TrainFlowCard(
+      tone: TrainFlowCardTone.peach,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Row(
             children: [
-              const Icon(Icons.summarize, color: AppColors.primary),
+              const Icon(Icons.description_outlined, color: AppColors.primary),
               const SizedBox(width: 8),
               Expanded(
                 child: Text(
-                  '自动周报 Agent Mock',
+                  widget.reportTitle,
                   style: Theme.of(context)
                       .textTheme
                       .titleLarge
-                      ?.copyWith(fontWeight: FontWeight.w800),
+                      ?.copyWith(fontWeight: FontWeight.w900),
                 ),
               ),
-              ToneBadge(label: report.weekLabel),
-            ],
-          ),
-          const SizedBox(height: 12),
-          Row(
-            children: [
-              Expanded(
-                child: MetricPill(
-                  label: '完成率',
-                  value: report.completionRateLabel,
+              widget.reports.when(
+                data: (List<ReportRevision> value) => ToneBadge(
+                  label: value.isEmpty ? '数据积累中' : '修订 ${value.first.revision}',
                 ),
-              ),
-              const SizedBox(width: 10),
-              Expanded(
-                child: MetricPill(
-                  label: '负荷趋势',
-                  value: report.loadTrendLabel,
-                  color: AppColors.secondary,
-                ),
+                error: (Object error, StackTrace stackTrace) =>
+                    const ToneBadge(label: '读取失败'),
+                loading: () => const ToneBadge(label: '读取中'),
               ),
             ],
           ),
-          const SizedBox(height: 12),
-          LinearProgressIndicator(
-            value: report.completionRate,
-            minHeight: 8,
-            color: AppColors.primary,
-            backgroundColor: AppColors.primary.withValues(alpha: 0.12),
-            borderRadius: BorderRadius.circular(999),
-          ),
           const SizedBox(height: 10),
-          Text(
-            '本周完成 ${report.completedWorkouts}/${report.plannedWorkouts} 次计划训练。',
-            style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                  color: AppColors.textSecondary,
-                ),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-class _WeeklyReportInsightCard extends StatelessWidget {
-  final WeeklyReport report;
-
-  const _WeeklyReportInsightCard({required this.report});
-
-  @override
-  Widget build(BuildContext context) {
-    return TrainFlowCard(
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            '决策命中回顾',
-            style: Theme.of(context)
-                .textTheme
-                .titleMedium
-                ?.copyWith(fontWeight: FontWeight.w800),
-          ),
-          const SizedBox(height: 8),
-          Text(report.decisionReview),
-          const SizedBox(height: 12),
-          Text(
-            '恢复建议',
-            style: Theme.of(context)
-                .textTheme
-                .titleMedium
-                ?.copyWith(fontWeight: FontWeight.w800),
-          ),
-          const SizedBox(height: 8),
-          Text(report.recoverySummary),
-          const SizedBox(height: 12),
-          Text(
-            '本周亮点',
-            style: Theme.of(context)
-                .textTheme
-                .titleMedium
-                ?.copyWith(fontWeight: FontWeight.w800),
-          ),
-          const SizedBox(height: 8),
-          for (final String item in report.highlights)
-            Padding(
-              padding: const EdgeInsets.only(bottom: 6),
-              child: Text('· $item'),
-            ),
-        ],
-      ),
-    );
-  }
-}
-
-class _WeeklyReportFocusCard extends StatelessWidget {
-  final WeeklyReport report;
-
-  const _WeeklyReportFocusCard({required this.report});
-
-  @override
-  Widget build(BuildContext context) {
-    return TrainFlowCard(
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            '下周重点',
-            style: Theme.of(context)
-                .textTheme
-                .titleMedium
-                ?.copyWith(fontWeight: FontWeight.w800),
-          ),
-          const SizedBox(height: 10),
-          for (int i = 0; i < report.nextWeekFocus.length; i += 1)
-            Padding(
-              padding: const EdgeInsets.only(bottom: 8),
-              child: Row(
+          widget.reports.when(
+            data: (List<ReportRevision> value) {
+              if (value.isEmpty) {
+                return Text(
+                  widget.emptyMessage ?? '数据积累中：结构化指标尚未形成，旧周报仅作为兼容摘要展示。',
+                );
+              }
+              final ReportRevision latest = value.first;
+              return Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  CircleAvatar(
-                    radius: 12,
-                    backgroundColor: AppColors.primaryLightest,
-                    child: Text(
-                      '${i + 1}',
-                      style: Theme.of(context).textTheme.labelSmall?.copyWith(
-                            color: AppColors.primary,
-                            fontWeight: FontWeight.w800,
-                          ),
-                    ),
+                  Text(latest.narrative),
+                  const SizedBox(height: 8),
+                  Text(
+                    '${latest.algorithmVersion} · ${latest.metricIds.length} 项输入指标 · 历史修订 ${value.length} 份',
+                    style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                          color: AppColors.textSecondary,
+                        ),
                   ),
-                  const SizedBox(width: 10),
-                  Expanded(child: Text(report.nextWeekFocus[i])),
                 ],
-              ),
+              );
+            },
+            error: (Object error, StackTrace stackTrace) => const Text(
+              '本地报告读取失败，兼容摘要仍可查看；不会请求网络生成报告。',
             ),
-        ],
-      ),
-    );
-  }
-}
-
-class _WeeklyReportExportCard extends ConsumerWidget {
-  final TrainingMvpState state;
-  final WeeklyReport report;
-  final String exportText;
-  final String imageExportStatus;
-
-  const _WeeklyReportExportCard({
-    required this.state,
-    required this.report,
-    required this.exportText,
-    required this.imageExportStatus,
-  });
-
-  @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    return TrainFlowCard(
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            children: [
-              const Icon(Icons.ios_share, color: AppColors.primary),
-              const SizedBox(width: 8),
-              Expanded(
-                child: Text(
-                  '周报导出',
-                  style: Theme.of(context)
-                      .textTheme
-                      .titleMedium
-                      ?.copyWith(fontWeight: FontWeight.w800),
-                ),
-              ),
-              ToneBadge(label: 'Markdown + PNG'),
-            ],
+            loading: () => const Text('正在读取本地报告修订。'),
           ),
-          const SizedBox(height: 10),
-          Text(
-            '上方周报可导出 Markdown；下方分享卡可在本地生成 PNG 图片字节，也可先保存到本地周报归档，后续再接系统分享和保存到相册。',
-            style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                  color: AppColors.textSecondary,
-                ),
-          ),
-          const SizedBox(height: 12),
-          _WeeklyReportImagePreview(report: report),
-          const SizedBox(height: 12),
-          SizedBox(
-            width: double.infinity,
-            child: FilledButton.icon(
-              onPressed: () {
-                final String markdown = report.markdown;
-                ref
-                    .read(weeklyReportExportTextProvider.notifier)
-                    .setValue(markdown);
-                ref
-                    .read(trainingMvpProvider.notifier)
-                    .recordWeeklyReportMarkdownExport(markdown);
-              },
-              icon: const Icon(Icons.description_outlined),
-              label: const Text('导出 Markdown'),
-            ),
-          ),
-          const SizedBox(height: 10),
-          SizedBox(
-            width: double.infinity,
-            child: OutlinedButton.icon(
-              onPressed: () {
-                ref
-                    .read(trainingMvpProvider.notifier)
-                    .saveCurrentWeeklyReport();
-              },
-              icon: const Icon(Icons.bookmark_add_outlined),
-              label: const Text('保存到本地归档'),
-            ),
-          ),
-          const SizedBox(height: 10),
-          _SavedWeeklyReportArchiveCard(state: state),
-          const SizedBox(height: 10),
-          SizedBox(
-            width: double.infinity,
-            child: OutlinedButton.icon(
-              onPressed: () async {
-                await _exportImagePreview(ref);
-              },
-              icon: const Icon(Icons.image_outlined),
-              label: const Text('生成图片卡片'),
-            ),
-          ),
-          const SizedBox(height: 10),
-          Text(
-            imageExportStatus,
-            style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                  color: AppColors.textSecondary,
-                ),
-          ),
-          const SizedBox(height: 10),
-          _WeeklyReportExportHistoryCard(state: state),
-          if (exportText.isNotEmpty) ...[
+          if (widget.onGenerate != null) ...[
             const SizedBox(height: 12),
-            SelectableText(exportText),
+            SizedBox(
+              width: double.infinity,
+              child: OutlinedButton.icon(
+                onPressed: _isGenerating ? null : _generate,
+                icon: const Icon(Icons.add_chart_outlined),
+                label: Text(_isGenerating ? '正在生成' : '生成新的本地修订'),
+              ),
+            ),
           ],
+          if (_actionMessage != null) ...[
+            const SizedBox(height: 8),
+            Text(
+              _actionMessage!,
+              style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                    color: AppColors.warningDark,
+                  ),
+            ),
+          ],
+          const SizedBox(height: 8),
+          Text(
+            '叙事由设备内固定中文模板生成，不调用云端模型，也不覆盖历史修订。',
+            style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                  color: AppColors.textSecondary,
+                ),
+          ),
         ],
       ),
     );
   }
 
-  Future<void> _exportImagePreview(WidgetRef ref) async {
+  Future<void> _generate() async {
+    final Future<bool> Function()? action = widget.onGenerate;
+    if (action == null) return;
+    setState(() {
+      _isGenerating = true;
+      _actionMessage = null;
+    });
     try {
-      final Uint8List bytes = await _buildWeeklyReportPng(report);
-      final int byteCount = bytes.length;
-      if (byteCount == 0) {
-        ref
-            .read(weeklyReportImageExportStatusProvider.notifier)
-            .setValue('图片卡片生成失败：PNG 字节为空。');
-        return;
-      }
-      final double kb = byteCount / 1024;
-      ref
-          .read(trainingMvpProvider.notifier)
-          .recordWeeklyReportPngExport(byteCount);
-      ref.read(weeklyReportImageExportStatusProvider.notifier).setValue(
-            '图片卡片已生成：PNG ${kb.toStringAsFixed(1)} KB，可接系统分享。',
-          );
+      final bool generated = await action();
+      if (!mounted) return;
+      setState(() {
+        _actionMessage = generated ? '新的本地报告修订已生成。' : '当前指标未变，已保留现有修订，未重复生成。';
+      });
+    } on StateError catch (error) {
+      if (!mounted) return;
+      setState(() {
+        _actionMessage = error.message.toString();
+      });
     } catch (_) {
-      ref
-          .read(weeklyReportImageExportStatusProvider.notifier)
-          .setValue('图片卡片生成失败：请重新打开周报后再试。');
+      if (!mounted) return;
+      setState(() {
+        _actionMessage = '本地报告生成失败，指标和历史修订均未改变。';
+      });
+    } finally {
+      if (mounted) {
+        setState(() {
+          _isGenerating = false;
+        });
+      }
     }
   }
 }
 
-class _WeeklyReportExportHistoryCard extends StatelessWidget {
-  final TrainingMvpState state;
+class _GrowthWeeklyReportCard extends StatelessWidget {
+  const _GrowthWeeklyReportCard({
+    required this.state,
+    required this.growthState,
+    required this.weekStart,
+  });
 
-  const _WeeklyReportExportHistoryCard({required this.state});
+  final TrainingMvpState state;
+  final GrowthEvidenceState growthState;
+  final DateTime weekStart;
 
   @override
   Widget build(BuildContext context) {
-    final WeeklyReportExportRecord? latestRecord =
-        state.latestWeeklyReportExportRecord;
+    final String currentWeekKey = growthDateKey(weekStart);
+    WeeklyGrowthReport? report;
+    for (final WeeklyGrowthReport item in growthState.weeklyReports) {
+      if (item.weekKey == currentWeekKey) {
+        report = item;
+        break;
+      }
+    }
+    final int effectiveTrainingDays = _effectiveTrainingDayCount(
+      state.logs,
+      weekStart,
+    );
 
-    return DecoratedBox(
-      decoration: BoxDecoration(
-        color: AppColors.grayLightest,
-        borderRadius: BorderRadius.circular(8),
-      ),
-      child: Padding(
-        padding: const EdgeInsets.all(12),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              '本地导出记录',
-              style: Theme.of(context)
-                  .textTheme
-                  .bodyMedium
-                  ?.copyWith(fontWeight: FontWeight.w800),
-            ),
-            const SizedBox(height: 6),
-            Text(
-              state.weeklyReportExportStatusMessage,
-              style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                    color: AppColors.textSecondary,
-                  ),
-            ),
-            if (latestRecord != null) ...[
-              const SizedBox(height: 8),
-              InfoRow(label: '最近格式', value: latestRecord.format.label),
-              InfoRow(label: '文件名', value: latestRecord.fileName),
-              InfoRow(
-                label: '大小',
-                value: '${latestRecord.sizeLabel} · ${latestRecord.weekLabel}',
+    return TrainFlowCard(
+      tone: TrainFlowCardTone.peach,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              const Icon(Icons.query_stats_outlined, color: AppColors.primary),
+              const SizedBox(width: 8),
+              Expanded(
+                child: Text(
+                  '兼容训练执行摘要',
+                  style: Theme.of(context)
+                      .textTheme
+                      .titleLarge
+                      ?.copyWith(fontWeight: FontWeight.w900),
+                ),
+              ),
+              ToneBadge(
+                label: report == null
+                    ? '数据积累中'
+                    : report.isLocked
+                        ? '旧报告只读'
+                        : '兼容视图',
               ),
             ],
-          ],
-        ),
-      ),
-    );
-  }
-}
-
-class _SavedWeeklyReportArchiveCard extends StatelessWidget {
-  final TrainingMvpState state;
-
-  const _SavedWeeklyReportArchiveCard({required this.state});
-
-  @override
-  Widget build(BuildContext context) {
-    final WeeklyReport? latestSavedReport = state.savedWeeklyReports.isEmpty
-        ? null
-        : state.savedWeeklyReports.first;
-
-    return DecoratedBox(
-      decoration: BoxDecoration(
-        color: AppColors.grayLightest,
-        borderRadius: BorderRadius.circular(8),
-      ),
-      child: Padding(
-        padding: const EdgeInsets.all(12),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
+          ),
+          const SizedBox(height: 10),
+          if (report == null)
             Text(
-              '本地周报归档',
-              style: Theme.of(context)
-                  .textTheme
-                  .bodyMedium
-                  ?.copyWith(fontWeight: FontWeight.w800),
-            ),
-            const SizedBox(height: 6),
-            Text(
-              state.weeklyReportSaveStatusMessage,
-              style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                    color: AppColors.textSecondary,
-                  ),
-            ),
-            if (latestSavedReport != null) ...[
-              const SizedBox(height: 8),
-              InfoRow(label: '最近保存', value: latestSavedReport.weekLabel),
-              InfoRow(
-                label: '完成率',
-                value: latestSavedReport.completionRateLabel,
-              ),
-            ],
-          ],
-        ),
-      ),
-    );
-  }
-}
-
-Future<Uint8List> _buildWeeklyReportPng(WeeklyReport report) async {
-  const double width = 1080;
-  const double height = 1080;
-  final ui.PictureRecorder recorder = ui.PictureRecorder();
-  final Canvas canvas = Canvas(recorder);
-
-  canvas.drawRect(
-    const Rect.fromLTWH(0, 0, width, height),
-    Paint()..color = AppColors.primaryLightest,
-  );
-  canvas.drawRRect(
-    RRect.fromRectAndRadius(
-      const Rect.fromLTWH(54, 54, width - 108, height - 108),
-      const Radius.circular(42),
-    ),
-    Paint()..color = Colors.white,
-  );
-
-  _drawImageText(
-    canvas,
-    'TrainFlow AI 周报',
-    const Offset(96, 104),
-    fontSize: 58,
-    fontWeight: FontWeight.w900,
-    color: AppColors.textPrimary,
-    maxWidth: 760,
-  );
-  _drawImageText(
-    canvas,
-    report.weekLabel,
-    const Offset(96, 178),
-    fontSize: 32,
-    fontWeight: FontWeight.w700,
-    color: AppColors.primary,
-    maxWidth: 720,
-  );
-
-  _drawMetricBlock(
-    canvas,
-    rect: const Rect.fromLTWH(96, 260, 410, 160),
-    label: '完成率',
-    value: report.completionRateLabel,
-    color: AppColors.primary,
-  );
-  _drawMetricBlock(
-    canvas,
-    rect: const Rect.fromLTWH(574, 260, 410, 160),
-    label: '负荷趋势',
-    value: report.loadTrendLabel,
-    color: AppColors.secondary,
-  );
-
-  final Rect progressTrack = const Rect.fromLTWH(96, 474, 888, 28);
-  canvas.drawRRect(
-    RRect.fromRectAndRadius(progressTrack, const Radius.circular(14)),
-    Paint()..color = AppColors.primary.withValues(alpha: 0.12),
-  );
-  canvas.drawRRect(
-    RRect.fromRectAndRadius(
-      Rect.fromLTWH(
-        progressTrack.left,
-        progressTrack.top,
-        progressTrack.width * report.completionRate.clamp(0, 1),
-        progressTrack.height,
-      ),
-      const Radius.circular(14),
-    ),
-    Paint()..color = AppColors.primary,
-  );
-
-  _drawSectionText(
-    canvas,
-    title: '恢复建议',
-    body: report.recoverySummary,
-    top: 570,
-  );
-  _drawSectionText(
-    canvas,
-    title: '下周重点',
-    body: report.nextWeekFocus.first,
-    top: 760,
-  );
-  _drawImageText(
-    canvas,
-    '本地生成 · 数据归用户所有',
-    const Offset(96, 982),
-    fontSize: 28,
-    fontWeight: FontWeight.w700,
-    color: AppColors.textSecondary,
-    maxWidth: 888,
-  );
-
-  final ui.Image image =
-      await recorder.endRecording().toImage(width.toInt(), height.toInt());
-  final ByteData? byteData =
-      await image.toByteData(format: ui.ImageByteFormat.png);
-  image.dispose();
-  return byteData?.buffer.asUint8List() ?? Uint8List(0);
-}
-
-void _drawMetricBlock(
-  Canvas canvas, {
-  required Rect rect,
-  required String label,
-  required String value,
-  required Color color,
-}) {
-  canvas.drawRRect(
-    RRect.fromRectAndRadius(rect, const Radius.circular(28)),
-    Paint()..color = color.withValues(alpha: 0.1),
-  );
-  _drawImageText(
-    canvas,
-    label,
-    Offset(rect.left + 28, rect.top + 26),
-    fontSize: 30,
-    fontWeight: FontWeight.w700,
-    color: AppColors.textSecondary,
-    maxWidth: rect.width - 56,
-  );
-  _drawImageText(
-    canvas,
-    value,
-    Offset(rect.left + 28, rect.top + 76),
-    fontSize: 46,
-    fontWeight: FontWeight.w900,
-    color: color,
-    maxWidth: rect.width - 56,
-  );
-}
-
-void _drawSectionText(
-  Canvas canvas, {
-  required String title,
-  required String body,
-  required double top,
-}) {
-  _drawImageText(
-    canvas,
-    title,
-    Offset(96, top),
-    fontSize: 34,
-    fontWeight: FontWeight.w900,
-    color: AppColors.textPrimary,
-    maxWidth: 888,
-  );
-  _drawImageText(
-    canvas,
-    body,
-    Offset(96, top + 52),
-    fontSize: 34,
-    fontWeight: FontWeight.w600,
-    color: AppColors.textSecondary,
-    maxWidth: 888,
-    maxLines: 3,
-  );
-}
-
-void _drawImageText(
-  Canvas canvas,
-  String text,
-  Offset offset, {
-  required double fontSize,
-  required FontWeight fontWeight,
-  required Color color,
-  required double maxWidth,
-  int maxLines = 1,
-}) {
-  final TextPainter painter = TextPainter(
-    text: TextSpan(
-      text: text,
-      style: TextStyle(
-        color: color,
-        fontSize: fontSize,
-        fontWeight: fontWeight,
-      ),
-    ),
-    maxLines: maxLines,
-    ellipsis: '...',
-    textDirection: TextDirection.ltr,
-  )..layout(maxWidth: maxWidth);
-  painter.paint(canvas, offset);
-}
-
-class _WeeklyReportImagePreview extends StatelessWidget {
-  final WeeklyReport report;
-
-  const _WeeklyReportImagePreview({required this.report});
-
-  @override
-  Widget build(BuildContext context) {
-    return DecoratedBox(
-      decoration: BoxDecoration(
-        color: AppColors.primaryLightest,
-        border: Border.all(color: AppColors.primary.withValues(alpha: 0.18)),
-        borderRadius: BorderRadius.circular(8),
-      ),
-      child: Padding(
-        padding: const EdgeInsets.all(14),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
-              children: [
-                const Icon(Icons.auto_graph, color: AppColors.primary),
-                const SizedBox(width: 8),
-                Expanded(
-                  child: Text(
-                    'TrainFlow AI 周报卡片',
-                    style: Theme.of(context)
-                        .textTheme
-                        .titleMedium
-                        ?.copyWith(fontWeight: FontWeight.w900),
-                  ),
-                ),
-                ToneBadge(label: report.weekLabel),
-              ],
-            ),
-            const SizedBox(height: 12),
-            Row(
-              children: [
-                Expanded(
-                  child: MetricPill(
-                    label: '完成率',
-                    value: report.completionRateLabel,
-                  ),
-                ),
-                const SizedBox(width: 8),
-                Expanded(
-                  child: MetricPill(
-                    label: '负荷趋势',
-                    value: report.loadTrendLabel,
-                    color: AppColors.secondary,
-                  ),
-                ),
-              ],
-            ),
-            const SizedBox(height: 12),
-            Text(
-              report.recoverySummary,
-              maxLines: 2,
-              overflow: TextOverflow.ellipsis,
-              style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                    color: AppColors.textSecondary,
-                  ),
-            ),
-            const SizedBox(height: 10),
-            Text(
-              report.nextWeekFocus.first,
-              maxLines: 2,
-              overflow: TextOverflow.ellipsis,
+              '旧周报模型当前没有可展示记录；新的本地报告将以不可变修订保存。',
               style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                    fontWeight: FontWeight.w800,
+                    color: AppColors.textSecondary,
                   ),
+            )
+          else
+            WeeklyGrowthCompatibilitySummary(
+              report: report,
+              effectiveTrainingDays: effectiveTrainingDays,
             ),
-          ],
-        ),
+        ],
       ),
     );
   }
+}
+
+class WeeklyGrowthCompatibilitySummary extends StatelessWidget {
+  const WeeklyGrowthCompatibilitySummary({
+    required this.report,
+    required this.effectiveTrainingDays,
+    super.key,
+  });
+
+  final WeeklyGrowthReport report;
+  final int effectiveTrainingDays;
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          children: [
+            Expanded(
+              child: MetricPill(
+                label: '训练执行指数',
+                value: report.trainingExecutionIndexLabel,
+              ),
+            ),
+            const SizedBox(width: 10),
+            Expanded(
+              child: MetricPill(
+                label: '完成率',
+                value: report.completionRateLabel,
+                color: AppColors.secondary,
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: 10),
+        InfoRow(
+          label: '本周有效训练日',
+          value: '$effectiveTrainingDays 天',
+        ),
+        InfoRow(
+          label: '跑量',
+          value: '${report.runningDistanceKm.toStringAsFixed(1)} km',
+        ),
+        InfoRow(label: '力量训练', value: '${report.strengthSessionCount} 次'),
+        Text(
+          '${report.recoverySummary} 已具备 ${report.availableIndexDimensions} 个兼容维度；少于 2 个维度时显示“数据不足”。',
+          style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                color: AppColors.textSecondary,
+              ),
+        ),
+        const SizedBox(height: 8),
+        Text(
+          '这是旧 WeeklyGrowthReport 的只读兼容摘要；新的本地报告使用不可变修订，不覆盖历史内容。',
+          style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                color: AppColors.textSecondary,
+              ),
+        ),
+      ],
+    );
+  }
+}
+
+class _LockedGrowthReportsCard extends StatelessWidget {
+  const _LockedGrowthReportsCard({
+    required this.growthState,
+  });
+
+  final GrowthEvidenceState growthState;
+
+  @override
+  Widget build(BuildContext context) {
+    final List<WeeklyGrowthReport> reports = growthState.weeklyReports
+        .where((WeeklyGrowthReport item) => item.isLocked)
+        .take(3)
+        .toList();
+    if (reports.isEmpty) return const SizedBox.shrink();
+    return TrainFlowCard(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            '旧周报兼容记录',
+            style: Theme.of(context)
+                .textTheme
+                .titleMedium
+                ?.copyWith(fontWeight: FontWeight.w800),
+          ),
+          const SizedBox(height: 6),
+          Text(
+            '以下记录只用于兼容查看。新的本地报告会创建修订，不会覆盖历史内容。',
+            style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                  color: AppColors.textSecondary,
+                ),
+          ),
+          const SizedBox(height: 10),
+          for (final WeeklyGrowthReport report in reports) ...[
+            Text(
+              '${report.weekKey} · 训练执行指数 ${report.trainingExecutionIndexLabel}',
+              style: Theme.of(context)
+                  .textTheme
+                  .bodyMedium
+                  ?.copyWith(fontWeight: FontWeight.w700),
+            ),
+            const SizedBox(height: 8),
+          ],
+        ],
+      ),
+    );
+  }
+}
+
+int _effectiveTrainingDayCount(
+  List<TrainingLog> logs,
+  DateTime weekStart,
+) {
+  final DateTime weekEnd = weekStart.add(const Duration(days: 7));
+  final Set<String> days = <String>{};
+  for (final TrainingLog log in logs) {
+    if (!log.isSessionRecord || log.normalizedCompletionPercentage < 50) {
+      continue;
+    }
+    if (log.date.isBefore(weekStart) || !log.date.isBefore(weekEnd)) continue;
+    days.add('${log.date.year}-${log.date.month}-${log.date.day}');
+  }
+  return days.length;
 }

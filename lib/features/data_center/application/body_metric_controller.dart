@@ -4,16 +4,23 @@ import '../../../data/models/body_metric.dart';
 import '../../../data/models/body_metric_import.dart';
 import '../../../data/models/body_metric_revision.dart';
 import '../../../data/models/body_metric_snapshot.dart';
+import '../../../data/models/daily_check_in_record.dart';
 import '../../../data/repositories/body_metric_repository.dart';
+import '../../../data/repositories/daily_check_in_repository.dart';
 import '../../../services/body_metric_import_service.dart';
 import '../../../services/body_metric_snapshot_service.dart';
 import '../../../services/local_storage_service.dart';
-import '../../profile/application/user_profile_controller.dart';
 
 const Object _unchanged = Object();
 
 final bodyMetricRepositoryProvider = Provider<BodyMetricRepository>(
   (Ref ref) => PersistedBodyMetricRepository(
+    ref.watch(localStorageServiceProvider),
+  ),
+);
+
+final dailyCheckInRepositoryProvider = Provider<DailyCheckInRepository>(
+  (Ref ref) => PersistedDailyCheckInRepository(
     ref.watch(localStorageServiceProvider),
   ),
 );
@@ -32,6 +39,8 @@ class BodyMetricState {
   final List<BodyMetricImportResult> importResults;
   final String importStatusMessage;
   final String dailyCheckInStatusMessage;
+  final CheckInStreakState checkInStreak;
+  final List<CheckInCelebrationReceipt> checkInCelebrations;
   final int persistenceVersion;
 
   const BodyMetricState({
@@ -43,6 +52,8 @@ class BodyMetricState {
     required this.importResults,
     required this.importStatusMessage,
     required this.dailyCheckInStatusMessage,
+    required this.checkInStreak,
+    required this.checkInCelebrations,
     required this.persistenceVersion,
   });
 
@@ -62,6 +73,8 @@ class BodyMetricState {
     List<BodyMetricImportResult>? importResults,
     String? importStatusMessage,
     String? dailyCheckInStatusMessage,
+    CheckInStreakState? checkInStreak,
+    List<CheckInCelebrationReceipt>? checkInCelebrations,
     int? persistenceVersion,
   }) {
     return BodyMetricState(
@@ -77,6 +90,8 @@ class BodyMetricState {
       importStatusMessage: importStatusMessage ?? this.importStatusMessage,
       dailyCheckInStatusMessage:
           dailyCheckInStatusMessage ?? this.dailyCheckInStatusMessage,
+      checkInStreak: checkInStreak ?? this.checkInStreak,
+      checkInCelebrations: checkInCelebrations ?? this.checkInCelebrations,
       persistenceVersion: persistenceVersion ?? this.persistenceVersion,
     );
   }
@@ -91,15 +106,24 @@ class BodyMetricController extends Notifier<BodyMetricState> {
   BodyMetricState build() {
     final BodyMetricRepository repository =
         ref.read(bodyMetricRepositoryProvider);
+    final List<BodyMetric> metrics = repository.listMetrics();
+    final DailyCheckInSnapshot checkInSnapshot =
+        ref.read(dailyCheckInRepositoryProvider).getSnapshot();
+    final bool hasHistory = metrics.isNotEmpty;
     return BodyMetricState(
-      metrics: repository.listMetrics(),
+      metrics: metrics,
       revisions: repository.listRevisions(),
       pendingMetric: null,
-      manualStatusMessage: '默认预填上次值；可选择今天、昨天或前天补录。',
+      manualStatusMessage: hasHistory
+          ? '默认预填上次值；可选择今天、昨天或前天补录。'
+          : '尚无身体记录。首次录入请使用包含完整字段的截图或 CSV，系统不会补造缺失值。',
       snapshotStatusMessage: '可粘贴体脂秤、手表或健康 App 截图中的文字，识别后需确认入库。',
       importResults: const [],
       importStatusMessage: '可粘贴 Apple 健康、手表或表格导出的身体数据 CSV。',
-      dailyCheckInStatusMessage: '根据当前画像，今天可以先使用预填签到。',
+      dailyCheckInStatusMessage:
+          hasHistory ? '根据当前画像，今天可以先使用预填签到。' : '尚无昨日记录，不能使用预填签到。',
+      checkInStreak: checkInSnapshot.streak,
+      checkInCelebrations: checkInSnapshot.unseenCelebrations,
       persistenceVersion: 0,
     );
   }
@@ -113,6 +137,14 @@ class BodyMetricController extends Notifier<BodyMetricState> {
     DateTime? measuredAt,
     bool forceSave = false,
   }) {
+    final BodyMetric? latestMetric = state.latestMetric;
+    if (latestMetric == null) {
+      state = state.copyWith(
+        manualStatusMessage: '首次快录缺少体脂和酸痛等字段，未保存；请先用完整截图或 CSV 建立基线。',
+      );
+      return;
+    }
+
     final DateTime selectedDate = _dateOnly(measuredAt ?? DateTime.now());
     final DateTime now = DateTime.now();
     final DateTime capturedAt = DateTime(
@@ -126,12 +158,12 @@ class BodyMetricController extends Notifier<BodyMetricState> {
       id: 'body-metric-${now.millisecondsSinceEpoch}',
       measuredAt: capturedAt,
       weightKg: weightKg,
-      bodyFatPercentage: state.latestMetric?.bodyFatPercentage ?? 18.6,
+      bodyFatPercentage: latestMetric.bodyFatPercentage,
       restingHeartRate: restingHeartRate,
       hrvMs: hrvMs,
       sleepHours: sleepHours,
       fatigueLevel: fatigueLevel,
-      sorenessLevel: state.latestMetric?.sorenessLevel ?? 3,
+      sorenessLevel: latestMetric.sorenessLevel,
       moodLabel: fatigueLevel >= 7 ? '偏疲劳' : '稳定',
       source: BodyMetricSource.manual,
       note: '数据中心 10 秒快录',
@@ -155,6 +187,11 @@ class BodyMetricController extends Notifier<BodyMetricState> {
             ? '已确认并保存异常值：${metric.measuredDateLabel} 的身体数据。'
             : '已保存 ${metric.measuredDateLabel} 的身体数据；质量、趋势和目标已刷新。',
       ),
+    );
+    _recordDailyCheckIn(
+      source: DailyCheckInSource.prefilled,
+      confirmedAt: now,
+      successMessage: '已按画像预填完成今日签到：和昨天一样。',
     );
   }
 
@@ -196,9 +233,15 @@ class BodyMetricController extends Notifier<BodyMetricState> {
         snapshotStatusMessage: '${result.summary} 请确认后写入 body_metrics。',
       );
     } on FormatException catch (error) {
-      state = state.copyWith(snapshotStatusMessage: error.message);
+      state = state.copyWith(
+        pendingMetric: null,
+        snapshotStatusMessage: error.message,
+      );
     } catch (_) {
-      state = state.copyWith(snapshotStatusMessage: '识别失败：请检查截图文字。');
+      state = state.copyWith(
+        pendingMetric: null,
+        snapshotStatusMessage: '识别失败：请检查截图文字。',
+      );
     }
   }
 
@@ -236,40 +279,47 @@ class BodyMetricController extends Notifier<BodyMetricState> {
   }
 
   void recordTiredDailyCheckIn() {
-    final BodyMetric? latestMetric = state.latestMetric;
     final DateTime now = DateTime.now();
-    final int fatigueLevel =
-        ((latestMetric?.fatigueLevel ?? 6) + 2).clamp(1, 10).toInt();
-    final double fallbackWeight =
-        ref.read(userProfileControllerProvider).profile.weightKg;
-    final BodyMetric metric = BodyMetric(
-      id: 'daily-check-in-tired-${now.millisecondsSinceEpoch}',
-      measuredAt: now,
-      weightKg: latestMetric?.weightKg ?? fallbackWeight,
-      bodyFatPercentage: latestMetric?.bodyFatPercentage ?? 18.6,
-      restingHeartRate: latestMetric?.restingHeartRate ?? 62,
-      hrvMs: ((latestMetric?.hrvMs ?? 48) - 4).clamp(25, 85).toInt(),
-      sleepHours:
-          ((latestMetric?.sleepHours ?? 6.4) - 0.8).clamp(4.0, 9.0).toDouble(),
-      fatigueLevel: fatigueLevel,
-      sorenessLevel:
-          ((latestMetric?.sorenessLevel ?? 4) + 1).clamp(1, 10).toInt(),
-      moodLabel: '偏疲劳',
-      source: BodyMetricSource.manual,
-      note: '精简签到：今天偏累，建议轻松版',
+    _recordDailyCheckIn(
+      source: DailyCheckInSource.subjectiveTired,
+      confirmedAt: now,
+      successMessage: '已完成今日主观签到：偏累；未生成或改写体重、体脂、静息心率、HRV、睡眠等身体指标。',
     );
-    _saveMetricAndRefresh(
-      metric,
-      reason: '精简签到偏累覆盖同日记录',
-      nextState: state.copyWith(
-        dailyCheckInStatusMessage: '已记录偏累，今日建议切轻松版；晨报和提醒会按新身体数据更新。',
-      ),
+  }
+
+  void recordContinuityDay(DailyContinuityKind continuityKind) {
+    final DateTime now = DateTime.now();
+    final bool isSafetyPause =
+        continuityKind == DailyContinuityKind.safetyPause;
+    _recordDailyCheckIn(
+      source: isSafetyPause
+          ? DailyCheckInSource.subjectiveTired
+          : DailyCheckInSource.prefilled,
+      continuityKind: continuityKind,
+      confirmedAt: now,
+      successMessage: isSafetyPause
+          ? '已记录今天的安全暂停：连续成长受到保护；未生成训练完成、身体指标或训练 XP。'
+          : '已记录今天按计划恢复：连续成长受到保护；未生成训练完成、身体指标或训练 XP。',
+    );
+  }
+
+  void markCheckInCelebrationSeen(String id) {
+    final DailyCheckInRepository repository =
+        ref.read(dailyCheckInRepositoryProvider);
+    repository.markCelebrationSeen(id, seenAt: DateTime.now());
+    final DailyCheckInSnapshot snapshot = repository.getSnapshot();
+    state = state.copyWith(
+      checkInStreak: snapshot.streak,
+      checkInCelebrations: snapshot.unseenCelebrations,
     );
   }
 
   void importCsv(String rawText) {
     try {
-      final BodyMetricImportResult result = _importService.parseCsv(rawText);
+      final BodyMetricImportResult result = _importService.parseCsv(
+        rawText,
+        historicalFallback: state.latestMetric,
+      );
       final BodyMetricRepository repository =
           ref.read(bodyMetricRepositoryProvider);
       for (final BodyMetric metric in result.metrics) {
@@ -297,6 +347,8 @@ class BodyMetricController extends Notifier<BodyMetricState> {
     _refreshAfterPersistence(
       state.copyWith(
         importStatusMessage: '身体数据已清除，CSV 导入历史仍保留在本次会话状态中。',
+        manualStatusMessage: '尚无身体记录。首次录入请使用包含完整字段的截图或 CSV，系统不会补造缺失值。',
+        dailyCheckInStatusMessage: '尚无昨日记录，不能使用预填签到。',
       ),
     );
   }
@@ -341,6 +393,28 @@ class BodyMetricController extends Notifier<BodyMetricState> {
   }) {
     ref.read(bodyMetricRepositoryProvider).saveMetric(metric, reason: reason);
     _refreshAfterPersistence(nextState);
+  }
+
+  void _recordDailyCheckIn({
+    required DailyCheckInSource source,
+    DailyContinuityKind continuityKind = DailyContinuityKind.standard,
+    required DateTime confirmedAt,
+    required String successMessage,
+  }) {
+    final DailyCheckInWriteResult result =
+        ref.read(dailyCheckInRepositoryProvider).record(
+              localDate: confirmedAt,
+              confirmedAt: confirmedAt,
+              source: source,
+              continuityKind: continuityKind,
+            );
+    final String duplicateMessage =
+        result.created ? successMessage : '今日签到已记录，同一天重复操作不会增加连续天数。';
+    state = state.copyWith(
+      dailyCheckInStatusMessage: duplicateMessage,
+      checkInStreak: result.snapshot.streak,
+      checkInCelebrations: result.snapshot.unseenCelebrations,
+    );
   }
 
   void _refreshAfterPersistence(BodyMetricState nextState) {

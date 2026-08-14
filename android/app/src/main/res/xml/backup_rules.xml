@@ -1,0 +1,5 @@
+<?xml version="1.0" encoding="utf-8"?>
+<full-backup-content>
+    <!-- 运动前筛查状态不得进入系统云备份或迁移到另一台设备。 -->
+    <exclude domain="sharedpref" path="TrainMateHealthClearance.xml" />
+</full-backup-content>

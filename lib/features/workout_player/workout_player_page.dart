@@ -5,12 +5,20 @@ import 'package:go_router/go_router.dart';
 import '../../app/router/app_routes.dart';
 import '../../core/constants/app_colors.dart';
 import '../../core/widgets/exercise_media.dart';
+import '../../core/widgets/trainmate_action_character.dart';
+import '../../core/widgets/trainmate_action_mappings.dart';
+import '../../core/widgets/trainmate_showcase_widgets.dart';
 import '../../core/widgets/trainflow_widgets.dart';
 import '../../data/models/exercise.dart';
+import '../../data/models/exercise_training_profile.dart';
+import '../../data/models/pain_log.dart';
 import '../../data/models/training_log.dart';
 import '../../data/models/workout_day.dart';
 import '../../data/models/workout_player_step.dart';
 import '../dashboard/training_mvp_controller.dart';
+import '../pet/application/pet_controller.dart';
+import '../pet/presentation/widgets/pet_training_receipt.dart';
+import '../training_log/presentation/training_record_editor.dart';
 
 class WorkoutPlayerPage extends ConsumerWidget {
   const WorkoutPlayerPage({super.key});
@@ -19,17 +27,27 @@ class WorkoutPlayerPage extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final TrainingMvpState state = ref.watch(trainingMvpProvider);
     final WorkoutPlayerStep step = state.activeWorkoutPlayerStep;
+    final TrainMateAction characterAction = trainMateActionForWorkoutPhase(
+      step.phase,
+      state.activeWorkoutPlayerWorkout.trainingType,
+    );
 
-    return TrainFlowPage(
+    return TrainMateImmersivePage(
       title: '跟练执行',
       subtitle: '逐步引导、真实倒计时、TTS 提示队列和练中一键降级。',
-      action: IconButton(
-        tooltip: '关闭跟练',
-        onPressed: () => context.go(AppRoutes.dashboard),
-        icon: const Icon(Icons.close),
+      leading: const TrainMateBackButton(
+        fallbackRoute: AppRoutes.dashboard,
+      ),
+      artwork: TrainMateActionCharacter(
+        action: characterAction,
+        backgroundColor: AppColors.primary,
       ),
       children: [
-        _PlayerStatusCard(state: state, step: step),
+        _PlayerStatusCard(
+          state: state,
+          step: step,
+          characterAction: characterAction,
+        ),
         _CurrentStepCard(step: step, state: state),
         _PlayerAssistCard(state: state),
         _PlayerActionCard(state: state),
@@ -43,14 +61,9 @@ Future<void> _showWorkoutReviewSheet({
   required BuildContext context,
   required WorkoutDay workout,
 }) {
-  return showModalBottomSheet<void>(
+  return showTrainingRecordEditor(
     context: context,
-    isScrollControlled: true,
-    builder: (BuildContext context) {
-      return _WorkoutReviewSheet(
-        workout: workout,
-      );
-    },
+    workout: workout,
   );
 }
 
@@ -73,18 +86,58 @@ class _ExerciseExecutionDraft {
   final int repetitionsPerSet;
   final TextEditingController completedSetController;
   final TextEditingController weightController;
+  final List<_StrengthSetDraft> setDrafts;
+  final bool requestsLandingQuality;
+  LandingQuality? landingQuality;
 
   _ExerciseExecutionDraft({
     required this.exerciseId,
     required this.exerciseName,
     required this.plannedSetCount,
     required this.repetitionsPerSet,
+    this.requestsLandingQuality = false,
   })  : completedSetController = TextEditingController(),
-        weightController = TextEditingController();
+        weightController = TextEditingController(),
+        setDrafts = List<_StrengthSetDraft>.generate(
+          plannedSetCount.clamp(1, 8).toInt(),
+          (int index) => _StrengthSetDraft(
+            setIndex: index + 1,
+            plannedRepetitions: repetitionsPerSet,
+          ),
+        );
 
   void dispose() {
     completedSetController.dispose();
     weightController.dispose();
+    for (final _StrengthSetDraft set in setDrafts) {
+      set.dispose();
+    }
+  }
+}
+
+class _StrengthSetDraft {
+  final int setIndex;
+  bool completed = false;
+  final TextEditingController repetitionsController;
+  final TextEditingController weightController;
+  final TextEditingController rpeController;
+  final TextEditingController durationController;
+
+  _StrengthSetDraft({
+    required this.setIndex,
+    required int plannedRepetitions,
+  })  : repetitionsController = TextEditingController(
+          text: plannedRepetitions > 0 ? plannedRepetitions.toString() : '',
+        ),
+        weightController = TextEditingController(),
+        rpeController = TextEditingController(),
+        durationController = TextEditingController();
+
+  void dispose() {
+    repetitionsController.dispose();
+    weightController.dispose();
+    rpeController.dispose();
+    durationController.dispose();
   }
 }
 
@@ -99,6 +152,8 @@ class _WorkoutReviewSheetState extends ConsumerState<_WorkoutReviewSheet> {
   late final List<_ExerciseExecutionDraft> _exerciseDrafts;
   int _selectedRpe = 6;
   int _selectedCompletionPercentage = 100;
+  SessionFeel? _selectedSessionFeel;
+  bool _abortedByUser = false;
   String? _errorMessage;
 
   @override
@@ -146,6 +201,7 @@ class _WorkoutReviewSheetState extends ConsumerState<_WorkoutReviewSheet> {
         exerciseName: description,
         plannedSetCount: 0,
         repetitionsPerSet: 0,
+        requestsLandingQuality: false,
       );
     }
     return _ExerciseExecutionDraft(
@@ -153,6 +209,7 @@ class _WorkoutReviewSheetState extends ConsumerState<_WorkoutReviewSheet> {
       exerciseName: match.group(1)!.trim(),
       plannedSetCount: int.tryParse(match.group(2)!) ?? 0,
       repetitionsPerSet: int.tryParse(match.group(3)!) ?? 0,
+      requestsLandingQuality: false,
     );
   }
 
@@ -169,17 +226,27 @@ class _WorkoutReviewSheetState extends ConsumerState<_WorkoutReviewSheet> {
       );
     return [
       for (final WorkoutExerciseLink link in links)
-        _ExerciseExecutionDraft(
-          exerciseId: link.exerciseId,
-          exerciseName: ref
-                  .read(trainingMvpProvider)
-                  .findExercise(link.exerciseId)
-                  ?.name ??
-              link.exerciseId,
-          plannedSetCount: link.plannedSetCount,
-          repetitionsPerSet: link.repetitionsPerSet,
-        ),
+        _buildStructuredExerciseDraft(link),
     ];
+  }
+
+  _ExerciseExecutionDraft _buildStructuredExerciseDraft(
+    WorkoutExerciseLink link,
+  ) {
+    final Exercise? exercise =
+        ref.read(trainingMvpProvider).findExercise(link.exerciseId);
+    final List<LegTrainingElement> legElements =
+        exercise?.trainingStructureProfile.legElements ??
+            const <LegTrainingElement>[];
+    return _ExerciseExecutionDraft(
+      exerciseId: link.exerciseId,
+      exerciseName: exercise?.name ?? link.exerciseId,
+      plannedSetCount: link.plannedSetCount,
+      repetitionsPerSet: link.repetitionsPerSet,
+      requestsLandingQuality:
+          legElements.contains(LegTrainingElement.eccentricLanding) ||
+              legElements.contains(LegTrainingElement.power),
+    );
   }
 
   void _save() {
@@ -224,37 +291,104 @@ class _WorkoutReviewSheetState extends ConsumerState<_WorkoutReviewSheet> {
       return;
     }
     for (final _ExerciseExecutionDraft draft in _exerciseDrafts) {
-      final int completedSetCount =
+      final int legacyCompletedSetCount =
           int.tryParse(draft.completedSetController.text.trim()) ?? 0;
-      final double weightKg =
+      final double legacyWeightKg =
           double.tryParse(draft.weightController.text.trim()) ?? 0;
-      if (completedSetCount < 0 || completedSetCount > 99) {
+      if (legacyCompletedSetCount < 0 || legacyCompletedSetCount > 99) {
         setState(() {
           _errorMessage = '${draft.exerciseName}的完成组数需在 0 到 99 之间。';
         });
         return;
       }
       if (draft.plannedSetCount > 0 &&
-          completedSetCount > draft.plannedSetCount) {
+          legacyCompletedSetCount > draft.plannedSetCount) {
         setState(() {
           _errorMessage = '${draft.exerciseName}的完成组数不能超过计划组数。';
         });
         return;
       }
-      if (weightKg < 0 || weightKg > 500) {
+      if (legacyWeightKg < 0 || legacyWeightKg > 500) {
         setState(() {
           _errorMessage = '${draft.exerciseName}的工作重量需在 0 到 500 kg 之间。';
         });
         return;
       }
+      final List<StrengthSetExecutionRecord> actualSets =
+          <StrengthSetExecutionRecord>[];
+      for (final _StrengthSetDraft set in draft.setDrafts) {
+        if (!set.completed) continue;
+        final int repetitions =
+            int.tryParse(set.repetitionsController.text.trim()) ?? 0;
+        final double weightKg =
+            double.tryParse(set.weightController.text.trim()) ?? 0;
+        final double? rpe = set.rpeController.text.trim().isEmpty
+            ? null
+            : double.tryParse(set.rpeController.text.trim());
+        final int? durationSeconds = set.durationController.text.trim().isEmpty
+            ? null
+            : int.tryParse(set.durationController.text.trim());
+        if (repetitions < 0 || repetitions > 999) {
+          setState(() {
+            _errorMessage =
+                '${draft.exerciseName}第 ${set.setIndex} 组次数需在 0 到 999 之间。';
+          });
+          return;
+        }
+        if (weightKg < 0 || weightKg > 500) {
+          setState(() {
+            _errorMessage =
+                '${draft.exerciseName}第 ${set.setIndex} 组重量需在 0 到 500 kg 之间。';
+          });
+          return;
+        }
+        if (rpe != null && (rpe < 1 || rpe > 10)) {
+          setState(() {
+            _errorMessage =
+                '${draft.exerciseName}第 ${set.setIndex} 组 RPE 需在 1 到 10 之间。';
+          });
+          return;
+        }
+        if (durationSeconds != null &&
+            (durationSeconds < 1 || durationSeconds > 3600)) {
+          setState(() {
+            _errorMessage =
+                '${draft.exerciseName}第 ${set.setIndex} 组用时需在 1 到 3600 秒之间。';
+          });
+          return;
+        }
+        actualSets.add(
+          StrengthSetExecutionRecord(
+            setIndex: actualSets.length + 1,
+            repetitions: repetitions,
+            weightKg: weightKg,
+            rpe: rpe,
+            durationSeconds: durationSeconds,
+          ),
+        );
+      }
+      final int completedSetCount =
+          actualSets.isEmpty ? legacyCompletedSetCount : actualSets.length;
+      final double weightKg = actualSets.isEmpty
+          ? legacyWeightKg
+          : actualSets
+              .map((StrengthSetExecutionRecord set) => set.weightKg)
+              .reduce((double first, double second) =>
+                  first > second ? first : second);
+      final Set<int> actualRepetitions = actualSets
+          .map((StrengthSetExecutionRecord set) => set.repetitions)
+          .toSet();
       exerciseRecords.add(
         ExerciseExecutionRecord(
           exerciseId: draft.exerciseId,
           exerciseName: draft.exerciseName,
           plannedSetCount: draft.plannedSetCount,
           completedSetCount: completedSetCount,
-          repetitionsPerSet: draft.repetitionsPerSet,
+          repetitionsPerSet:
+              actualRepetitions.length == 1 ? actualRepetitions.single : 0,
           weightKg: weightKg,
+          sets: List<StrengthSetExecutionRecord>.unmodifiable(actualSets),
+          landingQuality: draft.landingQuality,
         ),
       );
     }
@@ -270,7 +404,20 @@ class _WorkoutReviewSheetState extends ConsumerState<_WorkoutReviewSheet> {
           exerciseRecords: exerciseRecords,
           interruptionReason: _interruptionReasonController.text,
           userNote: _noteController.text,
+          abortedByUser: _abortedByUser,
+          sessionFeel: _selectedSessionFeel,
         );
+    if (exerciseRecords.any(
+      (ExerciseExecutionRecord record) =>
+          record.landingQuality == LandingQuality.pain,
+    )) {
+      ref.read(trainingMvpProvider.notifier).savePainLog(
+            bodyPart: '落地动作相关部位',
+            painLevel: 4,
+            timing: PainTiming.duringTraining,
+            note: '训练后落地质量反馈，需在疼痛记录中补充具体部位。',
+          );
+    }
     Navigator.of(context).pop();
   }
 
@@ -332,6 +479,32 @@ class _WorkoutReviewSheetState extends ConsumerState<_WorkoutReviewSheet> {
               ),
               const SizedBox(height: 16),
               Text(
+                '训练感受（可跳过）',
+                style: Theme.of(context)
+                    .textTheme
+                    .titleMedium
+                    ?.copyWith(fontWeight: FontWeight.w800),
+              ),
+              const SizedBox(height: 8),
+              Wrap(
+                key: const ValueKey<String>('workout-review-session-feel'),
+                spacing: 8,
+                runSpacing: 8,
+                children: [
+                  for (final SessionFeel feel in SessionFeel.values)
+                    ChoiceChip(
+                      label: Text(feel.label),
+                      selected: _selectedSessionFeel == feel,
+                      onSelected: (bool selected) {
+                        setState(() {
+                          _selectedSessionFeel = selected ? feel : null;
+                        });
+                      },
+                    ),
+                ],
+              ),
+              const SizedBox(height: 16),
+              Text(
                 '完成度',
                 style: Theme.of(context)
                     .textTheme
@@ -350,10 +523,27 @@ class _WorkoutReviewSheetState extends ConsumerState<_WorkoutReviewSheet> {
                       onSelected: (_) {
                         setState(() {
                           _selectedCompletionPercentage = percentage;
+                          if (percentage == 100) {
+                            _abortedByUser = false;
+                          }
                         });
                       },
                     ),
                 ],
+              ),
+              CheckboxListTile(
+                key: const ValueKey<String>('workout-review-aborted-toggle'),
+                contentPadding: EdgeInsets.zero,
+                value: _abortedByUser,
+                onChanged: _selectedCompletionPercentage >= 100
+                    ? null
+                    : (bool? value) {
+                        setState(() {
+                          _abortedByUser = value ?? false;
+                        });
+                      },
+                title: const Text('我主动中止本次训练'),
+                subtitle: const Text('仅如实记录安全决策；无安全依据时不会获得额外成长分。'),
               ),
               const SizedBox(height: 16),
               TextFormField(
@@ -413,6 +603,19 @@ class _WorkoutReviewSheetState extends ConsumerState<_WorkoutReviewSheet> {
                   _ExerciseExecutionFields(
                     index: index,
                     draft: _exerciseDrafts[index],
+                    onChanged: () => setState(() {}),
+                    onAddSet: () {
+                      setState(() {
+                        final _ExerciseExecutionDraft draft =
+                            _exerciseDrafts[index];
+                        draft.setDrafts.add(
+                          _StrengthSetDraft(
+                            setIndex: draft.setDrafts.length + 1,
+                            plannedRepetitions: draft.repetitionsPerSet,
+                          ),
+                        );
+                      });
+                    },
                   ),
                   const SizedBox(height: 12),
                 ],
@@ -470,10 +673,14 @@ class _WorkoutReviewSheetState extends ConsumerState<_WorkoutReviewSheet> {
 class _ExerciseExecutionFields extends StatelessWidget {
   final int index;
   final _ExerciseExecutionDraft draft;
+  final VoidCallback onChanged;
+  final VoidCallback onAddSet;
 
   const _ExerciseExecutionFields({
     required this.index,
     required this.draft,
+    required this.onChanged,
+    required this.onAddSet,
   });
 
   @override
@@ -505,6 +712,30 @@ class _ExerciseExecutionFields extends StatelessWidget {
                     color: AppColors.textSecondary,
                   ),
             ),
+            if (draft.requestsLandingQuality) ...[
+              const SizedBox(height: 10),
+              DropdownButtonFormField<LandingQuality>(
+                key: ValueKey<String>(
+                  'workout-review-exercise-$index-landing-quality',
+                ),
+                initialValue: draft.landingQuality,
+                decoration: const InputDecoration(
+                  labelText: '落地质量（本地记录）',
+                  helperText: '选择疼痛后将进入本地疼痛保护流程。',
+                ),
+                items: <DropdownMenuItem<LandingQuality>>[
+                  for (final LandingQuality quality in LandingQuality.values)
+                    DropdownMenuItem<LandingQuality>(
+                      value: quality,
+                      child: Text(quality.label),
+                    ),
+                ],
+                onChanged: (LandingQuality? value) {
+                  draft.landingQuality = value;
+                  onChanged();
+                },
+              ),
+            ],
             const SizedBox(height: 10),
             Row(
               children: [
@@ -515,7 +746,9 @@ class _ExerciseExecutionFields extends StatelessWidget {
                     ),
                     controller: draft.completedSetController,
                     keyboardType: TextInputType.number,
-                    decoration: const InputDecoration(labelText: '完成组数'),
+                    decoration: const InputDecoration(
+                      labelText: '动作级完成组数（兼容）',
+                    ),
                   ),
                 ),
                 const SizedBox(width: 10),
@@ -528,10 +761,44 @@ class _ExerciseExecutionFields extends StatelessWidget {
                     keyboardType: const TextInputType.numberWithOptions(
                       decimal: true,
                     ),
-                    decoration: const InputDecoration(labelText: '工作重量 kg'),
+                    decoration: const InputDecoration(
+                      labelText: '动作级重量 kg（兼容）',
+                    ),
                   ),
                 ),
               ],
+            ),
+            const SizedBox(height: 12),
+            Text(
+              '真实逐组记录',
+              style: Theme.of(context)
+                  .textTheme
+                  .bodyMedium
+                  ?.copyWith(fontWeight: FontWeight.w800),
+            ),
+            const SizedBox(height: 6),
+            Text(
+              '只有勾选完成的组会写入 strength_sets；每组可记录不同重量、次数、RPE 和用时。',
+              style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                    color: AppColors.textSecondary,
+                  ),
+            ),
+            const SizedBox(height: 8),
+            for (int setIndex = 0;
+                setIndex < draft.setDrafts.length;
+                setIndex += 1)
+              _StrengthSetExecutionFields(
+                exerciseIndex: index,
+                setDraft: draft.setDrafts[setIndex],
+                onChanged: onChanged,
+              ),
+            Align(
+              alignment: Alignment.centerLeft,
+              child: TextButton.icon(
+                onPressed: draft.setDrafts.length >= 12 ? null : onAddSet,
+                icon: const Icon(Icons.add),
+                label: const Text('添加一组'),
+              ),
             ),
           ],
         ),
@@ -540,18 +807,114 @@ class _ExerciseExecutionFields extends StatelessWidget {
   }
 }
 
+class _StrengthSetExecutionFields extends StatelessWidget {
+  final int exerciseIndex;
+  final _StrengthSetDraft setDraft;
+  final VoidCallback onChanged;
+
+  const _StrengthSetExecutionFields({
+    required this.exerciseIndex,
+    required this.setDraft,
+    required this.onChanged,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final int setIndex = setDraft.setIndex - 1;
+    return Column(
+      children: [
+        Material(
+          color: Colors.transparent,
+          child: CheckboxListTile(
+            key: ValueKey<String>(
+              'workout-review-exercise-$exerciseIndex-set-$setIndex-completed',
+            ),
+            contentPadding: EdgeInsets.zero,
+            value: setDraft.completed,
+            onChanged: (bool? value) {
+              setDraft.completed = value ?? false;
+              onChanged();
+            },
+            title: Text('第 ${setDraft.setIndex} 组'),
+            subtitle: const Text('勾选后按真实完成情况填写'),
+          ),
+        ),
+        if (setDraft.completed)
+          Wrap(
+            spacing: 8,
+            runSpacing: 8,
+            children: [
+              SizedBox(
+                width: 100,
+                child: TextFormField(
+                  key: ValueKey<String>(
+                    'workout-review-exercise-$exerciseIndex-set-$setIndex-reps',
+                  ),
+                  controller: setDraft.repetitionsController,
+                  keyboardType: TextInputType.number,
+                  decoration: const InputDecoration(labelText: '次数'),
+                ),
+              ),
+              SizedBox(
+                width: 110,
+                child: TextFormField(
+                  key: ValueKey<String>(
+                    'workout-review-exercise-$exerciseIndex-set-$setIndex-weight',
+                  ),
+                  controller: setDraft.weightController,
+                  keyboardType: const TextInputType.numberWithOptions(
+                    decimal: true,
+                  ),
+                  decoration: const InputDecoration(labelText: '重量 kg'),
+                ),
+              ),
+              SizedBox(
+                width: 90,
+                child: TextFormField(
+                  key: ValueKey<String>(
+                    'workout-review-exercise-$exerciseIndex-set-$setIndex-rpe',
+                  ),
+                  controller: setDraft.rpeController,
+                  keyboardType: const TextInputType.numberWithOptions(
+                    decimal: true,
+                  ),
+                  decoration: const InputDecoration(labelText: 'RPE'),
+                ),
+              ),
+              SizedBox(
+                width: 110,
+                child: TextFormField(
+                  key: ValueKey<String>(
+                    'workout-review-exercise-$exerciseIndex-set-$setIndex-duration',
+                  ),
+                  controller: setDraft.durationController,
+                  keyboardType: TextInputType.number,
+                  decoration: const InputDecoration(labelText: '用时 秒'),
+                ),
+              ),
+            ],
+          ),
+        const SizedBox(height: 6),
+      ],
+    );
+  }
+}
+
 class _PlayerStatusCard extends StatelessWidget {
   final TrainingMvpState state;
   final WorkoutPlayerStep step;
+  final TrainMateAction characterAction;
 
   const _PlayerStatusCard({
     required this.state,
     required this.step,
+    required this.characterAction,
   });
 
   @override
   Widget build(BuildContext context) {
     return TrainFlowCard(
+      cornerCharacterAction: characterAction,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -888,6 +1251,11 @@ class _PlayerActionCard extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     if (state.workoutPlayerFinished) {
       final review = state.latestWorkoutSessionReview;
+      final PetState? petState = ref.watch(petControllerProvider).value;
+      final bool hasValidTraining = review != null &&
+          review.isSessionRecord &&
+          !review.abortedByUser &&
+          review.normalizedCompletionPercentage >= 50;
       return TrainFlowCard(
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -943,6 +1311,13 @@ class _PlayerActionCard extends ConsumerWidget {
               ],
               const SizedBox(height: 12),
             ],
+            PetTrainingReceiptCard(
+              settlement: petState?.pendingSettlement,
+              hasValidTraining: hasValidTraining,
+              onAcknowledged: () => ref
+                  .read(petControllerProvider.notifier)
+                  .acknowledgeSettlement(),
+            ),
             SizedBox(
               width: double.infinity,
               child: OutlinedButton.icon(

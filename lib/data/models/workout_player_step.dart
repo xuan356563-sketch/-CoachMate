@@ -1,4 +1,5 @@
 import 'workout_day.dart';
+import 'exercise_training_profile.dart';
 
 enum WorkoutPlayerPhase {
   foamRolling,
@@ -118,8 +119,10 @@ List<WorkoutPlayerStep> buildWorkoutPlayerSteps(
       estimatedSeconds: deloaded ? 10 * 60 : mainSeconds,
       restSeconds: 45,
       exerciseIds: deloaded
-          ? const []
+          ? _safeDeloadExerciseIds(workout)
           : _exerciseIdsForPhase(workout, WorkoutPlayerPhase.main),
+      restSecondsOverride: deloaded ? 30 : _mainRestSeconds(workout),
+      voiceCueOverride: deloaded ? null : _mainVoiceCue(workout),
     ),
     _step(
       id: 'cooldown',
@@ -142,6 +145,8 @@ WorkoutPlayerStep _step({
   required int estimatedSeconds,
   required int restSeconds,
   required List<String> exerciseIds,
+  int? restSecondsOverride,
+  String? voiceCueOverride,
 }) {
   final String title = phase.label;
   return WorkoutPlayerStep(
@@ -150,10 +155,62 @@ WorkoutPlayerStep _step({
     title: title,
     cues: cues.isEmpty ? const ['今日无需安排，直接进入下一步'] : cues,
     estimatedSeconds: estimatedSeconds,
-    restSeconds: restSeconds,
-    voiceCue: '开始$title。结束后休息 $restSeconds 秒，再进入下一步。',
+    restSeconds: restSecondsOverride ?? restSeconds,
+    voiceCue: voiceCueOverride ??
+        '开始$title。结束后休息 ${restSecondsOverride ?? restSeconds} 秒，再进入下一步。',
     exerciseIds: exerciseIds,
   );
+}
+
+int _mainRestSeconds(WorkoutDay workout) {
+  int restSeconds = 45;
+  for (final WorkoutExerciseLink link in workout.workoutExercises) {
+    if ((link.module == WorkoutExerciseModule.mainTraining ||
+            link.module == WorkoutExerciseModule.accessory) &&
+        link.restSeconds > restSeconds) {
+      restSeconds = link.restSeconds;
+    }
+  }
+  return restSeconds;
+}
+
+String? _mainVoiceCue(WorkoutDay workout) {
+  final List<WorkoutExerciseLink> links = workout.workoutExercises
+      .where((WorkoutExerciseLink link) =>
+          link.module == WorkoutExerciseModule.mainTraining ||
+          link.module == WorkoutExerciseModule.accessory)
+      .toList()
+    ..sort(
+      (WorkoutExerciseLink first, WorkoutExerciseLink second) =>
+          first.sequence.compareTo(second.sequence),
+    );
+  if (links.isEmpty) return null;
+  final WorkoutExerciseLink first = links.first;
+  final List<String> cues = <String>[
+    '开始正式训练',
+    if (first.tempo != null) '动作节奏 ${first.tempo}',
+    first.executionIntent.label,
+    if (first.breathingCue != null) first.breathingCue!,
+    '组间休息 ${_mainRestSeconds(workout)} 秒',
+  ];
+  return '${cues.join('。')}。';
+}
+
+List<String> _safeDeloadExerciseIds(WorkoutDay workout) {
+  final List<String> safeIds = <String>[];
+  for (final WorkoutExerciseLink link in workout.workoutExercises) {
+    final ExerciseTrainingProfile profile =
+        trainingProfileForExercise(link.exerciseId);
+    final bool highDemand =
+        profile.dimensions.contains(TrainingDimension.neural) ||
+            profile.dimensions.contains(TrainingDimension.eccentric);
+    if (!highDemand &&
+        link.exerciseId.isNotEmpty &&
+        !safeIds.contains(link.exerciseId)) {
+      safeIds.add(link.exerciseId);
+    }
+  }
+  return List<String>.unmodifiable(safeIds);
 }
 
 List<String> _exerciseIdsForPhase(

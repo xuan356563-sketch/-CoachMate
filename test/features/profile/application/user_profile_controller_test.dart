@@ -97,7 +97,8 @@ void main() {
       InMemoryUserProfileRepository.defaultProfile.toJson(),
     )
       ..remove('equipmentAccessType')
-      ..remove('workerProfileType');
+      ..remove('workerProfileType')
+      ..remove('maxHeartRate');
     storage.saveJson(PersistedUserProfileRepository.storageKey, {
       'profileCompleted': true,
       'profile': legacyProfile,
@@ -111,5 +112,6 @@ void main() {
     expect(state.isCompleted, isTrue);
     expect(state.profile.equipmentAccessType, EquipmentAccessType.gym);
     expect(state.profile.workerProfileType, WorkerProfileType.general);
+    expect(state.profile.maxHeartRate, isNull);
   });
 }

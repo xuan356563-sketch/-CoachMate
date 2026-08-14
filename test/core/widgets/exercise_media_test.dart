@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 import 'package:trainflow_ai/core/widgets/exercise_media.dart';
+import 'package:trainflow_ai/core/widgets/flow_mascot.dart';
 import 'package:trainflow_ai/data/models/exercise.dart';
 import 'package:trainflow_ai/data/models/user_profile.dart';
 
@@ -58,6 +59,6 @@ void main() {
     await tester.pump();
 
     expect(find.text('仅支持图片或 GIF 动图'), findsOneWidget);
-    expect(find.byType(Image), findsNothing);
+    expect(find.byType(FlowMascot), findsOneWidget);
   });
 }

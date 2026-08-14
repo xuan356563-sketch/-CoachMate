@@ -4,144 +4,705 @@ import 'package:go_router/go_router.dart';
 
 import '../../app/router/app_routes.dart';
 import '../../core/constants/app_colors.dart';
+import '../../core/theme/trainmate_visual_mode.dart';
+import '../../core/theme/trainflow_tokens.dart';
+import '../../core/widgets/flow_mascot.dart';
+import '../../core/widgets/trainmate_showcase_widgets.dart';
 import '../../core/widgets/trainflow_widgets.dart';
-import '../../data/models/body_metric.dart';
+import '../../data/local/trainmate_structured_database_gateway.dart';
 import '../../data/models/daily_adjustment.dart';
-import '../../data/models/daily_check_in.dart';
-import '../../data/models/evidence_source.dart';
-import '../../data/models/meal_guide.dart';
-import '../../data/models/motion_check.dart';
+import '../../data/models/body_metric.dart';
+import '../../data/models/growth_evidence.dart';
 import '../../data/models/pain_log.dart';
-import '../../data/models/race.dart';
-import '../../data/models/starter_program.dart';
-import '../../data/models/training_load_curve.dart';
-import '../../data/models/training_reminder.dart';
+import '../../data/models/training_log.dart';
+import '../../data/models/training_metrics.dart';
+import '../../data/models/training_schedule.dart';
 import '../../data/models/user_profile.dart';
 import '../../data/models/workout_day.dart';
+import '../../services/growth_engine.dart';
+import '../growth/application/growth_evidence_controller.dart';
+import '../growth/application/local_training_fact_sync.dart';
+import '../growth/application/training_metrics_projection_service.dart';
+import '../growth/application/training_metrics_provider.dart';
+import '../growth/ability_progress_overview.dart';
+import '../profile/application/training_schedule_controller.dart';
+import '../rhythm/application/body_rhythm_controller.dart';
 import '../profile/application/user_profile_controller.dart';
+import '../training_log/presentation/training_record_editor.dart';
 import 'training_mvp_controller.dart';
+import 'widgets/today_showcase_header.dart';
 
-class TodayTrainingPage extends ConsumerWidget {
+FlowMascotSpec selectTodayMascotSpec({
+  required bool profileCompleted,
+  required TrainingDecisionType decisionType,
+  required bool shouldDeloadTraining,
+  required bool isSynchronizing,
+  required int completedTaskCount,
+  required int totalTaskCount,
+}) {
+  if (!profileCompleted) {
+    return const FlowMascotSpec(
+      action: FlowMascotAction.beckon,
+      expression: FlowMascotExpression.wink,
+      semanticLabel: 'Flow 训练伙伴邀请你完成基础资料',
+      durationMilliseconds: 520,
+    );
+  }
+  if (shouldDeloadTraining ||
+      decisionType == TrainingDecisionType.deload ||
+      decisionType == TrainingDecisionType.recovery ||
+      decisionType == TrainingDecisionType.rest) {
+    return const FlowMascotSpec(
+      action: FlowMascotAction.meditate,
+      expression: FlowMascotExpression.closed,
+      semanticLabel: 'Flow 训练伙伴提醒今天优先恢复',
+      durationMilliseconds: 620,
+    );
+  }
+  if (isSynchronizing) {
+    return const FlowMascotSpec(
+      action: FlowMascotAction.scan,
+      expression: FlowMascotExpression.focused,
+      semanticLabel: 'Flow 训练伙伴正在核对训练记录',
+      durationMilliseconds: 560,
+    );
+  }
+  if (totalTaskCount > 0 && completedTaskCount >= totalTaskCount) {
+    return const FlowMascotSpec(
+      action: FlowMascotAction.celebrate,
+      expression: FlowMascotExpression.happy,
+      semanticLabel: 'Flow 训练伙伴庆祝今日任务完成',
+      durationMilliseconds: 460,
+      motionCycles: 2,
+    );
+  }
+  return const FlowMascotSpec(
+    action: FlowMascotAction.jog,
+    expression: FlowMascotExpression.wink,
+    semanticLabel: 'Flow 训练伙伴陪你开始今日慢跑',
+    durationMilliseconds: 480,
+    motionCycles: 2,
+  );
+}
+
+class TodayTrainingPage extends ConsumerStatefulWidget {
   const TodayTrainingPage({super.key});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<TodayTrainingPage> createState() => _TodayTrainingPageState();
+}
+
+class _TodayTrainingPageState extends ConsumerState<TodayTrainingPage> {
+  String? _pendingReceiptEventId;
+
+  void _startWorkoutFromShowcase() {
+    final bool started =
+        ref.read(trainingMvpProvider.notifier).startWorkoutPlayer();
+    if (started) {
+      context.push(AppRoutes.workoutPlayer);
+      return;
+    }
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(
+          ref.read(trainingMvpProvider).workoutPlayerStatusMessage,
+        ),
+      ),
+    );
+  }
+
+  void _scheduleGrowthReceipt(TrainingGrowthReceipt receipt) {
+    final String eventId = receipt.event.eventId;
+    if (_pendingReceiptEventId == eventId) return;
+    _pendingReceiptEventId = eventId;
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted || _pendingReceiptEventId != eventId) return;
+      final String incompleteLabel =
+          receipt.event.missingData.isEmpty ? '' : ' · 数据不完整';
+      final ScaffoldMessengerState messenger = ScaffoldMessenger.of(context);
+      messenger.hideCurrentSnackBar();
+      messenger.showSnackBar(
+        SnackBar(
+          duration: const Duration(seconds: 5),
+          content: Text(
+            '+${receipt.awardedXp} 成长分 · ${receipt.message}'
+            '$incompleteLabel',
+          ),
+          action: SnackBarAction(
+            label: '查看证据',
+            onPressed: () => context.push(AppRoutes.growthEvidence),
+          ),
+        ),
+      );
+      ref
+          .read(growthEvidenceControllerProvider.notifier)
+          .acknowledgeLatestReceipt(eventId);
+      _pendingReceiptEventId = null;
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
     final TrainingMvpState state = ref.watch(trainingMvpProvider);
     final WorkoutDay todayWorkout = state.todayWorkout;
+    final GrowthEvidenceState growthState =
+        ref.watch(growthEvidenceControllerProvider);
+    if (growthState.latestReceipt != null) {
+      _scheduleGrowthReceipt(growthState.latestReceipt!);
+    }
+    final GrowthDashboard growthDashboard = GrowthEngine().buildDashboard(
+      events: growthState.events,
+      levelState: growthState.levelState,
+      todayWorkout: todayWorkout,
+      logs: state.logs,
+      races: state.races,
+    );
+    final FlowMascotSpec mascotSpec = selectTodayMascotSpec(
+      profileCompleted: state.profileCompleted,
+      decisionType: todayWorkout.decisionType,
+      shouldDeloadTraining: state.latestPainLog?.shouldDeloadTraining == true,
+      isSynchronizing: growthState.isSynchronizing,
+      completedTaskCount: growthDashboard.completedTaskCount,
+      totalTaskCount: growthDashboard.totalTaskCount,
+    );
+    final DateTime now = DateTime.now();
+    final TrainingMetricsQuery metricsQuery = TrainingMetricsQuery(
+      athleteProfileId: state.profile.id,
+      period: MetricPeriod.week,
+      periodStart: _weekStart(now),
+    );
+    final AsyncValue<List<MetricAggregate>> metricsAsync =
+        ref.watch(trainingMetricAggregatesProvider(metricsQuery));
+    final AsyncValue<List<MetricAggregate>> historicalMetricsAsync = ref.watch(
+      trainingMetricAggregatesProvider(
+        TrainingMetricsQuery(
+          athleteProfileId: state.profile.id,
+          includeInvalidated: true,
+        ),
+      ),
+    );
+    final List<MetricAggregate> metrics = metricsAsync.when(
+      data: (List<MetricAggregate> value) => value,
+      error: (Object error, StackTrace stackTrace) => const <MetricAggregate>[],
+      loading: () => const <MetricAggregate>[],
+    );
+    final TrainingScheduleState scheduleState =
+        ref.watch(trainingScheduleControllerProvider);
+    final DateTime weekStart = _weekStart(now);
+    final DateTime weekEnd = weekStart.add(const Duration(days: 7));
+    final List<ScheduledWorkout> scheduledWeekWorkouts = scheduleState.workouts
+        .where((ScheduledWorkout item) =>
+            !item.scheduledDate.isBefore(weekStart) &&
+            item.scheduledDate.isBefore(weekEnd))
+        .toList(growable: false);
+    final AsyncValue<L1ScheduledResultReadState> l1ResultsAsync = ref.watch(
+      l1ScheduledResultReadProvider(
+        L1ScheduledResultQuery(
+          athleteProfileId: state.profile.id,
+          startLocalDate: weekStart,
+          endExclusiveLocalDate: weekEnd,
+        ),
+      ),
+    );
+    final TrainingMetricsProjectionService projectionService =
+        ref.watch(trainingMetricsProjectionServiceProvider);
+    final L1DashboardProjection l1Projection = l1ResultsAsync.when(
+      data: (L1ScheduledResultReadState value) => projectionService.project(
+        logs: state.logs,
+        scheduledTodayWorkout: state.scheduledTodayWorkout,
+        scheduledWeekWorkouts: scheduledWeekWorkouts,
+        metrics: metrics,
+        now: now,
+        persistedScheduledResults: value.results
+            .map((StructuredScheduledWorkoutResult item) =>
+                item.toDomainResult())
+            .toList(growable: false),
+        source: switch (value.source) {
+          L1ScheduledResultReadSource.structured =>
+            L1ProjectionSource.structured,
+          L1ScheduledResultReadSource.compatibilityUnavailable =>
+            L1ProjectionSource.compatibilityUnavailable,
+          L1ScheduledResultReadSource.compatibilityFailed =>
+            L1ProjectionSource.compatibilityFailed,
+        },
+      ),
+      error: (Object error, StackTrace stackTrace) => projectionService.project(
+        logs: state.logs,
+        scheduledTodayWorkout: state.scheduledTodayWorkout,
+        scheduledWeekWorkouts: scheduledWeekWorkouts,
+        metrics: metrics,
+        now: now,
+        source: L1ProjectionSource.compatibilityFailed,
+      ),
+      loading: () => projectionService.project(
+        logs: state.logs,
+        scheduledTodayWorkout: state.scheduledTodayWorkout,
+        scheduledWeekWorkouts: scheduledWeekWorkouts,
+        metrics: metrics,
+        now: now,
+        source: L1ProjectionSource.structuredLoading,
+      ),
+    );
+    final AsyncValue<BodyRhythmState> rhythmAsync =
+        ref.watch(bodyRhythmControllerProvider);
 
-    return TrainFlowPage(
-      title: '今日训练',
-      subtitle: 'TrainFlow AI / AI 训练决策辅助系统',
-      action: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          IconButton(
-            tooltip: '照吃卡',
-            onPressed: () => context.go(AppRoutes.mealGuide),
-            icon: const Icon(Icons.restaurant_menu),
-          ),
-          IconButton(
-            tooltip: '记录疼痛',
-            onPressed: () => context.go(AppRoutes.rehab),
-            icon: const Icon(Icons.health_and_safety_outlined),
-          ),
-          IconButton(
-            tooltip: 'AI 教练',
-            onPressed: () => context.go(AppRoutes.aiCoach),
-            icon: const Icon(Icons.auto_awesome),
-          ),
-          IconButton(
-            tooltip: '提醒',
-            onPressed: () => context.go(AppRoutes.reminders),
-            icon: const Icon(Icons.notifications_active_outlined),
-          ),
-        ],
+    final BodyMetric? latestMetric = state.latestBodyMetric;
+    final String completionLabel =
+        '${(growthDashboard.completionRate.clamp(0, 1) * 100).round()}%';
+
+    return TrainMateImmersiveHubPage(
+      mode: TrainMateVisualMode.darkTraining,
+      hero: TodayShowcaseHeader(
+        athleteName: state.profile.name,
+        growthLabel: growthDashboard.level.label,
+        growthXp: growthDashboard.level.currentXp,
+        nextLevelXp: growthDashboard.level.nextLevelXp,
+        completionRate: growthDashboard.completionRate,
+        weeklyConsistencyLabel: l1Projection.weeklyConsistencyLabel,
+        workout: todayWorkout,
+        onOpenCoach: () => context.go(AppRoutes.aiCenter),
+        onStartWorkout: _startWorkoutFromShowcase,
       ),
       children: [
+        TrainMateStatusStrip(
+          semanticLabel: '今日最新状态，点击进入签到',
+          onTap: () => context.push(AppRoutes.dailyCheckIn),
+          metrics: <TrainMateStatusMetric>[
+            TrainMateStatusMetric(
+              label: '睡眠',
+              value: latestMetric == null
+                  ? '待记录'
+                  : '${latestMetric.sleepHours.toStringAsFixed(1)}h',
+              icon: Icons.bedtime_outlined,
+              color: AppColors.primaryLightest,
+            ),
+            TrainMateStatusMetric(
+              label: '准备度',
+              value: '${state.readinessScore}',
+              icon: Icons.bolt_outlined,
+              color: AppColors.secondaryLight,
+            ),
+            TrainMateStatusMetric(
+              label: '疲劳',
+              value: latestMetric == null
+                  ? '待记录'
+                  : '${latestMetric.fatigueLevel}/10',
+              icon: Icons.battery_alert_outlined,
+              color: AppColors.background,
+            ),
+            TrainMateStatusMetric(
+              label: '酸痛',
+              value: latestMetric == null
+                  ? '待记录'
+                  : '${latestMetric.sorenessLevel}/10',
+              icon: Icons.accessibility_new_outlined,
+              color: AppColors.primaryLightest,
+            ),
+            TrainMateStatusMetric(
+              label: '心情',
+              value: latestMetric?.moodLabel.isNotEmpty == true
+                  ? latestMetric!.moodLabel
+                  : '待记录',
+              icon: Icons.sentiment_satisfied_alt_outlined,
+              color: AppColors.secondaryLight,
+            ),
+          ],
+        ),
+        const SizedBox(height: 20),
+        TrainMateOverviewGrid(
+          first: _TodayOverviewCard(
+            icon: Icons.favorite_outline,
+            label: '训练准备度',
+            value: '${state.readinessScore}',
+            detail: state.readinessLabel,
+          ),
+          second: _TodayOverviewCard(
+            icon: Icons.calendar_today_outlined,
+            label: '本周一致性',
+            value: l1Projection.weeklyConsistencyLabel,
+            detail: '$completionLabel 完成',
+          ),
+          trend: _TodayOverviewCard(
+            icon: Icons.insights_outlined,
+            label: '恢复与训练记录',
+            value: latestMetric == null
+                ? '暂无身体数据'
+                : 'HRV ${latestMetric.hrvMs} · 睡眠 ${latestMetric.sleepHours.toStringAsFixed(1)}h',
+            detail: latestMetric == null
+                ? '完成签到后会在这里显示最新真实状态。'
+                : '最近状态来自 ${latestMetric.source.label} · ${latestMetric.measuredDateLabel}',
+            wide: true,
+          ),
+        ),
+        const SizedBox(height: 20),
         if (!state.profileCompleted) const _OnboardingPromptCard(),
-        _MorningReportCard(state: state),
-        _WorkerProfileStrategyCard(state: state),
-        _ReminderPreviewCard(state: state),
-        _DailyCheckInPreviewCard(state: state),
-        const _RehabEntryCard(),
+        AbilityProgressOverview(
+          metrics: historicalMetricsAsync,
+          compact: true,
+          onTap: () => context.push(AppRoutes.growthEvidence),
+        ),
+        _TodayGrowthCard(
+          dashboard: growthDashboard,
+          projection: l1Projection,
+          isSynchronizing: growthState.isSynchronizing,
+          statusMessage: growthState.statusMessage,
+          mascotAction: mascotSpec.action,
+          rhythm: rhythmAsync,
+        ),
+        const SectionTitle(title: '今日状态与签到'),
+        const _DailyCheckInPreviewCard(),
         if (state.latestPainLog != null)
           _PainRiskCard(painLog: state.latestPainLog!),
-        _ReadinessCard(state: state),
-        _RecoveryCountdownCard(state: state),
-        _DailyAdjustmentPreviewCard(state: state),
-        _TrainingStatusTrendCard(state: state),
-        _StarterProgramPreviewCard(
-            day: state.activeStarterProgramDay, state: state),
-        _DataCenterPreviewCard(metric: state.latestBodyMetric, state: state),
-        _MealGuidePreviewCard(guide: state.activeMealGuide),
-        _MotionCheckPreviewCard(state: state),
-        _RacePrepPreviewCard(race: state.featuredRace),
         const SectionTitle(title: '今日训练内容'),
+        _WorkerProfileStrategyCard(state: state),
+        _DailyAdjustmentPreviewCard(state: state),
         _WorkoutSummaryCard(workout: todayWorkout),
-        const _FeedbackCard(),
-        const SectionTitle(title: 'AI 教练建议 Mock'),
+        const SectionTitle(title: '训练完成记录'),
+        _TrainingRecordEntryCard(workout: todayWorkout),
+        _RecentTrainingRecordsCard(logs: state.logs),
+        const SectionTitle(title: 'AI 教练建议（本地规则）'),
         _CoachAdviceCard(advice: state.coachAdvices),
-        const SectionTitle(title: '训练依据'),
-        _EvidenceSourceCard(sources: todayWorkout.evidenceSources),
       ],
     );
   }
 }
 
-class _MorningReportCard extends StatelessWidget {
-  final TrainingMvpState state;
+class _TodayOverviewCard extends StatelessWidget {
+  const _TodayOverviewCard({
+    required this.icon,
+    required this.label,
+    required this.value,
+    required this.detail,
+    this.wide = false,
+  });
 
-  const _MorningReportCard({required this.state});
+  final IconData icon;
+  final String label;
+  final String value;
+  final String detail;
+  final bool wide;
 
   @override
   Widget build(BuildContext context) {
-    final BodyMetric? metric = state.latestBodyMetric;
+    return TrainFlowCard(
+      child: ConstrainedBox(
+        constraints: BoxConstraints(minHeight: wide ? 118 : 142),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: <Widget>[
+            Icon(icon, color: TrainFlowTokens.accent),
+            const SizedBox(height: 10),
+            TrainMateMetricValue(value: value, label: label),
+            const SizedBox(height: 3),
+            Text(detail,
+                maxLines: 2,
+                overflow: TextOverflow.ellipsis,
+                style: Theme.of(context)
+                    .textTheme
+                    .bodySmall
+                    ?.copyWith(color: TrainMateVisualScope.muted(context))),
+          ],
+        ),
+      ),
+    );
+  }
+}
 
+class _TrainingRecordEntryCard extends StatelessWidget {
+  const _TrainingRecordEntryCard({required this.workout});
+
+  final WorkoutDay workout;
+
+  @override
+  Widget build(BuildContext context) {
     return TrainFlowCard(
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
+        children: <Widget>[
           Row(
-            children: [
-              const Icon(Icons.wb_sunny_outlined, color: AppColors.warning),
-              const SizedBox(width: 8),
-              Expanded(
-                child: Text(
-                  '晨间报告',
-                  style: Theme.of(context)
-                      .textTheme
-                      .titleMedium
-                      ?.copyWith(fontWeight: FontWeight.w800),
+            children: <Widget>[
+              Container(
+                width: 44,
+                height: 44,
+                decoration: BoxDecoration(
+                  color: AppColors.primaryLight,
+                  borderRadius: BorderRadius.circular(14),
+                ),
+                child: const Icon(
+                  Icons.edit_calendar_outlined,
+                  color: AppColors.primary,
                 ),
               ),
-              ToneBadge(label: state.readinessLabel),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: <Widget>[
+                    Text(
+                      '记录今日训练',
+                      style: Theme.of(context)
+                          .textTheme
+                          .titleMedium
+                          ?.copyWith(fontWeight: FontWeight.w900),
+                    ),
+                    const SizedBox(height: 2),
+                    const Text(
+                      '记录计划内训练或额外运动，保存后更新成长证据。',
+                      style: TextStyle(color: AppColors.textSecondary),
+                    ),
+                  ],
+                ),
+              ),
             ],
           ),
-          const SizedBox(height: 12),
-          Row(
-            children: [
-              Expanded(
-                child: MetricPill(
-                  label: '昨晚睡眠',
-                  value: metric == null
-                      ? '未记录'
-                      : '${metric.sleepHours.toStringAsFixed(1)} h',
-                  color: AppColors.secondary,
-                ),
+          const SizedBox(height: 14),
+          SizedBox(
+            width: double.infinity,
+            child: FilledButton.icon(
+              key: const ValueKey<String>('today-training-record-entry'),
+              onPressed: () => showTrainingRecordEditor(
+                context: context,
+                workout: workout,
               ),
-              const SizedBox(width: 10),
-              Expanded(
-                child: MetricPill(
-                  label: 'HRV',
-                  value: metric == null ? '未记录' : '${metric.hrvMs} ms',
-                ),
-              ),
-            ],
+              icon: const Icon(Icons.add),
+              label: const Text('记录今日训练'),
+            ),
           ),
-          const SizedBox(height: 12),
-          InfoRow(label: '今日安排', value: state.todayWorkout.title),
-          InfoRow(label: '一句话建议', value: state.morningReportAdvice),
         ],
+      ),
+    );
+  }
+}
+
+class _TodayGrowthCard extends StatelessWidget {
+  const _TodayGrowthCard({
+    required this.dashboard,
+    required this.projection,
+    required this.isSynchronizing,
+    required this.statusMessage,
+    required this.mascotAction,
+    required this.rhythm,
+  });
+
+  final GrowthDashboard dashboard;
+  final L1DashboardProjection projection;
+  final bool isSynchronizing;
+  final String statusMessage;
+  final FlowMascotAction mascotAction;
+  final AsyncValue<BodyRhythmState> rhythm;
+
+  @override
+  Widget build(BuildContext context) {
+    final String dayLabel = dashboard.growthDay == null
+        ? '成长基线待建立'
+        : '累计成长日 ${dashboard.growthDay}';
+    return TrainFlowCard(
+      key: const ValueKey<String>('today-growth-card'),
+      tone: TrainFlowCardTone.peach,
+      cornerCharacterAction: trainMateActionForFlowMascot(mascotAction),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          _RhythmCompactEntry(
+            rhythm: rhythm,
+            growthLabel: '$dayLabel · ${dashboard.level.label}',
+          ),
+          const SizedBox(height: 12),
+          LinearProgressIndicator(
+            value: dashboard.level.progress,
+            minHeight: 8,
+            color: AppColors.primary,
+            backgroundColor: AppColors.primary.withValues(alpha: 0.12),
+            borderRadius: BorderRadius.circular(999),
+          ),
+          const SizedBox(height: 8),
+          Text(
+            '成长经验 ${dashboard.level.currentXp}/${dashboard.level.nextLevelXp}',
+            style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                  color: AppColors.textSecondary,
+                ),
+          ),
+          const SizedBox(height: 12),
+          Text(
+            'L1 训练执行',
+            style: Theme.of(context)
+                .textTheme
+                .titleMedium
+                ?.copyWith(fontWeight: FontWeight.w800),
+          ),
+          const SizedBox(height: 8),
+          InfoRow(
+            label: '本周一致性',
+            value: projection.weeklyConsistencyLabel,
+          ),
+          InfoRow(
+            label: '今日训练判定',
+            value: projection.todayDecisionLabel,
+          ),
+          InfoRow(
+            label: '负荷状态',
+            value: projection.loadStateLabel.replaceFirst('负荷状态：', ''),
+          ),
+          const SizedBox(height: 8),
+          TrainFlowExpandable(
+            key: const ValueKey<String>(
+              'today-growth-details-expandable',
+            ),
+            title: '查看详情',
+            summary:
+                '今日任务 ${dashboard.completedTaskCount}/${dashboard.totalTaskCount} · ${dashboard.raceCountdownLabel}',
+            summaryMaxLines: 2,
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  dashboard.raceCountdownLabel,
+                  style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                        color: AppColors.textSecondary,
+                      ),
+                ),
+                const SizedBox(height: 10),
+                for (final GrowthTask task in dashboard.tasks)
+                  Padding(
+                    padding: const EdgeInsets.only(bottom: 7),
+                    child: Row(
+                      children: [
+                        Icon(
+                          task.completed
+                              ? Icons.check_circle
+                              : Icons.radio_button_unchecked,
+                          size: 18,
+                          color: task.completed
+                              ? AppColors.success
+                              : AppColors.textSecondary,
+                        ),
+                        const SizedBox(width: 8),
+                        Expanded(child: Text(task.title)),
+                      ],
+                    ),
+                  ),
+                const SizedBox(height: 4),
+                Text(
+                  isSynchronizing ? '正在核对真实记录…' : statusMessage,
+                  style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                        color: AppColors.textSecondary,
+                      ),
+                ),
+                const SizedBox(height: 8),
+                Text(
+                  '计算依据：${projection.calculationBasis}',
+                  style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                        color: AppColors.textSecondary,
+                      ),
+                ),
+                Align(
+                  alignment: Alignment.centerRight,
+                  child: TextButton.icon(
+                    onPressed: () => context.push(AppRoutes.growthEvidence),
+                    icon: const Icon(Icons.timeline_outlined),
+                    label: const Text('查看成长证据'),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _RhythmCompactEntry extends StatelessWidget {
+  const _RhythmCompactEntry({
+    required this.rhythm,
+    required this.growthLabel,
+  });
+
+  final AsyncValue<BodyRhythmState> rhythm;
+  final String growthLabel;
+
+  @override
+  Widget build(BuildContext context) {
+    final String title;
+    final String subtitle;
+    final String trailing;
+    switch (rhythm) {
+      case AsyncData<BodyRhythmState>(:final value):
+        final snapshot = value.snapshot;
+        if (!snapshot.hasBaseline) {
+          title = '身体节奏基线积累中';
+          subtitle = '已有 ${snapshot.sufficientFactorCount}/4 项长期数据';
+        } else if (snapshot.stateAge == null) {
+          title = '近期节奏 ${snapshot.speed.toStringAsFixed(1)}×';
+          subtitle = '填写生日后显示状态年龄';
+        } else {
+          title = '状态年龄 ${snapshot.stateAge!.toStringAsFixed(1)}';
+          subtitle = '${snapshot.paceLabel} · 每周更新一次';
+        }
+        trailing = '${snapshot.speed.toStringAsFixed(1)}×';
+      case AsyncError<BodyRhythmState>():
+        title = '身体节奏暂未更新';
+        subtitle = '点击查看数据状态';
+        trailing = '--';
+      default:
+        title = '正在核对身体节奏';
+        subtitle = '读取近 30 天长期趋势';
+        trailing = '…';
+    }
+    return Semantics(
+      button: true,
+      label: '$title，$subtitle，点击查看身体节奏详情',
+      child: InkWell(
+        key: const ValueKey<String>('today-growth-rhythm-entry'),
+        borderRadius: BorderRadius.circular(16),
+        onTap: () => context.push(AppRoutes.rhythmDetail),
+        child: Padding(
+          padding: const EdgeInsets.symmetric(vertical: 4),
+          child: Row(
+            children: [
+              CircleAvatar(
+                backgroundColor: AppColors.primary.withValues(alpha: 0.12),
+                child: const Icon(
+                  Icons.monitor_heart_outlined,
+                  color: AppColors.primary,
+                ),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      title,
+                      style: Theme.of(context)
+                          .textTheme
+                          .titleMedium
+                          ?.copyWith(fontWeight: FontWeight.w900),
+                    ),
+                    Text(
+                      '$subtitle · $growthLabel',
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
+                      style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                            color: AppColors.textSecondary,
+                          ),
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(width: 8),
+              Text(
+                trailing,
+                style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                      color: AppColors.primary,
+                      fontWeight: FontWeight.w900,
+                    ),
+              ),
+              const Icon(Icons.chevron_right),
+            ],
+          ),
+        ),
       ),
     );
   }
@@ -191,75 +752,11 @@ class _WorkerProfileStrategyCard extends StatelessWidget {
   }
 }
 
-class _ReminderPreviewCard extends StatelessWidget {
-  final TrainingMvpState state;
-
-  const _ReminderPreviewCard({required this.state});
-
-  @override
-  Widget build(BuildContext context) {
-    final TrainingReminder? nextReminder = state.nextTrainingReminder;
-
-    return TrainFlowCard(
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            children: [
-              const Icon(Icons.notifications_active_outlined,
-                  color: AppColors.primary),
-              const SizedBox(width: 8),
-              Expanded(
-                child: Text(
-                  '主动提醒',
-                  style: Theme.of(context)
-                      .textTheme
-                      .titleMedium
-                      ?.copyWith(fontWeight: FontWeight.w800),
-                ),
-              ),
-              ToneBadge(
-                label: state.remindersEnabled ? '本地 Mock' : '已暂停',
-                color: state.remindersEnabled
-                    ? AppColors.primary
-                    : AppColors.warningDark,
-              ),
-            ],
-          ),
-          const SizedBox(height: 10),
-          InfoRow(label: '下一条', value: state.reminderSummaryLabel),
-          if (nextReminder != null) ...[
-            const SizedBox(height: 4),
-            Text(
-              nextReminder.reason,
-              style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                    color: AppColors.textSecondary,
-                  ),
-            ),
-          ],
-          const SizedBox(height: 12),
-          Align(
-            alignment: Alignment.centerRight,
-            child: TextButton(
-              onPressed: () => context.go(AppRoutes.reminders),
-              child: const Text('打开提醒'),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
 class _DailyCheckInPreviewCard extends StatelessWidget {
-  final TrainingMvpState state;
-
-  const _DailyCheckInPreviewCard({required this.state});
+  const _DailyCheckInPreviewCard();
 
   @override
   Widget build(BuildContext context) {
-    final DailyCheckInSummary summary = state.dailyCheckInSummary;
-
     return TrainFlowCard(
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -277,20 +774,11 @@ class _DailyCheckInPreviewCard extends StatelessWidget {
                       ?.copyWith(fontWeight: FontWeight.w800),
                 ),
               ),
-              ToneBadge(label: summary.modeLabel),
             ],
           ),
           const SizedBox(height: 10),
-          InfoRow(label: '今天只问', value: summary.questionCountLabel),
           Text(
-            summary.explanation,
-            style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                  color: AppColors.textSecondary,
-                ),
-          ),
-          const SizedBox(height: 6),
-          Text(
-            summary.sortExplanation,
+            '打开后再填写今天的主观状态；首页不展示身体慢变量或推断结论。',
             style: Theme.of(context).textTheme.bodySmall?.copyWith(
                   color: AppColors.textSecondary,
                 ),
@@ -299,74 +787,9 @@ class _DailyCheckInPreviewCard extends StatelessWidget {
           Align(
             alignment: Alignment.centerRight,
             child: TextButton(
-              onPressed: () => context.go(AppRoutes.dailyCheckIn),
+              onPressed: () => context.push(AppRoutes.dailyCheckIn),
               child: const Text('打开签到'),
             ),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-class _RecoveryCountdownCard extends StatelessWidget {
-  final TrainingMvpState state;
-
-  const _RecoveryCountdownCard({required this.state});
-
-  @override
-  Widget build(BuildContext context) {
-    final bool hasLog = state.latestLog != null;
-
-    return TrainFlowCard(
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            children: [
-              const Icon(Icons.hourglass_bottom, color: AppColors.secondary),
-              const SizedBox(width: 8),
-              Expanded(
-                child: Text(
-                  '恢复倒计时',
-                  style: Theme.of(context)
-                      .textTheme
-                      .titleMedium
-                      ?.copyWith(fontWeight: FontWeight.w800),
-                ),
-              ),
-              ToneBadge(
-                label: state.recoveryCountdownLabel,
-                color: hasLog ? AppColors.secondary : AppColors.warning,
-              ),
-            ],
-          ),
-          const SizedBox(height: 12),
-          Row(
-            children: [
-              Expanded(
-                child: MetricPill(
-                  label: '距下次高强度课',
-                  value: state.recoveryCountdownLabel,
-                  color: AppColors.secondary,
-                ),
-              ),
-              const SizedBox(width: 10),
-              Expanded(
-                child: MetricPill(
-                  label: '建议恢复',
-                  value: '${state.recommendedRecoveryHours} 小时',
-                  color: AppColors.warning,
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 12),
-          Text(
-            state.recoveryAdvice,
-            style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                  color: AppColors.textSecondary,
-                ),
           ),
         ],
       ),
@@ -427,627 +850,9 @@ class _DailyAdjustmentPreviewCard extends StatelessWidget {
           Align(
             alignment: Alignment.centerRight,
             child: TextButton(
-              onPressed: () => context.go(AppRoutes.dailyAdjustment),
+              onPressed: () => context.push(AppRoutes.dailyAdjustment),
               child: const Text('打开调整'),
             ),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-class _TrainingStatusTrendCard extends StatelessWidget {
-  final TrainingMvpState state;
-
-  const _TrainingStatusTrendCard({required this.state});
-
-  @override
-  Widget build(BuildContext context) {
-    final double acute = state.acuteLoadScore;
-    final double chronic = state.chronicLoadScore;
-    final double acuteRatio = (acute / chronic).clamp(0.0, 1.4).toDouble();
-    final double chronicRatio = (chronic / 520).clamp(0.0, 1.0).toDouble();
-    final List<TrainingLoadCurvePoint> curvePoints =
-        state.trainingLoadCurvePoints;
-    final TrainingLoadCurvePoint? latestLoadPoint =
-        curvePoints.isEmpty ? null : curvePoints.last;
-
-    return TrainFlowCard(
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            children: [
-              const Icon(Icons.show_chart, color: AppColors.primary),
-              const SizedBox(width: 8),
-              Expanded(
-                child: Text(
-                  '训练状态趋势',
-                  style: Theme.of(context)
-                      .textTheme
-                      .titleMedium
-                      ?.copyWith(fontWeight: FontWeight.w800),
-                ),
-              ),
-              ToneBadge(label: state.trainingStatusLabel),
-            ],
-          ),
-          const SizedBox(height: 12),
-          _LoadBar(
-            label: 'ATL 急性负荷',
-            value: acuteRatio / 1.4,
-            score: acute.round(),
-            color: AppColors.warning,
-          ),
-          const SizedBox(height: 10),
-          _LoadBar(
-            label: 'CTL 慢性体能',
-            value: chronicRatio,
-            score: chronic.round(),
-            color: AppColors.primary,
-          ),
-          if (curvePoints.isNotEmpty) ...[
-            const SizedBox(height: 14),
-            Text(
-              'CTL / ATL / TSB 训练负荷曲线',
-              style: Theme.of(context)
-                  .textTheme
-                  .bodyMedium
-                  ?.copyWith(fontWeight: FontWeight.w800),
-            ),
-            const SizedBox(height: 4),
-            Text(
-              '当前 TSB ${latestLoadPoint!.tsbScore.round()} · 日负荷 ${latestLoadPoint.dailyLoadScore.round()}',
-              style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                    color: AppColors.textSecondary,
-                  ),
-            ),
-            const SizedBox(height: 8),
-            _LoadCurveChart(points: curvePoints),
-            const SizedBox(height: 8),
-            const _LoadCurveLegend(),
-          ],
-          const SizedBox(height: 12),
-          Text(
-            state.trainingStatusReason,
-            style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                  color: AppColors.textSecondary,
-                ),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-class _LoadBar extends StatelessWidget {
-  final String label;
-  final double value;
-  final int score;
-  final Color color;
-
-  const _LoadBar({
-    required this.label,
-    required this.value,
-    required this.score,
-    required this.color,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Row(
-          children: [
-            Expanded(
-              child: Text(
-                label,
-                style: Theme.of(context)
-                    .textTheme
-                    .bodyMedium
-                    ?.copyWith(fontWeight: FontWeight.w800),
-              ),
-            ),
-            Text(
-              '$score',
-              style: Theme.of(context).textTheme.labelLarge?.copyWith(
-                    color: color,
-                    fontWeight: FontWeight.w800,
-                  ),
-            ),
-          ],
-        ),
-        const SizedBox(height: 6),
-        LinearProgressIndicator(
-          value: value,
-          minHeight: 8,
-          color: color,
-          backgroundColor: color.withValues(alpha: 0.12),
-          borderRadius: BorderRadius.circular(999),
-        ),
-      ],
-    );
-  }
-}
-
-class _LoadCurveChart extends StatelessWidget {
-  final List<TrainingLoadCurvePoint> points;
-
-  const _LoadCurveChart({required this.points});
-
-  @override
-  Widget build(BuildContext context) {
-    return SizedBox(
-      height: 120,
-      child: CustomPaint(
-        painter: _LoadCurvePainter(points: points),
-        child: Align(
-          alignment: Alignment.bottomCenter,
-          child: Padding(
-            padding: const EdgeInsets.only(top: 100),
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                Text(
-                  points.first.label,
-                  style: Theme.of(context).textTheme.labelSmall?.copyWith(
-                        color: AppColors.textSecondary,
-                      ),
-                ),
-                Text(
-                  points.last.label,
-                  style: Theme.of(context).textTheme.labelSmall?.copyWith(
-                        color: AppColors.textSecondary,
-                      ),
-                ),
-              ],
-            ),
-          ),
-        ),
-      ),
-    );
-  }
-}
-
-class _LoadCurveLegend extends StatelessWidget {
-  const _LoadCurveLegend();
-
-  @override
-  Widget build(BuildContext context) {
-    return Row(
-      children: const [
-        _LegendDot(label: 'CTL', color: AppColors.primary),
-        SizedBox(width: 14),
-        _LegendDot(label: 'ATL', color: AppColors.warning),
-        SizedBox(width: 14),
-        _LegendDot(label: 'TSB', color: AppColors.secondary),
-      ],
-    );
-  }
-}
-
-class _LegendDot extends StatelessWidget {
-  final String label;
-  final Color color;
-
-  const _LegendDot({
-    required this.label,
-    required this.color,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return Row(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        Container(
-          width: 10,
-          height: 10,
-          decoration: BoxDecoration(
-            color: color,
-            shape: BoxShape.circle,
-          ),
-        ),
-        const SizedBox(width: 6),
-        Text(label, style: Theme.of(context).textTheme.labelMedium),
-      ],
-    );
-  }
-}
-
-class _LoadCurvePainter extends CustomPainter {
-  final List<TrainingLoadCurvePoint> points;
-
-  const _LoadCurvePainter({required this.points});
-
-  @override
-  void paint(Canvas canvas, Size size) {
-    final Paint gridPaint = Paint()
-      ..color = AppColors.border
-      ..strokeWidth = 1;
-    final double chartHeight = size.height - 22;
-    for (final double ratio in <double>[0, 0.5, 1]) {
-      final double y = chartHeight * ratio;
-      canvas.drawLine(Offset(0, y), Offset(size.width, y), gridPaint);
-    }
-    final List<double> allValues = [
-      for (final TrainingLoadCurvePoint point in points) ...[
-        point.ctlScore,
-        point.atlScore,
-        point.tsbScore,
-      ],
-    ];
-    final double minValue =
-        allValues.reduce((double a, double b) => a < b ? a : b);
-    final double maxValue =
-        allValues.reduce((double a, double b) => a > b ? a : b);
-
-    _drawLine(
-      canvas: canvas,
-      size: Size(size.width, chartHeight),
-      color: AppColors.primary,
-      values:
-          points.map((TrainingLoadCurvePoint point) => point.ctlScore).toList(),
-      minValue: minValue,
-      maxValue: maxValue,
-    );
-    _drawLine(
-      canvas: canvas,
-      size: Size(size.width, chartHeight),
-      color: AppColors.warning,
-      values:
-          points.map((TrainingLoadCurvePoint point) => point.atlScore).toList(),
-      minValue: minValue,
-      maxValue: maxValue,
-    );
-    _drawLine(
-      canvas: canvas,
-      size: Size(size.width, chartHeight),
-      color: AppColors.secondary,
-      values:
-          points.map((TrainingLoadCurvePoint point) => point.tsbScore).toList(),
-      minValue: minValue,
-      maxValue: maxValue,
-    );
-  }
-
-  void _drawLine({
-    required Canvas canvas,
-    required Size size,
-    required Color color,
-    required List<double> values,
-    required double minValue,
-    required double maxValue,
-  }) {
-    if (values.isEmpty) {
-      return;
-    }
-    final double range =
-        (maxValue - minValue).abs() < 1 ? 1 : maxValue - minValue;
-    final Path path = Path();
-    for (int i = 0; i < values.length; i += 1) {
-      final double x = values.length == 1
-          ? size.width / 2
-          : size.width * i / (values.length - 1);
-      final double normalized = (values[i] - minValue) / range;
-      final double y = size.height - normalized * size.height;
-      if (i == 0) {
-        path.moveTo(x, y);
-      } else {
-        path.lineTo(x, y);
-      }
-      canvas.drawCircle(Offset(x, y), 3.5, Paint()..color = color);
-    }
-    final Paint linePaint = Paint()
-      ..color = color
-      ..style = PaintingStyle.stroke
-      ..strokeCap = StrokeCap.round
-      ..strokeJoin = StrokeJoin.round
-      ..strokeWidth = 3;
-    canvas.drawPath(path, linePaint);
-  }
-
-  @override
-  bool shouldRepaint(covariant _LoadCurvePainter oldDelegate) {
-    return oldDelegate.points != points;
-  }
-}
-
-class _StarterProgramPreviewCard extends StatelessWidget {
-  final StarterProgramDay day;
-  final TrainingMvpState state;
-
-  const _StarterProgramPreviewCard({
-    required this.day,
-    required this.state,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return TrainFlowCard(
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            children: [
-              const Icon(Icons.flag_circle, color: AppColors.primary),
-              const SizedBox(width: 8),
-              Expanded(
-                child: Text(
-                  '30 天渐进引导',
-                  style: Theme.of(context)
-                      .textTheme
-                      .titleMedium
-                      ?.copyWith(fontWeight: FontWeight.w800),
-                ),
-              ),
-              ToneBadge(label: day.dayLabel),
-            ],
-          ),
-          const SizedBox(height: 10),
-          Text(
-              '${day.title} · ${day.durationMinutes} 分钟 · 连续 ${state.starterProgramStreak} 天'),
-          const SizedBox(height: 8),
-          Text(
-            '今天只做一屏：做什么 + 怎么吃；太累可切 5 分钟补救版。',
-            style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                  color: AppColors.textSecondary,
-                ),
-          ),
-          const SizedBox(height: 12),
-          Align(
-            alignment: Alignment.centerRight,
-            child: TextButton(
-              onPressed: () => context.go(AppRoutes.starterProgram),
-              child: const Text('打开引导'),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-class _DataCenterPreviewCard extends StatelessWidget {
-  final BodyMetric? metric;
-  final TrainingMvpState state;
-
-  const _DataCenterPreviewCard({
-    required this.metric,
-    required this.state,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    final BodyMetric? latestMetric = metric;
-
-    return TrainFlowCard(
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            children: [
-              const Icon(Icons.monitor_heart, color: AppColors.primary),
-              const SizedBox(width: 8),
-              Expanded(
-                child: Text(
-                  '身体数据',
-                  style: Theme.of(context)
-                      .textTheme
-                      .titleMedium
-                      ?.copyWith(fontWeight: FontWeight.w800),
-                ),
-              ),
-              ToneBadge(label: '7 日趋势'),
-            ],
-          ),
-          const SizedBox(height: 10),
-          if (latestMetric == null)
-            const Text('还没有身体数据，先完成一次 10 秒快录。')
-          else
-            Text(
-              '${latestMetric.measuredDateLabel} · 体重 ${latestMetric.weightKg.toStringAsFixed(1)} kg · HRV ${latestMetric.hrvMs} ms · 睡眠 ${latestMetric.sleepHours.toStringAsFixed(1)} h',
-            ),
-          const SizedBox(height: 8),
-          Text(
-            '7 日均值：体重 ${state.averageWeight7d.toStringAsFixed(1)} kg，静息心率 ${state.averageRestingHr7d.round()} bpm。',
-            style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                  color: AppColors.textSecondary,
-                ),
-          ),
-          const SizedBox(height: 12),
-          Align(
-            alignment: Alignment.centerRight,
-            child: TextButton(
-              onPressed: () => context.go(AppRoutes.dataCenter),
-              child: const Text('查看身体数据'),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-class _RacePrepPreviewCard extends StatelessWidget {
-  final RacePlan race;
-
-  const _RacePrepPreviewCard({required this.race});
-
-  @override
-  Widget build(BuildContext context) {
-    return TrainFlowCard(
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            children: [
-              const Icon(Icons.emoji_events, color: AppColors.primary),
-              const SizedBox(width: 8),
-              Expanded(
-                child: Text(
-                  '比赛备战',
-                  style: Theme.of(context)
-                      .textTheme
-                      .titleMedium
-                      ?.copyWith(fontWeight: FontWeight.w800),
-                ),
-              ),
-              ToneBadge(label: race.type.label),
-            ],
-          ),
-          const SizedBox(height: 10),
-          Text('${race.name} · ${race.currentPhase} · ${race.raceDateLabel}'),
-          const SizedBox(height: 8),
-          Text(
-            '已接入周期反推、赛前减量、装备建议、比赛策略和成绩预测 Mock。',
-            style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                  color: AppColors.textSecondary,
-                ),
-          ),
-          const SizedBox(height: 12),
-          Align(
-            alignment: Alignment.centerRight,
-            child: TextButton(
-              onPressed: () => context.go(AppRoutes.races),
-              child: const Text('查看比赛备战'),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-class _MotionCheckPreviewCard extends StatelessWidget {
-  final TrainingMvpState state;
-
-  const _MotionCheckPreviewCard({required this.state});
-
-  @override
-  Widget build(BuildContext context) {
-    final MotionCheckRule rule = state.featuredMotionCheck;
-    final MotionAnalysisResult? result = state.latestMotionAnalysisResult;
-
-    return TrainFlowCard(
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            children: [
-              const Icon(Icons.motion_photos_on, color: AppColors.primary),
-              const SizedBox(width: 8),
-              Expanded(
-                child: Text(
-                  '动作纠错',
-                  style: Theme.of(context)
-                      .textTheme
-                      .titleMedium
-                      ?.copyWith(fontWeight: FontWeight.w800),
-                ),
-              ),
-              ToneBadge(label: '${rule.score} 分'),
-            ],
-          ),
-          const SizedBox(height: 10),
-          if (result == null)
-            Text('8 个核心动作规则已接入，今日先从${rule.type.label}纠错开始。')
-          else
-            Text(
-              '最近分析：${result.type.label} · ${result.riskLevel.label} · ${result.suggestedImpact.label}',
-            ),
-          const SizedBox(height: 8),
-          Text(
-            result == null
-                ? '当前为本地规则 Mock，不做真实视频识别。'
-                : '动作质量风险已进入每日调整，训练会按 Body Engine 解释更保守地处理。',
-            style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                  color: AppColors.textSecondary,
-                ),
-          ),
-          const SizedBox(height: 12),
-          Align(
-            alignment: Alignment.centerRight,
-            child: TextButton(
-              onPressed: () => context.go(AppRoutes.motionCheck),
-              child: const Text('查看纠错'),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-class _MealGuidePreviewCard extends StatelessWidget {
-  final MealGuide guide;
-
-  const _MealGuidePreviewCard({required this.guide});
-
-  @override
-  Widget build(BuildContext context) {
-    return TrainFlowCard(
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            children: [
-              const Icon(Icons.restaurant_menu, color: AppColors.primary),
-              const SizedBox(width: 8),
-              Expanded(
-                child: Text(
-                  '今日照吃卡',
-                  style: Theme.of(context)
-                      .textTheme
-                      .titleMedium
-                      ?.copyWith(fontWeight: FontWeight.w800),
-                ),
-              ),
-              ToneBadge(label: guide.scenario.label),
-            ],
-          ),
-          const SizedBox(height: 10),
-          Text(guide.instruction),
-          const SizedBox(height: 8),
-          Text(
-            guide.formula,
-            style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                  color: AppColors.textSecondary,
-                ),
-          ),
-          const SizedBox(height: 12),
-          Align(
-            alignment: Alignment.centerRight,
-            child: TextButton(
-              onPressed: () => context.go(AppRoutes.mealGuide),
-              child: const Text('查看照吃指令'),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-class _RehabEntryCard extends StatelessWidget {
-  const _RehabEntryCard();
-
-  @override
-  Widget build(BuildContext context) {
-    return TrainFlowCard(
-      child: Row(
-        children: [
-          const Icon(Icons.health_and_safety_outlined,
-              color: AppColors.primary),
-          const SizedBox(width: 10),
-          const Expanded(
-            child: Text('康复记录：记录疼痛后今日训练会自动降级'),
-          ),
-          TextButton(
-            onPressed: () => context.go(AppRoutes.rehab),
-            child: const Text('记录疼痛'),
           ),
         ],
       ),
@@ -1108,6 +913,7 @@ class _OnboardingPromptCard extends ConsumerWidget {
     final TrainingMvpState state = ref.watch(trainingMvpProvider);
 
     return TrainFlowCard(
+      tone: TrainFlowCardTone.peach,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -1160,60 +966,8 @@ class _OnboardingPromptCard extends ConsumerWidget {
               ),
               const SizedBox(width: 10),
               OutlinedButton(
-                onPressed: () => context.go(AppRoutes.onboarding),
+                onPressed: () => context.push(AppRoutes.onboarding),
                 child: const Text('调整'),
-              ),
-            ],
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-class _ReadinessCard extends StatelessWidget {
-  final TrainingMvpState state;
-
-  const _ReadinessCard({required this.state});
-
-  @override
-  Widget build(BuildContext context) {
-    final Color color = readinessColor(state.readinessScore);
-
-    return TrainFlowCard(
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            children: [
-              Expanded(
-                child: Text(
-                  state.readinessLabel,
-                  style: Theme.of(context)
-                      .textTheme
-                      .titleLarge
-                      ?.copyWith(fontWeight: FontWeight.w800),
-                ),
-              ),
-              ToneBadge(label: '${state.readinessScore} 分', color: color),
-            ],
-          ),
-          const SizedBox(height: 14),
-          Row(
-            children: [
-              Expanded(
-                child: MetricPill(
-                  label: '今日时长',
-                  value: '${state.todayWorkout.estimatedMinutes} 分钟',
-                ),
-              ),
-              const SizedBox(width: 10),
-              Expanded(
-                child: MetricPill(
-                  label: '目标强度',
-                  value: state.todayWorkout.intensity,
-                  color: AppColors.secondary,
-                ),
               ),
             ],
           ),
@@ -1228,9 +982,26 @@ class _WorkoutSummaryCard extends ConsumerWidget {
 
   const _WorkoutSummaryCard({required this.workout});
 
+  void _startPlayer(BuildContext context, WidgetRef ref) {
+    final bool started =
+        ref.read(trainingMvpProvider.notifier).startWorkoutPlayer();
+    if (started) {
+      context.push(AppRoutes.workoutPlayer);
+      return;
+    }
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(
+          ref.read(trainingMvpProvider).workoutPlayerStatusMessage,
+        ),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     return TrainFlowCard(
+      tone: TrainFlowCardTone.peach,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -1254,34 +1025,48 @@ class _WorkoutSummaryCard extends ConsumerWidget {
             ],
           ),
           const SizedBox(height: 12),
-          _FiveStepFlow(workout: workout),
+          SizedBox(
+            width: double.infinity,
+            child: FilledButton.icon(
+              key: const ValueKey<String>('today-workout-start-button'),
+              onPressed: () => _startPlayer(context, ref),
+              icon: const Icon(Icons.play_arrow),
+              label: Text(
+                '开始跟练 · 约 ${workout.estimatedMinutes} 分钟',
+              ),
+            ),
+          ),
+          const SizedBox(height: 12),
+          TrainFlowExpandable(
+            key: const ValueKey<String>(
+              'today-workout-five-step-expandable',
+            ),
+            title: '今日训练五步',
+            summary: '泡沫轴 / 拉伸 / 激活 / 正式 / 放松 · ${workout.estimatedMinutes} 分钟',
+            child: _FiveStepFlow(workout: workout),
+          ),
           const SizedBox(height: 12),
           InfoRow(label: '热身补充', value: workout.warmupSteps.join(' / ')),
-          InfoRow(label: '主训练', value: workout.mainSets.join(' / ')),
           InfoRow(
             label: '辅助',
             value: workout.accessoryWork.isEmpty
                 ? '无需额外辅助'
                 : workout.accessoryWork.join(' / '),
           ),
-          InfoRow(label: '冷身', value: workout.cooldownSteps.join(' / ')),
           const SizedBox(height: 8),
-          Text(
-            workout.coachNotes,
-            style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                  color: AppColors.textSecondary,
-                ),
-          ),
-          const SizedBox(height: 12),
-          Align(
-            alignment: Alignment.centerRight,
-            child: FilledButton.icon(
-              onPressed: () {
-                ref.read(trainingMvpProvider.notifier).startWorkoutPlayer();
-                context.go(AppRoutes.workoutPlayer);
-              },
-              icon: const Icon(Icons.play_arrow),
-              label: const Text('开始跟练'),
+          TrainFlowExpandable(
+            key: const ValueKey<String>(
+              'today-workout-coach-notes-expandable',
+            ),
+            title: '教练说明',
+            summary: workout.coachNotes,
+            summaryMaxLines: 2,
+            child: Text(
+              key: const ValueKey<String>('today-workout-coach-notes-full'),
+              workout.coachNotes,
+              style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                    color: AppColors.textSecondary,
+                  ),
             ),
           ),
         ],
@@ -1300,14 +1085,6 @@ class _FiveStepFlow extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(
-          '今日训练五步',
-          style: Theme.of(context)
-              .textTheme
-              .titleMedium
-              ?.copyWith(fontWeight: FontWeight.w800),
-        ),
-        const SizedBox(height: 10),
         _StepLine(index: 1, title: '泡沫轴放松', items: workout.foamRollingSteps),
         _StepLine(index: 2, title: '动态拉伸', items: workout.dynamicStretchSteps),
         _StepLine(index: 3, title: '激活动作', items: workout.activationSteps),
@@ -1377,145 +1154,132 @@ class _StepLine extends StatelessWidget {
   }
 }
 
-class _FeedbackCard extends ConsumerWidget {
-  const _FeedbackCard();
+class _RecentTrainingRecordsCard extends StatelessWidget {
+  final List<TrainingLog> logs;
+
+  const _RecentTrainingRecordsCard({required this.logs});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final int rpe = ref.watch(feedbackRpeProvider);
-    final bool completed = ref.watch(feedbackCompletedProvider);
+  Widget build(BuildContext context) {
+    final List<TrainingLog> recentLogs =
+        logs.where((TrainingLog log) => log.isSessionRecord).toList()
+          ..sort(
+            (TrainingLog first, TrainingLog second) =>
+                second.createdAt.compareTo(first.createdAt),
+          );
+    final List<TrainingLog> visibleLogs = recentLogs.take(3).toList();
 
     return TrainFlowCard(
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
-            '训练完成记录',
+            '最近训练记录',
             style: Theme.of(context)
                 .textTheme
                 .titleMedium
                 ?.copyWith(fontWeight: FontWeight.w800),
           ),
           const SizedBox(height: 12),
-          SwitchListTile(
-            contentPadding: EdgeInsets.zero,
-            title: const Text('今天已完成训练'),
-            value: completed,
-            onChanged: (bool value) {
-              ref.read(feedbackCompletedProvider.notifier).setValue(value);
-            },
-          ),
-          Row(
-            children: [
-              const Text('体感强度'),
-              Expanded(
-                child: Slider(
-                  min: 1,
-                  max: 10,
-                  divisions: 9,
-                  label: '$rpe',
-                  value: rpe.toDouble(),
-                  onChanged: (double value) {
-                    ref
-                        .read(feedbackRpeProvider.notifier)
-                        .setValue(value.round());
-                  },
-                ),
-              ),
-              SizedBox(
-                width: 28,
-                child: Text(
-                  '$rpe',
-                  textAlign: TextAlign.end,
-                  style: Theme.of(context)
-                      .textTheme
-                      .titleMedium
-                      ?.copyWith(fontWeight: FontWeight.w800),
-                ),
-              ),
+          if (visibleLogs.isEmpty)
+            Text(
+              '还没有完整训练记录，完成今日训练后会显示在这里。',
+              style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                    color: AppColors.textSecondary,
+                  ),
+            )
+          else
+            for (int index = 0; index < visibleLogs.length; index += 1) ...[
+              _TrainingLogRow(log: visibleLogs[index]),
+              if (index < visibleLogs.length - 1) const Divider(height: 24),
             ],
-          ),
-          const SizedBox(height: 8),
-          SizedBox(
-            width: double.infinity,
-            child: FilledButton.icon(
-              onPressed: () {
-                ref.read(trainingMvpProvider.notifier).saveTodayLog(
-                      completed: completed,
-                      rpe: rpe,
-                      userNote: completed ? '按计划完成' : '未完成，等待调整',
-                    );
-              },
-              icon: const Icon(Icons.check_circle_outline),
-              label: const Text('保存今日反馈'),
-            ),
-          ),
         ],
       ),
     );
   }
 }
 
-class _EvidenceSourceCard extends StatelessWidget {
-  final List<EvidenceSource> sources;
+class _TrainingLogRow extends StatelessWidget {
+  final TrainingLog log;
 
-  const _EvidenceSourceCard({required this.sources});
+  const _TrainingLogRow({required this.log});
 
   @override
   Widget build(BuildContext context) {
-    return TrainFlowCard(
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          for (final EvidenceSource source in sources) ...[
-            Row(
-              children: [
-                Expanded(
-                  child: Text(
-                    source.title,
-                    style: Theme.of(context)
-                        .textTheme
-                        .titleSmall
-                        ?.copyWith(fontWeight: FontWeight.w800),
-                  ),
-                ),
-                ToneBadge(
-                  label: source.sourceType.label,
-                  color: AppColors.secondary,
-                ),
-              ],
+    final String note = log.userNote?.trim() ?? '';
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          children: [
+            Expanded(
+              child: Text(
+                _trainingLogDateLabel(log.createdAt),
+                style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                      color: AppColors.textSecondary,
+                      fontWeight: FontWeight.w700,
+                    ),
+              ),
             ),
-            const SizedBox(height: 6),
-            Text(
-              source.citationLabel,
-              style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                    color: AppColors.textSecondary,
-                    fontWeight: FontWeight.w700,
-                  ),
+            ToneBadge(
+              label: _trainingLogCompletionLabel(log),
+              color: _trainingLogStatusColor(log),
             ),
-            const SizedBox(height: 6),
-            Text('原文片段：${source.quote}'),
-            const SizedBox(height: 4),
-            Text(
-              '适用原因：${source.note}',
-              style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                    color: AppColors.textSecondary,
-                  ),
-            ),
-            if (source != sources.last) const Divider(height: 22),
+            const SizedBox(width: 8),
+            ToneBadge(label: 'RPE ${log.rpe}'),
           ],
-          const SizedBox(height: 10),
-          Align(
-            alignment: Alignment.centerRight,
-            child: TextButton(
-              onPressed: () => context.go(AppRoutes.knowledge),
-              child: const Text('查看书库'),
-            ),
+        ),
+        const SizedBox(height: 8),
+        Text(
+          log.isSessionReview
+              ? log.sessionReviewSummary
+              : note.isEmpty
+                  ? '无备注'
+                  : note,
+        ),
+        if (log.isSessionReview && note.isNotEmpty) ...[
+          const SizedBox(height: 4),
+          Text(
+            note,
+            style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                  color: AppColors.textSecondary,
+                ),
           ),
         ],
-      ),
+      ],
     );
   }
+}
+
+String _trainingLogDateLabel(DateTime value) {
+  final String month = value.month.toString().padLeft(2, '0');
+  final String day = value.day.toString().padLeft(2, '0');
+  final String hour = value.hour.toString().padLeft(2, '0');
+  final String minute = value.minute.toString().padLeft(2, '0');
+  return '$month月$day日 $hour:$minute';
+}
+
+String _trainingLogCompletionLabel(TrainingLog log) {
+  if (log.isSessionReview) {
+    return '${log.normalizedCompletionPercentage}% 完成';
+  }
+  return log.completed ? '已完成' : '未完成';
+}
+
+Color _trainingLogStatusColor(TrainingLog log) {
+  if (log.completed || log.normalizedCompletionPercentage >= 80) {
+    return AppColors.primary;
+  }
+  if (log.normalizedCompletionPercentage > 0) {
+    return AppColors.warningDark;
+  }
+  return AppColors.textSecondary;
+}
+
+DateTime _weekStart(DateTime value) {
+  final DateTime date = DateTime(value.year, value.month, value.day);
+  return date.subtract(Duration(days: date.weekday - DateTime.monday));
 }
 
 Color _decisionColor(TrainingDecisionType decisionType) {
@@ -1540,26 +1304,36 @@ class _CoachAdviceCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    if (advice.isEmpty) {
+      return const TrainFlowCard(
+        child: Text('暂无建议，完成签到或训练后再来查看。'),
+      );
+    }
     return TrainFlowCard(
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          for (final String item in advice) ...[
-            Row(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                const Icon(
-                  Icons.bolt,
-                  size: 18,
-                  color: AppColors.primary,
-                ),
-                const SizedBox(width: 8),
-                Expanded(child: Text(item)),
-              ],
-            ),
-            if (item != advice.last) const SizedBox(height: 10),
+      child: TrainFlowExpandable(
+        key: const ValueKey<String>('today-coach-advice-expandable'),
+        title: '建议详情',
+        summary: '共 ${advice.length} 条建议',
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            for (final String item in advice) ...[
+              Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const Icon(
+                    Icons.bolt,
+                    size: 18,
+                    color: AppColors.primary,
+                  ),
+                  const SizedBox(width: 8),
+                  Expanded(child: Text(item)),
+                ],
+              ),
+              if (item != advice.last) const SizedBox(height: 10),
+            ],
           ],
-        ],
+        ),
       ),
     );
   }

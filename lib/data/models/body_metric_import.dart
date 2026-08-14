@@ -4,11 +4,13 @@ class BodyMetricImportResult {
   final List<BodyMetric> metrics;
   final int skippedRows;
   final String sourceLabel;
+  final Map<String, List<String>> inheritedFieldLabelsByMetricId;
 
   const BodyMetricImportResult({
     required this.metrics,
     required this.skippedRows,
     required this.sourceLabel,
+    this.inheritedFieldLabelsByMetricId = const <String, List<String>>{},
   });
 
   int get importedCount {
@@ -25,7 +27,20 @@ class BodyMetricImportResult {
   }
 
   String get summary {
-    return '已解析 $importedCount 条身体数据，跳过 $skippedRows 行，范围 $dateRangeLabel。';
+    final int inheritedRecordCount = inheritedFieldLabelsByMetricId.length;
+    final int inheritedFieldCount = inheritedFieldLabelsByMetricId.values.fold(
+      0,
+      (int total, List<String> labels) => total + labels.length,
+    );
+    final Set<String> inheritedFieldLabels = <String>{
+      for (final List<String> labels in inheritedFieldLabelsByMetricId.values)
+        ...labels,
+    };
+    final String inheritedSummary = inheritedRecordCount == 0
+        ? ''
+        : '；其中 $inheritedRecordCount 条沿用已保存历史值 '
+            '$inheritedFieldCount 项：${inheritedFieldLabels.join('、')}';
+    return '已解析 $importedCount 条身体数据，跳过 $skippedRows 行，范围 $dateRangeLabel$inheritedSummary。';
   }
 
   String _dateLabel(DateTime value) {

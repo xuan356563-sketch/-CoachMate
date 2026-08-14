@@ -49,6 +49,7 @@ class DailyAdjustmentController extends Notifier<DailyAdjustmentState> {
         environment: state.context.environment,
         weather: state.context.weather,
         statusMessage: '已更新今日可训练时间为 $minutes 分钟。',
+        appliedDecisions: state.context.appliedDecisions,
       ),
     );
   }
@@ -62,6 +63,7 @@ class DailyAdjustmentController extends Notifier<DailyAdjustmentState> {
         environment: state.context.environment,
         weather: state.context.weather,
         statusMessage: '已更新今日工作压力为${value.label}。',
+        appliedDecisions: state.context.appliedDecisions,
       ),
     );
   }
@@ -75,6 +77,7 @@ class DailyAdjustmentController extends Notifier<DailyAdjustmentState> {
         environment: value,
         weather: state.context.weather,
         statusMessage: '已更新今日训练场地为${value.label}。',
+        appliedDecisions: state.context.appliedDecisions,
       ),
     );
   }
@@ -88,12 +91,14 @@ class DailyAdjustmentController extends Notifier<DailyAdjustmentState> {
         environment: state.context.environment,
         weather: value,
         statusMessage: '已更新今日天气状态为${value.label}。',
+        appliedDecisions: state.context.appliedDecisions,
       ),
     );
   }
 
   /// 记录已应用的每日调整决策。
   void applyDailyAdjustmentDecision(DailyAdjustmentDecision decision) {
+    final DateTime confirmedAt = DateTime.now();
     _saveContext(
       DailyAdjustmentContext(
         availableMinutes: state.context.availableMinutes,
@@ -102,6 +107,44 @@ class DailyAdjustmentController extends Notifier<DailyAdjustmentState> {
         weather: state.context.weather,
         statusMessage:
             '已应用今日调整：${decision.decisionLabel}，${decision.planChangeSummary}',
+        appliedDecisions: <AppliedDailyDecisionFact>[
+          ...state.context.appliedDecisions,
+          AppliedDailyDecisionFact(
+            localDate: _localDateKey(confirmedAt),
+            decisionType: decision.decisionType,
+            confirmedAt: confirmedAt,
+          ),
+        ],
+      ),
+    );
+  }
+
+  /// 记录用户确认的 AI 恢复提示，不改变本地疼痛和准备度决策优先级。
+  void applyAiRecoveryRecommendation(String recommendation) {
+    final String normalized = recommendation.trim();
+    if (normalized.isEmpty) return;
+    _saveContext(
+      DailyAdjustmentContext(
+        availableMinutes: state.context.availableMinutes,
+        workStress: state.context.workStress,
+        environment: state.context.environment,
+        weather: state.context.weather,
+        statusMessage: '已确认 AI 恢复建议：$normalized 本地安全规则仍优先。',
+        appliedDecisions: state.context.appliedDecisions,
+      ),
+    );
+  }
+
+  /// 无身体设备或身体基线时仍可记录主观偏累，但不补造任何健康字段。
+  void recordTiredCheckIn() {
+    _saveContext(
+      DailyAdjustmentContext(
+        availableMinutes: state.context.availableMinutes,
+        workStress: state.context.workStress,
+        environment: state.context.environment,
+        weather: state.context.weather,
+        statusMessage: '已记录今日偏累；训练建议采用轻松版，未生成身体指标。',
+        appliedDecisions: state.context.appliedDecisions,
       ),
     );
   }
@@ -112,3 +155,8 @@ class DailyAdjustmentController extends Notifier<DailyAdjustmentState> {
     state = DailyAdjustmentState(context: savedContext);
   }
 }
+
+String _localDateKey(DateTime value) =>
+    '${value.year.toString().padLeft(4, '0')}-'
+    '${value.month.toString().padLeft(2, '0')}-'
+    '${value.day.toString().padLeft(2, '0')}';

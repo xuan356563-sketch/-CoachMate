@@ -1,3 +1,4 @@
+import 'ai_knowledge_citation.dart';
 import 'evidence_source.dart';
 import 'user_profile.dart';
 import 'workout_day.dart';
@@ -13,6 +14,7 @@ class TrainingPlan {
   final String weeklyStructure;
   final List<WorkoutDay> workoutDays;
   final List<EvidenceSource> evidenceSources;
+  final List<AiKnowledgeCitation> knowledgeCitations;
   final DateTime createdAt;
   final DateTime updatedAt;
 
@@ -27,6 +29,7 @@ class TrainingPlan {
     required this.weeklyStructure,
     required this.workoutDays,
     required this.evidenceSources,
+    this.knowledgeCitations = const <AiKnowledgeCitation>[],
     required this.createdAt,
     required this.updatedAt,
   });
@@ -36,6 +39,8 @@ class TrainingPlan {
         json['workoutDays'] as List<dynamic>? ?? [];
     final List<dynamic> evidenceJson =
         json['evidenceSources'] as List<dynamic>? ?? [];
+    final List<dynamic> citationJson =
+        json['knowledgeCitations'] as List<dynamic>? ?? [];
     return TrainingPlan(
       id: json['id'] as String? ?? '',
       title: json['title'] as String? ?? '',
@@ -58,6 +63,14 @@ class TrainingPlan {
                 EvidenceSource.fromJson(value as Map<String, dynamic>),
           )
           .toList(),
+      knowledgeCitations: citationJson
+          .whereType<Map>()
+          .map(
+            (Map<dynamic, dynamic> value) => AiKnowledgeCitation.fromJson(
+              Map<String, dynamic>.from(value),
+            ),
+          )
+          .toList(growable: false),
       createdAt: DateTime.tryParse(json['createdAt'] as String? ?? '') ??
           DateTime.fromMillisecondsSinceEpoch(0),
       updatedAt: DateTime.tryParse(json['updatedAt'] as String? ?? '') ??
@@ -79,6 +92,9 @@ class TrainingPlan {
       'evidenceSources': evidenceSources
           .map((EvidenceSource source) => source.toJson())
           .toList(),
+      'knowledgeCitations': knowledgeCitations
+          .map((AiKnowledgeCitation source) => source.toJson())
+          .toList(),
       'createdAt': createdAt.toIso8601String(),
       'updatedAt': updatedAt.toIso8601String(),
     };
@@ -95,6 +111,7 @@ class TrainingPlan {
     String? weeklyStructure,
     List<WorkoutDay>? workoutDays,
     List<EvidenceSource>? evidenceSources,
+    List<AiKnowledgeCitation>? knowledgeCitations,
     DateTime? createdAt,
     DateTime? updatedAt,
   }) {
@@ -109,6 +126,7 @@ class TrainingPlan {
       weeklyStructure: weeklyStructure ?? this.weeklyStructure,
       workoutDays: workoutDays ?? this.workoutDays,
       evidenceSources: evidenceSources ?? this.evidenceSources,
+      knowledgeCitations: knowledgeCitations ?? this.knowledgeCitations,
       createdAt: createdAt ?? this.createdAt,
       updatedAt: updatedAt ?? this.updatedAt,
     );

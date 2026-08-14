@@ -140,12 +140,50 @@ WeatherCondition weatherConditionFromJson(String? value) {
   }
 }
 
+class AppliedDailyDecisionFact {
+  AppliedDailyDecisionFact({
+    required String localDate,
+    required this.decisionType,
+    required DateTime confirmedAt,
+  })  : localDate = _validatedLocalDate(localDate),
+        confirmedAt = confirmedAt.toUtc();
+
+  factory AppliedDailyDecisionFact.fromJson(Map<String, dynamic> json) {
+    final TrainingDecisionType? decisionType =
+        _trainingDecisionTypeFromJson(json['decisionType']);
+    if (decisionType == null) {
+      throw const FormatException('每日调整决策类型无效');
+    }
+    final DateTime? confirmedAt =
+        DateTime.tryParse(json['confirmedAt'] as String? ?? '');
+    if (confirmedAt == null) {
+      throw const FormatException('每日调整确认时间无效');
+    }
+    return AppliedDailyDecisionFact(
+      localDate: json['localDate'] as String? ?? '',
+      decisionType: decisionType,
+      confirmedAt: confirmedAt,
+    );
+  }
+
+  final String localDate;
+  final TrainingDecisionType decisionType;
+  final DateTime confirmedAt;
+
+  Map<String, Object?> toJson() => <String, Object?>{
+        'localDate': localDate,
+        'decisionType': _trainingDecisionTypeJsonValue(decisionType),
+        'confirmedAt': confirmedAt.toIso8601String(),
+      };
+}
+
 class DailyAdjustmentContext {
   final int availableMinutes;
   final WorkStressLevel workStress;
   final TrainingEnvironment environment;
   final WeatherCondition weather;
   final String statusMessage;
+  final List<AppliedDailyDecisionFact> appliedDecisions;
 
   const DailyAdjustmentContext({
     required this.availableMinutes,
@@ -153,6 +191,7 @@ class DailyAdjustmentContext {
     required this.environment,
     required this.weather,
     required this.statusMessage,
+    this.appliedDecisions = const <AppliedDailyDecisionFact>[],
   });
 
   factory DailyAdjustmentContext.defaults({
@@ -164,6 +203,7 @@ class DailyAdjustmentContext {
       environment: TrainingEnvironment.gym,
       weather: WeatherCondition.good,
       statusMessage: '尚未应用今日现实约束调整。',
+      appliedDecisions: const <AppliedDailyDecisionFact>[],
     );
   }
 
@@ -174,6 +214,7 @@ class DailyAdjustmentContext {
       environment: trainingEnvironmentFromJson(json['environment'] as String?),
       weather: weatherConditionFromJson(json['weather'] as String?),
       statusMessage: json['statusMessage'] as String? ?? '尚未应用今日现实约束调整。',
+      appliedDecisions: _appliedDecisionFactsFromJson(json['appliedDecisions']),
     );
   }
 
@@ -184,6 +225,9 @@ class DailyAdjustmentContext {
       'environment': environment.jsonValue,
       'weather': weather.jsonValue,
       'statusMessage': statusMessage,
+      'appliedDecisions': appliedDecisions
+          .map((AppliedDailyDecisionFact fact) => fact.toJson())
+          .toList(growable: false),
     };
   }
 }
@@ -218,4 +262,59 @@ class DailyAdjustmentDecision {
   String get decisionTypeLabel {
     return decisionType.label;
   }
+}
+
+List<AppliedDailyDecisionFact> _appliedDecisionFactsFromJson(Object? value) {
+  if (value is! List) return const <AppliedDailyDecisionFact>[];
+  final List<AppliedDailyDecisionFact> facts = <AppliedDailyDecisionFact>[];
+  for (final Object? item in value) {
+    if (item is! Map) continue;
+    try {
+      facts.add(
+        AppliedDailyDecisionFact.fromJson(
+          Map<String, dynamic>.from(item),
+        ),
+      );
+    } on FormatException {
+      continue;
+    } on TypeError {
+      continue;
+    }
+  }
+  return List<AppliedDailyDecisionFact>.unmodifiable(facts);
+}
+
+String _trainingDecisionTypeJsonValue(TrainingDecisionType value) {
+  return switch (value) {
+    TrainingDecisionType.normal => 'normal',
+    TrainingDecisionType.deload => 'deload',
+    TrainingDecisionType.recovery => 'recovery',
+    TrainingDecisionType.technique => 'technique',
+    TrainingDecisionType.rest => 'rest',
+  };
+}
+
+TrainingDecisionType? _trainingDecisionTypeFromJson(Object? value) {
+  return switch (value) {
+    'normal' => TrainingDecisionType.normal,
+    'deload' => TrainingDecisionType.deload,
+    'recovery' => TrainingDecisionType.recovery,
+    'technique' => TrainingDecisionType.technique,
+    'rest' => TrainingDecisionType.rest,
+    _ => null,
+  };
+}
+
+String _validatedLocalDate(String value) {
+  final RegExpMatch? match =
+      RegExp(r'^(\d{4})-(\d{2})-(\d{2})$').firstMatch(value);
+  final DateTime? parsed = DateTime.tryParse(value);
+  if (match == null ||
+      parsed == null ||
+      parsed.year.toString().padLeft(4, '0') != match.group(1) ||
+      parsed.month.toString().padLeft(2, '0') != match.group(2) ||
+      parsed.day.toString().padLeft(2, '0') != match.group(3)) {
+    throw const FormatException('每日调整本地日期必须是有效的 yyyy-MM-dd 自然日');
+  }
+  return value;
 }

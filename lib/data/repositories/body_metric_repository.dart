@@ -152,8 +152,6 @@ class PersistedBodyMetricRepository implements BodyMetricRepository {
     final Map<String, dynamic>? storedState =
         _storageService.readJson(_storageKey);
     if (storedState == null) {
-      _metrics.addAll(seedBodyMetrics);
-      _sortMetrics();
       return;
     }
 

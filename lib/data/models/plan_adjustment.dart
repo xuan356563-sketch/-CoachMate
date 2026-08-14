@@ -46,6 +46,9 @@ class PlanAdjustment {
   final PlanAdjustmentKind kind;
   final DateTime adjustedAt;
 
+  /// 由待确认调整建议产生时记录来源；手动调整保持为空。
+  final String? sourceProposalId;
+
   const PlanAdjustment({
     required this.id,
     required this.planId,
@@ -58,6 +61,7 @@ class PlanAdjustment {
     required this.reason,
     required this.kind,
     required this.adjustedAt,
+    this.sourceProposalId,
   });
 
   factory PlanAdjustment.fromJson(Map<String, dynamic> json) {
@@ -76,6 +80,7 @@ class PlanAdjustment {
       kind: planAdjustmentKindFromJson(json['kind'] as String?),
       adjustedAt: DateTime.tryParse(json['adjustedAt'] as String? ?? '') ??
           DateTime.fromMillisecondsSinceEpoch(0),
+      sourceProposalId: json['sourceProposalId'] as String?,
     );
   }
 
@@ -92,6 +97,7 @@ class PlanAdjustment {
       'reason': reason,
       'kind': kind.jsonValue,
       'adjustedAt': adjustedAt.toIso8601String(),
+      if (sourceProposalId != null) 'sourceProposalId': sourceProposalId,
     };
   }
 

@@ -3,11 +3,13 @@ import 'body_metric.dart';
 class BodyMetricSnapshotRecognitionResult {
   final BodyMetric metric;
   final int matchedFieldCount;
+  final List<String> inheritedFieldLabels;
   final String sourceLabel;
 
   const BodyMetricSnapshotRecognitionResult({
     required this.metric,
     required this.matchedFieldCount,
+    this.inheritedFieldLabels = const <String>[],
     required this.sourceLabel,
   });
 
@@ -22,6 +24,9 @@ class BodyMetricSnapshotRecognitionResult {
   }
 
   String get summary {
-    return '已识别 $matchedFieldCount 项身体指标，$confidenceLabel，来源 $sourceLabel。';
+    final String inheritedSummary = inheritedFieldLabels.isEmpty
+        ? ''
+        : '，沿用上次 ${inheritedFieldLabels.length} 项：${inheritedFieldLabels.join('、')}';
+    return '已识别 $matchedFieldCount 项身体指标$inheritedSummary，$confidenceLabel，来源 $sourceLabel。';
   }
 }

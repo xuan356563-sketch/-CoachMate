@@ -64,15 +64,43 @@ void main() {
     );
     expect(platform.screenAwakeRequests.last, isFalse);
   });
+
+  test('平台不支持常亮时显示明确升级提示', () async {
+    final _FakeWorkoutPlatformService platform =
+        _FakeWorkoutPlatformService(screenAwakeSupported: false);
+    final ProviderContainer container = ProviderContainer(
+      overrides: [
+        workoutPlatformServiceProvider.overrideWithValue(platform),
+      ],
+    );
+    addTearDown(container.dispose);
+
+    container
+        .read(workoutPlayerAssistControllerProvider.notifier)
+        .toggleScreenAwake();
+    await Future<void>.delayed(Duration.zero);
+
+    final WorkoutPlayerAssistState state =
+        container.read(workoutPlayerAssistControllerProvider);
+    expect(state.screenAwakeRequested, isFalse);
+    expect(state.screenAwakeStatusMessage, contains('升级 iOS/Safari'));
+  });
 }
 
 class _FakeWorkoutPlatformService extends WorkoutPlatformService {
+  final bool screenAwakeSupported;
   final List<String> spoken = [];
   final List<bool> screenAwakeRequests = [];
   int stopSpeechCount = 0;
 
+  _FakeWorkoutPlatformService({this.screenAwakeSupported = true});
+
   @override
-  Future<bool> speak(String text) async {
+  Future<bool> speak(
+    String text, {
+    double rate = 1,
+    String? voiceName,
+  }) async {
     spoken.add(text);
     return true;
   }
@@ -85,6 +113,6 @@ class _FakeWorkoutPlatformService extends WorkoutPlatformService {
   @override
   Future<bool> setScreenAwake(bool enabled) async {
     screenAwakeRequests.add(enabled);
-    return true;
+    return screenAwakeSupported;
   }
 }

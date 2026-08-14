@@ -168,5 +168,85 @@ void main() {
       container.read(dailyAdjustmentControllerProvider).context.weather,
       WeatherCondition.rain,
     );
+    final AppliedDailyDecisionFact firstFact = container
+        .read(dailyAdjustmentControllerProvider)
+        .context
+        .appliedDecisions
+        .single;
+    expect(firstFact.decisionType, TrainingDecisionType.deload);
+    expect(firstFact.confirmedAt.isUtc, isTrue);
+    expect(firstFact.localDate, _localDateKey(firstFact.confirmedAt.toLocal()));
+
+    container
+        .read(dailyAdjustmentControllerProvider.notifier)
+        .setDailyWeather(WeatherCondition.good);
+    expect(
+      container
+          .read(dailyAdjustmentControllerProvider)
+          .context
+          .appliedDecisions,
+      hasLength(1),
+    );
+
+    const DailyAdjustmentDecision replacement = DailyAdjustmentDecision(
+      decisionType: TrainingDecisionType.normal,
+      availableMinutes: 30,
+      workStress: WorkStressLevel.normal,
+      environment: TrainingEnvironment.gym,
+      weather: WeatherCondition.good,
+      decisionLabel: '正常训练',
+      reason: '状态恢复',
+      adjustedMinutes: 30,
+      planChangeSummary: '恢复原计划',
+      constraintBadges: <String>[],
+      adjustments: <String>[],
+    );
+    container
+        .read(dailyAdjustmentControllerProvider.notifier)
+        .applyDailyAdjustmentDecision(replacement);
+
+    final List<AppliedDailyDecisionFact> replacedFacts = container
+        .read(dailyAdjustmentControllerProvider)
+        .context
+        .appliedDecisions;
+    expect(replacedFacts, hasLength(1));
+    expect(replacedFacts.single.decisionType, TrainingDecisionType.normal);
+    expect(
+      replacedFacts.single.confirmedAt.isBefore(firstFact.confirmedAt),
+      isFalse,
+    );
+
+    container.dispose();
+    final ProviderContainer restoredContainer = createContainer(storage);
+    addTearDown(restoredContainer.dispose);
+    expect(
+      restoredContainer
+          .read(dailyAdjustmentControllerProvider)
+          .context
+          .appliedDecisions
+          .single
+          .decisionType,
+      TrainingDecisionType.normal,
+    );
+  });
+
+  test('未点击应用今日调整的恢复文案不会生成决策事实', () {
+    final InMemoryLocalStorageService storage = InMemoryLocalStorageService();
+    final ProviderContainer container = createContainer(storage);
+    addTearDown(container.dispose);
+
+    container
+        .read(dailyAdjustmentControllerProvider.notifier)
+        .applyAiRecoveryRecommendation('今天优先恢复');
+
+    final DailyAdjustmentState state =
+        container.read(dailyAdjustmentControllerProvider);
+    expect(state.statusMessage, contains('恢复'));
+    expect(state.context.appliedDecisions, isEmpty);
   });
 }
+
+String _localDateKey(DateTime value) =>
+    '${value.year.toString().padLeft(4, '0')}-'
+    '${value.month.toString().padLeft(2, '0')}-'
+    '${value.day.toString().padLeft(2, '0')}';

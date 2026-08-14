@@ -6,6 +6,8 @@ abstract class ImportedWorkoutRepository {
 
   ImportedWorkout saveWorkout(ImportedWorkout workout);
 
+  bool removeRouteShape(String workoutId);
+
   void clearWorkouts();
 }
 
@@ -22,6 +24,15 @@ class InMemoryImportedWorkoutRepository implements ImportedWorkoutRepository {
     _workouts.removeWhere((ImportedWorkout item) => item.id == workout.id);
     _workouts.insert(0, workout);
     return workout;
+  }
+
+  @override
+  bool removeRouteShape(String workoutId) {
+    final int index =
+        _workouts.indexWhere((ImportedWorkout item) => item.id == workoutId);
+    if (index < 0 || !_workouts[index].hasRouteShape) return false;
+    _workouts[index] = _workouts[index].withoutRouteShape();
+    return true;
   }
 
   @override
@@ -58,6 +69,16 @@ class PersistedImportedWorkoutRepository implements ImportedWorkoutRepository {
   }
 
   @override
+  bool removeRouteShape(String workoutId) {
+    final int index =
+        _workouts.indexWhere((ImportedWorkout item) => item.id == workoutId);
+    if (index < 0 || !_workouts[index].hasRouteShape) return false;
+    _workouts[index] = _workouts[index].withoutRouteShape();
+    _persist();
+    return true;
+  }
+
+  @override
   void clearWorkouts() {
     _workouts.clear();
     _persist();
@@ -81,7 +102,7 @@ class PersistedImportedWorkoutRepository implements ImportedWorkoutRepository {
 
   void _persist() {
     _storageService.saveJson(storageKey, {
-      'schemaVersion': 1,
+      'schemaVersion': 2,
       'workouts':
           _workouts.map((ImportedWorkout workout) => workout.toJson()).toList(),
     });

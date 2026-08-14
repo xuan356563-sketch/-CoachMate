@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../app/router/app_routes.dart';
 import '../../core/constants/app_colors.dart';
+import '../../core/widgets/trainmate_action_character.dart';
 import '../../core/widgets/trainflow_widgets.dart';
 import '../../data/models/knowledge_entry.dart';
 import '../dashboard/training_mvp_controller.dart';
@@ -18,6 +20,13 @@ class KnowledgeLibraryPage extends ConsumerWidget {
     return TrainFlowPage(
       title: '书库 / 知识库',
       subtitle: '把计划、动作、照吃卡和纠错建议绑定到可追溯的来源。',
+      leading: const TrainMateBackButton(
+        fallbackRoute: AppRoutes.aiCenter,
+      ),
+      artwork: const TrainMateActionCharacter(
+        action: TrainMateAction.seatedMeditation,
+        backgroundColor: AppColors.primary,
+      ),
       children: [
         TrainFlowCard(
           child: Column(
@@ -36,6 +45,7 @@ class KnowledgeLibraryPage extends ConsumerWidget {
                           ?.copyWith(fontWeight: FontWeight.w800),
                     ),
                   ),
+                  const ToneBadge(label: '内部已审核'),
                 ],
               ),
               const SizedBox(height: 12),
@@ -59,16 +69,9 @@ class KnowledgeLibraryPage extends ConsumerWidget {
               ),
               const SizedBox(height: 10),
               MetricPill(
-                label: '引用关联',
+                label: '已核引用关联',
                 value: '${state.citationLinks.length} 条',
                 color: AppColors.warningDark,
-              ),
-              const SizedBox(height: 12),
-              Text(
-                '本地 MVP：books、book_quotes、citations 三层结构已能展示、搜索和导入；真实书库数据库后续再接。',
-                style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                      color: AppColors.textSecondary,
-                    ),
               ),
             ],
           ),
@@ -80,6 +83,7 @@ class KnowledgeLibraryPage extends ConsumerWidget {
         const SectionTitle(title: '书籍与引文'),
         if (visibleBooks.isEmpty)
           TrainFlowCard(
+            cornerCharacterAction: TrainMateAction.seatedMeditation,
             child: Text(
               '没有匹配的书籍或引文。',
               style: Theme.of(context).textTheme.bodyMedium?.copyWith(
@@ -268,8 +272,12 @@ class _BookQuoteBlock extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final List<CitationLink> citations = state.citationsForQuote(quote.id);
+    final String locationLabel =
+        quote.isVerified ? '${quote.chapter} · ${quote.pageRange}' : '待核版本/页码';
+    final String quoteLabel = quote.isVerified ? quote.kind.label : '内容摘要（待核页）';
 
     return Padding(
+      key: ValueKey<String>('knowledge-quote-${quote.id}'),
       padding: const EdgeInsets.only(top: 10),
       child: DecoratedBox(
         decoration: BoxDecoration(
@@ -282,14 +290,25 @@ class _BookQuoteBlock extends StatelessWidget {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Text(
-                '${quote.chapter} · ${quote.pageRange}',
+                locationLabel,
                 style: Theme.of(context).textTheme.bodySmall?.copyWith(
                       color: AppColors.textSecondary,
                       fontWeight: FontWeight.w700,
                     ),
               ),
               const SizedBox(height: 6),
-              Text('原文片段：${quote.quote}'),
+              Row(
+                children: [
+                  ToneBadge(
+                    label: quote.verificationStatus.label,
+                    color: quote.isVerified
+                        ? AppColors.success
+                        : AppColors.warningDark,
+                  ),
+                  const SizedBox(width: 8),
+                  Expanded(child: Text('$quoteLabel：${quote.quote}')),
+                ],
+              ),
               const SizedBox(height: 4),
               Text(
                 '适用原因：${quote.note}',
@@ -300,7 +319,7 @@ class _BookQuoteBlock extends StatelessWidget {
               if (citations.isNotEmpty) ...[
                 const SizedBox(height: 10),
                 Text(
-                  '引用关联',
+                  '已核引用关联',
                   style: Theme.of(context)
                       .textTheme
                       .titleSmall
@@ -326,6 +345,15 @@ class _BookQuoteBlock extends StatelessWidget {
                       ],
                     ),
                   ),
+              ],
+              if (!quote.isVerified) ...[
+                const SizedBox(height: 8),
+                Text(
+                  '收到实际版本版权页和引用页照片并人工核页后，才开放引用关联。',
+                  style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                        color: AppColors.warningDark,
+                      ),
+                ),
               ],
             ],
           ),

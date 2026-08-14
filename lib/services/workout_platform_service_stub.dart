@@ -1,4 +1,8 @@
-Future<bool> speak(String text) async {
+Future<bool> speak(
+  String text, {
+  double rate = 1,
+  String? voiceName,
+}) async {
   return false;
 }
 

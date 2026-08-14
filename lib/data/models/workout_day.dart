@@ -1,4 +1,5 @@
 import 'evidence_source.dart';
+import 'exercise_training_profile.dart';
 
 enum TrainingType {
   easyRun,
@@ -114,6 +115,9 @@ class WorkoutExerciseLink {
   final int repetitionsPerSet;
   final String plannedWeightOrIntensity;
   final int restSeconds;
+  final String? tempo;
+  final ExecutionIntent executionIntent;
+  final String? breathingCue;
 
   const WorkoutExerciseLink({
     required this.id,
@@ -124,6 +128,9 @@ class WorkoutExerciseLink {
     required this.repetitionsPerSet,
     required this.plannedWeightOrIntensity,
     required this.restSeconds,
+    this.tempo,
+    this.executionIntent = ExecutionIntent.controlled,
+    this.breathingCue,
   });
 
   factory WorkoutExerciseLink.fromJson(Map<String, dynamic> json) {
@@ -142,6 +149,14 @@ class WorkoutExerciseLink {
           json['plannedWeightOrIntensity'] as String? ?? '',
       restSeconds:
           ((json['restSeconds'] as num?)?.toInt() ?? 0).clamp(0, 1800).toInt(),
+      tempo: (json['tempo'] as String?)?.trim().isEmpty == true
+          ? null
+          : json['tempo'] as String?,
+      executionIntent:
+          executionIntentFromJson(json['executionIntent'] as String?),
+      breathingCue: (json['breathingCue'] as String?)?.trim().isEmpty == true
+          ? null
+          : json['breathingCue'] as String?,
     );
   }
 
@@ -170,6 +185,9 @@ class WorkoutExerciseLink {
     int? repetitionsPerSet,
     String? plannedWeightOrIntensity,
     int? restSeconds,
+    Object? tempo = _unchangedWorkoutValue,
+    ExecutionIntent? executionIntent,
+    Object? breathingCue = _unchangedWorkoutValue,
   }) {
     return WorkoutExerciseLink(
       id: id ?? this.id,
@@ -181,6 +199,13 @@ class WorkoutExerciseLink {
       plannedWeightOrIntensity:
           plannedWeightOrIntensity ?? this.plannedWeightOrIntensity,
       restSeconds: restSeconds ?? this.restSeconds,
+      tempo: identical(tempo, _unchangedWorkoutValue)
+          ? this.tempo
+          : tempo as String?,
+      executionIntent: executionIntent ?? this.executionIntent,
+      breathingCue: identical(breathingCue, _unchangedWorkoutValue)
+          ? this.breathingCue
+          : breathingCue as String?,
     );
   }
 
@@ -194,6 +219,9 @@ class WorkoutExerciseLink {
       'repetitionsPerSet': repetitionsPerSet,
       'plannedWeightOrIntensity': plannedWeightOrIntensity,
       'restSeconds': restSeconds,
+      if (tempo != null) 'tempo': tempo,
+      'executionIntent': executionIntent.jsonValue,
+      if (breathingCue != null) 'breathingCue': breathingCue,
     };
   }
 }
@@ -346,6 +374,8 @@ class WorkoutDay {
   final String coachNotes;
   final List<EvidenceSource> evidenceSources;
   final List<WorkoutExerciseLink> workoutExercises;
+  final DimensionFocus dimensionFocus;
+  final String structurePolicyVersion;
 
   const WorkoutDay({
     required this.id,
@@ -367,6 +397,8 @@ class WorkoutDay {
     required this.coachNotes,
     required this.evidenceSources,
     this.workoutExercises = const [],
+    this.dimensionFocus = const DimensionFocus(),
+    this.structurePolicyVersion = '',
   });
 
   factory WorkoutDay.fromJson(Map<String, dynamic> json) {
@@ -414,6 +446,12 @@ class WorkoutDay {
             ),
           )
           .toList(),
+      dimensionFocus: json['dimensionFocus'] is Map<String, dynamic>
+          ? DimensionFocus.fromJson(
+              json['dimensionFocus'] as Map<String, dynamic>,
+            )
+          : const DimensionFocus(),
+      structurePolicyVersion: json['structurePolicyVersion'] as String? ?? '',
     );
   }
 
@@ -446,6 +484,8 @@ class WorkoutDay {
             ))
           .map((WorkoutExerciseLink item) => item.toJson())
           .toList(),
+      'dimensionFocus': dimensionFocus.toJson(),
+      'structurePolicyVersion': structurePolicyVersion,
     };
   }
 
@@ -469,6 +509,8 @@ class WorkoutDay {
     String? coachNotes,
     List<EvidenceSource>? evidenceSources,
     List<WorkoutExerciseLink>? workoutExercises,
+    DimensionFocus? dimensionFocus,
+    String? structurePolicyVersion,
   }) {
     return WorkoutDay(
       id: id ?? this.id,
@@ -490,6 +532,11 @@ class WorkoutDay {
       coachNotes: coachNotes ?? this.coachNotes,
       evidenceSources: evidenceSources ?? this.evidenceSources,
       workoutExercises: workoutExercises ?? this.workoutExercises,
+      dimensionFocus: dimensionFocus ?? this.dimensionFocus,
+      structurePolicyVersion:
+          structurePolicyVersion ?? this.structurePolicyVersion,
     );
   }
 }
+
+const Object _unchangedWorkoutValue = Object();

@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 
 import '../../app/router/app_routes.dart';
 import '../../core/constants/app_colors.dart';
+import '../../core/widgets/trainmate_action_character.dart';
 import '../../core/widgets/trainflow_widgets.dart';
 import '../../data/models/formal_ai_plan.dart';
 import '../../data/models/starter_graduation_report.dart';
@@ -19,7 +20,16 @@ class StarterGraduationPage extends ConsumerWidget {
 
     return TrainFlowPage(
       title: '30 天毕业报告',
+      layout: TrainFlowPageLayout.report,
       subtitle: '第 30 天结束后，用完成率、心率变化和主观感受趋势衔接正式 AI 个性化周期。',
+      animateChildren: true,
+      leading: const TrainMateBackButton(
+        fallbackRoute: AppRoutes.starterProgram,
+      ),
+      artwork: const TrainMateActionCharacter(
+        action: TrainMateAction.jumpingJack,
+        backgroundColor: AppColors.primary,
+      ),
       children: [
         _GraduationSummaryCard(report: report, state: state),
         _AbilityAssessmentCard(report: report),
@@ -43,6 +53,7 @@ class _GraduationSummaryCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return TrainFlowCard(
+      cornerCharacterAction: TrainMateAction.jumpingJack,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [

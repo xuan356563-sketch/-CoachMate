@@ -20,6 +20,7 @@ void main() {
     training.startWorkoutPlayer(
       workoutDayId: container.read(trainingMvpProvider).todayWorkout.id,
     );
+    training.completeWorkoutPlayerStep();
     training.setKnowledgeSearchQuery('深蹲');
     final TrainingMvpState before = container.read(trainingMvpProvider);
 

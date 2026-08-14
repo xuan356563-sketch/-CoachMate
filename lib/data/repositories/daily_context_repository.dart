@@ -40,6 +40,7 @@ class InMemoryDailyContextRepository implements DailyContextRepository {
       statusMessage: context.statusMessage.trim().isEmpty
           ? '尚未应用今日现实约束调整。'
           : context.statusMessage,
+      appliedDecisions: _normalizeAppliedDecisions(context.appliedDecisions),
     );
   }
 }
@@ -105,6 +106,31 @@ class PersistedDailyContextRepository implements DailyContextRepository {
       statusMessage: context.statusMessage.trim().isEmpty
           ? '尚未应用今日现实约束调整。'
           : context.statusMessage,
+      appliedDecisions: _normalizeAppliedDecisions(context.appliedDecisions),
     );
   }
+}
+
+List<AppliedDailyDecisionFact> _normalizeAppliedDecisions(
+  List<AppliedDailyDecisionFact> facts,
+) {
+  const int maximumHistoryDays = 90;
+  final Map<String, AppliedDailyDecisionFact> latestByDate =
+      <String, AppliedDailyDecisionFact>{};
+  for (final AppliedDailyDecisionFact fact in facts) {
+    final AppliedDailyDecisionFact? current = latestByDate[fact.localDate];
+    if (current == null || !fact.confirmedAt.isBefore(current.confirmedAt)) {
+      latestByDate[fact.localDate] = fact;
+    }
+  }
+  final List<AppliedDailyDecisionFact> normalized =
+      latestByDate.values.toList(growable: true)
+        ..sort(
+          (AppliedDailyDecisionFact left, AppliedDailyDecisionFact right) =>
+              left.localDate.compareTo(right.localDate),
+        );
+  if (normalized.length > maximumHistoryDays) {
+    normalized.removeRange(0, normalized.length - maximumHistoryDays);
+  }
+  return List<AppliedDailyDecisionFact>.unmodifiable(normalized);
 }

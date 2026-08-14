@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../app/router/app_routes.dart';
 import '../../core/constants/app_colors.dart';
+import '../../core/widgets/trainmate_action_character.dart';
 import '../../core/widgets/trainflow_widgets.dart';
 import '../../data/models/self_use_acceptance.dart';
 import '../../data/repositories/self_use_acceptance_repository.dart';
@@ -134,7 +136,15 @@ class _SelfUseAcceptancePageState extends ConsumerState<SelfUseAcceptancePage> {
   Widget build(BuildContext context) {
     return TrainFlowPage(
       title: '14 天自用验收',
+      layout: TrainFlowPageLayout.form,
       subtitle: '记录真实使用，不自动宣称 Gate A 已通过。',
+      leading: const TrainMateBackButton(
+        fallbackRoute: AppRoutes.profile,
+      ),
+      artwork: const TrainMateActionCharacter(
+        action: TrainMateAction.plank,
+        backgroundColor: AppColors.primary,
+      ),
       action: _record.isStarted
           ? IconButton(
               tooltip: '重置验收记录',

@@ -1,5 +1,6 @@
 import 'evidence_source.dart';
 import 'exercise_body_profile.dart';
+import 'exercise_training_profile.dart';
 import 'user_profile.dart';
 
 enum ExerciseCategory {
@@ -140,6 +141,7 @@ enum ExerciseRelationType {
   replacement,
   regression,
   progression,
+  unlockedBy,
 }
 
 extension ExerciseRelationTypeJson on ExerciseRelationType {
@@ -151,6 +153,8 @@ extension ExerciseRelationTypeJson on ExerciseRelationType {
         return 'regression';
       case ExerciseRelationType.progression:
         return 'progression';
+      case ExerciseRelationType.unlockedBy:
+        return 'unlocked_by';
     }
   }
 
@@ -162,6 +166,8 @@ extension ExerciseRelationTypeJson on ExerciseRelationType {
         return '退阶';
       case ExerciseRelationType.progression:
         return '进阶';
+      case ExerciseRelationType.unlockedBy:
+        return '解锁条件';
     }
   }
 }
@@ -172,6 +178,8 @@ ExerciseRelationType exerciseRelationTypeFromJson(String? value) {
       return ExerciseRelationType.regression;
     case 'progression':
       return ExerciseRelationType.progression;
+    case 'unlocked_by':
+      return ExerciseRelationType.unlockedBy;
     case 'replacement':
     default:
       return ExerciseRelationType.replacement;
@@ -221,6 +229,7 @@ class Exercise {
   final List<String> mediaUrls;
   final ExerciseMediaStatus mediaStatus;
   final ExerciseBodyProfile? bodyProfile;
+  final ExerciseTrainingProfile? trainingProfile;
   final String breathingCue;
   final List<String> contraindications;
   final List<String> suitableFor;
@@ -242,6 +251,7 @@ class Exercise {
     this.mediaUrls = const [],
     this.mediaStatus = ExerciseMediaStatus.placeholder,
     this.bodyProfile,
+    this.trainingProfile,
     this.breathingCue = '保持平稳呼吸，动作质量下降就停止。',
     this.contraindications = const ['出现尖锐疼痛、头晕或动作失稳时停止。'],
     this.suitableFor = const ['基础训练'],
@@ -278,6 +288,11 @@ class Exercise {
               json['bodyProfile'] as Map<String, dynamic>,
             )
           : bodyProfileForExercise(json['id'] as String? ?? ''),
+      trainingProfile: json['trainingProfile'] is Map<String, dynamic>
+          ? ExerciseTrainingProfile.fromJson(
+              json['trainingProfile'] as Map<String, dynamic>,
+            )
+          : trainingProfileForExercise(json['id'] as String? ?? ''),
       breathingCue: json['breathingCue'] as String? ?? '保持平稳呼吸，动作质量下降就停止。',
       contraindications: List<String>.from(
         json['contraindications'] as List<dynamic>? ?? ['出现尖锐疼痛、头晕或动作失稳时停止。'],
@@ -317,6 +332,7 @@ class Exercise {
       'mediaUrls': mediaUrls,
       'mediaStatus': mediaStatus.jsonValue,
       'bodyProfile': bodyEngineProfile.toJson(),
+      'trainingProfile': trainingStructureProfile.toJson(),
       'breathingCue': breathingCue,
       'contraindications': contraindications,
       'suitableFor': suitableFor,
@@ -331,5 +347,41 @@ class Exercise {
 
   ExerciseBodyProfile get bodyEngineProfile {
     return bodyProfile ?? bodyProfileForExercise(id);
+  }
+
+  ExerciseTrainingProfile get trainingStructureProfile {
+    return trainingProfile ?? trainingProfileForExercise(id);
+  }
+
+  /// 只替换媒体字段，其余字段原样保留。
+  ///
+  /// 动作库的示范图集中在 seed 层的媒体清单里维护，条目定义本身不必重复写图片路径，
+  /// 由清单在组装阶段统一注入。
+  Exercise withMedia({
+    required List<String> mediaUrls,
+    required ExerciseMediaStatus mediaStatus,
+  }) {
+    return Exercise(
+      id: id,
+      name: name,
+      category: category,
+      targetMuscles: targetMuscles,
+      sportTags: sportTags,
+      description: description,
+      steps: steps,
+      commonMistakes: commonMistakes,
+      setsAndReps: setsAndReps,
+      equipment: equipment,
+      mediaUrl: mediaUrl,
+      mediaUrls: mediaUrls,
+      mediaStatus: mediaStatus,
+      bodyProfile: bodyProfile,
+      trainingProfile: trainingProfile,
+      breathingCue: breathingCue,
+      contraindications: contraindications,
+      suitableFor: suitableFor,
+      evidenceSources: evidenceSources,
+      relations: relations,
+    );
   }
 }

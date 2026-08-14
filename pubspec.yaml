@@ -19,6 +19,26 @@ dependencies:
 
   # 存储
   shared_preferences: ^2.3.4
+  flutter_secure_storage: ^9.2.4
+  sqflite: ^2.4.3
+  path: ^1.9.1
+
+  # 后端 API 与赛事图片选择
+  http: ^1.2.2
+  image_picker: ^1.1.2
+  file_selector: ^1.1.0
+  url_launcher: ^6.3.2
+  flutter_local_notifications: ^22.2.0
+  timezone: ^0.11.1
+  flutter_timezone: ^5.1.0
+  in_app_purchase: ^3.3.0
+  in_app_purchase_storekit: ^0.4.11
+
+  # 真实 GPX 文件解析
+  xml: ^7.0.1
+
+  # 手机端动作姿态识别与系统健康数据读取
+  health: ^13.3.1
 
   # 屏幕适配
   flutter_screenutil: ^5.9.3
@@ -37,3 +57,17 @@ flutter:
     - assets/images/exercises/free-exercise-db/
     - assets/images/icons/
     - assets/fonts/
+    - assets/training/
+    - assets/branding/exports/png/trainmate-flow-brandmark-256.png
+    - assets/branding/exports/png/trainmate-flow-character-256.png
+    - assets/branding/exports/png/trainmate-flow-lockup-1600.png
+    - assets/branding/exports/png/trainmate-flow-logo-final-256.png
+    - assets/branding/exports/png/trainmate-flow-logo-final-lockup-1600.png
+    - assets/branding/action-characters/navy/
+    - assets/branding/action-characters/peach-light/
+    - assets/branding/flow-dog-v1/exports/png/
+    - assets/branding/flow-dog-v1/action-characters/navy/
+    - assets/branding/flow-dog-v1/action-characters/peach-light/
+    - assets/branding/flow-v2-color-detail/exports/png/
+    - assets/branding/flow-v2-color-detail/action-characters/navy/
+    - assets/branding/flow-v2-color-detail/action-characters/peach-light/

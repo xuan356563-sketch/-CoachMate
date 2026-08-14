@@ -1,10 +1,18 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../app/router/app_routes.dart';
 import '../../core/constants/app_colors.dart';
+import '../../core/widgets/trainmate_action_character.dart';
 import '../../core/widgets/trainflow_widgets.dart';
 import '../../data/models/imported_workout.dart';
+import '../../services/activity_document_picker.dart';
 import '../dashboard/training_mvp_controller.dart';
+import 'route_replay_card.dart';
+
+final activityDocumentPickerProvider = Provider<ActivityDocumentPicker>(
+  (Ref ref) => const SystemActivityDocumentPicker(),
+);
 
 class ActivityImportPage extends ConsumerWidget {
   const ActivityImportPage({super.key});
@@ -16,15 +24,24 @@ class ActivityImportPage extends ConsumerWidget {
 
     return TrainFlowPage(
       title: '训练文件导入',
-      subtitle: 'GPX / FIT 导入 Mock：配速、心率、爬升写入 workout_logs。',
+      layout: TrainFlowPageLayout.form,
+      subtitle: '真实 GPX 文件在本地解析；FIT 第一版继续使用文本摘要。',
+      leading: const TrainMateBackButton(
+        fallbackRoute: AppRoutes.dataCenter,
+      ),
+      artwork: const TrainMateActionCharacter(
+        action: TrainMateAction.running,
+        backgroundColor: AppColors.primary,
+      ),
       children: [
         _ActivityImportEditor(importText: importText),
         _ActivityImportResultCard(state: state),
         const SectionTitle(title: '最近导入'),
         if (state.importedWorkouts.isEmpty)
           TrainFlowCard(
+            cornerCharacterAction: TrainMateAction.running,
             child: Text(
-              '还没有导入记录。粘贴 GPX 或 FIT 摘要后，这里会显示训练效果标签。',
+              '还没有导入记录。选择 GPX 文件或粘贴 FIT 摘要后，这里会显示训练效果和路线。',
               style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                     color: AppColors.textSecondary,
                   ),
@@ -55,7 +72,7 @@ class _ActivityImportEditor extends ConsumerWidget {
               const SizedBox(width: 8),
               Expanded(
                 child: Text(
-                  '导入源文本',
+                  '导入训练数据',
                   style: Theme.of(context)
                       .textTheme
                       .titleMedium
@@ -67,12 +84,28 @@ class _ActivityImportEditor extends ConsumerWidget {
           ),
           const SizedBox(height: 10),
           Text(
-            '第一版不读取真实文件，只粘贴 GPX 文本或 FIT 摘要；导入成功后会写入 workout_logs。',
+            'GPX 使用系统文件选择器，原始经纬度只参与本次计算；持久化时仅保留去地理化路线形状。',
             style: Theme.of(context).textTheme.bodySmall?.copyWith(
                   color: AppColors.textSecondary,
                 ),
           ),
           const SizedBox(height: 12),
+          SizedBox(
+            width: double.infinity,
+            child: FilledButton.icon(
+              onPressed: () => _pickGpxDocument(context, ref),
+              icon: const Icon(Icons.folder_open_outlined),
+              label: const Text('选择 GPX 文件'),
+            ),
+          ),
+          const SizedBox(height: 12),
+          Text(
+            '也可以粘贴 GPX 内容或 FIT 文本摘要：',
+            style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                  color: AppColors.textSecondary,
+                ),
+          ),
+          const SizedBox(height: 8),
           Wrap(
             spacing: 8,
             runSpacing: 8,
@@ -187,46 +220,88 @@ class _ActivityImportResultCard extends StatelessWidget {
   }
 }
 
-class _ImportedWorkoutCard extends StatelessWidget {
+class _ImportedWorkoutCard extends ConsumerWidget {
   final ImportedWorkout workout;
 
   const _ImportedWorkoutCard({required this.workout});
 
   @override
-  Widget build(BuildContext context) {
-    return TrainFlowCard(
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
+  Widget build(BuildContext context, WidgetRef ref) {
+    return Column(
+      children: [
+        TrainFlowCard(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Expanded(
-                child: Text(
-                  workout.title,
-                  style: Theme.of(context)
-                      .textTheme
-                      .titleMedium
-                      ?.copyWith(fontWeight: FontWeight.w800),
-                ),
+              Row(
+                children: [
+                  Expanded(
+                    child: Text(
+                      workout.title,
+                      style: Theme.of(context)
+                          .textTheme
+                          .titleMedium
+                          ?.copyWith(fontWeight: FontWeight.w800),
+                    ),
+                  ),
+                  ToneBadge(
+                    label: workout.trainingEffect.label,
+                    color: _effectColor(workout.trainingEffect),
+                  ),
+                ],
               ),
-              ToneBadge(
-                label: workout.trainingEffect.label,
-                color: _effectColor(workout.trainingEffect),
+              const SizedBox(height: 8),
+              Text('${workout.dateLabel} · ${workout.source.label}'),
+              const SizedBox(height: 8),
+              Text(
+                '${workout.summary} · 爬升 ${workout.elevationGainMeters} m · 平均心率 ${workout.averageHeartRate} bpm',
+                style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                      color: AppColors.textSecondary,
+                    ),
               ),
             ],
           ),
-          const SizedBox(height: 8),
-          Text('${workout.dateLabel} · ${workout.source.label}'),
-          const SizedBox(height: 8),
-          Text(
-            '${workout.summary} · 爬升 ${workout.elevationGainMeters} m · 平均心率 ${workout.averageHeartRate} bpm',
-            style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                  color: AppColors.textSecondary,
-                ),
+        ),
+        if (workout.hasRouteShape)
+          RouteReplayCard(
+            workout: workout,
+            onDeleteRoute: () => ref
+                .read(trainingMvpProvider.notifier)
+                .removeImportedRouteShape(workout.id),
           ),
-        ],
-      ),
+      ],
     );
+  }
+}
+
+Future<void> _pickGpxDocument(
+  BuildContext context,
+  WidgetRef ref,
+) async {
+  try {
+    final ActivityDocument? document =
+        await ref.read(activityDocumentPickerProvider).pickGpx();
+    if (!context.mounted) return;
+    if (document == null) {
+      ref
+          .read(trainingMvpProvider.notifier)
+          .setActivityImportStatusMessage('已取消选择 GPX 文件，未写入任何训练数据。');
+      return;
+    }
+    ref.read(trainingMvpProvider.notifier).importGpxDocument(
+          document.contents,
+          fileName: document.fileName,
+        );
+  } on FormatException catch (error) {
+    if (!context.mounted) return;
+    ref
+        .read(trainingMvpProvider.notifier)
+        .setActivityImportStatusMessage(error.message.toString());
+  } catch (_) {
+    if (!context.mounted) return;
+    ref
+        .read(trainingMvpProvider.notifier)
+        .setActivityImportStatusMessage('读取 GPX 文件失败，请重新选择有效文件。');
   }
 }
 

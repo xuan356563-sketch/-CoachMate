@@ -6,7 +6,11 @@ import 'dart:js_interop_unsafe';
 
 JSObject? _wakeLockSentinel;
 
-Future<bool> speak(String text) async {
+Future<bool> speak(
+  String text, {
+  double rate = 1,
+  String? voiceName,
+}) async {
   final String trimmedText = text.trim();
   if (trimmedText.isEmpty) {
     return false;
@@ -20,7 +24,16 @@ Future<bool> speak(String text) async {
     final html.SpeechSynthesisUtterance utterance =
         html.SpeechSynthesisUtterance(trimmedText);
     utterance.lang = 'zh-CN';
-    utterance.rate = 0.95;
+    utterance.rate = rate.clamp(0.5, 2).toDouble();
+    final String selectedName = voiceName?.trim() ?? '';
+    if (selectedName.isNotEmpty) {
+      for (final html.SpeechSynthesisVoice voice in synthesis.getVoices()) {
+        if (voice.name == selectedName) {
+          utterance.voice = voice;
+          break;
+        }
+      }
+    }
     synthesis.speak(utterance);
     return true;
   } catch (_) {

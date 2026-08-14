@@ -1,6 +1,7 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../data/models/plan_adjustment.dart';
+import '../../../data/models/training_metrics.dart';
 import '../../../data/models/workout_day.dart';
 import '../../../data/repositories/plan_adjustment_repository.dart';
 import '../../../data/repositories/training_plan_repository.dart';
@@ -130,6 +131,214 @@ class PlanAdjustmentController extends Notifier<PlanAdjustmentState> {
           ),
         );
     _refresh('已恢复原计划并记录为本地学习信号：${canonicalWorkout.title}。');
+  }
+
+  /// 应用已经由用户确认的 ACWR 调整建议。
+  ///
+  /// 该入口只接受单个训练日的确定性差异；周总量建议不会在这里猜测分摊。
+  void applyConfirmedProposal({
+    required AdjustmentProposal proposal,
+    required WorkoutDay currentWorkout,
+  }) {
+    if (proposal.status != AdjustmentProposalStatus.confirmed) {
+      throw StateError('调整建议尚未确认，训练计划保持不变。');
+    }
+    if (proposal.workoutDayId == null ||
+        proposal.workoutDayId != currentWorkout.id ||
+        proposal.planId != currentWorkout.planId) {
+      throw StateError('调整建议与当前训练日不匹配，未修改训练计划。');
+    }
+    if (proposal.originalMinutes != currentWorkout.estimatedMinutes ||
+        proposal.originalIntensity != currentWorkout.intensity) {
+      throw StateError('训练计划已变化，请重新生成调整预览后再确认。');
+    }
+    if (proposal.adjustedMinutes < 5 || proposal.adjustedMinutes > 180) {
+      throw StateError('调整后的训练时长超出 5 到 180 分钟安全范围。');
+    }
+    final String adjustedIntensity = proposal.adjustedIntensity.trim();
+    if (adjustedIntensity.isEmpty || adjustedIntensity == '降低一级') {
+      throw StateError('调整建议没有可执行的明确强度，未修改训练计划。');
+    }
+
+    final DateTime adjustedAt = proposal.confirmedAt ?? DateTime.now();
+    ref.read(planAdjustmentRepositoryProvider).saveAdjustment(
+          PlanAdjustment(
+            id: 'plan-proposal-${proposal.id}-${adjustedAt.microsecondsSinceEpoch}',
+            planId: proposal.planId,
+            workoutDayId: currentWorkout.id,
+            workoutTitle: currentWorkout.title,
+            originalEstimatedMinutes: proposal.originalMinutes,
+            adjustedEstimatedMinutes: proposal.adjustedMinutes,
+            originalIntensity: proposal.originalIntensity,
+            adjustedIntensity: adjustedIntensity,
+            reason: proposal.explanation,
+            kind: PlanAdjustmentKind.adjusted,
+            adjustedAt: adjustedAt,
+            sourceProposalId: proposal.id,
+          ),
+        );
+    _refresh('已应用经确认的负荷调整：${currentWorkout.title}。');
+  }
+
+  /// 把周总量建议按预览快照一次性写入；任一训练日变化都会阻止整组应用。
+  void applyConfirmedWeeklyProposal({
+    required AdjustmentProposal proposal,
+    required List<WorkoutDay> currentWorkouts,
+  }) {
+    if (proposal.status != AdjustmentProposalStatus.confirmed) {
+      throw StateError('周总量调整建议尚未确认，训练计划保持不变。');
+    }
+    if (proposal.workoutDayId != null || proposal.workoutChanges.isEmpty) {
+      throw StateError('周总量建议缺少完整训练日差异，未修改训练计划。');
+    }
+    final Map<String, WorkoutDay> currentById = <String, WorkoutDay>{
+      for (final WorkoutDay workout in currentWorkouts) workout.id: workout,
+    };
+    if (currentById.length != proposal.workoutChanges.length) {
+      throw StateError('周总量建议与当前计划不完整匹配，未修改训练计划。');
+    }
+    int originalTotal = 0;
+    int adjustedTotal = 0;
+    for (final AdjustmentProposalWorkoutChange change
+        in proposal.workoutChanges) {
+      final WorkoutDay? workout = currentById[change.workoutDayId];
+      if (workout == null || workout.planId != proposal.planId) {
+        throw StateError('周总量建议包含不存在的训练日，未修改训练计划。');
+      }
+      if (workout.estimatedMinutes != change.originalMinutes ||
+          workout.intensity != change.originalIntensity) {
+        throw StateError('训练计划已变化，请重新生成周总量预览后再确认。');
+      }
+      if (change.adjustedMinutes < 5 ||
+          change.adjustedMinutes > change.originalMinutes ||
+          change.adjustedIntensity != change.originalIntensity) {
+        throw StateError('周总量建议包含不安全或越界的训练日差异，未修改训练计划。');
+      }
+      originalTotal += change.originalMinutes;
+      adjustedTotal += change.adjustedMinutes;
+    }
+    if (originalTotal != proposal.originalMinutes ||
+        adjustedTotal != proposal.adjustedMinutes ||
+        adjustedTotal >= originalTotal) {
+      throw StateError('周总量建议汇总与差异快照不一致，未修改训练计划。');
+    }
+
+    final DateTime adjustedAt = proposal.confirmedAt ?? DateTime.now();
+    final List<PlanAdjustment> adjustments = proposal.workoutChanges
+        .map(
+          (AdjustmentProposalWorkoutChange change) => PlanAdjustment(
+            id: 'plan-proposal-${proposal.id}-${change.workoutDayId}-'
+                '${adjustedAt.microsecondsSinceEpoch}',
+            planId: proposal.planId,
+            workoutDayId: change.workoutDayId,
+            workoutTitle: change.workoutTitle,
+            originalEstimatedMinutes: change.originalMinutes,
+            adjustedEstimatedMinutes: change.adjustedMinutes,
+            originalIntensity: change.originalIntensity,
+            adjustedIntensity: change.adjustedIntensity,
+            reason: proposal.explanation,
+            kind: PlanAdjustmentKind.adjusted,
+            adjustedAt: adjustedAt,
+            sourceProposalId: proposal.id,
+          ),
+        )
+        .toList(growable: false);
+    ref
+        .read(planAdjustmentRepositoryProvider)
+        .saveAdjustmentsAtomically(adjustments);
+    _refresh('已应用经确认的周总量调整，共 ${adjustments.length} 个训练日。');
+  }
+
+  /// 撤销指定建议产生的调整；若用户随后又手动修改计划，则拒绝覆盖新修改。
+  void undoConfirmedProposal(AdjustmentProposal proposal) {
+    if (proposal.status != AdjustmentProposalStatus.confirmed &&
+        proposal.status != AdjustmentProposalStatus.undone) {
+      throw StateError('只有已确认的调整建议可以撤销。');
+    }
+    if (proposal.workoutChanges.isNotEmpty) {
+      _undoConfirmedWeeklyProposal(proposal);
+      return;
+    }
+    final String? workoutDayId = proposal.workoutDayId;
+    if (workoutDayId == null) {
+      throw StateError('周总量预览未曾自动应用，无需撤销训练计划。');
+    }
+    final PlanAdjustment? latest = _latestFor(workoutDayId);
+    if (latest == null ||
+        !latest.isActive ||
+        latest.sourceProposalId != proposal.id) {
+      throw StateError('训练计划已有后续修改，为避免覆盖新计划，本次撤销已停止。');
+    }
+
+    final DateTime adjustedAt = proposal.undoneAt ?? DateTime.now();
+    ref.read(planAdjustmentRepositoryProvider).saveAdjustment(
+          PlanAdjustment(
+            id: 'plan-proposal-undo-${proposal.id}-${adjustedAt.microsecondsSinceEpoch}',
+            planId: proposal.planId,
+            workoutDayId: workoutDayId,
+            workoutTitle: proposal.workoutTitle,
+            originalEstimatedMinutes: proposal.originalMinutes,
+            adjustedEstimatedMinutes: proposal.originalMinutes,
+            originalIntensity: proposal.originalIntensity,
+            adjustedIntensity: proposal.originalIntensity,
+            reason: '用户撤销 ACWR 调整建议，恢复确认前快照。',
+            kind: PlanAdjustmentKind.restored,
+            adjustedAt: adjustedAt,
+            sourceProposalId: proposal.id,
+          ),
+        );
+    _refresh('已撤销负荷调整并恢复确认前计划：${proposal.workoutTitle}。');
+  }
+
+  void _undoConfirmedWeeklyProposal(AdjustmentProposal proposal) {
+    final List<PlanAdjustment> active = <PlanAdjustment>[];
+    for (final AdjustmentProposalWorkoutChange change
+        in proposal.workoutChanges) {
+      final PlanAdjustment? latest = _latestFor(change.workoutDayId);
+      if (latest == null ||
+          !latest.isActive ||
+          latest.sourceProposalId != proposal.id ||
+          latest.adjustedEstimatedMinutes != change.adjustedMinutes) {
+        throw StateError('周计划已有后续修改，为避免覆盖新计划，本次整组撤销已停止。');
+      }
+      active.add(latest);
+    }
+    final DateTime adjustedAt = proposal.undoneAt ?? DateTime.now();
+    final List<PlanAdjustment> restored = <PlanAdjustment>[
+      for (int index = 0; index < proposal.workoutChanges.length; index += 1)
+        PlanAdjustment(
+          id: 'plan-proposal-undo-${proposal.id}-'
+              '${proposal.workoutChanges[index].workoutDayId}-'
+              '${adjustedAt.microsecondsSinceEpoch}',
+          planId: proposal.planId,
+          workoutDayId: proposal.workoutChanges[index].workoutDayId,
+          workoutTitle: active[index].workoutTitle,
+          originalEstimatedMinutes:
+              proposal.workoutChanges[index].originalMinutes,
+          adjustedEstimatedMinutes:
+              proposal.workoutChanges[index].originalMinutes,
+          originalIntensity: proposal.workoutChanges[index].originalIntensity,
+          adjustedIntensity: proposal.workoutChanges[index].originalIntensity,
+          reason: '用户撤销 ACWR 周总量调整建议，恢复确认前快照。',
+          kind: PlanAdjustmentKind.restored,
+          adjustedAt: adjustedAt,
+          sourceProposalId: proposal.id,
+        ),
+    ];
+    ref.read(planAdjustmentRepositoryProvider).saveAdjustmentsAtomically(
+          restored,
+        );
+    _refresh('已整组撤销周总量调整并恢复确认前计划。');
+  }
+
+  /// 删除由健康指标建议产生的计划投影，保留用户手动调整记录。
+  void clearHealthDerivedAdjustments() {
+    final int removed = ref
+        .read(planAdjustmentRepositoryProvider)
+        .clearHealthDerivedAdjustments();
+    _refresh(
+      removed == 0 ? '当前没有需要清理的健康派生计划调整。' : '已清理 $removed 条健康派生计划调整，手动调整保持不变。',
+    );
   }
 
   PlanAdjustment? _latestFor(String workoutDayId) {

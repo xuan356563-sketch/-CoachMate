@@ -1,7 +1,10 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 
+import 'package:trainflow_ai/data/models/body_metric.dart';
 import 'package:trainflow_ai/data/models/body_metric_export.dart';
+import 'package:trainflow_ai/data/repositories/body_metric_repository.dart';
+import 'package:trainflow_ai/data/seed/seed_body_metrics.dart';
 import 'package:trainflow_ai/features/data_center/application/body_metric_export_controller.dart';
 import 'package:trainflow_ai/services/local_storage_service.dart';
 
@@ -14,8 +17,17 @@ void main() {
     );
   }
 
+  void seedStorage(InMemoryLocalStorageService storage) {
+    final PersistedBodyMetricRepository repository =
+        PersistedBodyMetricRepository(storage);
+    for (final BodyMetric metric in seedBodyMetrics) {
+      repository.saveMetric(metric, reason: '测试导出基线');
+    }
+  }
+
   test('初始状态、三种导出和重新读取保持原有行为', () {
     final InMemoryLocalStorageService storage = InMemoryLocalStorageService();
+    seedStorage(storage);
     final ProviderContainer first = createContainer(storage);
 
     expect(first.read(bodyMetricExportControllerProvider).records, isEmpty);

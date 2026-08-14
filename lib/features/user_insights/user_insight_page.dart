@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../app/router/app_routes.dart';
 import '../../core/constants/app_colors.dart';
+import '../../core/widgets/trainmate_action_character.dart';
 import '../../core/widgets/trainflow_widgets.dart';
 import '../../data/models/user_insight.dart';
 import '../../data/models/user_trust_review.dart';
@@ -16,7 +18,15 @@ class UserInsightPage extends ConsumerWidget {
 
     return TrainFlowPage(
       title: '用户画像',
+      layout: TrainFlowPageLayout.report,
       subtitle: '越用越懂、越用越简单、越用越相信。',
+      leading: const TrainMateBackButton(
+        fallbackRoute: AppRoutes.profile,
+      ),
+      artwork: const TrainMateActionCharacter(
+        action: TrainMateAction.seatedMeditation,
+        backgroundColor: AppColors.primary,
+      ),
       children: [
         _InsightSummaryCard(state: state),
         _TrustReviewCard(report: state.userTrustReviewReport),
@@ -45,6 +55,7 @@ class _InsightSummaryCard extends ConsumerWidget {
     final UserInsightWeeklyTask? latestTask = tableState.latestWeeklyTask;
 
     return TrainFlowCard(
+      cornerCharacterAction: TrainMateAction.seatedMeditation,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [

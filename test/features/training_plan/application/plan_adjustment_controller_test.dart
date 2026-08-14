@@ -2,6 +2,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 import 'package:trainflow_ai/data/models/plan_adjustment.dart';
+import 'package:trainflow_ai/data/models/training_metrics.dart';
 import 'package:trainflow_ai/data/models/workout_day.dart';
 import 'package:trainflow_ai/data/seed/seed_training_plans.dart';
 import 'package:trainflow_ai/features/training_plan/application/plan_adjustment_controller.dart';
@@ -243,11 +244,133 @@ void main() {
     expect(state.adjustments, isEmpty);
     expect(state.statusMessage, '无法恢复原计划：没有找到对应训练日。');
   });
+
+  test('已确认 ACWR 建议通过计划调整边界应用并可恢复确认前快照', () {
+    final InMemoryLocalStorageService storage = InMemoryLocalStorageService();
+    final ProviderContainer container = createContainer(storage);
+    addTearDown(container.dispose);
+    final WorkoutDay workout = seedTrainingPlans.first.workoutDays.first;
+    final PlanAdjustmentController controller =
+        container.read(planAdjustmentControllerProvider.notifier);
+    final AdjustmentProposal confirmed = _proposalForWorkout(
+      workout,
+      status: AdjustmentProposalStatus.confirmed,
+      adjustedIntensity: 'RPE 3-4',
+    );
+
+    controller.applyConfirmedProposal(
+      proposal: confirmed,
+      currentWorkout: workout,
+    );
+
+    PlanAdjustment latest =
+        container.read(planAdjustmentControllerProvider).adjustments.first;
+    expect(latest.isActive, isTrue);
+    expect(latest.sourceProposalId, confirmed.id);
+    expect(latest.originalIntensity, workout.intensity);
+    expect(latest.adjustedIntensity, 'RPE 3-4');
+
+    controller.undoConfirmedProposal(
+      confirmed.copyWith(
+        status: AdjustmentProposalStatus.undone,
+        undoneAt: DateTime(2026, 7, 15, 11),
+      ),
+    );
+
+    latest = container.read(planAdjustmentControllerProvider).adjustments.first;
+    expect(latest.kind, PlanAdjustmentKind.restored);
+    expect(latest.adjustedEstimatedMinutes, workout.estimatedMinutes);
+    expect(latest.adjustedIntensity, workout.intensity);
+    expect(latest.sourceProposalId, confirmed.id);
+  });
+
+  test('确认前、模糊强度或已有后续修改时均不会覆盖计划', () {
+    final InMemoryLocalStorageService storage = InMemoryLocalStorageService();
+    final ProviderContainer container = createContainer(storage);
+    addTearDown(container.dispose);
+    final WorkoutDay workout = seedTrainingPlans.first.workoutDays.first;
+    final PlanAdjustmentController controller =
+        container.read(planAdjustmentControllerProvider.notifier);
+
+    expect(
+      () => controller.applyConfirmedProposal(
+        proposal: _proposalForWorkout(workout),
+        currentWorkout: workout,
+      ),
+      throwsA(isA<StateError>()),
+    );
+    expect(
+      () => controller.applyConfirmedProposal(
+        proposal: _proposalForWorkout(
+          workout,
+          status: AdjustmentProposalStatus.confirmed,
+          adjustedIntensity: '降低一级',
+        ),
+        currentWorkout: workout,
+      ),
+      throwsA(isA<StateError>()),
+    );
+    expect(
+      container.read(planAdjustmentControllerProvider).adjustments,
+      isEmpty,
+    );
+
+    final AdjustmentProposal confirmed = _proposalForWorkout(
+      workout,
+      status: AdjustmentProposalStatus.confirmed,
+      adjustedIntensity: 'RPE 3-4',
+    );
+    controller.applyConfirmedProposal(
+      proposal: confirmed,
+      currentWorkout: workout,
+    );
+    controller.saveManualAdjustment(
+      workout: workout,
+      adjustedMinutes: 30,
+      adjustedIntensity: 'RPE 2-3',
+      reason: '用户后续手动修改',
+    );
+
+    expect(
+      () => controller.undoConfirmedProposal(confirmed),
+      throwsA(isA<StateError>()),
+    );
+    final PlanAdjustment latest =
+        container.read(planAdjustmentControllerProvider).adjustments.first;
+    expect(latest.reason, '用户后续手动修改');
+    expect(latest.sourceProposalId, isNull);
+  });
 }
 
 WorkoutDay _workoutDay({required int minutes, required String intensity}) {
   return seedTrainingPlans.first.workoutDays.first.copyWith(
     estimatedMinutes: minutes,
     intensity: intensity,
+  );
+}
+
+AdjustmentProposal _proposalForWorkout(
+  WorkoutDay workout, {
+  AdjustmentProposalStatus status = AdjustmentProposalStatus.proposed,
+  String adjustedIntensity = 'RPE 3-4',
+}) {
+  return AdjustmentProposal(
+    id: 'proposal-${workout.id}',
+    athleteProfileId: 'athlete-a',
+    planId: workout.planId,
+    workoutDayId: workout.id,
+    workoutTitle: workout.title,
+    triggerMetricCode: 'acwr.session_rpe',
+    triggerAlgorithmVersion: 'trainmate-l1-acwr-v1',
+    explanation: '负荷偏高，建议降低一级。',
+    originalMinutes: workout.estimatedMinutes,
+    adjustedMinutes: workout.estimatedMinutes,
+    originalIntensity: workout.intensity,
+    adjustedIntensity: adjustedIntensity,
+    status: status,
+    createdAt: DateTime(2026, 7, 15, 9),
+    confirmedAt: status == AdjustmentProposalStatus.confirmed
+        ? DateTime(2026, 7, 15, 10)
+        : null,
   );
 }

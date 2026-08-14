@@ -1,6 +1,7 @@
 import '../models/evidence_source.dart';
 import '../models/exercise.dart';
 import '../models/user_profile.dart';
+import 'seed_exercise_builder.dart';
 
 List<Exercise> buildSeedExerciseExtensions(
   List<EvidenceSource> evidenceSources,
@@ -19,6 +20,7 @@ List<Exercise> buildSeedExerciseExtensions(
     required String breathingCue,
     String safetyNote = '出现尖锐疼痛、头晕或动作失稳时停止。',
     String useCase = '基础训练',
+    List<ExerciseRelation> relations = const <ExerciseRelation>[],
   }) {
     return Exercise(
       id: id,
@@ -36,6 +38,7 @@ List<Exercise> buildSeedExerciseExtensions(
       contraindications: [safetyNote],
       suitableFor: [useCase],
       evidenceSources: evidenceSources,
+      relations: relations,
     );
   }
 
@@ -378,6 +381,94 @@ List<Exercise> buildSeedExerciseExtensions(
       breathingCue: '前移吸气，回收呼气，保持动作缓慢。',
       safetyNote: '踝部疼痛或肿胀增加时停止并记录。',
       useCase: '踝活动度与跑步准备',
+    ),
+    create(
+      id: 'exercise-short-foot',
+      name: '短足训练',
+      category: ExerciseCategory.activation,
+      targetMuscles: ['足底稳定肌', '足弓', '足踝'],
+      sportTags: [MainSport.rehab, MainSport.marathon, MainSport.trailRunning],
+      description: '保持脚趾放松，用前脚掌与脚跟相互靠近的感觉轻轻提起足弓。',
+      steps: ['赤脚三点踩地', '脚趾保持伸展', '轻轻缩短足底并提起足弓', '保持 5 秒后完全放松'],
+      commonMistakes: ['蜷缩脚趾代偿', '脚掌外翻', '用力过大导致足底抽筋'],
+      setsAndReps: '2-3 组 x 每侧 6-8 次，每次保持 5 秒',
+      equipment: ['平坦地面'],
+      breathingCue: '保持自然呼吸，呼气时轻轻建立足弓。',
+      safetyNote: '足底出现尖锐疼痛或抽筋持续不缓解时停止。',
+      useCase: '足弓控制与下肢训练准备',
+    ),
+    create(
+      id: 'exercise-toe-yoga',
+      name: '脚趾瑜伽',
+      category: ExerciseCategory.activation,
+      targetMuscles: ['足底稳定肌', '足趾屈伸肌', '足弓'],
+      sportTags: [MainSport.rehab, MainSport.marathon, MainSport.trailRunning],
+      description: '分别抬起大脚趾和其余脚趾，建立足趾分离控制与足底感知。',
+      steps: ['赤脚站立并三点踩地', '大脚趾抬起，其余脚趾压地', '大脚趾压地，其余脚趾抬起', '缓慢交替并保持足弓稳定'],
+      commonMistakes: ['整只脚一起抬起', '脚踝内外翻', '为了完成动作抓紧地面'],
+      setsAndReps: '2 组 x 每种方式 8-10 次',
+      equipment: ['平坦地面'],
+      breathingCue: '自然呼吸，不要因精细控制而憋气。',
+      safetyNote: '脚趾或足底疼痛时停止，不强行扩大活动范围。',
+      useCase: '足趾控制与足踝激活',
+    ),
+    create(
+      id: 'exercise-drop-landing',
+      name: '下落着地',
+      category: ExerciseCategory.activation,
+      targetMuscles: ['股四头肌', '臀大肌', '小腿', '足踝稳定肌'],
+      sportTags: [MainSport.strength, MainSport.hyrox, MainSport.trailRunning],
+      description: '从低台阶踏下后只练习安静、稳定的落地，不接续起跳。',
+      steps: ['站在 10-20 厘米低台阶边缘', '单脚向前踏出自然下落', '双脚安静落地并屈髋屈膝缓冲', '稳定保持 2 秒再站起'],
+      commonMistakes: ['主动向上跳离台阶', '落地膝内扣', '脚跟重砸地面', '落地后立即移动'],
+      setsAndReps: '3 组 x 3-5 次，组间休息 60 秒',
+      equipment: ['10-20 厘米稳定台阶'],
+      breathingCue: '下落时吸气，落地缓冲时缓慢呼气。',
+      safetyNote: '膝、踝、足底疼痛或无法稳定站住时停止。',
+      useCase: '跳跃前落地解锁',
+      relations: <ExerciseRelation>[
+        regressionTo('exercise-bodyweight-squat', '无法稳定缓冲时先练慢速徒手深蹲。'),
+      ],
+    ),
+    create(
+      id: 'exercise-reverse-step-down',
+      name: '反向下台阶',
+      category: ExerciseCategory.strength,
+      targetMuscles: ['股四头肌', '臀大肌', '髋稳定肌', '足踝稳定肌'],
+      sportTags: [
+        MainSport.strength,
+        MainSport.marathon,
+        MainSport.trailRunning
+      ],
+      description: '站在低台阶上缓慢向后点地，训练支撑腿的离心控制和髋膝对线。',
+      steps: ['单脚站在低台阶上', '支撑腿缓慢屈膝屈髋', '另一脚向后轻点地面', '支撑脚整掌发力回到站姿'],
+      commonMistakes: ['支撑膝内扣', '直接跌落到底部', '骨盆向一侧塌下'],
+      setsAndReps: '3 组 x 每侧 6-10 次，下降 3 秒',
+      equipment: ['10-20 厘米稳定台阶'],
+      breathingCue: '下降吸气，回到站姿时呼气。',
+      safetyNote: '膝前侧尖锐疼痛或明显失稳时降低台阶或停止。',
+      useCase: '单腿离心与下坡准备',
+      relations: <ExerciseRelation>[
+        regressionTo('exercise-step-up', '无法控制下降时先做低台阶踏步。'),
+      ],
+    ),
+    create(
+      id: 'exercise-single-leg-rdl',
+      name: '单腿罗马尼亚硬拉',
+      category: ExerciseCategory.strength,
+      targetMuscles: ['腘绳肌', '臀大肌', '髋稳定肌', '足踝稳定肌'],
+      sportTags: [MainSport.strength, MainSport.marathon, MainSport.hyrox],
+      description: '用单腿髋铰链同时训练后链力量、足踝稳定和骨盆控制。',
+      steps: ['单腿站稳并微屈膝', '髋部向后推，另一腿向后延伸', '骨盆保持朝向地面', '支撑脚整掌发力回到直立'],
+      commonMistakes: ['骨盆向外打开', '弯腰找地面', '支撑膝内扣', '动作过快失去平衡'],
+      setsAndReps: '3 组 x 每侧 6-10 次',
+      equipment: ['哑铃或壶铃（可选）'],
+      breathingCue: '髋向后时吸气，站起时呼气。',
+      safetyNote: '腰背、腘绳肌或支撑膝出现尖锐疼痛时停止。',
+      useCase: '单腿后链力量与动态稳定',
+      relations: <ExerciseRelation>[
+        regressionTo('exercise-rdl', '平衡不足时先练双腿罗马尼亚硬拉。'),
+      ],
     ),
     create(
       id: 'exercise-couch-stretch',

@@ -25,6 +25,10 @@ class TrainingReminderService {
       readinessScore: readinessScore,
       trainingStatusLabel: trainingStatusLabel,
     );
+    final bool isProtectionState = _isProtectionState(
+      readinessScore: readinessScore,
+      trainingStatusLabel: trainingStatusLabel,
+    );
 
     if (needsLightVersion) {
       reminders.add(
@@ -41,39 +45,41 @@ class TrainingReminderService {
       );
     }
 
-    reminders.add(
-      TrainingReminder(
-        id: 'daily-plan',
-        type: TrainingReminderType.dailyPlan,
-        title: '今日训练提醒',
-        timeLabel: preferredTimeLabel,
-        reason:
-            '固定时间推送当天安排：${todayWorkout.title}，总时长约 ${todayWorkout.estimatedMinutes} 分钟。',
-        actionLabel: '去今日训练',
-        priorityLabel: '固定提醒',
-        enabled: enabled,
-      ),
-    );
-
-    reminders.add(
-      TrainingReminder(
-        id: formalPlanUnlocked ? 'formal-plan' : 'starter-program',
-        type: formalPlanUnlocked
-            ? TrainingReminderType.formalPlan
-            : TrainingReminderType.starterProgram,
-        title: formalPlanUnlocked ? '正式周期提醒' : '30 天引导提醒',
-        timeLabel: _starterReminderTime(
-          preferredTimeLabel: preferredTimeLabel,
-          profile: profile,
+    if (!isProtectionState) {
+      reminders.add(
+        TrainingReminder(
+          id: 'daily-plan',
+          type: TrainingReminderType.dailyPlan,
+          title: '今日训练提醒',
+          timeLabel: preferredTimeLabel,
+          reason:
+              '固定时间推送当天安排：${todayWorkout.title}，总时长约 ${todayWorkout.estimatedMinutes} 分钟。',
+          actionLabel: '去今日训练',
+          priorityLabel: '固定提醒',
+          enabled: enabled,
         ),
-        reason: formalPlanUnlocked
-            ? '已从 30 天毕业报告切到正式 AI 个性化周期，提醒只保留下一步训练确认。'
-            : '当前第 $starterProgramDayIndex/30 天，连续 $starterProgramStreak 天；漏练不惩罚，可顺延或切 5 分钟补救版。',
-        actionLabel: formalPlanUnlocked ? '看正式计划' : '打开引导',
-        priorityLabel: formalPlanUnlocked ? '周期衔接' : '习惯建立',
-        enabled: enabled,
-      ),
-    );
+      );
+
+      reminders.add(
+        TrainingReminder(
+          id: formalPlanUnlocked ? 'formal-plan' : 'starter-program',
+          type: formalPlanUnlocked
+              ? TrainingReminderType.formalPlan
+              : TrainingReminderType.starterProgram,
+          title: formalPlanUnlocked ? '正式周期提醒' : '30 天引导提醒',
+          timeLabel: _starterReminderTime(
+            preferredTimeLabel: preferredTimeLabel,
+            profile: profile,
+          ),
+          reason: formalPlanUnlocked
+              ? '已从 30 天毕业报告切到正式 AI 个性化周期，提醒只保留下一步训练确认。'
+              : '当前第 $starterProgramDayIndex/30 天，累计成长日 $starterProgramStreak 天；可按状态顺延或切 5 分钟补救版。',
+          actionLabel: formalPlanUnlocked ? '看正式计划' : '打开引导',
+          priorityLabel: formalPlanUnlocked ? '周期衔接' : '习惯建立',
+          enabled: enabled,
+        ),
+      );
+    }
 
     if (remainingRecoveryHours > 0) {
       reminders.add(
@@ -120,6 +126,13 @@ class TrainingReminderService {
     return latestBodyMetric.sleepHours < 6.5 ||
         latestBodyMetric.fatigueLevel >= 7 ||
         latestBodyMetric.sorenessLevel >= 7;
+  }
+
+  bool _isProtectionState({
+    required int readinessScore,
+    required String trainingStatusLabel,
+  }) {
+    return trainingStatusLabel == '过度风险' && readinessScore < 50;
   }
 
   String _starterReminderTime({

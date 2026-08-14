@@ -151,11 +151,18 @@ class AchievementRecord {
   }
 
   factory AchievementRecord.fromJson(Map<String, dynamic> json) {
+    final String definitionId = json['definitionId'] as String? ?? '';
     return AchievementRecord(
       id: json['id'] as String? ?? '',
-      definitionId: json['definitionId'] as String? ?? '',
-      title: json['title'] as String? ?? '',
-      description: json['description'] as String? ?? '',
+      definitionId: definitionId,
+      title: _currentAchievementTitle(
+        definitionId,
+        json['title'] as String? ?? '',
+      ),
+      description: _currentAchievementDescription(
+        definitionId,
+        json['description'] as String? ?? '',
+      ),
       category: achievementCategoryFromJson(json['category'] as String?),
       currentValue: (json['currentValue'] as num?)?.toInt() ?? 0,
       targetValue: (json['targetValue'] as num?)?.toInt() ?? 1,
@@ -183,6 +190,25 @@ class AchievementRecord {
     final String minute = unlockedAt.minute.toString().padLeft(2, '0');
     return '${unlockedAt.month}/${unlockedAt.day} $hour:$minute';
   }
+}
+
+String _currentAchievementTitle(String definitionId, String storedTitle) {
+  return switch (definitionId) {
+    'seven_day_streak' => '累计成长 7 天',
+    'thirty_day_streak' => '累计成长 30 天',
+    _ => storedTitle,
+  };
+}
+
+String _currentAchievementDescription(
+  String definitionId,
+  String storedDescription,
+) {
+  return switch (definitionId) {
+    'seven_day_streak' => '30 天引导累计完成 7 天。',
+    'thirty_day_streak' => '累计完成 30 天渐进引导，准备进入正式 AI 计划。',
+    _ => storedDescription,
+  };
 }
 
 DateTime _dateTimeFromJson(String? value) {

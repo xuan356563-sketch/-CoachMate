@@ -2,6 +2,15 @@ import '../models/evidence_source.dart';
 import '../models/exercise.dart';
 import '../models/user_profile.dart';
 import 'seed_exercise_extensions.dart';
+import 'seed_exercise_media.dart';
+import 'seed_exercises_bodyweight.dart';
+import 'seed_exercises_chest_back.dart';
+import 'seed_exercises_core_lower.dart';
+import 'seed_exercises_crossfit.dart';
+import 'seed_exercises_focus.dart';
+import 'seed_exercises_shoulder_arm.dart';
+import 'seed_exercises_supplement.dart';
+import 'seed_exercises_trail.dart';
 
 const List<EvidenceSource> exerciseEvidenceSources = [
   EvidenceSource(
@@ -26,7 +35,13 @@ const List<EvidenceSource> exerciseEvidenceSources = [
   ),
 ];
 
-final List<Exercise> seedExercises = [
+/// 动作库全量条目。
+///
+/// 组装顺序：基础条目 → 扩展条目 → 按部位补齐的胸背 / 肩臂 / 核心下肢 →
+/// 自重、CrossFit、越野跑三条专项线。最后由 [applyExerciseMedia] 统一补上示范图。
+final List<Exercise> seedExercises = applyExerciseMedia(_rawSeedExercises);
+
+final List<Exercise> _rawSeedExercises = [
   Exercise(
     id: 'exercise-goblet-squat',
     name: '高脚杯深蹲',
@@ -668,4 +683,12 @@ final List<Exercise> seedExercises = [
     evidenceSources: exerciseEvidenceSources,
   ),
   ...buildSeedExerciseExtensions(exerciseEvidenceSources),
+  ...buildChestAndBackExercises(exerciseEvidenceSources),
+  ...buildShoulderAndArmExercises(exerciseEvidenceSources),
+  ...buildCoreAndLowerExercises(exerciseEvidenceSources),
+  ...buildBodyweightExercises(exerciseEvidenceSources),
+  ...buildCrossFitExercises(exerciseEvidenceSources),
+  ...buildTrailRunningExercises(exerciseEvidenceSources),
+  ...buildSupplementExercises(exerciseEvidenceSources),
+  ...buildFocusExercises(exerciseEvidenceSources),
 ];

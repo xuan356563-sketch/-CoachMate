@@ -126,6 +126,46 @@ CitationTargetType citationTargetTypeFromJson(String? value) {
   }
 }
 
+enum QuoteKind { shortExcerpt, paraphrase }
+
+extension QuoteKindJson on QuoteKind {
+  String get jsonValue => switch (this) {
+        QuoteKind.shortExcerpt => 'short_excerpt',
+        QuoteKind.paraphrase => 'paraphrase',
+      };
+
+  String get label => switch (this) {
+        QuoteKind.shortExcerpt => '原文短引',
+        QuoteKind.paraphrase => '内容转述',
+      };
+}
+
+QuoteKind quoteKindFromJson(String? value) {
+  return value == 'short_excerpt'
+      ? QuoteKind.shortExcerpt
+      : QuoteKind.paraphrase;
+}
+
+enum QuoteVerificationStatus { pending, verified }
+
+extension QuoteVerificationStatusJson on QuoteVerificationStatus {
+  String get jsonValue => switch (this) {
+        QuoteVerificationStatus.pending => 'pending',
+        QuoteVerificationStatus.verified => 'verified',
+      };
+
+  String get label => switch (this) {
+        QuoteVerificationStatus.pending => '待核版本/页码',
+        QuoteVerificationStatus.verified => '版本与页码已核',
+      };
+}
+
+QuoteVerificationStatus quoteVerificationStatusFromJson(String? value) {
+  return value == 'verified'
+      ? QuoteVerificationStatus.verified
+      : QuoteVerificationStatus.pending;
+}
+
 class TrainingBook {
   final String id;
   final String title;
@@ -176,6 +216,8 @@ class BookQuote {
   final String quote;
   final String note;
   final List<KnowledgeArea> areas;
+  final QuoteKind kind;
+  final QuoteVerificationStatus verificationStatus;
 
   const BookQuote({
     required this.id,
@@ -185,7 +227,11 @@ class BookQuote {
     required this.quote,
     required this.note,
     required this.areas,
+    this.kind = QuoteKind.paraphrase,
+    this.verificationStatus = QuoteVerificationStatus.pending,
   });
+
+  bool get isVerified => verificationStatus == QuoteVerificationStatus.verified;
 
   factory BookQuote.fromJson(Map<String, dynamic> json) {
     return BookQuote(
@@ -198,6 +244,10 @@ class BookQuote {
       areas: (json['areas'] as List<dynamic>? ?? [])
           .map((dynamic value) => knowledgeAreaFromJson(value as String?))
           .toList(),
+      kind: quoteKindFromJson(json['kind'] as String?),
+      verificationStatus: quoteVerificationStatusFromJson(
+        json['verificationStatus'] as String?,
+      ),
     );
   }
 
@@ -210,6 +260,8 @@ class BookQuote {
       'quote': quote,
       'note': note,
       'areas': areas.map((KnowledgeArea area) => area.jsonValue).toList(),
+      'kind': kind.jsonValue,
+      'verificationStatus': verificationStatus.jsonValue,
     };
   }
 }

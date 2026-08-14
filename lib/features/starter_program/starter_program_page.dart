@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 
 import '../../app/router/app_routes.dart';
 import '../../core/constants/app_colors.dart';
+import '../../core/widgets/trainmate_action_character.dart';
 import '../../core/widgets/trainflow_widgets.dart';
 import '../../data/models/evidence_source.dart';
 import '../../data/models/starter_graduation_report.dart';
@@ -21,6 +22,13 @@ class StarterProgramPage extends ConsumerWidget {
     return TrainFlowPage(
       title: '30 天渐进引导',
       subtitle: '新手默认入口：低到不可能失败，每天只增强一点点。',
+      leading: const TrainMateBackButton(
+        fallbackRoute: AppRoutes.dailyCheckIn,
+      ),
+      artwork: const TrainMateActionCharacter(
+        action: TrainMateAction.jumpRope,
+        backgroundColor: AppColors.primary,
+      ),
       children: [
         _StarterProgramSummaryCard(state: state),
         _StarterProgramTodayCard(day: day, state: state),
@@ -39,6 +47,7 @@ class _StarterProgramSummaryCard extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     return TrainFlowCard(
+      cornerCharacterAction: TrainMateAction.jumpRope,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -89,7 +98,7 @@ class _StarterProgramSummaryCard extends ConsumerWidget {
               const SizedBox(width: 10),
               Expanded(
                 child: MetricPill(
-                  label: '连续完成',
+                  label: '累计成长日',
                   value: '${state.starterProgramStreak} 天',
                   color: AppColors.secondary,
                 ),
@@ -294,7 +303,7 @@ class _StarterGraduationPreviewCard extends StatelessWidget {
           SizedBox(
             width: double.infinity,
             child: FilledButton.icon(
-              onPressed: () => context.go(AppRoutes.starterGraduation),
+              onPressed: () => context.push(AppRoutes.starterGraduation),
               icon: const Icon(Icons.assessment_outlined),
               label: Text(buttonLabel),
             ),

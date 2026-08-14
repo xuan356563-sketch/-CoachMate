@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../app/router/app_routes.dart';
 import '../../core/constants/app_colors.dart';
+import '../../core/widgets/trainmate_action_character.dart';
 import '../../core/widgets/trainflow_widgets.dart';
 import '../../data/models/pain_log.dart';
 import '../dashboard/training_mvp_controller.dart';
@@ -73,8 +75,18 @@ class RehabPage extends ConsumerWidget {
 
     return TrainFlowPage(
       title: '康复记录',
+      layout: TrainFlowPageLayout.form,
       subtitle: '记录疼痛后，今日训练会自动降级；疼痛 ≥7 强制提示就医。',
+      includeDisclaimer: false,
+      leading: const TrainMateBackButton(
+        fallbackRoute: AppRoutes.profile,
+      ),
+      artwork: const TrainMateActionCharacter(
+        action: TrainMateAction.seatedForwardFold,
+        backgroundColor: AppColors.primary,
+      ),
       children: [
+        const _RehabMedicalBoundaryCard(),
         _CurrentRiskCard(state: state),
         TrainFlowCard(
           child: Column(
@@ -175,6 +187,7 @@ class RehabPage extends ConsumerWidget {
         const SectionTitle(title: '疼痛记录'),
         if (state.painLogs.isEmpty)
           TrainFlowCard(
+            cornerCharacterAction: TrainMateAction.seatedForwardFold,
             child: Text(
               '还没有疼痛记录。记录后，今日训练和 AI 教练建议会立即更新。',
               style: Theme.of(context).textTheme.bodyMedium?.copyWith(
@@ -186,6 +199,53 @@ class RehabPage extends ConsumerWidget {
           for (final PainLog painLog in state.painLogs)
             _PainLogCard(painLog: painLog),
       ],
+    );
+  }
+}
+
+class _RehabMedicalBoundaryCard extends StatelessWidget {
+  const _RehabMedicalBoundaryCard();
+
+  @override
+  Widget build(BuildContext context) {
+    return TrainFlowCard(
+      key: const ValueKey<String>('rehab-medical-boundary-card'),
+      tone: TrainFlowCardTone.peach,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              const Icon(Icons.medical_information_outlined,
+                  color: AppColors.danger),
+              const SizedBox(width: 8),
+              Expanded(
+                child: Text(
+                  '医疗边界与就医提示',
+                  style: Theme.of(context)
+                      .textTheme
+                      .titleMedium
+                      ?.copyWith(fontWeight: FontWeight.w900),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 8),
+          const Text(
+            '这里用于记录疼痛并调整训练，不用于诊断、治疗或替代医生/物理治疗师。'
+            '出现剧烈或持续加重疼痛、无法负重或活动、明显肿胀、麻木或无力，'
+            '或胸痛、呼吸困难等情况，请立即停止训练并及时就医；紧急症状请联系当地急救。',
+          ),
+          const SizedBox(height: 8),
+          Text(
+            '应用中的“疼痛 ≥7 分或持续超过 14 天”是保守提醒阈值，不是医学诊断标准。',
+            style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                  color: AppColors.textSecondary,
+                  fontWeight: FontWeight.w700,
+                ),
+          ),
+        ],
+      ),
     );
   }
 }

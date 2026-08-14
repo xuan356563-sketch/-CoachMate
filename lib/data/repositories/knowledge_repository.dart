@@ -44,7 +44,11 @@ class InMemoryKnowledgeRepository implements KnowledgeRepository {
 
   @override
   List<CitationLink> listCitationLinks() {
-    return List<CitationLink>.unmodifiable(_citationLinks);
+    return List<CitationLink>.unmodifiable(
+      _citationLinks.where(
+        (CitationLink citation) => _isVerifiedQuote(citation.quoteId),
+      ),
+    );
   }
 
   @override
@@ -55,7 +59,8 @@ class InMemoryKnowledgeRepository implements KnowledgeRepository {
   @override
   List<CitationLink> citationsForQuote(String quoteId) {
     return _citationLinks
-        .where((CitationLink citation) => citation.quoteId == quoteId)
+        .where((CitationLink citation) =>
+            citation.quoteId == quoteId && _isVerifiedQuote(quoteId))
         .toList();
   }
 
@@ -85,6 +90,12 @@ class InMemoryKnowledgeRepository implements KnowledgeRepository {
 
   bool _isImportedCitation(CitationLink citation) {
     return citation.id.startsWith('imported-citation-');
+  }
+
+  bool _isVerifiedQuote(String quoteId) {
+    return _quotes.any(
+      (BookQuote quote) => quote.id == quoteId && quote.isVerified,
+    );
   }
 }
 

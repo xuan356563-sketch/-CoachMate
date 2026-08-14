@@ -4,8 +4,10 @@ import 'package:go_router/go_router.dart';
 
 import '../../app/router/app_routes.dart';
 import '../../core/constants/app_colors.dart';
+import '../../core/widgets/trainmate_action_character.dart';
 import '../../core/widgets/trainflow_widgets.dart';
 import '../../data/models/evidence_source.dart';
+import '../../data/models/ai_knowledge_citation.dart';
 import '../../data/models/training_plan.dart';
 import '../../data/models/training_rule_audit.dart';
 import '../../data/models/user_profile.dart';
@@ -25,8 +27,18 @@ class PlanDetailPage extends ConsumerWidget {
     if (plan == null) {
       return const TrainFlowPage(
         title: '计划不存在',
+        leading: TrainMateBackButton(
+          fallbackRoute: AppRoutes.plans,
+        ),
+        artwork: TrainMateActionCharacter(
+          action: TrainMateAction.forwardLunge,
+          backgroundColor: AppColors.primary,
+        ),
         children: [
-          TrainFlowCard(child: Text('没有找到对应训练计划。')),
+          TrainFlowCard(
+            cornerCharacterAction: TrainMateAction.forwardLunge,
+            child: Text('没有找到对应训练计划。'),
+          ),
         ],
       );
     }
@@ -34,8 +46,16 @@ class PlanDetailPage extends ConsumerWidget {
     return TrainFlowPage(
       title: plan.title,
       subtitle: '${plan.sportType.label} · ${plan.level}',
+      leading: const TrainMateBackButton(
+        fallbackRoute: AppRoutes.plans,
+      ),
+      artwork: const TrainMateActionCharacter(
+        action: TrainMateAction.forwardLunge,
+        backgroundColor: AppColors.primary,
+      ),
       children: [
         TrainFlowCard(
+          cornerCharacterAction: TrainMateAction.forwardLunge,
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
@@ -53,10 +73,14 @@ class PlanDetailPage extends ConsumerWidget {
           ),
         ),
         _RuleAuditCard(report: state.ruleAuditReportForPlan(plan)),
+        if (plan.knowledgeCitations.isNotEmpty) ...[
+          const SectionTitle(title: '本次处方依据'),
+          _KnowledgeCitationList(citations: plan.knowledgeCitations),
+        ],
         const SectionTitle(title: '第 1 周训练日'),
         for (final WorkoutDay day in plan.workoutDays)
           TrainFlowCard(
-            onTap: () => context.go(AppRoutes.workoutDetail(plan.id, day.id)),
+            onTap: () => context.push(AppRoutes.workoutDetail(plan.id, day.id)),
             child: Row(
               children: [
                 SizedBox(
@@ -94,10 +118,22 @@ class PlanDetailPage extends ConsumerWidget {
                     const SizedBox(height: 6),
                     TextButton.icon(
                       onPressed: () {
-                        ref
+                        final bool started = ref
                             .read(trainingMvpProvider.notifier)
                             .startWorkoutPlayer(workoutDayId: day.id);
-                        context.go(AppRoutes.workoutPlayer);
+                        if (started) {
+                          context.push(AppRoutes.workoutPlayer);
+                        } else {
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            SnackBar(
+                              content: Text(
+                                ref
+                                    .read(trainingMvpProvider)
+                                    .workoutPlayerStatusMessage,
+                              ),
+                            ),
+                          );
+                        }
                       },
                       icon: const Icon(Icons.play_arrow),
                       label: const Text('开始跟练'),
@@ -110,6 +146,33 @@ class PlanDetailPage extends ConsumerWidget {
         const SectionTitle(title: '依据来源'),
         _EvidenceList(sources: plan.evidenceSources),
       ],
+    );
+  }
+}
+
+class _KnowledgeCitationList extends StatelessWidget {
+  final List<AiKnowledgeCitation> citations;
+
+  const _KnowledgeCitationList({required this.citations});
+
+  @override
+  Widget build(BuildContext context) {
+    return TrainFlowCard(
+      child: Column(
+        children: [
+          for (final AiKnowledgeCitation citation in citations)
+            ListTile(
+              contentPadding: EdgeInsets.zero,
+              leading: const Icon(Icons.menu_book_outlined),
+              title: Text(citation.title),
+              subtitle: Text(
+                '${citation.sourceLabel} · ${citation.sourceSection}',
+              ),
+              trailing: const Icon(Icons.chevron_right),
+              onTap: () => context.push(AppRoutes.knowledgeItem(citation.id)),
+            ),
+        ],
+      ),
     );
   }
 }

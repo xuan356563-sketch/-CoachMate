@@ -55,10 +55,14 @@ class TrainingReminder {
 class TrainingReminderSettings {
   final bool enabled;
   final String preferredTimeLabel;
+  final bool followSchedule;
+  final int leadMinutes;
 
   const TrainingReminderSettings({
     required this.enabled,
     required this.preferredTimeLabel,
+    this.followSchedule = true,
+    this.leadMinutes = 30,
   });
 
   factory TrainingReminderSettings.fromJson(Map<String, dynamic> json) {
@@ -66,6 +70,8 @@ class TrainingReminderSettings {
     return TrainingReminderSettings(
       enabled: json['enabled'] as bool? ?? true,
       preferredTimeLabel: rawTimeLabel.trim().isEmpty ? '20:30' : rawTimeLabel,
+      followSchedule: json['followSchedule'] as bool? ?? true,
+      leadMinutes: (json['leadMinutes'] as num?)?.toInt() ?? 30,
     );
   }
 
@@ -73,6 +79,8 @@ class TrainingReminderSettings {
     return {
       'enabled': enabled,
       'preferredTimeLabel': preferredTimeLabel,
+      'followSchedule': followSchedule,
+      'leadMinutes': leadMinutes,
     };
   }
 }

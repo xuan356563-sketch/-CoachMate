@@ -4,6 +4,7 @@ import 'dart:convert';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../data/models/achievement.dart';
+import '../../data/models/ai_artifact.dart';
 import '../../data/models/body_data_quality.dart';
 import '../../data/models/body_metric_export.dart';
 import '../../data/models/body_metric_goal.dart';
@@ -11,6 +12,7 @@ import '../../data/models/body_metric.dart';
 import '../../data/models/body_metric_import.dart';
 import '../../data/models/body_metric_revision.dart';
 import '../../data/models/body_trend_insight.dart';
+import '../../data/models/coach_feedback.dart';
 import '../../data/models/daily_adjustment.dart';
 import '../../data/models/daily_check_in.dart';
 import '../../data/models/exercise.dart';
@@ -22,6 +24,7 @@ import '../../data/models/motion_check.dart';
 import '../../data/models/motion_pose.dart';
 import '../../data/models/pain_log.dart';
 import '../../data/models/plan_adjustment.dart';
+import '../../data/models/pre_exercise_clearance.dart';
 import '../../data/models/race.dart';
 import '../../data/models/starter_graduation_report.dart';
 import '../../data/models/starter_program.dart';
@@ -30,11 +33,13 @@ import '../../data/models/training_log.dart';
 import '../../data/models/training_plan.dart';
 import '../../data/models/training_reminder.dart';
 import '../../data/models/training_rule_audit.dart';
+import '../../data/models/training_schedule.dart';
 import '../../data/models/user_insight.dart';
 import '../../data/models/user_profile.dart';
 import '../../data/models/user_trust_review.dart';
 import '../../data/models/weekly_report.dart';
 import '../../data/models/weekly_report_export.dart';
+import '../../data/models/weekly_psych_check_in.dart';
 import '../../data/models/workout_day.dart';
 import '../../data/models/workout_player_step.dart';
 import '../../data/repositories/exercise_repository.dart';
@@ -56,6 +61,7 @@ import '../../services/ai_training_service.dart';
 import '../../services/body_data_quality_service.dart';
 import '../../services/body_metric_goal_service.dart';
 import '../../services/body_trend_insight_service.dart';
+import '../../services/coach_feedback_policy.dart';
 import '../../services/daily_adjustment_service.dart';
 import '../../services/daily_check_in_service.dart';
 import '../../services/exercise_substitution_service.dart';
@@ -76,19 +82,65 @@ import '../../services/weekly_report_service.dart';
 import '../daily_adjustment/application/daily_adjustment_controller.dart';
 import '../data_center/application/body_metric_controller.dart';
 import '../data_center/application/body_metric_export_controller.dart';
+import '../growth/application/growth_evidence_controller.dart';
 import '../meal_guide/application/meal_preference_controller.dart';
+import '../pet/application/pet_controller.dart';
+import '../training_log/application/training_record_save_request.dart';
 import '../profile/application/achievement_controller.dart';
 import '../profile/application/user_profile_controller.dart';
+import '../profile/application/training_schedule_controller.dart';
 import '../reminders/application/reminder_settings_controller.dart';
 import '../training_log/application/training_log_controller.dart';
+import '../training_plan/application/four_week_plan_controller.dart';
 import '../training_plan/application/plan_adjustment_controller.dart';
+import '../training_plan/application/pre_exercise_clearance_controller.dart';
 import '../workout_player/application/workout_player_assist_controller.dart';
 
 const Object _unchanged = Object();
 
+ExerciseExecutionRecord _normalizedExerciseRecord(
+  ExerciseExecutionRecord item,
+) {
+  final String exerciseId = item.exerciseId?.trim() ?? '';
+  final List<StrengthSetExecutionRecord> sets =
+      List<StrengthSetExecutionRecord>.unmodifiable(
+    item.sets.indexed.map(
+      ((int, StrengthSetExecutionRecord) indexed) {
+        final StrengthSetExecutionRecord set = indexed.$2;
+        return StrengthSetExecutionRecord(
+          setIndex: indexed.$1 + 1,
+          repetitions: set.repetitions,
+          weightKg: set.weightKg,
+          rpe: set.rpe,
+          durationSeconds: set.durationSeconds,
+        );
+      },
+    ),
+  );
+  return ExerciseExecutionRecord(
+    exerciseId: exerciseId.isEmpty ? null : exerciseId,
+    exerciseName: item.exerciseName.trim(),
+    plannedSetCount: item.plannedSetCount,
+    completedSetCount: sets.isEmpty ? item.completedSetCount : sets.length,
+    repetitionsPerSet: item.repetitionsPerSet,
+    weightKg: sets.isEmpty
+        ? item.weightKg
+        : sets.map((StrengthSetExecutionRecord set) => set.weightKg).reduce(
+            (double first, double second) => first > second ? first : second),
+    sets: sets,
+    landingQuality: item.landingQuality,
+  );
+}
+
 final trainingMvpProvider =
     NotifierProvider<TrainingMvpController, TrainingMvpState>(
   TrainingMvpController.new,
+);
+
+/// 跟练执行时读取的实时钟。使用函数而不是缓存的 DateTime，确保长期前台运行
+/// 跨过筛查有效期后，下一次操作会立即重新裁决。
+final trainingExecutionClockProvider = Provider<DateTime Function()>(
+  (Ref ref) => DateTime.now,
 );
 
 final feedbackRpeProvider = NotifierProvider<FeedbackRpeController, int>(
@@ -215,7 +267,12 @@ class FeedbackCompletedController extends Notifier<bool> {
 class BodyMetricWeightController extends Notifier<double> {
   @override
   double build() {
-    return 73.8;
+    return ref.watch(
+          bodyMetricControllerProvider.select(
+            (BodyMetricState value) => value.latestMetric?.weightKg,
+          ),
+        ) ??
+        60;
   }
 
   void setValue(double value) {
@@ -226,7 +283,12 @@ class BodyMetricWeightController extends Notifier<double> {
 class BodyMetricRestingHrController extends Notifier<int> {
   @override
   int build() {
-    return 58;
+    return ref.watch(
+          bodyMetricControllerProvider.select(
+            (BodyMetricState value) => value.latestMetric?.restingHeartRate,
+          ),
+        ) ??
+        45;
   }
 
   void setValue(int value) {
@@ -237,7 +299,12 @@ class BodyMetricRestingHrController extends Notifier<int> {
 class BodyMetricHrvController extends Notifier<int> {
   @override
   int build() {
-    return 52;
+    return ref.watch(
+          bodyMetricControllerProvider.select(
+            (BodyMetricState value) => value.latestMetric?.hrvMs,
+          ),
+        ) ??
+        25;
   }
 
   void setValue(int value) {
@@ -248,7 +315,12 @@ class BodyMetricHrvController extends Notifier<int> {
 class BodyMetricSleepController extends Notifier<double> {
   @override
   double build() {
-    return 7.1;
+    return ref.watch(
+          bodyMetricControllerProvider.select(
+            (BodyMetricState value) => value.latestMetric?.sleepHours,
+          ),
+        ) ??
+        4;
   }
 
   void setValue(double value) {
@@ -259,7 +331,12 @@ class BodyMetricSleepController extends Notifier<double> {
 class BodyMetricFatigueController extends Notifier<int> {
   @override
   int build() {
-    return 4;
+    return ref.watch(
+          bodyMetricControllerProvider.select(
+            (BodyMetricState value) => value.latestMetric?.fatigueLevel,
+          ),
+        ) ??
+        1;
   }
 
   void setValue(int value) {
@@ -501,6 +578,7 @@ class TrainingMvpState {
   final List<WeeklyReportExportRecord> weeklyReportExportRecords;
   final String weeklyReportExportStatusMessage;
   final List<String> coachAdvices;
+  final ScheduledWorkout? scheduledTodayWorkout;
 
   const TrainingMvpState({
     required this.profileCompleted,
@@ -575,6 +653,7 @@ class TrainingMvpState {
     required this.weeklyReportExportRecords,
     required this.weeklyReportExportStatusMessage,
     required this.coachAdvices,
+    this.scheduledTodayWorkout,
   });
 
   TrainingPlan get activePlan {
@@ -582,7 +661,13 @@ class TrainingMvpState {
   }
 
   WorkoutDay get baseTodayWorkout {
-    return activePlan.workoutDays.first;
+    final ScheduledWorkout? scheduled = scheduledTodayWorkout;
+    if (scheduled == null) {
+      return activePlan.workoutDays.first;
+    }
+    final WorkoutDay base =
+        findWorkoutDay(scheduled.workoutDayId) ?? activePlan.workoutDays.first;
+    return applyScheduledWorkout(base, scheduled);
   }
 
   bool get noEquipmentConstraint {
@@ -1194,21 +1279,6 @@ class TrainingMvpState {
     return '今天优先恢复，训练只做低压版本。';
   }
 
-  WeeklyReport get weeklyReport {
-    return WeeklyReportService().buildWeeklyReport(
-      profile: profile,
-      todayWorkout: todayWorkout,
-      logs: logs,
-      bodyMetrics: bodyMetrics,
-      readinessScore: readinessScore,
-      trainingStatusLabel: trainingStatusLabel,
-      trainingStatusReason: trainingStatusReason,
-      recoveryCountdownLabel: recoveryCountdownLabel,
-      recoveryAdvice: recoveryAdvice,
-      achievementSummaryLabel: achievementSummaryLabel,
-    );
-  }
-
   StarterGraduationReport get starterGraduationReport {
     return StarterGraduationService().buildReport(
       goal: starterProgramGoal,
@@ -1687,6 +1757,7 @@ class TrainingMvpState {
     List<WeeklyReportExportRecord>? weeklyReportExportRecords,
     String? weeklyReportExportStatusMessage,
     List<String>? coachAdvices,
+    Object? scheduledTodayWorkout = _unchanged,
   }) {
     return TrainingMvpState(
       profileCompleted: profileCompleted ?? this.profileCompleted,
@@ -1807,6 +1878,9 @@ class TrainingMvpState {
       weeklyReportExportStatusMessage: weeklyReportExportStatusMessage ??
           this.weeklyReportExportStatusMessage,
       coachAdvices: coachAdvices ?? this.coachAdvices,
+      scheduledTodayWorkout: identical(scheduledTodayWorkout, _unchanged)
+          ? this.scheduledTodayWorkout
+          : scheduledTodayWorkout as ScheduledWorkout?,
     );
   }
 }
@@ -1858,6 +1932,16 @@ class TrainingMvpController extends Notifier<TrainingMvpState> {
 
   final TrainingPlanRepository _planRepository =
       InMemoryTrainingPlanRepository();
+
+  List<TrainingPlan> _basePlansFor(bool profileCompleted) {
+    if (!profileCompleted) {
+      return _planRepository.listPlans();
+    }
+    return <TrainingPlan>[
+      ref.read(fourWeekPlanControllerProvider).activePlan,
+    ];
+  }
+
   final ExerciseRepository _exerciseRepository = InMemoryExerciseRepository();
   KnowledgeRepository? _knowledgeRepositoryInstance;
 
@@ -1931,7 +2015,7 @@ class TrainingMvpController extends Notifier<TrainingMvpState> {
           }
           state = state.copyWith(
             plans: _applyPlanAdjustments(
-              _planRepository.listPlans(),
+              _basePlansFor(state.profileCompleted),
               next.adjustments,
             ),
             planAdjustments: next.adjustments,
@@ -1942,12 +2026,22 @@ class TrainingMvpController extends Notifier<TrainingMvpState> {
     );
     final UserProfileState profileState =
         ref.read(userProfileControllerProvider);
+    final FourWeekPlanState fourWeekPlanState =
+        ref.read(fourWeekPlanControllerProvider);
     ref.listen<UserProfileState>(
       userProfileControllerProvider,
       (UserProfileState? previous, UserProfileState next) {
         final TrainingMvpState profileUpdatedState = state.copyWith(
           profileCompleted: next.isCompleted,
           profile: next.profile,
+          plans: _applyPlanAdjustments(
+            next.isCompleted
+                ? <TrainingPlan>[
+                    ref.read(fourWeekPlanControllerProvider).activePlan,
+                  ]
+                : _planRepository.listPlans(),
+            state.planAdjustments,
+          ),
         );
         state = profileUpdatedState.copyWith(
           coachAdvices: _aiTrainingService.buildMockCoachAdvice(
@@ -1958,6 +2052,63 @@ class TrainingMvpController extends Notifier<TrainingMvpState> {
             latestPainLog: profileUpdatedState.latestPainLog,
           ),
         );
+      },
+    );
+    ref.listen<FourWeekPlanState>(
+      fourWeekPlanControllerProvider,
+      (FourWeekPlanState? previous, FourWeekPlanState next) {
+        scheduleMicrotask(() {
+          if (!ref.mounted || !state.profileCompleted) {
+            return;
+          }
+          if (next.executionLocked) {
+            _switchSkillExecutionToFallback(
+              next,
+              reason: next.executionLockReason,
+            );
+            return;
+          }
+          final TrainingMvpState planUpdatedState = state.copyWith(
+            plans: _applyPlanAdjustments(
+              <TrainingPlan>[next.activePlan],
+              state.planAdjustments,
+            ),
+          );
+          state = planUpdatedState.copyWith(
+            coachAdvices: _aiTrainingService.buildMockCoachAdvice(
+              profile: planUpdatedState.profile,
+              todayWorkout: planUpdatedState.todayWorkout,
+              todayMealGuide: planUpdatedState.activeMealGuide,
+              latestLog: planUpdatedState.latestLog,
+              latestPainLog: planUpdatedState.latestPainLog,
+            ),
+          );
+        });
+      },
+    );
+    final TrainingScheduleState scheduleState =
+        ref.read(trainingScheduleControllerProvider);
+    ref.listen<TrainingScheduleState>(
+      trainingScheduleControllerProvider,
+      (TrainingScheduleState? previous, TrainingScheduleState next) {
+        scheduleMicrotask(() {
+          if (!ref.mounted) return;
+          final ScheduledWorkout? scheduled = next.workoutFor(DateTime.now());
+          final TrainingMvpState nextState = state.copyWith(
+            scheduledTodayWorkout: scheduled,
+            dailyAvailableMinutesOverride: scheduled?.allocatedMinutes ??
+                state.dailyAvailableMinutesOverride,
+          );
+          state = nextState.copyWith(
+            coachAdvices: _aiTrainingService.buildMockCoachAdvice(
+              profile: nextState.profile,
+              todayWorkout: nextState.todayWorkout,
+              todayMealGuide: nextState.activeMealGuide,
+              latestLog: nextState.latestLog,
+              latestPainLog: nextState.latestPainLog,
+            ),
+          );
+        });
       },
     );
     final DailyAdjustmentState dailyAdjustmentState =
@@ -2103,6 +2254,16 @@ class TrainingMvpController extends Notifier<TrainingMvpState> {
           );
           if (persisted) {
             _syncAchievementRecordsForCurrentState();
+            if (next.metrics.isNotEmpty) {
+              unawaited(
+                ref
+                    .read(growthEvidenceControllerProvider.notifier)
+                    .syncBodyMetric(
+                      profile: state.profile,
+                      metric: next.metrics.first,
+                    ),
+              );
+            }
           }
         });
       },
@@ -2111,7 +2272,9 @@ class TrainingMvpController extends Notifier<TrainingMvpState> {
     final List<PlanAdjustment> planAdjustments =
         planAdjustmentState.adjustments;
     final List<TrainingPlan> plans = _applyPlanAdjustments(
-      _planRepository.listPlans(),
+      profileState.isCompleted
+          ? <TrainingPlan>[fourWeekPlanState.activePlan]
+          : _planRepository.listPlans(),
       planAdjustments,
     );
     final List<Exercise> exercises = _exerciseRepository.listExercises();
@@ -2150,20 +2313,32 @@ class TrainingMvpController extends Notifier<TrainingMvpState> {
         _formalAiPlanRepository.isUnlocked() && savedFormalAiPlan != null;
     final List<MotionAnalysisResult> savedMotionAnalysisResults =
         _motionAnalysisRepository.listResults();
+    final ScheduledWorkout? scheduledTodayWorkout =
+        scheduleState.workoutFor(DateTime.now());
+    WorkoutDay initialWorkout = plans.first.workoutDays.first;
+    if (scheduledTodayWorkout != null) {
+      for (final TrainingPlan plan in plans) {
+        for (final WorkoutDay day in plan.workoutDays) {
+          if (day.id == scheduledTodayWorkout.workoutDayId) {
+            initialWorkout = applyScheduledWorkout(day, scheduledTodayWorkout);
+          }
+        }
+      }
+    }
     final int initialWorkoutPlayerRemainingSeconds = buildWorkoutPlayerSteps(
-      plans.first.workoutDays.first,
+      initialWorkout,
       deloaded: false,
     ).first.estimatedSeconds;
     final List<String> coachAdvices = _aiTrainingService.buildMockCoachAdvice(
       profile: profile,
-      todayWorkout: plans.first.workoutDays.first,
+      todayWorkout: initialWorkout,
       todayMealGuide: _mealGuideRepository.findByScenario(
         mealPreference.scenario,
       ),
       latestPainLog: painLogs.isEmpty ? null : painLogs.first,
     );
 
-    return TrainingMvpState(
+    final TrainingMvpState initialState = TrainingMvpState(
       profileCompleted: profileState.isCompleted,
       profile: profile,
       plans: plans,
@@ -2254,7 +2429,25 @@ class TrainingMvpController extends Notifier<TrainingMvpState> {
           ? '尚未登记周报导出；导出 Markdown 或 PNG 后会写入本地记录。'
           : '已登记 ${weeklyReportExportRecords.length} 条周报导出记录。',
       coachAdvices: coachAdvices,
+      scheduledTodayWorkout: scheduledTodayWorkout,
     );
+    final Map<String, WorkoutDay> workoutsById = <String, WorkoutDay>{
+      for (final TrainingPlan plan in plans)
+        for (final WorkoutDay workout in plan.workoutDays) workout.id: workout,
+      initialWorkout.id: initialWorkout,
+    };
+    unawaited(Future<void>.microtask(() async {
+      if (!ref.mounted) return;
+      await ref.read(growthEvidenceControllerProvider.notifier).reconcile(
+            profile: profile,
+            logs: logs,
+            bodyMetrics: bodyMetrics,
+            painLogs: painLogs,
+            workoutsById: workoutsById,
+            fallbackWorkout: initialWorkout,
+          );
+    }));
+    return initialState;
   }
 
   void importRaceText(String rawText) {
@@ -2262,14 +2455,114 @@ class TrainingMvpController extends Notifier<TrainingMvpState> {
       final RacePlan race = _raceImportService.parse(rawText);
       _raceRepository.saveRace(race);
       final List<RacePlan> races = _raceRepository.listRaces();
-      state = state.copyWith(
+      ref.invalidate(fourWeekPlanControllerProvider);
+      final FourWeekPlanState planState =
+          ref.read(fourWeekPlanControllerProvider);
+      final TrainingMvpState nextState = state.copyWith(
         races: races,
+        plans: state.profileCompleted
+            ? _applyPlanAdjustments(
+                <TrainingPlan>[planState.activePlan],
+                state.planAdjustments,
+              )
+            : state.plans,
         raceImportStatusMessage: '已导入 ${race.name}，并写入本地 races；自动排期会按比赛日期重算。',
+      );
+      state = nextState.copyWith(
+        coachAdvices: _aiTrainingService.buildMockCoachAdvice(
+          profile: nextState.profile,
+          todayWorkout: nextState.todayWorkout,
+          todayMealGuide: nextState.activeMealGuide,
+          latestLog: nextState.latestLog,
+          latestPainLog: nextState.latestPainLog,
+        ),
       );
     } on FormatException catch (error) {
       state = state.copyWith(raceImportStatusMessage: error.message);
     } catch (_) {
       state = state.copyWith(raceImportStatusMessage: '导入失败：请检查赛事文本格式。');
+    }
+  }
+
+  /// 确认正式比赛成绩。返回空值表示保存成功，否则返回可展示的中文错误。
+  String? confirmOfficialRaceResult({
+    required String raceId,
+    required String trainingLogId,
+    required String durationText,
+    DateTime? confirmedAt,
+  }) {
+    final RacePlan? race = state.findRace(raceId);
+    if (race == null) {
+      return '未找到这场比赛，请刷新后重试。';
+    }
+
+    TrainingLog? linkedLog;
+    for (final TrainingLog log in state.logs) {
+      if (log.id == trainingLogId) {
+        linkedLog = log;
+        break;
+      }
+    }
+    if (linkedLog == null) {
+      return '未找到所选训练记录，请重新选择。';
+    }
+    if (!linkedLog.canConfirmOfficialRaceResult) {
+      return '所选记录不是已完成且包含实际时长或距离的正式训练记录。';
+    }
+    if (!race.isOnRaceDate(linkedLog.date)) {
+      return '所选训练记录与比赛日期不一致，请选择比赛当天的记录。';
+    }
+
+    final int durationSeconds;
+    try {
+      durationSeconds = OfficialRaceResult.parseDurationSeconds(durationText);
+    } on FormatException catch (error) {
+      return error.message;
+    }
+
+    final RacePlan updatedRace = race.confirmOfficialRaceResult(
+      durationSeconds: durationSeconds,
+      confirmedAt: confirmedAt ?? DateTime.now(),
+      trainingLogId: linkedLog.id,
+      workoutDayId: linkedLog.workoutDayId,
+    );
+    try {
+      _raceRepository.saveRace(updatedRace);
+      state = state.copyWith(
+        races: _raceRepository.listRaces(),
+        raceImportStatusMessage:
+            '已确认 ${race.name} 的正式比赛成绩 ${updatedRace.officialRaceResult!.durationLabel}。',
+      );
+      return null;
+    } catch (_) {
+      return '正式比赛成绩保存失败，本次确认未生效，请稍后重试。';
+    }
+  }
+
+  /// 撤销正式比赛成绩确认。撤销后该成绩不再以 PB 展示。
+  String? revokeOfficialRaceResult({
+    required String raceId,
+    DateTime? revokedAt,
+  }) {
+    final RacePlan? race = state.findRace(raceId);
+    if (race == null) {
+      return '未找到这场比赛，请刷新后重试。';
+    }
+    if (!race.hasActiveOfficialRaceResult) {
+      return '这场比赛当前没有可撤销的正式成绩。';
+    }
+
+    final RacePlan updatedRace =
+        race.revokeOfficialRaceResult(revokedAt ?? DateTime.now());
+    try {
+      _raceRepository.saveRace(updatedRace);
+      state = state.copyWith(
+        races: _raceRepository.listRaces(),
+        raceImportStatusMessage: '已撤销 ${race.name} 的正式比赛成绩确认。',
+      );
+      return null;
+    } catch (_) {
+      return '正式比赛成绩撤销失败，原确认仍然保留，请稍后重试。';
     }
   }
 
@@ -2407,6 +2700,113 @@ class TrainingMvpController extends Notifier<TrainingMvpState> {
     );
   }
 
+  /// 将用户确认的云端动作评分转换为既有本地动作分析记录。
+  void applyAiMotionArtifact({
+    required AiArtifact artifact,
+    required String ruleId,
+  }) {
+    final AiMotionScore? score = artifact.motionScore;
+    final MotionCheckRule? rule = state.findMotionCheck(ruleId);
+    if (artifact.decision != AiArtifactDecision.accepted ||
+        score == null ||
+        rule == null) {
+      state = state.copyWith(
+        motionAnalysisStatusMessage: '无法应用 AI Motion 结果，请先确认评分卡和动作类型。',
+      );
+      return;
+    }
+    final MotionAnalysisResult fallback =
+        _motionAnalysisService.buildMockResult(
+      rule: rule,
+      capturedAt: artifact.generatedAt,
+      bodyProfile: rule.exerciseId == null
+          ? null
+          : state.findExercise(rule.exerciseId!)?.bodyEngineProfile,
+    );
+    final MotionRiskLevel riskLevel = motionRiskLevelFromJson(score.riskLevel);
+    final TrainingDecisionImpact suggestedImpact = switch (riskLevel) {
+      MotionRiskLevel.low => TrainingDecisionImpact.keep,
+      MotionRiskLevel.medium => TrainingDecisionImpact.deload,
+      MotionRiskLevel.high => TrainingDecisionImpact.technique,
+    };
+    final MotionAnalysisResult result = MotionAnalysisResult(
+      id: 'ai-motion-${artifact.id}',
+      sourceRuleId: rule.id,
+      type: rule.type,
+      title: '${rule.type.label}AI 图片分析',
+      score: score.score,
+      riskLevel: riskLevel,
+      capturedAt: artifact.generatedAt,
+      detectedErrors: score.detectedErrors.isEmpty
+          ? fallback.detectedErrors
+          : score.detectedErrors,
+      involvedAreas: fallback.involvedAreas,
+      bodyEngineSummary: score.corrections.isEmpty
+          ? fallback.bodyEngineSummary
+          : 'AI 建议：${score.corrections.join('；')}',
+      decisionImpact: riskLevel == MotionRiskLevel.high
+          ? 'AI 图片复核提示高风险，今天应转为技术练习或停止相关负重。'
+          : riskLevel == MotionRiskLevel.medium
+              ? 'AI 图片复核提示中风险，今天建议降级并优先处理动作质量。'
+              : 'AI 图片复核未见明显高风险，仍需按本地反馈决定训练强度。',
+      suggestedImpact: suggestedImpact,
+      replacementActions: score.replacements.isEmpty
+          ? fallback.replacementActions
+          : score.replacements,
+      evidenceSources: fallback.evidenceSources,
+      analysisSource: 'AI Motion 图片分析（用户确认上传）',
+      analysisConfidence: score.confidence,
+      angleMetrics: score.corrections,
+    );
+    _motionAnalysisRepository.saveResult(result);
+    final List<MotionAnalysisResult> results =
+        _motionAnalysisRepository.listResults();
+    state = state.copyWith(
+      motionAnalysisResults: results,
+      motionAnalysisStatusMessage:
+          '已采用 AI Motion 图片分析：${rule.type.label} · ${result.riskLevel.label}。',
+      dailyAdjustmentStatusMessage:
+          'AI Motion 已写入本地决策输入：${result.suggestedImpact.label}。',
+    );
+  }
+
+  /// 将已确认的 AI Trainer 卡片保存为本地个性化计划，不覆盖种子计划。
+  void applyAiTrainerArtifact(AiArtifact artifact) {
+    final AiTrainerPlan? plan = artifact.trainerPlan;
+    if (artifact.decision != AiArtifactDecision.accepted || plan == null) {
+      state = state.copyWith(
+        formalPlanStatusMessage: '无法采用该 AI Trainer 卡片，请先确认结果。',
+      );
+      return;
+    }
+    final List<String> weeklyFocus = <String>[
+      for (final AiTrainerWorkoutCard card in plan.workoutCards)
+        '${card.title} · ${card.durationMinutes} 分钟 · ${card.focus.join(' / ')}',
+    ];
+    final FormalAiPlan localPlan = FormalAiPlan(
+      id: 'ai-trainer-${artifact.id}',
+      generatedAt: artifact.generatedAt,
+      title: plan.cycleLabel,
+      goalLabel: state.todayWorkout.title,
+      durationLabel: '${plan.workoutCards.length} 张训练卡',
+      weeklyStructure: plan.weeklyStructure,
+      progressionRule: '每次只在动作质量、恢复和日程允许时推进一个最小变量。',
+      safetyRule: plan.safetyNotes.join('；'),
+      weeklyFocus: weeklyFocus,
+      decisionRules: <String>[
+        ...plan.safetyNotes,
+        for (final AiTrainerWorkoutCard card in plan.workoutCards)
+          card.safetyNote,
+      ],
+    );
+    _formalAiPlanRepository.savePlan(localPlan);
+    state = state.copyWith(
+      formalPlanUnlocked: true,
+      formalAiPlan: localPlan,
+      formalPlanStatusMessage: '已采用 AI Trainer 计划：${localPlan.title}。种子计划未改变。',
+    );
+  }
+
   void _analyzeMotionCheckWithPoseFrame({
     required MotionCheckRule rule,
     required MotionPoseFrame frame,
@@ -2458,13 +2858,48 @@ class TrainingMvpController extends Notifier<TrainingMvpState> {
   }
 
   void importActivityText(String rawText) {
+    _importActivity(() => _activityImportService.parse(rawText));
+  }
+
+  void importGpxDocument(String rawText, {required String fileName}) {
+    _importActivity(
+      () => _activityImportService.parseGpx(rawText, fileName: fileName),
+    );
+  }
+
+  void removeImportedRouteShape(String workoutId) {
+    final bool removed = _importedWorkoutRepository.removeRouteShape(workoutId);
+    state = state.copyWith(
+      importedWorkouts: _importedWorkoutRepository.listWorkouts(),
+      activityImportStatusMessage:
+          removed ? '本地路线数据已删除；训练摘要和成长证据继续保留。' : '这条训练没有可删除的路线数据。',
+    );
+  }
+
+  void setActivityImportStatusMessage(String message) {
+    state = state.copyWith(activityImportStatusMessage: message);
+  }
+
+  void _importActivity(ImportedWorkout Function() parseWorkout) {
     try {
-      final ImportedWorkout importedWorkout = _activityImportService.parse(
-        rawText,
+      final ImportedWorkout importedWorkout = parseWorkout();
+      final bool alreadyImported = state.importedWorkouts.any(
+        (ImportedWorkout existing) =>
+            existing.id == importedWorkout.id ||
+            (importedWorkout.sourceFingerprint.isNotEmpty &&
+                existing.sourceFingerprint ==
+                    importedWorkout.sourceFingerprint),
       );
+      if (alreadyImported) {
+        state = state.copyWith(
+          activityImportStatusMessage:
+              '这项 ${importedWorkout.source.label} 训练已导入过，未重复生成训练日志。',
+        );
+        return;
+      }
       final DateTime now = DateTime.now();
       final TrainingLog log = TrainingLog(
-        id: 'import-log-${now.millisecondsSinceEpoch}',
+        id: 'import-log-${importedWorkout.id}',
         workoutDayId: state.todayWorkout.id,
         date: importedWorkout.startedAt,
         completed: true,
@@ -2477,6 +2912,7 @@ class TrainingMvpController extends Notifier<TrainingMvpState> {
         createdAt: now,
         kind: TrainingLogKind.activityImport,
         actualDurationMinutes: importedWorkout.durationMinutes,
+        distanceKm: importedWorkout.distanceKm,
         completionPercentage: 100,
         averageHeartRate: importedWorkout.averageHeartRate,
         averagePaceSecondsPerKm: importedWorkout.distanceKm <= 0
@@ -2503,10 +2939,13 @@ class TrainingMvpController extends Notifier<TrainingMvpState> {
           latestPainLog: state.latestPainLog,
         ),
       );
+      _syncGrowthForTrainingLog(log, workout: state.todayWorkout);
     } on FormatException catch (error) {
       state = state.copyWith(activityImportStatusMessage: error.message);
     } catch (_) {
-      state = state.copyWith(activityImportStatusMessage: '导入失败：请检查文本格式。');
+      state = state.copyWith(
+        activityImportStatusMessage: '导入失败：请检查文件或摘要格式。',
+      );
     }
   }
 
@@ -2534,7 +2973,7 @@ class TrainingMvpController extends Notifier<TrainingMvpState> {
     final int nextStreak =
         (state.starterProgramStreak + 1).clamp(0, 30).toInt();
     final String message = switch (feedback) {
-      StarterProgramFeedback.tooTired => '已记录“太累了”：明天不加量，优先保住连续性。',
+      StarterProgramFeedback.tooTired => '已记录“太累了”：明天不加量，恢复优先。',
       StarterProgramFeedback.justRight => '已记录“刚好”：明天按计划推进。',
       StarterProgramFeedback.tooEasy => '已记录“太轻松”：明天只增加 1 个最小变量。',
     };
@@ -2575,7 +3014,7 @@ class TrainingMvpController extends Notifier<TrainingMvpState> {
   void postponeStarterProgramDay() {
     final TrainingMvpState nextState = state.copyWith(
       starterProgramRescueMode: false,
-      starterProgramStatusMessage: '计划已顺延：漏练不惩罚，今天仍保留当前任务。',
+      starterProgramStatusMessage: '计划已顺延：今天仍保留当前任务，完成后计入累计成长日。',
     );
     _saveStarterProgramProgress(nextState);
     state = nextState;
@@ -2584,7 +3023,7 @@ class TrainingMvpController extends Notifier<TrainingMvpState> {
   void useStarterRescueVersion() {
     final TrainingMvpState nextState = state.copyWith(
       starterProgramRescueMode: true,
-      starterProgramStatusMessage: '已切换 5 分钟补救版，完成后仍可保住连击。',
+      starterProgramStatusMessage: '已切换 5 分钟补救版，完成后计入累计成长日。',
     );
     _saveStarterProgramProgress(nextState);
     state = nextState;
@@ -2599,61 +3038,6 @@ class TrainingMvpController extends Notifier<TrainingMvpState> {
         rescueMode: nextState.starterProgramRescueMode,
         statusMessage: nextState.starterProgramStatusMessage,
       ),
-    );
-  }
-
-  void saveCurrentWeeklyReport() {
-    final WeeklyReport report = state.weeklyReport;
-    _weeklyReportRepository.saveReport(report);
-    final List<WeeklyReport> savedReports =
-        _weeklyReportRepository.listReports();
-    state = state.copyWith(
-      savedWeeklyReports: savedReports,
-      weeklyReportSaveStatusMessage:
-          '已保存 ${report.weekLabel} 周报，本地归档 ${savedReports.length} 份。',
-    );
-  }
-
-  void recordWeeklyReportMarkdownExport(String markdown) {
-    _saveWeeklyReportExportRecord(
-      format: WeeklyReportExportFormat.markdown,
-      byteCount: utf8.encode(markdown).length,
-      extension: 'md',
-    );
-  }
-
-  void recordWeeklyReportPngExport(int byteCount) {
-    _saveWeeklyReportExportRecord(
-      format: WeeklyReportExportFormat.png,
-      byteCount: byteCount,
-      extension: 'png',
-    );
-  }
-
-  void _saveWeeklyReportExportRecord({
-    required WeeklyReportExportFormat format,
-    required int byteCount,
-    required String extension,
-  }) {
-    final WeeklyReport report = state.weeklyReport;
-    final DateTime now = DateTime.now();
-    final WeeklyReportExportRecord record = WeeklyReportExportRecord(
-      id: 'weekly-report-export-${format.jsonValue}-${now.millisecondsSinceEpoch}',
-      reportId: report.id,
-      weekLabel: report.weekLabel,
-      format: format,
-      byteCount: byteCount,
-      fileName:
-          'trainflow_weekly_${_exportSafeLabel(report.weekLabel)}.$extension',
-      exportedAt: now,
-    );
-    _weeklyReportExportRepository.saveRecord(record);
-    final List<WeeklyReportExportRecord> records =
-        _weeklyReportExportRepository.listRecords();
-    state = state.copyWith(
-      weeklyReportExportRecords: records,
-      weeklyReportExportStatusMessage:
-          '已登记 ${record.format.label} 导出：${record.sizeLabel}，后续可接系统分享或保存到相册。',
     );
   }
 
@@ -2707,7 +3091,8 @@ class TrainingMvpController extends Notifier<TrainingMvpState> {
     );
   }
 
-  void startWorkoutPlayer({String? workoutDayId}) {
+  bool startWorkoutPlayer({String? workoutDayId}) {
+    if (!_ensureSkillExecutionIsCurrent()) return false;
     _stopWorkoutPlayerTimer();
     final WorkoutDay selectedWorkout = workoutDayId == null
         ? state.todayWorkout
@@ -2742,9 +3127,11 @@ class TrainingMvpController extends Notifier<TrainingMvpState> {
       workoutPlayerStatusMessage: '已进入跟练模式：可启动真实倒计时，动作、休息和语音提示按步骤推进。',
     );
     _requestScreenAwake(true);
+    return true;
   }
 
   void startWorkoutPlayerCountdown() {
+    if (!_ensureSkillExecutionIsCurrent()) return;
     if (state.workoutPlayerFinished || state.workoutPlayerTimerRunning) {
       return;
     }
@@ -2796,6 +3183,7 @@ class TrainingMvpController extends Notifier<TrainingMvpState> {
   }
 
   void _tickWorkoutPlayerCountdown() {
+    if (!_ensureSkillExecutionIsCurrent()) return;
     if (state.workoutPlayerFinished || !state.workoutPlayerTimerRunning) {
       _stopWorkoutPlayerTimer();
       return;
@@ -2829,6 +3217,7 @@ class TrainingMvpController extends Notifier<TrainingMvpState> {
   }
 
   void completeWorkoutPlayerStep({bool autoCompleted = false}) {
+    if (!_ensureSkillExecutionIsCurrent()) return;
     _stopWorkoutPlayerTimer();
     final WorkoutPlayerStep step = state.activeWorkoutPlayerStep;
     final List<WorkoutPlayerStep> steps = state.workoutPlayerSteps;
@@ -2886,6 +3275,7 @@ class TrainingMvpController extends Notifier<TrainingMvpState> {
   }
 
   void skipWorkoutPlayerStep() {
+    if (!_ensureSkillExecutionIsCurrent()) return;
     _stopWorkoutPlayerTimer();
     final WorkoutPlayerStep step = state.activeWorkoutPlayerStep;
     final List<WorkoutPlayerStep> steps = state.workoutPlayerSteps;
@@ -2941,6 +3331,7 @@ class TrainingMvpController extends Notifier<TrainingMvpState> {
   }
 
   void deloadWorkoutPlayer() {
+    if (!_ensureSkillExecutionIsCurrent()) return;
     _stopWorkoutPlayerTimer();
     final WorkoutPlayerStep step = state.activeWorkoutPlayerStep;
     final List<WorkoutPlayerStep> deloadedSteps = buildWorkoutPlayerSteps(
@@ -2974,9 +3365,70 @@ class TrainingMvpController extends Notifier<TrainingMvpState> {
         ...state.workoutPlayerEvents,
         '太累了 ${step.title}，剩余内容降级',
       ],
-      workoutPlayerStatusMessage: '已一键降级剩余内容：改为低强度版，优先保住安全和连续性。',
+      workoutPlayerStatusMessage: '已一键降级剩余内容：改为低强度版，优先保证安全和可持续执行。',
     );
     _syncAchievementRecordsForCurrentState();
+  }
+
+  bool _ensureSkillExecutionIsCurrent() {
+    final FourWeekPlanState planState =
+        ref.read(fourWeekPlanControllerProvider);
+    final String? activeVersionId = planState.activeVersionId;
+    final bool activeVersionIsSkill = activeVersionId != null &&
+        planState.history.any(
+          (version) =>
+              version.id == activeVersionId && version.isSkillGenerated,
+        );
+    if (!activeVersionIsSkill) return true;
+
+    final PreExerciseClearance? clearance =
+        ref.read(preExerciseClearanceControllerProvider).value?.clearance;
+    final DateTime now = ref.read(trainingExecutionClockProvider)();
+    if (clearance?.isValidAt(now) == true) return true;
+
+    final TrainingPlan fallbackPlan = planState.fallbackGeneration.plan;
+    if (state.activePlan.id == fallbackPlan.id) {
+      return true;
+    }
+    _switchSkillExecutionToFallback(
+      planState,
+      reason: clearance?.blockingReasonAt(now) ?? '筛查状态暂不可验证。',
+    );
+    return false;
+  }
+
+  void _switchSkillExecutionToFallback(
+    FourWeekPlanState planState, {
+    String? reason,
+  }) {
+    _stopWorkoutPlayerTimer();
+    final List<TrainingPlan> fallbackPlans = _applyPlanAdjustments(
+      <TrainingPlan>[planState.fallbackGeneration.plan],
+      state.planAdjustments,
+    );
+    final WorkoutDay fallbackWorkout = fallbackPlans.first.workoutDays.first;
+    final int remainingSeconds = buildWorkoutPlayerSteps(
+      fallbackWorkout,
+      deloaded: false,
+    ).first.estimatedSeconds;
+    state = state.copyWith(
+      plans: fallbackPlans,
+      workoutPlayerStepIndex: 0,
+      workoutPlayerDeloaded: false,
+      workoutPlayerFinished: false,
+      activeWorkoutPlayerDayId: null,
+      workoutPlayerEvents: <String>[
+        ...state.workoutPlayerEvents,
+        '筛查状态失效，旧 Skill 跟练已停止',
+      ],
+      workoutPlayerRemainingSeconds: remainingSeconds,
+      workoutPlayerTimerRunning: false,
+      workoutPlayerScreenAwakeRequested: false,
+      workoutPlayerScreenAwakeStatusMessage: '旧 Skill 跟练已停止，屏幕常亮已释放。',
+      workoutPlayerStatusMessage:
+          '${reason ?? '筛查状态当前无效。'}旧 Skill 跟练已停止，并已切换到本地安全计划。',
+    );
+    _requestScreenAwake(false);
   }
 
   void saveTodayLog({
@@ -2988,6 +3440,10 @@ class TrainingMvpController extends Notifier<TrainingMvpState> {
     final TrainingLog log = TrainingLog(
       id: 'log-${now.millisecondsSinceEpoch}',
       workoutDayId: state.todayWorkout.id,
+      planItemId:
+          state.scheduledTodayWorkout?.workoutDayId == state.todayWorkout.id
+              ? state.scheduledTodayWorkout?.id
+              : null,
       date: now,
       completed: completed,
       rpe: rpe,
@@ -3011,6 +3467,7 @@ class TrainingMvpController extends Notifier<TrainingMvpState> {
       ),
     );
     _syncAchievementRecordsForCurrentState();
+    _syncGrowthForTrainingLog(log, workout: state.todayWorkout);
   }
 
   void saveWorkoutSessionReview({
@@ -3024,6 +3481,9 @@ class TrainingMvpController extends Notifier<TrainingMvpState> {
     List<ExerciseExecutionRecord> exerciseRecords = const [],
     String? interruptionReason,
     String? userNote,
+    bool abortedByUser = false,
+    SessionFeel? sessionFeel,
+    int? focusQuality,
   }) {
     final DateTime now = DateTime.now();
     final int safeDuration = actualDurationMinutes.clamp(5, 360).toInt();
@@ -3038,15 +3498,40 @@ class TrainingMvpController extends Notifier<TrainingMvpState> {
         List<ExerciseExecutionRecord>.unmodifiable(
       exerciseRecords.map((ExerciseExecutionRecord item) {
         final String exerciseId = item.exerciseId?.trim() ?? '';
+        final List<StrengthSetExecutionRecord> safeSets =
+            List<StrengthSetExecutionRecord>.unmodifiable(
+          item.sets.indexed.map(
+            ((int, StrengthSetExecutionRecord) indexed) {
+              final StrengthSetExecutionRecord set = indexed.$2;
+              final double? rpe = set.rpe;
+              final int? durationSeconds = set.durationSeconds;
+              return StrengthSetExecutionRecord(
+                setIndex: indexed.$1 + 1,
+                repetitions: set.repetitions.clamp(0, 999).toInt(),
+                weightKg: set.weightKg.clamp(0, 500).toDouble(),
+                rpe: rpe?.clamp(1, 10).toDouble(),
+                durationSeconds: durationSeconds?.clamp(1, 3600).toInt(),
+              );
+            },
+          ),
+        );
         return ExerciseExecutionRecord(
           exerciseId: exerciseId.isEmpty ? null : exerciseId,
           exerciseName: item.exerciseName.trim().isEmpty
               ? '未命名动作'
               : item.exerciseName.trim(),
           plannedSetCount: item.plannedSetCount.clamp(0, 99).toInt(),
-          completedSetCount: item.completedSetCount.clamp(0, 99).toInt(),
+          completedSetCount: safeSets.isEmpty
+              ? item.completedSetCount.clamp(0, 99).toInt()
+              : safeSets.length,
           repetitionsPerSet: item.repetitionsPerSet.clamp(0, 999).toInt(),
-          weightKg: item.weightKg.clamp(0, 500).toDouble(),
+          weightKg: safeSets.isEmpty
+              ? item.weightKg.clamp(0, 500).toDouble()
+              : safeSets
+                  .map((StrengthSetExecutionRecord set) => set.weightKg)
+                  .reduce((double first, double second) =>
+                      first > second ? first : second),
+          sets: safeSets,
         );
       }),
     );
@@ -3057,6 +3542,10 @@ class TrainingMvpController extends Notifier<TrainingMvpState> {
     final TrainingLog log = TrainingLog(
       id: 'session-review-${state.activeWorkoutPlayerWorkout.id}-$dayKey',
       workoutDayId: state.activeWorkoutPlayerWorkout.id,
+      planItemId: state.scheduledTodayWorkout?.workoutDayId ==
+              state.activeWorkoutPlayerWorkout.id
+          ? state.scheduledTodayWorkout?.id
+          : null,
       date: now,
       completed: safeCompletion == 100,
       rpe: safeRpe,
@@ -3075,10 +3564,19 @@ class TrainingMvpController extends Notifier<TrainingMvpState> {
       plannedSetCount: safePlannedSets,
       completedSetCount: safeCompletedSets,
       interruptionReason: reason.isEmpty ? null : reason,
+      downgradeAccepted: state.workoutPlayerDeloaded,
+      abortedByUser: abortedByUser && safeCompletion < 100,
       exerciseRecords: safeExerciseRecords,
+      sessionFeel: sessionFeel,
+      focusQuality: focusQuality?.clamp(1, 5).toInt(),
     );
     final List<TrainingLog> logs =
         ref.read(trainingLogControllerProvider.notifier).save(log);
+    final CoachFeedback feedback =
+        const CoachFeedbackPolicy().buildTrainingReceipt(
+      current: log,
+      workoutLabel: state.activeWorkoutPlayerWorkout.title,
+    );
     state = state.copyWith(
       logs: logs,
       coachAdvices: _aiTrainingService.buildMockCoachAdvice(
@@ -3088,9 +3586,180 @@ class TrainingMvpController extends Notifier<TrainingMvpState> {
         latestLog: logs.first,
         latestPainLog: state.latestPainLog,
       ),
-      workoutPlayerStatusMessage: '已保存训练反馈：${log.sessionReviewSummary}。',
+      workoutPlayerStatusMessage: feedback.text,
     );
     _syncAchievementRecordsForCurrentState();
+    _syncGrowthForTrainingLog(
+      log,
+      workout: state.activeWorkoutPlayerWorkout,
+    );
+    unawaited(ref.read(petControllerProvider.notifier).refreshToday());
+  }
+
+  TrainingLog saveTrainingRecord(TrainingRecordSaveRequest request) {
+    request.validate();
+    final DateTime createdAt = DateTime.now();
+    final String dayKey =
+        '${request.date.year}${request.date.month.toString().padLeft(2, '0')}'
+        '${request.date.day.toString().padLeft(2, '0')}';
+    final String recordId = request.source == TrainingRecordSource.planned
+        ? 'session-review-${request.workoutDayId.trim()}-$dayKey'
+        : 'session-review-extra-${createdAt.microsecondsSinceEpoch}';
+    final String? planItemId = request.source == TrainingRecordSource.planned
+        ? request.planItemId ??
+            (state.scheduledTodayWorkout?.workoutDayId == request.workoutDayId
+                ? state.scheduledTodayWorkout?.id
+                : null)
+        : null;
+    final List<ExerciseExecutionRecord> exerciseRecords =
+        List<ExerciseExecutionRecord>.unmodifiable(
+      request.exerciseRecords.map(_normalizedExerciseRecord),
+    );
+    final String customActivityName = request.customActivityName?.trim() ?? '';
+    final String deviceWorkoutId = request.deviceWorkoutId?.trim() ?? '';
+    final String reason = request.interruptionReason?.trim() ?? '';
+    final String note = request.userNote?.trim() ?? '';
+    final TrainingLog log = TrainingLog(
+      id: recordId,
+      workoutDayId: request.workoutDayId.trim(),
+      planItemId: planItemId,
+      date: request.date,
+      completed: request.completionPercentage == 100,
+      rpe: request.rpe,
+      fatigueLevel: request.rpe,
+      sleepQuality: 7,
+      painNote: state.latestPainLog == null
+          ? null
+          : '${state.latestPainLog!.bodyPart} ${state.latestPainLog!.painLevel}/10',
+      userNote: note.isEmpty ? null : note,
+      createdAt: createdAt,
+      kind: TrainingLogKind.sessionReview,
+      actualDurationMinutes: request.actualDurationMinutes,
+      completionPercentage: request.completionPercentage,
+      averageHeartRate: request.averageHeartRate,
+      averagePaceSecondsPerKm: request.averagePaceSecondsPerKm,
+      plannedSetCount: request.plannedSetCount,
+      completedSetCount: request.completedSetCount,
+      interruptionReason: reason.isEmpty ? null : reason,
+      downgradeAccepted: request.source == TrainingRecordSource.planned &&
+          state.workoutPlayerDeloaded,
+      abortedByUser:
+          request.abortedByUser && request.completionPercentage < 100,
+      exerciseRecords: exerciseRecords,
+      sessionFeel: request.sessionFeel,
+      focusQuality: request.focusQuality,
+      activityType: request.activityType,
+      customActivityName:
+          customActivityName.isEmpty ? null : customActivityName,
+      energyKcal: request.energyKcal,
+      energySource: request.energySource,
+      deviceWorkoutId: deviceWorkoutId.isEmpty ? null : deviceWorkoutId,
+    );
+    final List<TrainingLog> logs =
+        ref.read(trainingLogControllerProvider.notifier).save(log);
+    final WorkoutDay relatedWorkout =
+        state.findWorkoutDay(request.workoutDayId) ?? state.todayWorkout;
+    final String workoutLabel =
+        request.activityType == TrainingActivityType.custom
+            ? customActivityName
+            : request.activityType.label;
+    final CoachFeedback feedback =
+        const CoachFeedbackPolicy().buildTrainingReceipt(
+      current: log,
+      workoutLabel: workoutLabel,
+    );
+    state = state.copyWith(
+      logs: logs,
+      coachAdvices: _aiTrainingService.buildMockCoachAdvice(
+        profile: state.profile,
+        todayWorkout: relatedWorkout,
+        todayMealGuide: state.activeMealGuide,
+        latestLog: logs.first,
+        latestPainLog: state.latestPainLog,
+      ),
+      workoutPlayerStatusMessage: feedback.text,
+    );
+    _syncAchievementRecordsForCurrentState();
+    _syncGrowthForTrainingLog(log, workout: relatedWorkout);
+    unawaited(ref.read(petControllerProvider.notifier).refreshToday());
+    return log;
+  }
+
+  void savePsychologyWeeklyReport({
+    required WeeklyPsychCheckIn psychCheckIn,
+  }) {
+    final WeeklyReport report = WeeklyReportService().buildWeeklyReport(
+      profile: state.profile,
+      todayWorkout: state.todayWorkout,
+      logs: state.logs,
+      bodyMetrics: state.bodyMetrics,
+      readinessScore: state.readinessScore,
+      trainingStatusLabel: state.trainingStatusLabel,
+      trainingStatusReason: state.trainingStatusReason,
+      recoveryCountdownLabel: state.recoveryCountdownLabel,
+      recoveryAdvice: state.recoveryAdvice,
+      achievementSummaryLabel: state.achievementSummaryLabel,
+      psychCheckIn: psychCheckIn,
+      plannedWorkoutsForWeek: state.activePlan.workoutDays
+          .where(
+            (WorkoutDay workout) =>
+                workout.weekIndex == state.todayWorkout.weekIndex,
+          )
+          .toList(growable: false),
+    );
+    _weeklyReportRepository.saveReport(report);
+    state = state.copyWith(
+      savedWeeklyReports: _weeklyReportRepository.listReports(),
+      weeklyReportSaveStatusMessage: '周报状态已保存在本地，可继续选择下周方向。',
+    );
+  }
+
+  void selectWeeklyReportOption({
+    required String reportId,
+    required String optionId,
+  }) {
+    WeeklyReport? target;
+    for (final WeeklyReport report in state.savedWeeklyReports) {
+      if (report.id == reportId) {
+        target = report;
+        break;
+      }
+    }
+    if (target == null ||
+        !target.options.any((WeeklyReportOption item) => item.id == optionId)) {
+      state = state.copyWith(
+        weeklyReportSaveStatusMessage: '下周方向保存失败：选项不存在。',
+      );
+      return;
+    }
+    _weeklyReportRepository.saveReport(
+      target.copyWith(selectedOptionId: optionId),
+    );
+    state = state.copyWith(
+      savedWeeklyReports: _weeklyReportRepository.listReports(),
+      weeklyReportSaveStatusMessage: '已保存你选择的下周方向。',
+    );
+  }
+
+  void _syncGrowthForTrainingLog(
+    TrainingLog log, {
+    required WorkoutDay workout,
+  }) {
+    PainLog? painLog;
+    for (final PainLog item in state.painLogs) {
+      if (_isSameDate(item.date, log.date)) {
+        painLog = item;
+        break;
+      }
+    }
+    unawaited(
+      ref.read(growthEvidenceControllerProvider.notifier).syncTrainingLog(
+            profile: state.profile,
+            log: log,
+            workout: workout,
+            painLog: painLog,
+          ),
+    );
   }
 
   List<TrainingLog> _saveWorkoutPlayerLog({
@@ -3102,6 +3771,10 @@ class TrainingMvpController extends Notifier<TrainingMvpState> {
     final TrainingLog log = TrainingLog(
       id: 'player-log-${now.millisecondsSinceEpoch}',
       workoutDayId: state.activeWorkoutPlayerWorkout.id,
+      planItemId: state.scheduledTodayWorkout?.workoutDayId ==
+              state.activeWorkoutPlayerWorkout.id
+          ? state.scheduledTodayWorkout?.id
+          : null,
       date: now,
       completed: completed,
       rpe: rpe,
@@ -3147,15 +3820,6 @@ String _formatBytes(int bytes) {
   final double kilobytes = bytes / 1024;
   final int digits = kilobytes >= 10 ? 0 : 1;
   return '${kilobytes.toStringAsFixed(digits)} KB';
-}
-
-String _exportSafeLabel(String value) {
-  final String normalized = value
-      .trim()
-      .toLowerCase()
-      .replaceAll(RegExp(r'[^a-z0-9]+'), '_')
-      .replaceAll(RegExp(r'^_+|_+$'), '');
-  return normalized.isEmpty ? 'report' : normalized;
 }
 
 List<TrainingPlan> _applyPlanAdjustments(

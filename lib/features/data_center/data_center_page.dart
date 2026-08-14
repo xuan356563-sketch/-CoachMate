@@ -6,6 +6,8 @@ import 'package:go_router/go_router.dart';
 
 import '../../app/router/app_routes.dart';
 import '../../core/constants/app_colors.dart';
+import '../../core/widgets/trainmate_action_character.dart';
+import '../../core/widgets/trainmate_showcase_widgets.dart';
 import '../../core/widgets/trainflow_widgets.dart';
 import '../../data/models/body_data_quality.dart';
 import '../../data/models/body_metric.dart';
@@ -30,7 +32,19 @@ class DataCenterPage extends ConsumerWidget {
 
     return TrainFlowPage(
       title: '身体数据',
+      layout: TrainFlowPageLayout.report,
       subtitle: '10 秒快录体重、静息心率、HRV、睡眠和疲劳，默认看 7 日趋势，也可切换 30/90 日窗口。',
+      leading: const TrainMateBackButton(
+        fallbackRoute: AppRoutes.profile,
+      ),
+      artwork: const TrainMateIllustration(
+        assetPath: 'assets/images/trainmate_data_shield.png',
+        semanticLabel: '身体数据授权与保护插画',
+        fallback: TrainMateActionCharacter(
+          action: TrainMateAction.treePoseBalance,
+          backgroundColor: AppColors.primary,
+        ),
+      ),
       children: [
         _BodyMetricSummaryCard(state: state),
         _BodyDataQualityCard(report: state.bodyDataQualityReport),
@@ -101,7 +115,7 @@ class _ActivityImportPreviewCard extends StatelessWidget {
           Align(
             alignment: Alignment.centerRight,
             child: TextButton(
-              onPressed: () => context.go(AppRoutes.activityImport),
+              onPressed: () => context.push(AppRoutes.activityImport),
               child: const Text('打开导入'),
             ),
           ),
@@ -465,7 +479,37 @@ class _BodyMetricExportCard extends ConsumerWidget {
                 label: const Text('清除导出记录'),
               ),
               OutlinedButton.icon(
-                onPressed: () {
+                onPressed: () async {
+                  final bool? confirmed = await showDialog<bool>(
+                    context: context,
+                    builder: (BuildContext dialogContext) {
+                      return AlertDialog(
+                        title: const Text('清除全部身体数据？'),
+                        content: const Text(
+                          '这会删除 TrainMate 本地保存的身体记录和修订历史，且无法撤销。'
+                          '不会删除 Apple 健康中的原始数据，也不会清除训练记录。',
+                        ),
+                        actions: [
+                          TextButton(
+                            onPressed: () =>
+                                Navigator.of(dialogContext).pop(false),
+                            child: const Text('取消'),
+                          ),
+                          FilledButton(
+                            style: FilledButton.styleFrom(
+                              backgroundColor: AppColors.danger,
+                            ),
+                            onPressed: () =>
+                                Navigator.of(dialogContext).pop(true),
+                            child: const Text('确认清除'),
+                          ),
+                        ],
+                      );
+                    },
+                  );
+                  if (confirmed != true || !context.mounted) {
+                    return;
+                  }
                   ref.read(bodyMetricControllerProvider.notifier).clear();
                   ref
                       .read(bodyMetricExportTextProvider.notifier)
@@ -960,6 +1004,21 @@ class _QuickBodyMetricCard extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final BodyMetric? currentMetric = state.latestBodyMetric;
+    if (currentMetric == null) {
+      return const TrainFlowCard(
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              '10 秒快录',
+              style: TextStyle(fontWeight: FontWeight.w800),
+            ),
+            SizedBox(height: 8),
+            Text('尚未建立身体数据基线，快捷录入不会显示或预填示例值。请先使用完整截图或 CSV，并确认后再保存。'),
+          ],
+        ),
+      );
+    }
     final double weight = ref.watch(bodyMetricWeightProvider);
     final int restingHr = ref.watch(bodyMetricRestingHrProvider);
     final int hrv = ref.watch(bodyMetricHrvProvider);
@@ -1128,15 +1187,13 @@ class _QuickBodyMetricCard extends ConsumerWidget {
                       : AppColors.warningDark,
                 ),
           ),
-          if (currentMetric != null) ...[
-            const SizedBox(height: 8),
-            Text(
-              '上次记录：${currentMetric.measuredDateLabel} · ${currentMetric.weightKg.toStringAsFixed(1)} kg',
-              style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                    color: AppColors.textSecondary,
-                  ),
-            ),
-          ],
+          const SizedBox(height: 8),
+          Text(
+            '上次记录：${currentMetric.measuredDateLabel} · ${currentMetric.weightKg.toStringAsFixed(1)} kg',
+            style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                  color: AppColors.textSecondary,
+                ),
+          ),
         ],
       ),
     );
@@ -1158,7 +1215,10 @@ class _TrendCard extends StatelessWidget {
     final BodyMetric? latestMetric =
         windowMetrics.isEmpty ? null : windowMetrics.first;
     if (latestMetric == null) {
-      return const TrainFlowCard(child: Text('暂无趋势数据。'));
+      return const TrainFlowCard(
+        cornerCharacterAction: TrainMateAction.treePoseBalance,
+        child: Text('暂无趋势数据。'),
+      );
     }
     final List<_BodyMetricTrendPoint> trendPoints = windowMetrics.reversed
         .map(

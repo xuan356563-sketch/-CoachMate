@@ -1,11 +1,16 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../app/router/app_routes.dart';
 import '../../core/constants/app_colors.dart';
+import '../../core/widgets/trainmate_action_character.dart';
 import '../../core/widgets/trainflow_widgets.dart';
 import '../../data/models/daily_adjustment.dart';
 import '../../data/models/workout_day.dart';
 import '../dashboard/training_mvp_controller.dart';
+import '../pet/application/pet_controller.dart';
 import 'application/daily_adjustment_controller.dart';
 
 class DailyAdjustmentPage extends ConsumerWidget {
@@ -15,12 +20,32 @@ class DailyAdjustmentPage extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final TrainingMvpState state = ref.watch(trainingMvpProvider);
     final DailyAdjustmentDecision decision = state.dailyAdjustmentDecision;
+    final TrainMateAction characterAction = switch (decision.decisionType) {
+      TrainingDecisionType.normal => TrainMateAction.highKnees,
+      TrainingDecisionType.deload => TrainMateAction.sideLungeStretch,
+      TrainingDecisionType.technique => TrainMateAction.squat,
+      TrainingDecisionType.recovery ||
+      TrainingDecisionType.rest =>
+        TrainMateAction.seatedMeditation,
+    };
 
     return TrainFlowPage(
       title: '每日调整',
+      layout: TrainFlowPageLayout.form,
       subtitle: '把身体状态和现实约束合并，给出今天是否正常、降级、恢复、技术或休息。',
+      leading: const TrainMateBackButton(
+        fallbackRoute: AppRoutes.dashboard,
+      ),
+      artwork: TrainMateActionCharacter(
+        action: characterAction,
+        backgroundColor: AppColors.primary,
+      ),
       children: [
-        _DecisionSummaryCard(decision: decision, state: state),
+        _DecisionSummaryCard(
+          decision: decision,
+          state: state,
+          characterAction: characterAction,
+        ),
         _RealityConstraintCard(state: state),
         _AdjustmentStepsCard(decision: decision),
         _ApplyAdjustmentCard(state: state),
@@ -32,15 +57,18 @@ class DailyAdjustmentPage extends ConsumerWidget {
 class _DecisionSummaryCard extends StatelessWidget {
   final DailyAdjustmentDecision decision;
   final TrainingMvpState state;
+  final TrainMateAction characterAction;
 
   const _DecisionSummaryCard({
     required this.decision,
     required this.state,
+    required this.characterAction,
   });
 
   @override
   Widget build(BuildContext context) {
     return TrainFlowCard(
+      cornerCharacterAction: characterAction,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -374,6 +402,9 @@ class _ApplyAdjustmentCard extends ConsumerWidget {
                     .read(dailyAdjustmentControllerProvider.notifier)
                     .applyDailyAdjustmentDecision(
                         state.dailyAdjustmentDecision);
+                unawaited(
+                  ref.read(petControllerProvider.notifier).refreshToday(),
+                );
               },
               icon: const Icon(Icons.task_alt),
               label: const Text('应用今日调整'),

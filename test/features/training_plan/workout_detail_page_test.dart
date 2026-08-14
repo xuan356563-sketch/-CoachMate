@@ -10,8 +10,7 @@ import 'package:trainflow_ai/features/training_plan/workout_detail_page.dart';
 import 'package:trainflow_ai/services/local_storage_service.dart';
 
 void main() {
-  testWidgets('详情页通过计划调整控制器保存并恢复训练日',
-      (WidgetTester tester) async {
+  testWidgets('详情页通过计划调整控制器保存并恢复训练日', (WidgetTester tester) async {
     final InMemoryLocalStorageService storage = InMemoryLocalStorageService();
     final ProviderContainer container = ProviderContainer(
       overrides: [
@@ -40,6 +39,9 @@ void main() {
     );
     await tester.pumpAndSettle();
 
+    expect(find.textContaining('训练是伙伴的主食'), findsOneWidget);
+    expect(find.textContaining('完成度达到 50%'), findsOneWidget);
+
     await tester.tap(find.text('手动调整本次计划'));
     await tester.pumpAndSettle();
     await tester.enterText(
@@ -59,7 +61,8 @@ void main() {
     expect(adjusted.findWorkoutDay(workout.id)?.estimatedMinutes, 20);
     expect(find.text('当前调整：20 分钟 · ${workout.intensity}'), findsOneWidget);
     expect(
-      find.text('已记录为本地学习信号：${workout.title} 调整为 20 分钟 · ${workout.intensity}。'),
+      find.text(
+          '已记录为本地学习信号：${workout.title} 调整为 20 分钟 · ${workout.intensity}。'),
       findsOneWidget,
     );
 

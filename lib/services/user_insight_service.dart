@@ -30,7 +30,7 @@ class UserInsightService {
           id: 'event-starter-$starterProgramStreak',
           type: ProfileEventType.starterProgress,
           title: '30 天引导进度',
-          detail: '已连续完成 $starterProgramStreak 天。',
+          detail: '已累计完成 $starterProgramStreak 天。',
           occurredAt: DateTime.now(),
         ),
       for (final TrainingLog log in logs.take(6))

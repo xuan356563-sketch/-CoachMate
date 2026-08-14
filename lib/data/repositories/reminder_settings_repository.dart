@@ -42,6 +42,8 @@ class InMemoryReminderSettingsRepository implements ReminderSettingsRepository {
       enabled: settings.enabled,
       preferredTimeLabel:
           normalizedTimeLabel.isEmpty ? '20:30' : normalizedTimeLabel,
+      followSchedule: settings.followSchedule,
+      leadMinutes: settings.leadMinutes.clamp(15, 60),
     );
   }
 }
@@ -105,6 +107,8 @@ class PersistedReminderSettingsRepository
       enabled: settings.enabled,
       preferredTimeLabel:
           normalizedTimeLabel.isEmpty ? '20:30' : normalizedTimeLabel,
+      followSchedule: settings.followSchedule,
+      leadMinutes: settings.leadMinutes.clamp(15, 60),
     );
   }
 }

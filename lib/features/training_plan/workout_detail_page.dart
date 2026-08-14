@@ -4,8 +4,11 @@ import 'package:go_router/go_router.dart';
 
 import '../../app/router/app_routes.dart';
 import '../../core/constants/app_colors.dart';
+import '../../core/widgets/trainmate_action_character.dart';
+import '../../core/widgets/trainmate_action_mappings.dart';
 import '../../core/widgets/trainflow_widgets.dart';
 import '../../data/models/exercise.dart';
+import '../../data/models/exercise_training_profile.dart';
 import '../../data/models/plan_adjustment.dart';
 import '../../data/models/workout_day.dart';
 import '../dashboard/training_mvp_controller.dart';
@@ -27,13 +30,25 @@ class WorkoutDetailPage extends ConsumerWidget {
     final WorkoutDay? workout = state.findWorkoutDay(workoutDayId);
 
     if (workout == null) {
-      return const TrainFlowPage(
+      return TrainFlowPage(
         title: '训练日不存在',
-        children: [
-          TrainFlowCard(child: Text('没有找到对应训练日。')),
+        leading: TrainMateBackButton(
+          fallbackRoute: AppRoutes.planDetail(planId),
+        ),
+        artwork: const TrainMateActionCharacter(
+          action: TrainMateAction.seatedMeditation,
+          backgroundColor: AppColors.primary,
+        ),
+        children: const [
+          TrainFlowCard(
+            cornerCharacterAction: TrainMateAction.seatedMeditation,
+            child: Text('没有找到对应训练日。'),
+          ),
         ],
       );
     }
+    final TrainMateAction characterAction =
+        trainMateActionForTrainingType(workout.trainingType);
     final PlanAdjustment? latestAdjustment =
         state.latestPlanAdjustmentFor(workout.id);
     final bool hasActiveAdjustment = latestAdjustment?.isActive ?? false;
@@ -41,8 +56,16 @@ class WorkoutDetailPage extends ConsumerWidget {
     return TrainFlowPage(
       title: workout.title,
       subtitle: '第 ${workout.weekIndex} 周 · 第 ${workout.dayIndex} 天',
+      leading: TrainMateBackButton(
+        fallbackRoute: AppRoutes.planDetail(planId),
+      ),
+      artwork: TrainMateActionCharacter(
+        action: characterAction,
+        backgroundColor: AppColors.primary,
+      ),
       children: [
         TrainFlowCard(
+          cornerCharacterAction: characterAction,
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
@@ -64,6 +87,24 @@ class WorkoutDetailPage extends ConsumerWidget {
               const SizedBox(height: 14),
               InfoRow(label: '预计时长', value: '${workout.estimatedMinutes} 分钟'),
               InfoRow(label: '教练提示', value: workout.coachNotes),
+              if (!workout.dimensionFocus.isEmpty) ...[
+                const SizedBox(height: 10),
+                Wrap(
+                  spacing: 8,
+                  runSpacing: 8,
+                  children: <Widget>[
+                    for (final TrainingDimension dimension
+                        in workout.dimensionFocus.primary)
+                      ToneBadge(
+                        label: '主维度 · ${dimension.label}',
+                        color: AppColors.primary,
+                      ),
+                    for (final TrainingDimension dimension
+                        in workout.dimensionFocus.touch)
+                      ToneBadge(label: '触达 · ${dimension.label}'),
+                  ],
+                ),
+              ],
               if (hasActiveAdjustment) ...[
                 const SizedBox(height: 10),
                 DecoratedBox(
@@ -117,14 +158,48 @@ class WorkoutDetailPage extends ConsumerWidget {
                     ),
               ),
               const SizedBox(height: 12),
+              const DecoratedBox(
+                decoration: BoxDecoration(
+                  color: AppColors.primaryLightest,
+                  borderRadius: BorderRadius.all(Radius.circular(8)),
+                ),
+                child: Padding(
+                  padding: EdgeInsets.all(10),
+                  child: Row(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: <Widget>[
+                      Icon(Icons.pets_outlined, size: 20),
+                      SizedBox(width: 8),
+                      Expanded(
+                        child: Text(
+                          '训练是伙伴的主食；保存真实训练反馈且完成度达到 50% 后，才会结算伙伴能量。',
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+              const SizedBox(height: 12),
               SizedBox(
                 width: double.infinity,
                 child: FilledButton.icon(
                   onPressed: () {
-                    ref
+                    final bool started = ref
                         .read(trainingMvpProvider.notifier)
                         .startWorkoutPlayer(workoutDayId: workout.id);
-                    context.go(AppRoutes.workoutPlayer);
+                    if (started) {
+                      context.push(AppRoutes.workoutPlayer);
+                    } else {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        SnackBar(
+                          content: Text(
+                            ref
+                                .read(trainingMvpProvider)
+                                .workoutPlayerStatusMessage,
+                          ),
+                        ),
+                      );
+                    }
                   },
                   icon: const Icon(Icons.play_arrow),
                   label: const Text('开始跟练'),
@@ -515,6 +590,30 @@ class _WorkoutExerciseLinkRow extends StatelessWidget {
                       color: AppColors.textSecondary,
                     ),
               ),
+              if (exercise != null) ...[
+                const SizedBox(height: 6),
+                Wrap(
+                  spacing: 6,
+                  runSpacing: 6,
+                  children: <Widget>[
+                    if (link.tempo != null)
+                      ToneBadge(label: '节奏 ${link.tempo}'),
+                    ToneBadge(label: link.executionIntent.label),
+                    for (final LegTrainingElement element
+                        in exercise!.trainingStructureProfile.legElements)
+                      ToneBadge(label: element.label),
+                  ],
+                ),
+                if (link.breathingCue != null) ...[
+                  const SizedBox(height: 6),
+                  Text(
+                    '呼吸：${link.breathingCue}',
+                    style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                          color: AppColors.textSecondary,
+                        ),
+                  ),
+                ],
+              ],
             ],
           ),
         ),

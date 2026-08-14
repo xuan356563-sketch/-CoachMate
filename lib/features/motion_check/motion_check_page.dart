@@ -3,33 +3,430 @@ import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:image_picker/image_picker.dart';
 
 import '../../app/router/app_routes.dart';
 import '../../core/constants/app_colors.dart';
+import '../../core/widgets/trainmate_action_character.dart';
 import '../../core/widgets/trainflow_widgets.dart';
+import '../../data/models/ai_artifact.dart';
 import '../../data/models/evidence_source.dart';
 import '../../data/models/exercise.dart';
 import '../../data/models/motion_check.dart';
+import '../../data/models/motion_pose.dart';
 import '../../services/motion_pose_analysis_service.dart';
 import '../dashboard/training_mvp_controller.dart';
+import '../ai_center/application/ai_artifact_controller.dart';
+import 'application/motion_image_analysis_controller.dart';
 
-class MotionCheckPage extends ConsumerWidget {
+class MotionCheckPage extends ConsumerStatefulWidget {
   const MotionCheckPage({super.key});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<MotionCheckPage> createState() => _MotionCheckPageState();
+}
+
+class _MotionCheckPageState extends ConsumerState<MotionCheckPage> {
+  int _section = 0;
+
+  @override
+  Widget build(BuildContext context) {
     final TrainingMvpState state = ref.watch(trainingMvpProvider);
 
     return TrainFlowPage(
       title: '动作纠错',
-      subtitle: '先用本地规则模拟 Motion Vision → Body Engine → 决策输入。',
+      layout: TrainFlowPageLayout.form,
+      subtitle: '照片先在设备端提取关键点，确认后才发起云端图片复核。',
+      leading: const TrainMateBackButton(
+        fallbackRoute: AppRoutes.exercises,
+      ),
+      artwork: const TrainMateActionCharacter(
+        action: TrainMateAction.squat,
+        backgroundColor: AppColors.primary,
+      ),
       children: [
-        _MotionPipelineCard(state: state),
-        for (final MotionCheckRule rule in state.motionChecks)
-          _MotionRuleCard(rule: rule),
+        SegmentedButton<int>(
+          segments: const [
+            ButtonSegment(
+                value: 0, icon: Icon(Icons.add_a_photo), label: Text('照片识别')),
+            ButtonSegment(
+                value: 1, icon: Icon(Icons.rule), label: Text('纠错规则')),
+            ButtonSegment(
+                value: 2, icon: Icon(Icons.history), label: Text('分析记录')),
+          ],
+          selected: <int>{_section},
+          onSelectionChanged: (Set<int> value) =>
+              setState(() => _section = value.first),
+        ),
+        if (_section == 0) ...[
+          _MotionPhotoRecognitionCard(rules: state.motionChecks),
+          _MotionPipelineCard(state: state),
+        ] else if (_section == 1)
+          for (final MotionCheckRule rule in state.motionChecks)
+            _MotionRuleCard(rule: rule)
+        else if (state.motionAnalysisResults.isEmpty)
+          const TrainFlowCard(
+            cornerCharacterAction: TrainMateAction.squat,
+            child: Text('还没有动作分析记录。'),
+          )
+        else
+          for (final MotionAnalysisResult result in state.motionAnalysisResults)
+            TrainFlowCard(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(result.title,
+                      style: const TextStyle(fontWeight: FontWeight.w800)),
+                  const SizedBox(height: 8),
+                  InfoRow(label: '评分', value: '${result.score} 分'),
+                  InfoRow(label: '风险', value: result.riskLevel.label),
+                  InfoRow(label: '来源', value: result.analysisSource),
+                ],
+              ),
+            ),
       ],
     );
   }
+}
+
+class _MotionPhotoRecognitionCard extends ConsumerWidget {
+  final List<MotionCheckRule> rules;
+
+  const _MotionPhotoRecognitionCard({required this.rules});
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final MotionImageAnalysisState state =
+        ref.watch(motionImageAnalysisControllerProvider);
+    final AiArtifactState aiState = ref.watch(aiArtifactControllerProvider);
+    final controller = ref.read(motionImageAnalysisControllerProvider.notifier);
+    final MotionPoseAnalysis? analysis = state.analysis;
+    final AiArtifact? aiArtifact = aiState.latestFor(AiCapability.motion);
+    return TrainFlowCard(
+      tone: TrainFlowCardTone.peach,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text('照片动作识别',
+              style: Theme.of(context)
+                  .textTheme
+                  .titleLarge
+                  ?.copyWith(fontWeight: FontWeight.w800)),
+          const SizedBox(height: 10),
+          DropdownButtonFormField<String>(
+            initialValue: state.ruleId,
+            decoration: const InputDecoration(labelText: '选择纠错动作'),
+            items: [
+              for (final MotionCheckRule rule in rules)
+                DropdownMenuItem(value: rule.id, child: Text(rule.type.label)),
+            ],
+            onChanged: state.isBusy
+                ? null
+                : (String? value) {
+                    if (value == null) return;
+                    controller.selectRule(
+                      rules.firstWhere(
+                          (MotionCheckRule item) => item.id == value),
+                    );
+                  },
+          ),
+          const SizedBox(height: 12),
+          Row(
+            children: [
+              Expanded(
+                child: FilledButton.icon(
+                  onPressed: state.isBusy
+                      ? null
+                      : () => controller.pickAndAnalyze(ImageSource.camera),
+                  icon: const Icon(Icons.photo_camera),
+                  label: const Text('拍照识别'),
+                ),
+              ),
+              const SizedBox(width: 10),
+              Expanded(
+                child: OutlinedButton.icon(
+                  onPressed: state.isBusy
+                      ? null
+                      : () => controller.pickAndAnalyze(ImageSource.gallery),
+                  icon: const Icon(Icons.photo_library_outlined),
+                  label: const Text('从相册选择'),
+                ),
+              ),
+            ],
+          ),
+          if (state.isBusy) ...[
+            const SizedBox(height: 12),
+            const LinearProgressIndicator(),
+          ],
+          if (state.imageBytes != null) ...[
+            const SizedBox(height: 12),
+            AspectRatio(
+              aspectRatio: 3 / 4,
+              child: ClipRRect(
+                borderRadius: BorderRadius.circular(8),
+                child: Stack(
+                  fit: StackFit.expand,
+                  children: [
+                    Image.memory(state.imageBytes!, fit: BoxFit.contain),
+                    if (state.frame != null)
+                      CustomPaint(painter: _PoseOverlayPainter(state.frame!)),
+                  ],
+                ),
+              ),
+            ),
+          ],
+          const SizedBox(height: 10),
+          Text(state.statusMessage),
+          if (analysis != null) ...[
+            const Divider(height: 24),
+            InfoRow(label: '评分', value: '${analysis.score} 分'),
+            InfoRow(label: '风险', value: analysis.riskLevel.label),
+            InfoRow(
+              label: '置信度',
+              value: '${(analysis.confidence * 100).round()}%',
+            ),
+            for (final MotionPoseMeasurement item in analysis.measurements)
+              InfoRow(label: item.label, value: item.valueLabel),
+            const SizedBox(height: 10),
+            SizedBox(
+              width: double.infinity,
+              child: FilledButton.icon(
+                onPressed: () {
+                  ref
+                      .read(trainingMvpProvider.notifier)
+                      .analyzeMotionCheckFromPoseJson(
+                        ruleId: state.ruleId!,
+                        rawJson: jsonEncode(state.frame!.toJson()),
+                      );
+                  controller.clear();
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(content: Text('纠错结果已应用到今日训练。')),
+                  );
+                },
+                icon: const Icon(Icons.check_circle_outline),
+                label: const Text('应用纠错结果'),
+              ),
+            ),
+            const SizedBox(height: 8),
+            SizedBox(
+              width: double.infinity,
+              child: OutlinedButton.icon(
+                onPressed: aiState.isBusy || state.imageBytes == null
+                    ? null
+                    : () async {
+                        final bool? confirmed = await showDialog<bool>(
+                          context: context,
+                          builder: (BuildContext dialogContext) => AlertDialog(
+                            title: const Text('提交 AI 图片复核？'),
+                            content: const Text(
+                              '本次照片会在内存中清理元数据后发送给 AI 进行一次分析，不会保存到本地、云端或日志中。',
+                            ),
+                            actions: <Widget>[
+                              TextButton(
+                                onPressed: () =>
+                                    Navigator.of(dialogContext).pop(false),
+                                child: const Text('取消'),
+                              ),
+                              FilledButton(
+                                onPressed: () =>
+                                    Navigator.of(dialogContext).pop(true),
+                                child: const Text('确认提交'),
+                              ),
+                            ],
+                          ),
+                        );
+                        if (confirmed != true) return;
+                        final AiArtifact? artifact = await ref
+                            .read(aiArtifactControllerProvider.notifier)
+                            .generateMotion(
+                              imageBytes: state.imageBytes!,
+                              filename: '${state.ruleId!}.jpg',
+                              ruleId: state.ruleId!,
+                              localPoseSummary:
+                                  '本地评分 ${analysis.score}，风险 ${analysis.riskLevel.label}，${analysis.measurements.map((item) => '${item.label} ${item.valueLabel}').join('；')}',
+                            );
+                        if (artifact != null && context.mounted) {
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            const SnackBar(
+                              content: Text('AI Motion 评分卡已生成，请确认后再应用。'),
+                            ),
+                          );
+                        }
+                      },
+                icon: const Icon(Icons.auto_awesome),
+                label: const Text('提交 AI 图片复核'),
+              ),
+            ),
+            if (aiArtifact?.motionScore != null) ...[
+              const SizedBox(height: 12),
+              _AiMotionReviewPanel(
+                artifact: aiArtifact!,
+                ruleId: state.ruleId!,
+              ),
+            ],
+          ],
+        ],
+      ),
+    );
+  }
+}
+
+class _AiMotionReviewPanel extends ConsumerWidget {
+  final AiArtifact artifact;
+  final String ruleId;
+
+  const _AiMotionReviewPanel({
+    required this.artifact,
+    required this.ruleId,
+  });
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final AiMotionScore? score = artifact.motionScore;
+    if (score == null) return const SizedBox.shrink();
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        const Divider(height: 24),
+        Text(
+          'AI Motion 图片复核',
+          style: Theme.of(context)
+              .textTheme
+              .titleSmall
+              ?.copyWith(fontWeight: FontWeight.w800),
+        ),
+        const SizedBox(height: 8),
+        InfoRow(label: '评分', value: '${score.score} 分'),
+        InfoRow(label: '风险', value: _cloudRiskLabel(score.riskLevel)),
+        InfoRow(
+          label: '置信度',
+          value: '${(score.confidence * 100).round()}%',
+        ),
+        if (score.detectedErrors.isNotEmpty)
+          Text('发现：${score.detectedErrors.join('；')}'),
+        if (score.corrections.isNotEmpty)
+          Text('纠正：${score.corrections.join('；')}'),
+        if (score.replacements.isNotEmpty)
+          Text('替代：${score.replacements.join('；')}'),
+        const SizedBox(height: 6),
+        Text(
+          score.safetyNote,
+          style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                color: AppColors.textSecondary,
+              ),
+        ),
+        if (artifact.warnings.isNotEmpty) ...[
+          const SizedBox(height: 6),
+          Text('提示：${artifact.warnings.join('；')}'),
+        ],
+        if (artifact.isPending) ...[
+          const SizedBox(height: 12),
+          SizedBox(
+            width: double.infinity,
+            child: FilledButton.icon(
+              onPressed: () async {
+                final bool? confirmed = await showDialog<bool>(
+                  context: context,
+                  builder: (BuildContext dialogContext) => AlertDialog(
+                    title: const Text('采用 AI Motion 建议？'),
+                    content: const Text('确认后会写入本地动作分析记录，并重新计算今日训练。'),
+                    actions: <Widget>[
+                      TextButton(
+                        onPressed: () => Navigator.of(dialogContext).pop(false),
+                        child: const Text('取消'),
+                      ),
+                      FilledButton(
+                        onPressed: () => Navigator.of(dialogContext).pop(true),
+                        child: const Text('确认采用'),
+                      ),
+                    ],
+                  ),
+                );
+                if (confirmed != true) return;
+                final AiArtifact? accepted = await ref
+                    .read(aiArtifactControllerProvider.notifier)
+                    .decide(
+                      artifact: artifact,
+                      decision: AiArtifactDecision.accepted,
+                    );
+                if (accepted == null || !context.mounted) return;
+                ref
+                    .read(trainingMvpProvider.notifier)
+                    .applyAiMotionArtifact(artifact: accepted, ruleId: ruleId);
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(content: Text('AI Motion 建议已写入今日训练决策。')),
+                );
+              },
+              icon: const Icon(Icons.check_circle_outline),
+              label: const Text('确认采用 AI 建议'),
+            ),
+          ),
+        ] else
+          const Padding(
+            padding: EdgeInsets.only(top: 8),
+            child: Text('该 AI Motion 结果已确认。'),
+          ),
+      ],
+    );
+  }
+}
+
+String _cloudRiskLabel(String riskLevel) => switch (riskLevel) {
+      'low' => '低风险',
+      'high' => '高风险',
+      _ => '中风险',
+    };
+
+class _PoseOverlayPainter extends CustomPainter {
+  final MotionPoseFrame frame;
+
+  const _PoseOverlayPainter(this.frame);
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final Paint point = Paint()..color = AppColors.secondary;
+    final Paint line = Paint()
+      ..color = AppColors.secondary
+      ..strokeWidth = 3
+      ..style = PaintingStyle.stroke;
+    Offset? position(MotionPoseLandmarkType type) {
+      final item = frame.landmark(type);
+      return item == null
+          ? null
+          : Offset(item.x * size.width, item.y * size.height);
+    }
+
+    const connections = <List<MotionPoseLandmarkType>>[
+      [
+        MotionPoseLandmarkType.leftShoulder,
+        MotionPoseLandmarkType.rightShoulder
+      ],
+      [MotionPoseLandmarkType.leftShoulder, MotionPoseLandmarkType.leftElbow],
+      [MotionPoseLandmarkType.leftElbow, MotionPoseLandmarkType.leftWrist],
+      [MotionPoseLandmarkType.rightShoulder, MotionPoseLandmarkType.rightElbow],
+      [MotionPoseLandmarkType.rightElbow, MotionPoseLandmarkType.rightWrist],
+      [MotionPoseLandmarkType.leftShoulder, MotionPoseLandmarkType.leftHip],
+      [MotionPoseLandmarkType.rightShoulder, MotionPoseLandmarkType.rightHip],
+      [MotionPoseLandmarkType.leftHip, MotionPoseLandmarkType.rightHip],
+      [MotionPoseLandmarkType.leftHip, MotionPoseLandmarkType.leftKnee],
+      [MotionPoseLandmarkType.leftKnee, MotionPoseLandmarkType.leftAnkle],
+      [MotionPoseLandmarkType.rightHip, MotionPoseLandmarkType.rightKnee],
+      [MotionPoseLandmarkType.rightKnee, MotionPoseLandmarkType.rightAnkle],
+    ];
+    for (final pair in connections) {
+      final Offset? first = position(pair.first);
+      final Offset? second = position(pair.last);
+      if (first != null && second != null) canvas.drawLine(first, second, line);
+    }
+    for (final landmark in frame.landmarks) {
+      canvas.drawCircle(
+          Offset(landmark.x * size.width, landmark.y * size.height), 5, point);
+    }
+  }
+
+  @override
+  bool shouldRepaint(covariant _PoseOverlayPainter oldDelegate) =>
+      oldDelegate.frame != frame;
 }
 
 Future<void> _showPoseJsonImportDialog({
@@ -225,7 +622,7 @@ class _MotionRuleCard extends ConsumerWidget {
               alignment: Alignment.centerRight,
               child: TextButton.icon(
                 onPressed: () =>
-                    context.go(AppRoutes.exerciseDetail(exercise.id)),
+                    context.push(AppRoutes.exerciseDetail(exercise.id)),
                 icon: const Icon(Icons.open_in_new),
                 label: const Text('查看动作安全提示'),
               ),

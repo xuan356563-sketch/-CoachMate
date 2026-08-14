@@ -80,12 +80,14 @@ class StarterProgramProgress {
   factory StarterProgramProgress.fromJson(Map<String, dynamic> json) {
     final int rawDayIndex = (json['dayIndex'] as num?)?.toInt() ?? 1;
     final int rawStreak = (json['streak'] as num?)?.toInt() ?? 0;
+    final String rawStatusMessage =
+        json['statusMessage'] as String? ?? '第 1 天目标：低到不可能失败。';
     return StarterProgramProgress(
       goal: starterProgramGoalFromJson(json['goal'] as String?),
       dayIndex: rawDayIndex.clamp(1, 30).toInt(),
       streak: rawStreak.clamp(0, 30).toInt(),
       rescueMode: json['rescueMode'] == true,
-      statusMessage: json['statusMessage'] as String? ?? '第 1 天目标：低到不可能失败。',
+      statusMessage: _normalizeStarterProgramStatusMessage(rawStatusMessage),
     );
   }
 
@@ -98,6 +100,15 @@ class StarterProgramProgress {
       'statusMessage': statusMessage,
     };
   }
+}
+
+String _normalizeStarterProgramStatusMessage(String message) {
+  return switch (message) {
+    '已记录“太累了”：明天不加量，优先保住连续性。' => '已记录“太累了”：明天不加量，恢复优先。',
+    '计划已顺延：漏练不惩罚，今天仍保留当前任务。' => '计划已顺延：今天仍保留当前任务，完成后计入累计成长日。',
+    '已切换 5 分钟补救版，完成后仍可保住连击。' => '已切换 5 分钟补救版，完成后计入累计成长日。',
+    _ => message,
+  };
 }
 
 class StarterProgramDay {

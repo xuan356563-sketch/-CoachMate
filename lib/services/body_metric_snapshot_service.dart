@@ -36,6 +36,22 @@ class BodyMetricSnapshotRecognitionService {
       throw const FormatException('识别失败：没有找到可用的身体指标。');
     }
 
+    final List<String> inheritedFieldLabels = <String>[
+      if (weight == null) '体重',
+      if (bodyFat == null) '体脂率',
+      if (restingHr == null) '静息心率',
+      if (hrv == null) 'HRV',
+      if (sleep == null) '睡眠',
+      if (fatigue == null) '疲劳',
+      if (soreness == null) '酸痛',
+    ];
+    if (fallback == null && inheritedFieldLabels.isNotEmpty) {
+      throw FormatException(
+        '识别失败：缺少必填身体指标：${inheritedFieldLabels.join('、')}。'
+        '请补全后重试；系统不会使用示例值补齐。',
+      );
+    }
+
     final DateTime now = DateTime.now();
     final BodyMetric metric = BodyMetric(
       id: 'body-snapshot-${now.millisecondsSinceEpoch}',
@@ -46,23 +62,24 @@ class BodyMetricSnapshotRecognitionService {
         now.hour,
         now.minute,
       ),
-      weightKg: weight ?? fallback?.weightKg ?? 73.8,
-      bodyFatPercentage: bodyFat ?? fallback?.bodyFatPercentage ?? 18.6,
-      restingHeartRate: restingHr ?? fallback?.restingHeartRate ?? 58,
-      hrvMs: hrv ?? fallback?.hrvMs ?? 52,
-      sleepHours: sleep ?? fallback?.sleepHours ?? 7.0,
-      fatigueLevel:
-          (fatigue ?? fallback?.fatigueLevel ?? 4).clamp(1, 10).toInt(),
-      sorenessLevel:
-          (soreness ?? fallback?.sorenessLevel ?? 3).clamp(1, 10).toInt(),
-      moodLabel: (fatigue ?? fallback?.fatigueLevel ?? 4) >= 7 ? '偏疲劳' : '截图识别',
+      weightKg: weight ?? fallback!.weightKg,
+      bodyFatPercentage: bodyFat ?? fallback!.bodyFatPercentage,
+      restingHeartRate: restingHr ?? fallback!.restingHeartRate,
+      hrvMs: hrv ?? fallback!.hrvMs,
+      sleepHours: sleep ?? fallback!.sleepHours,
+      fatigueLevel: (fatigue ?? fallback!.fatigueLevel).clamp(1, 10).toInt(),
+      sorenessLevel: (soreness ?? fallback!.sorenessLevel).clamp(1, 10).toInt(),
+      moodLabel: (fatigue ?? fallback!.fatigueLevel) >= 7 ? '偏疲劳' : '截图识别',
       source: BodyMetricSource.screenshot,
-      note: '截图识别 Mock：用户确认入库',
+      note: inheritedFieldLabels.isEmpty
+          ? '截图文字识别：全部字段来自本次识别；用户确认入库'
+          : '截图文字识别：${inheritedFieldLabels.join('、')}沿用上次记录；用户确认入库',
     );
 
     return BodyMetricSnapshotRecognitionResult(
       metric: metric,
       matchedFieldCount: matchedFieldCount,
+      inheritedFieldLabels: inheritedFieldLabels,
       sourceLabel: _sourceLabel(text),
     );
   }

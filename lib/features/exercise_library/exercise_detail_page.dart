@@ -5,10 +5,13 @@ import 'package:go_router/go_router.dart';
 import '../../app/router/app_routes.dart';
 import '../../core/constants/app_colors.dart';
 import '../../core/widgets/exercise_media.dart';
+import '../../core/widgets/trainmate_action_character.dart';
+import '../../core/widgets/trainmate_action_mappings.dart';
 import '../../core/widgets/trainflow_widgets.dart';
 import '../../data/models/evidence_source.dart';
 import '../../data/models/exercise.dart';
 import '../../data/models/exercise_body_profile.dart';
+import '../../data/models/exercise_focus_profile.dart';
 import '../../data/models/user_profile.dart';
 import '../dashboard/training_mvp_controller.dart';
 
@@ -25,23 +28,46 @@ class ExerciseDetailPage extends ConsumerWidget {
     if (exercise == null) {
       return const TrainFlowPage(
         title: '动作不存在',
+        leading: TrainMateBackButton(
+          key: ValueKey<String>('exercise-detail-back'),
+          fallbackRoute: AppRoutes.exercises,
+        ),
+        artwork: TrainMateActionCharacter(
+          action: TrainMateAction.pointingGuide,
+          backgroundColor: AppColors.primary,
+        ),
         children: [
-          TrainFlowCard(child: Text('没有找到对应动作。')),
+          TrainFlowCard(
+            cornerCharacterAction: TrainMateAction.pointingGuide,
+            child: Text('没有找到对应动作。'),
+          ),
         ],
       );
     }
 
     final ExerciseBodyProfile bodyProfile = exercise.bodyEngineProfile;
+    final ExerciseFocusProfile focusProfile = exerciseFocusProfile(exercise);
+    final TrainMateAction characterAction =
+        trainMateActionForExercise(exercise);
 
     return TrainFlowPage(
       title: exercise.name,
       subtitle: exercise.category.label,
+      leading: const TrainMateBackButton(
+        key: ValueKey<String>('exercise-detail-back'),
+        fallbackRoute: AppRoutes.exercises,
+      ),
+      artwork: TrainMateActionCharacter(
+        action: characterAction,
+        backgroundColor: AppColors.primary,
+      ),
       children: [
         if (exercise.mediaUrl != null)
           TrainFlowCard(
             child: ExerciseMedia(exercise: exercise),
           ),
         TrainFlowCard(
+          cornerCharacterAction: characterAction,
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
@@ -59,6 +85,31 @@ class ExerciseDetailPage extends ConsumerWidget {
             ],
           ),
         ),
+        if (!focusProfile.isEmpty)
+          TrainFlowCard(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  '训练焦点',
+                  style: Theme.of(context)
+                      .textTheme
+                      .titleMedium
+                      ?.copyWith(fontWeight: FontWeight.w800),
+                ),
+                const SizedBox(height: 10),
+                InfoRow(
+                  label: '标签',
+                  value: focusProfile.tags.map((item) => item.label).join('、'),
+                ),
+                InfoRow(
+                  label: '区域',
+                  value:
+                      focusProfile.areas.map((item) => item.label).join('、'),
+                ),
+              ],
+            ),
+          ),
         if (bodyProfile.isStructured)
           TrainFlowCard(
             child: Column(
@@ -244,7 +295,7 @@ class _ExerciseRelationRow extends StatelessWidget {
     return InkWell(
       onTap: exercise == null
           ? null
-          : () => context.go(AppRoutes.exerciseDetail(exercise!.id)),
+          : () => context.push(AppRoutes.exerciseDetail(exercise!.id)),
       child: Padding(
         padding: const EdgeInsets.symmetric(vertical: 4),
         child: Row(
@@ -298,6 +349,7 @@ class _ExerciseRelationRow extends StatelessWidget {
       ExerciseRelationType.replacement => Icons.swap_horiz,
       ExerciseRelationType.regression => Icons.trending_down,
       ExerciseRelationType.progression => Icons.trending_up,
+      ExerciseRelationType.unlockedBy => Icons.lock_open_outlined,
     };
   }
 }

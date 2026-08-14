@@ -20,7 +20,7 @@ const List<EvidenceSource> starterProgramEvidenceSources = [
     chapter: '第 2 章 行为起点',
     pageRange: 'p. 39-54',
     quote: '习惯更容易从小到几乎不会失败的行为开始。',
-    note: '用于漏练不惩罚、5 分钟补救版和连击反馈。',
+    note: '用于任务顺延、5 分钟补救版和累计成长反馈。',
   ),
 ];
 
