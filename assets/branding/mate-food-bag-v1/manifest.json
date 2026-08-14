@@ -1,0 +1,33 @@
+{
+  "version": "mate-food-bag-v1",
+  "status": "awaiting-human-action-sheet-review",
+  "rightsStatus": "user-provided-ai-generated-reference-pending-review",
+  "characterContract": {
+    "name": "MATE",
+    "productName": "TrainMate",
+    "paperBag": "倒扣平顶、无耳朵、无尖角、眼槽位于纸袋约百分之六十高度",
+    "paperBagPrint": "仅倒置大碗图案，不允许可读文字",
+    "body": "陶土色圆胖身体、米色运动鞋、灰白短围巾",
+    "palette": ["#C1512E", "#D6B489", "#F5EBD8", "#E8467F", "#1A1512", "#2438CE"]
+  },
+  "reference": {
+    "path": "assets/branding/mate-food-bag-v1/source/mate-character-sheet-user-provided-v1.png",
+    "width": 1536,
+    "height": 1024,
+    "hasAlpha": false,
+    "sha256": "99e035cd2e06524d0a7fbf233bbc8335ee84e17f25978149e1f8d010a29e0860"
+  },
+  "reviewArtifacts": [
+    {
+      "id": "mate-action-contact-sheet-draft",
+      "path": "assets/branding/mate-food-bag-v1/review/mate-action-contact-sheet-draft.png",
+      "width": 1536,
+      "height": 1024,
+      "hasAlpha": false,
+      "sha256": "5019977c6d3564fbff80ae9b0ee06a3f036b3cd7534f7405028044d8a71ad623",
+      "reviewStatus": "awaiting-human-visual-review",
+      "runtimeEligible": false
+    }
+  ],
+  "nextGate": "经人工确认联系表后，才可生成二十张透明动作母图与四十张运行时明暗版本。"
+}

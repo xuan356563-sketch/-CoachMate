@@ -1,0 +1,42 @@
+{
+  "version": 1,
+  "style": "深蓝线稿、橙色家具、象牙白留白与少量薄荷状态色；环境图不含人物、动物、Logo、文字或水印。",
+  "reviewStatus": "pending-human-visual-review",
+  "assets": [
+    {
+      "path": "trainmate_companion_room.png",
+      "promptVersion": "immersive-hub-v1-companion",
+      "source": "image_gen.imagegen",
+      "size": "1586x992",
+      "sha256": "aac7ee636d37e43918183de1eef65dc50340fb6579537dd1a19373b1de98b546"
+    },
+    {
+      "path": "trainmate_plan_studio.png",
+      "promptVersion": "immersive-hub-v1-plan",
+      "source": "image_gen.imagegen",
+      "size": "1586x992",
+      "sha256": "37613d358ff5bee3ce558fcdb7c64503d19279a4733954ed9845ff455e32bc48"
+    },
+    {
+      "path": "trainmate_today_training_room.png",
+      "promptVersion": "immersive-hub-v1-today",
+      "source": "image_gen.imagegen",
+      "size": "1586x992",
+      "sha256": "061c911f95a4cdfaf59154ab441b9f5fd759f855dc988b80d1d2eb61075e5703"
+    },
+    {
+      "path": "trainmate_exercise_lab.png",
+      "promptVersion": "immersive-hub-v1-exercises",
+      "source": "image_gen.imagegen",
+      "size": "1586x992",
+      "sha256": "61295e808995c1d4e5d843030505f63edcf556cd45735ee587c4ccc96818864d"
+    },
+    {
+      "path": "trainmate_profile_recovery_room.png",
+      "promptVersion": "immersive-hub-v1-profile",
+      "source": "image_gen.imagegen",
+      "size": "1586x992",
+      "sha256": "dd025663a70af8e5a5b2f6cd8208675a04a32417700004da1de3898f9da214d7"
+    }
+  ]
+}

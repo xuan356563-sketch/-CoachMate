@@ -1,0 +1,646 @@
+{
+  "schema_version": 2,
+  "generated_at": "2026-08-02",
+  "entries": [
+    {
+      "exercise_id": "exercise-jumping-jack",
+      "slug": "jumping_jack",
+      "generation_version": "trainmate-anatomy-2026.08.02-v2",
+      "subject_presentation": "female",
+      "review_status": "approved",
+      "media_status": "precise",
+      "frames": [
+        {
+          "role": "setup",
+          "path": "assets/images/exercises/free-exercise-db/jumping_jack_0.jpg",
+          "sha256": "7ea05264a0eb1fa9a58f97a52fb91bb11c894de03b2b64e920d4f33ff2f56341"
+        },
+        {
+          "role": "key_position",
+          "path": "assets/images/exercises/free-exercise-db/jumping_jack_1.jpg",
+          "sha256": "2249ed15044338da4a48a8562f9a5ea3c3916edc46c3bcca1311cd6a20698602"
+        }
+      ]
+    },
+    {
+      "exercise_id": "exercise-burpee",
+      "slug": "burpee",
+      "generation_version": "trainmate-anatomy-2026.08.02-v2",
+      "subject_presentation": "male",
+      "review_status": "approved",
+      "media_status": "precise",
+      "frames": [
+        {
+          "role": "setup",
+          "path": "assets/images/exercises/free-exercise-db/burpee_0.jpg",
+          "sha256": "9d2527ee36472ffbda2522a292a6d13fc787c58cf286791ec790e93eef6c8b64"
+        },
+        {
+          "role": "key_position",
+          "path": "assets/images/exercises/free-exercise-db/burpee_1.jpg",
+          "sha256": "eecd56557626d2fa2abfca3bab1b76504c27ec0c43329553d1da4dfd218a8878"
+        }
+      ]
+    },
+    {
+      "exercise_id": "exercise-jump-lunge",
+      "slug": "jump_lunge",
+      "generation_version": "trainmate-anatomy-2026.08.02-v2",
+      "subject_presentation": "male",
+      "review_status": "approved",
+      "media_status": "precise",
+      "frames": [
+        {
+          "role": "setup",
+          "path": "assets/images/exercises/free-exercise-db/jump_lunge_0.jpg",
+          "sha256": "ed381f3325d02a83fe698718f8bd7f1c00bf197ee1dce6b72bf9e30420896aa2"
+        },
+        {
+          "role": "key_position",
+          "path": "assets/images/exercises/free-exercise-db/jump_lunge_1.jpg",
+          "sha256": "35967f04687f1e02db2bcdcc3199a251f9637e4de4f0339a196c4acd8800fcea"
+        }
+      ]
+    },
+    {
+      "exercise_id": "exercise-plank-shoulder-tap",
+      "slug": "plank_shoulder_tap",
+      "generation_version": "trainmate-anatomy-2026.08.02-v2",
+      "subject_presentation": "male",
+      "review_status": "approved",
+      "media_status": "precise",
+      "frames": [
+        {
+          "role": "setup",
+          "path": "assets/images/exercises/free-exercise-db/plank_shoulder_tap_0.jpg",
+          "sha256": "e6e4acfbd04155b505a89f3e895b7753ca0fb20e8a8e18f37af8e9ffa1479f30"
+        },
+        {
+          "role": "key_position",
+          "path": "assets/images/exercises/free-exercise-db/plank_shoulder_tap_1.jpg",
+          "sha256": "5f4eb14272fd769f7733645609f5fc701fa79c5094f8d309663105e5d79606a7"
+        }
+      ]
+    },
+    {
+      "exercise_id": "exercise-plank-up-down",
+      "slug": "plank_up_down",
+      "generation_version": "trainmate-anatomy-2026.08.02-v2",
+      "subject_presentation": "male",
+      "review_status": "approved",
+      "media_status": "precise",
+      "frames": [
+        {
+          "role": "setup",
+          "path": "assets/images/exercises/free-exercise-db/plank_up_down_0.jpg",
+          "sha256": "52cec4c39ec147eff840893dc8e533575708a9d48beb161e80e483ad73bd560d"
+        },
+        {
+          "role": "key_position",
+          "path": "assets/images/exercises/free-exercise-db/plank_up_down_1.jpg",
+          "sha256": "22ec4d7f3c820b907d914ed6c3bbc84d657adb4a3cc0f02670441664cf4ca70e"
+        }
+      ]
+    },
+    {
+      "exercise_id": "exercise-inchworm",
+      "slug": "inchworm",
+      "generation_version": "trainmate-anatomy-2026.08.02-v2",
+      "subject_presentation": "male",
+      "review_status": "approved",
+      "media_status": "precise",
+      "frames": [
+        {
+          "role": "setup",
+          "path": "assets/images/exercises/free-exercise-db/inchworm_0.jpg",
+          "sha256": "e372bd11dd01fc62b8697fdfd586f687978ff24e807096ad401b733ea3aced54"
+        },
+        {
+          "role": "key_position",
+          "path": "assets/images/exercises/free-exercise-db/inchworm_1.jpg",
+          "sha256": "b56c6e7a860ffc09615fbe5a6595008c2c1f24e17592a635bfb805616a93f08e"
+        }
+      ]
+    },
+    {
+      "exercise_id": "exercise-crunch",
+      "slug": "crunch",
+      "generation_version": "trainmate-anatomy-2026.08.02-v2",
+      "subject_presentation": "male",
+      "review_status": "approved",
+      "media_status": "precise",
+      "frames": [
+        {
+          "role": "setup",
+          "path": "assets/images/exercises/free-exercise-db/crunch_0.jpg",
+          "sha256": "2033e23607078f845e8b5cb7d3241ce27cb0730e7618bfcbccdf344a74805f59"
+        },
+        {
+          "role": "key_position",
+          "path": "assets/images/exercises/free-exercise-db/crunch_1.jpg",
+          "sha256": "01ea24bd915d67aee407d615c294dbe38ef6f4fed861b4aebe427f570e4bbaa5"
+        }
+      ]
+    },
+    {
+      "exercise_id": "exercise-bicycle-crunch",
+      "slug": "bicycle_crunch",
+      "generation_version": "trainmate-anatomy-2026.08.02-v2",
+      "subject_presentation": "male",
+      "review_status": "approved",
+      "media_status": "precise",
+      "frames": [
+        {
+          "role": "setup",
+          "path": "assets/images/exercises/free-exercise-db/bicycle_crunch_0.jpg",
+          "sha256": "2f2b057755810552efb8a3ccd89a4a314c9ac61ea895dd676964565a8783eb66"
+        },
+        {
+          "role": "key_position",
+          "path": "assets/images/exercises/free-exercise-db/bicycle_crunch_1.jpg",
+          "sha256": "8fad28abc6cca52edaf8ad3a8902688aafddf9c0a0518ffe25d74a113a12b202"
+        }
+      ]
+    },
+    {
+      "exercise_id": "exercise-side-plank-hip-dip",
+      "slug": "side_plank_hip_dip",
+      "generation_version": "trainmate-anatomy-2026.08.02-v2",
+      "subject_presentation": "female",
+      "review_status": "approved",
+      "media_status": "precise",
+      "frames": [
+        {
+          "role": "setup",
+          "path": "assets/images/exercises/free-exercise-db/side_plank_hip_dip_0.jpg",
+          "sha256": "0186aedc317290e92829119418e4ebcd56b6f34ce067b53e83d31a91280c7318"
+        },
+        {
+          "role": "key_position",
+          "path": "assets/images/exercises/free-exercise-db/side_plank_hip_dip_1.jpg",
+          "sha256": "330b6184a20f6a6bd4959967493003a64a0ccb19d9c4d461ec81166eac7adbeb"
+        }
+      ]
+    },
+    {
+      "exercise_id": "exercise-side-lying-leg-raise",
+      "slug": "side_lying_leg_raise",
+      "generation_version": "trainmate-anatomy-2026.08.02-v2",
+      "subject_presentation": "female",
+      "review_status": "approved",
+      "media_status": "precise",
+      "frames": [
+        {
+          "role": "setup",
+          "path": "assets/images/exercises/free-exercise-db/side_lying_leg_raise_0.jpg",
+          "sha256": "e5698e101164f863d20b75150a0e733e864f27bd6b79a93463867b9235938d82"
+        },
+        {
+          "role": "key_position",
+          "path": "assets/images/exercises/free-exercise-db/side_lying_leg_raise_1.jpg",
+          "sha256": "a3ad89c7269295e5dc370caaa70b1bc625271916684927c4d8c800a59e38cd9e"
+        }
+      ]
+    },
+    {
+      "exercise_id": "exercise-donkey-kick",
+      "slug": "donkey_kick",
+      "generation_version": "trainmate-anatomy-2026.08.02-v2",
+      "subject_presentation": "male",
+      "review_status": "approved",
+      "media_status": "precise",
+      "frames": [
+        {
+          "role": "setup",
+          "path": "assets/images/exercises/free-exercise-db/donkey_kick_0.jpg",
+          "sha256": "52b5faf4b23c1f7640bc1e23ac8620db213a0151383ee99a00cbde5d0de30913"
+        },
+        {
+          "role": "key_position",
+          "path": "assets/images/exercises/free-exercise-db/donkey_kick_1.jpg",
+          "sha256": "3e79e91cda6660c53ca4957c868dc0e44bc27047f2acde5c48ae1147407ec993"
+        }
+      ]
+    },
+    {
+      "exercise_id": "exercise-fire-hydrant",
+      "slug": "fire_hydrant",
+      "generation_version": "trainmate-anatomy-2026.08.02-v2",
+      "subject_presentation": "female",
+      "review_status": "approved",
+      "media_status": "precise",
+      "frames": [
+        {
+          "role": "setup",
+          "path": "assets/images/exercises/free-exercise-db/fire_hydrant_0.jpg",
+          "sha256": "f96fa24e41135fd28c6794c255f85e6a41f6146b3f989ca9f0573e5b7c8c6823"
+        },
+        {
+          "role": "key_position",
+          "path": "assets/images/exercises/free-exercise-db/fire_hydrant_1.jpg",
+          "sha256": "8b730f85ea675976a84a7b6b40d7e24650acf409ff98d21a3dad3fce001397d8"
+        }
+      ]
+    },
+    {
+      "exercise_id": "exercise-wall-sit",
+      "slug": "wall_sit",
+      "generation_version": "trainmate-anatomy-2026.08.02-v2",
+      "subject_presentation": "male",
+      "review_status": "approved",
+      "media_status": "precise",
+      "frames": [
+        {
+          "role": "setup",
+          "path": "assets/images/exercises/free-exercise-db/wall_sit_0.jpg",
+          "sha256": "f920a2a61724a30b7f6fb0bfa2cc313e1775fed2e70c3ba0abc22f83d3a6f63b"
+        },
+        {
+          "role": "key_position",
+          "path": "assets/images/exercises/free-exercise-db/wall_sit_1.jpg",
+          "sha256": "7c5da52909d3c3bbbf3e20f5ae6bb01ba3cc33f56dec65f1f8eb63b57c3d9545"
+        }
+      ]
+    },
+    {
+      "exercise_id": "exercise-lateral-lunge",
+      "slug": "lateral_lunge",
+      "generation_version": "trainmate-anatomy-2026.08.02-v2",
+      "subject_presentation": "female",
+      "review_status": "approved",
+      "media_status": "precise",
+      "frames": [
+        {
+          "role": "setup",
+          "path": "assets/images/exercises/free-exercise-db/lateral_lunge_0.jpg",
+          "sha256": "18a40bcb3da1e6766ff23a6e2dbe89165b990a3c184bb9e3361b9287e4074419"
+        },
+        {
+          "role": "key_position",
+          "path": "assets/images/exercises/free-exercise-db/lateral_lunge_1.jpg",
+          "sha256": "856c8f5abf6260fda53cde4ac72223307a74f530f08ca198de971bcf3a8f1463"
+        }
+      ]
+    },
+    {
+      "exercise_id": "exercise-tibialis-raise",
+      "slug": "tibialis_raise",
+      "generation_version": "trainmate-anatomy-2026.08.02-v2",
+      "subject_presentation": "male",
+      "review_status": "approved",
+      "media_status": "precise",
+      "frames": [
+        {
+          "role": "setup",
+          "path": "assets/images/exercises/free-exercise-db/tibialis_raise_0.jpg",
+          "sha256": "5466a97d2a2fb775fb3f8b0a682bf04adb50cfbabe5d5502ef43be3241f094fd"
+        },
+        {
+          "role": "key_position",
+          "path": "assets/images/exercises/free-exercise-db/tibialis_raise_1.jpg",
+          "sha256": "ebd9b2c84720013a531446c2ded4ef6d465b1850096d22019998484c14baffe4"
+        }
+      ]
+    },
+    {
+      "exercise_id": "exercise-prone-ytw",
+      "slug": "prone_ytw",
+      "generation_version": "trainmate-anatomy-2026.08.02-v2",
+      "subject_presentation": "male",
+      "review_status": "approved",
+      "media_status": "precise",
+      "frames": [
+        {
+          "role": "setup",
+          "path": "assets/images/exercises/free-exercise-db/prone_ytw_0.jpg",
+          "sha256": "d829ae89a413d241be04a6ff7a08042f185fd69d8505cc8484b23376f382bbd4"
+        },
+        {
+          "role": "key_position",
+          "path": "assets/images/exercises/free-exercise-db/prone_ytw_1.jpg",
+          "sha256": "6844ad5f5bd3a6714a8b0f614b8e55bc871d8b427e52766da197b7f72571713c"
+        }
+      ]
+    },
+    {
+      "exercise_id": "exercise-band-internal-rotation",
+      "slug": "band_internal_rotation",
+      "generation_version": "trainmate-anatomy-2026.08.02-v2",
+      "subject_presentation": "male",
+      "review_status": "approved",
+      "media_status": "precise",
+      "frames": [
+        {
+          "role": "setup",
+          "path": "assets/images/exercises/free-exercise-db/band_internal_rotation_0.jpg",
+          "sha256": "8370f187a30d7e195efce1cbf974015a294718ee2b8ac573346596ff5a667515"
+        },
+        {
+          "role": "key_position",
+          "path": "assets/images/exercises/free-exercise-db/band_internal_rotation_1.jpg",
+          "sha256": "948149a1c552847c3200c2d86bbc94c7d1a558ce9951f44d550863990dbaba5e"
+        }
+      ]
+    },
+    {
+      "exercise_id": "exercise-breathing-9090",
+      "slug": "breathing_9090",
+      "generation_version": "trainmate-anatomy-2026.08.02-v2",
+      "subject_presentation": "male",
+      "review_status": "approved",
+      "media_status": "precise",
+      "frames": [
+        {
+          "role": "setup",
+          "path": "assets/images/exercises/free-exercise-db/breathing_9090_0.jpg",
+          "sha256": "a55aa2f737019f2771d9b8afb4d045eee94de6f2400ff011c4b9cc7a59584d40"
+        },
+        {
+          "role": "key_position",
+          "path": "assets/images/exercises/free-exercise-db/breathing_9090_1.jpg",
+          "sha256": "6056be667731e228ed3998e3ba040e9b2d977ec676460064952899ac39e4b7c2"
+        }
+      ]
+    },
+    {
+      "exercise_id": "exercise-crocodile-breathing",
+      "slug": "crocodile_breathing",
+      "generation_version": "trainmate-anatomy-2026.08.02-v2",
+      "subject_presentation": "male",
+      "review_status": "approved",
+      "media_status": "precise",
+      "frames": [
+        {
+          "role": "setup",
+          "path": "assets/images/exercises/free-exercise-db/crocodile_breathing_0.jpg",
+          "sha256": "073aafda30c86d854ddbc7f084ce1d1afd08435dd1aa54b5ab49d08084bc4c4d"
+        },
+        {
+          "role": "key_position",
+          "path": "assets/images/exercises/free-exercise-db/crocodile_breathing_1.jpg",
+          "sha256": "7073254799656084879b48051dd40f13bf4417a588c9160338df13f23b1f9d78"
+        }
+      ]
+    },
+    {
+      "exercise_id": "exercise-downward-dog",
+      "slug": "downward_dog",
+      "generation_version": "trainmate-anatomy-2026.08.02-v2",
+      "subject_presentation": "female",
+      "review_status": "approved",
+      "media_status": "precise",
+      "frames": [
+        {
+          "role": "setup",
+          "path": "assets/images/exercises/free-exercise-db/downward_dog_0.jpg",
+          "sha256": "6eaaaaa231f604c17861aa00b6c08f4053ddb7bbe4b74ef0af9bd611f835818d"
+        },
+        {
+          "role": "key_position",
+          "path": "assets/images/exercises/free-exercise-db/downward_dog_1.jpg",
+          "sha256": "17c881941a0008d71a4b638a28707409455d119ab7938068127d001338a8b533"
+        }
+      ]
+    },
+    {
+      "exercise_id": "exercise-childs-pose",
+      "slug": "childs_pose",
+      "generation_version": "trainmate-anatomy-2026.08.02-v2",
+      "subject_presentation": "female",
+      "review_status": "approved",
+      "media_status": "precise",
+      "frames": [
+        {
+          "role": "setup",
+          "path": "assets/images/exercises/free-exercise-db/childs_pose_0.jpg",
+          "sha256": "fc7496dcc625b586de8af96794bbd3b2353cbccdc357c7bbf644ea2f85b17120"
+        },
+        {
+          "role": "key_position",
+          "path": "assets/images/exercises/free-exercise-db/childs_pose_1.jpg",
+          "sha256": "04dadf1bd62e8c52caf307cbd1a347ae22b3a5ab0c66c9cea44b3d8aa23eff1a"
+        }
+      ]
+    },
+    {
+      "exercise_id": "exercise-supine-figure-4",
+      "slug": "supine_figure_4",
+      "generation_version": "trainmate-anatomy-2026.08.02-v2",
+      "subject_presentation": "male",
+      "review_status": "approved",
+      "media_status": "precise",
+      "frames": [
+        {
+          "role": "setup",
+          "path": "assets/images/exercises/free-exercise-db/supine_figure_4_0.jpg",
+          "sha256": "9fbfc0ab83c20d3c000619fa1f3f540f3a18962fbde770791280dabf49a1de4b"
+        },
+        {
+          "role": "key_position",
+          "path": "assets/images/exercises/free-exercise-db/supine_figure_4_1.jpg",
+          "sha256": "63645a09c1834f1c11aae43fc2f7ebd9037966df521e80e5c164e6efe0c54e74"
+        }
+      ]
+    },
+    {
+      "exercise_id": "exercise-standing-quad-stretch",
+      "slug": "standing_quad_stretch",
+      "generation_version": "trainmate-anatomy-2026.08.02-v2",
+      "subject_presentation": "female",
+      "review_status": "approved",
+      "media_status": "precise",
+      "frames": [
+        {
+          "role": "setup",
+          "path": "assets/images/exercises/free-exercise-db/standing_quad_stretch_0.jpg",
+          "sha256": "92323987329a825b1e693fc1b946f19d50d31d285b8a9892fbc4b608caf448ad"
+        },
+        {
+          "role": "key_position",
+          "path": "assets/images/exercises/free-exercise-db/standing_quad_stretch_1.jpg",
+          "sha256": "db48762759c252261cc611f303e927170b204334059b717d4c4532d1d7206c4c"
+        }
+      ]
+    },
+    {
+      "exercise_id": "exercise-seated-hamstring-stretch",
+      "slug": "seated_hamstring_stretch",
+      "generation_version": "trainmate-anatomy-2026.08.02-v2",
+      "subject_presentation": "female",
+      "review_status": "approved",
+      "media_status": "precise",
+      "frames": [
+        {
+          "role": "setup",
+          "path": "assets/images/exercises/free-exercise-db/seated_hamstring_stretch_0.jpg",
+          "sha256": "42aac7f29bb1830da9e4c362cd56f1322309b70e88bcebce45dfec1837eb26da"
+        },
+        {
+          "role": "key_position",
+          "path": "assets/images/exercises/free-exercise-db/seated_hamstring_stretch_1.jpg",
+          "sha256": "f431708b79d8c591b0c1ef471d0ac3b972d1b6a77e313570a6c9e508c028d42d"
+        }
+      ]
+    },
+    {
+      "exercise_id": "exercise-butterfly-stretch",
+      "slug": "butterfly_stretch",
+      "generation_version": "trainmate-anatomy-2026.08.02-v2",
+      "subject_presentation": "female",
+      "review_status": "approved",
+      "media_status": "precise",
+      "frames": [
+        {
+          "role": "setup",
+          "path": "assets/images/exercises/free-exercise-db/butterfly_stretch_0.jpg",
+          "sha256": "23f4dda7d17fa8888ed3142e68d6e4d1b59f45e218cf3bd33bc2b0167555a482"
+        },
+        {
+          "role": "key_position",
+          "path": "assets/images/exercises/free-exercise-db/butterfly_stretch_1.jpg",
+          "sha256": "63916d4059b6144fc3ae195b45937a9d1a7e0f88cff7bc16bb07bbfe3f2e268d"
+        }
+      ]
+    },
+    {
+      "exercise_id": "exercise-hip-9090-switch",
+      "slug": "hip_9090_switch",
+      "generation_version": "trainmate-anatomy-2026.08.02-v2",
+      "subject_presentation": "female",
+      "review_status": "approved",
+      "media_status": "precise",
+      "frames": [
+        {
+          "role": "setup",
+          "path": "assets/images/exercises/free-exercise-db/hip_9090_switch_0.jpg",
+          "sha256": "8ca267a464f01dc65ca85a56f6b1e75d1de5968342e250922ba350c54ac66511"
+        },
+        {
+          "role": "key_position",
+          "path": "assets/images/exercises/free-exercise-db/hip_9090_switch_1.jpg",
+          "sha256": "c5a7b1825ea03d43c86847c3e88757658e012bbc5dccca37d8d3216f80a50d9d"
+        }
+      ]
+    },
+    {
+      "exercise_id": "exercise-incline-barbell-bench-press",
+      "slug": "incline_barbell_bench_press",
+      "generation_version": "trainmate-anatomy-2026.08.02-v2",
+      "subject_presentation": "female",
+      "review_status": "approved",
+      "media_status": "precise",
+      "frames": [
+        {
+          "role": "setup",
+          "path": "assets/images/exercises/free-exercise-db/incline_barbell_bench_press_0.jpg",
+          "sha256": "2657de3dfb1ab636999f966a5b87fffd844ef2602c01ae971e4692300780564b"
+        },
+        {
+          "role": "key_position",
+          "path": "assets/images/exercises/free-exercise-db/incline_barbell_bench_press_1.jpg",
+          "sha256": "cf33b40553c583a387733fa7ee172420b102af2dbdbd691f2fed6d85c98039c3"
+        }
+      ]
+    },
+    {
+      "exercise_id": "exercise-smith-machine-squat",
+      "slug": "smith_machine_squat",
+      "generation_version": "trainmate-anatomy-2026.08.02-v2",
+      "subject_presentation": "female",
+      "review_status": "approved",
+      "media_status": "precise",
+      "frames": [
+        {
+          "role": "setup",
+          "path": "assets/images/exercises/free-exercise-db/smith_machine_squat_0.jpg",
+          "sha256": "e775564a8442b7b6176a6d4ee5aaae2ac1b34a8b937cb02287eccd0e6837a085"
+        },
+        {
+          "role": "key_position",
+          "path": "assets/images/exercises/free-exercise-db/smith_machine_squat_1.jpg",
+          "sha256": "1748897446158189dcca5a00dd5fb91a5cf1c60f5363c98975a8b50decf370f5"
+        }
+      ]
+    },
+    {
+      "exercise_id": "exercise-pec-deck-fly",
+      "slug": "pec_deck_fly",
+      "generation_version": "trainmate-anatomy-2026.08.02-v2",
+      "subject_presentation": "female",
+      "review_status": "approved",
+      "media_status": "precise",
+      "frames": [
+        {
+          "role": "setup",
+          "path": "assets/images/exercises/free-exercise-db/pec_deck_fly_0.jpg",
+          "sha256": "9ec4e4768639ed22f1ce02449e353c8517a2fddfdff5e9cccecdb241690b0c1a"
+        },
+        {
+          "role": "key_position",
+          "path": "assets/images/exercises/free-exercise-db/pec_deck_fly_1.jpg",
+          "sha256": "adc7d5f9510f75718b8d347476c683fabbd3f1a16022a98b8f69abe42515c29c"
+        }
+      ]
+    },
+    {
+      "exercise_id": "exercise-hip-abduction-machine",
+      "slug": "hip_abduction_machine",
+      "generation_version": "trainmate-anatomy-2026.08.02-v2",
+      "subject_presentation": "female",
+      "review_status": "approved",
+      "media_status": "precise",
+      "frames": [
+        {
+          "role": "setup",
+          "path": "assets/images/exercises/free-exercise-db/hip_abduction_machine_0.jpg",
+          "sha256": "06d442f4cf88f19a2d3418d57ead307c37e32e6dc90bfaf317f03c6f1a2fc0cb"
+        },
+        {
+          "role": "key_position",
+          "path": "assets/images/exercises/free-exercise-db/hip_abduction_machine_1.jpg",
+          "sha256": "4a18147e1ca8779470161343b24b6a7fc0b13a9a13028b9db44f1a5691b2a1e2"
+        }
+      ]
+    },
+    {
+      "exercise_id": "exercise-t-bar-row",
+      "slug": "t_bar_row",
+      "generation_version": "trainmate-anatomy-2026.08.02-v2",
+      "subject_presentation": "male",
+      "review_status": "approved",
+      "media_status": "precise",
+      "frames": [
+        {
+          "role": "setup",
+          "path": "assets/images/exercises/free-exercise-db/t_bar_row_0.jpg",
+          "sha256": "1749f7cbdb6236aae61cde65eac3aba14fac3df2cf2575c9280c5b8d748a8fd6"
+        },
+        {
+          "role": "key_position",
+          "path": "assets/images/exercises/free-exercise-db/t_bar_row_1.jpg",
+          "sha256": "d821421bae06d3c01ba7be6dd3ad4d7b101c27a571c56748864c294d9e0ef10a"
+        }
+      ]
+    },
+    {
+      "exercise_id": "exercise-med-ball-slam",
+      "slug": "med_ball_slam",
+      "generation_version": "trainmate-anatomy-2026.08.02-v2",
+      "subject_presentation": "female",
+      "review_status": "approved",
+      "media_status": "precise",
+      "frames": [
+        {
+          "role": "setup",
+          "path": "assets/images/exercises/free-exercise-db/med_ball_slam_0.jpg",
+          "sha256": "917ec0dac0c4d6e7d35ada610ff71adae93e582553ddc612301b7e3cfbb60c62"
+        },
+        {
+          "role": "key_position",
+          "path": "assets/images/exercises/free-exercise-db/med_ball_slam_1.jpg",
+          "sha256": "4122c4b17593569de6785f33c415d7ee501b83211af11b1625ce39fa02972428"
+        }
+      ]
+    }
+  ]
+}

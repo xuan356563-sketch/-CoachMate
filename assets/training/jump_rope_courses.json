@@ -1,0 +1,213 @@
+{
+  "courses": [
+    {
+      "id": "jump-rope-beginner-20",
+      "title": "20 分钟入门跳绳",
+      "level": "beginner",
+      "description": "低冲击建立节奏，不安排双摇，适合第一次使用跟练。",
+      "expectedDurationSeconds": 1200,
+      "voice": {
+        "countdownLast": 5,
+        "preAnnounceOnRest": true,
+        "rate": 1.0,
+        "enabled": true
+      },
+      "phases": [
+        {
+          "id": "warmup",
+          "name": "热身",
+          "exercises": [
+            {"id":"wrist","name":"手腕绕环","durationSeconds":30,"restSeconds":0,"repeat":1,"announce":"手腕绕环，动作放松","cues":["肩膀放松","由手腕带动"]},
+            {"id":"ankle","name":"脚踝绕环","durationSeconds":30,"restSeconds":0,"repeat":1,"announce":"脚踝绕环，控制幅度","cues":["左右脚交替"]},
+            {"id":"calf","name":"提踵","durationSeconds":30,"restSeconds":0,"repeat":1,"announce":"开始提踵","cues":["缓慢落下"]},
+            {"id":"shadow","name":"无绳空跳","durationSeconds":90,"restSeconds":0,"repeat":1,"announce":"无绳空跳，找轻柔落地感觉","cues":["前脚掌轻触地面"]}
+          ]
+        },
+        {
+          "id": "adapt",
+          "name": "适应跳",
+          "exercises": [
+            {"id":"basic","name":"慢速基础跳","durationSeconds":60,"restSeconds":30,"repeat":2,"announce":"慢速基础跳，先找到稳定节奏","cues":["手腕发力","绳高保持稳定"]}
+          ]
+        },
+        {
+          "id": "main-a",
+          "name": "主训 A · 间歇",
+          "exercises": [
+            {"id":"basic-interval","name":"基础跳","durationSeconds":45,"restSeconds":15,"repeat":3,"announce":"基础跳，前脚掌落地放轻","cues":["保持能说短句的强度"]},
+            {"id":"alternate-interval","name":"左右脚交替跳","durationSeconds":45,"restSeconds":15,"repeat":2,"announce":"左右脚交替跳，像原地慢跑","cues":["身体保持直立"]}
+          ]
+        },
+        {
+          "id": "main-b",
+          "name": "主训 B · 变式",
+          "exercises": [
+            {"id":"high-knee","name":"低幅高抬腿跳","durationSeconds":30,"restSeconds":30,"repeat":1,"announce":"低幅高抬腿跳，不追求速度","cues":["落地保持轻柔"]},
+            {"id":"jumping-jack","name":"开合跳","durationSeconds":30,"restSeconds":30,"repeat":1,"announce":"开合跳，控制左右幅度","cues":["膝盖朝脚尖方向"]},
+            {"id":"front-back","name":"前后跳","durationSeconds":30,"restSeconds":30,"repeat":1,"announce":"小幅前后跳","cues":["移动距离不要过大"]}
+          ]
+        },
+        {
+          "id": "cooldown",
+          "name": "降温",
+          "exercises": [
+            {"id":"slow","name":"慢速跳","durationSeconds":60,"restSeconds":0,"repeat":1,"announce":"降低跳速","cues":["让呼吸逐步恢复"]},
+            {"id":"march","name":"原地踏步","durationSeconds":60,"restSeconds":0,"repeat":1,"announce":"放下跳绳，开始原地踏步","cues":["不要突然停下"]}
+          ]
+        },
+        {
+          "id": "stretch",
+          "name": "拉伸",
+          "exercises": [
+            {"id":"calf-left","name":"左侧小腿拉伸","durationSeconds":45,"restSeconds":0,"repeat":1,"announce":"左侧小腿拉伸","cues":["脚跟保持贴地"]},
+            {"id":"calf-right","name":"右侧小腿拉伸","durationSeconds":45,"restSeconds":0,"repeat":1,"announce":"右侧小腿拉伸","cues":["脚跟保持贴地"]},
+            {"id":"achilles","name":"跟腱拉伸","durationSeconds":30,"restSeconds":0,"repeat":2,"announce":"跟腱拉伸，左右侧依次完成","cues":["屈膝但脚跟不抬起"]},
+            {"id":"ankle-mobility","name":"脚踝活动","durationSeconds":20,"restSeconds":0,"repeat":2,"announce":"脚踝轻柔活动","cues":["不要做到疼痛"]},
+            {"id":"shoulder","name":"肩部拉伸","durationSeconds":25,"restSeconds":0,"repeat":1,"announce":"肩部放松拉伸","cues":["保持自然呼吸"]},
+            {"id":"forearm","name":"前臂拉伸","durationSeconds":25,"restSeconds":0,"repeat":1,"announce":"前臂和手腕拉伸","cues":["力度温和"]}
+          ]
+        }
+      ]
+    },
+    {
+      "id": "jump-rope-standard-38",
+      "title": "38 分钟标准跳绳",
+      "level": "standard",
+      "description": "六阶段完整课程，包含基础间歇与跳法变化。",
+      "expectedDurationSeconds": 2280,
+      "voice": {
+        "countdownLast": 5,
+        "preAnnounceOnRest": true,
+        "rate": 1.0,
+        "enabled": true
+      },
+      "phases": [
+        {
+          "id": "warmup",
+          "name": "热身",
+          "exercises": [
+            {"id":"wrist","name":"手腕绕环","durationSeconds":60,"restSeconds":0,"repeat":1,"announce":"手腕绕环，动作放松","cues":["肩膀放松"]},
+            {"id":"ankle","name":"脚踝绕环","durationSeconds":60,"restSeconds":0,"repeat":1,"announce":"脚踝绕环","cues":["左右脚交替"]},
+            {"id":"calf","name":"提踵","durationSeconds":60,"restSeconds":0,"repeat":1,"announce":"开始提踵","cues":["缓慢落下"]},
+            {"id":"shadow","name":"无绳空跳","durationSeconds":120,"restSeconds":0,"repeat":1,"announce":"无绳空跳，找到节奏","cues":["前脚掌轻触地面"]}
+          ]
+        },
+        {
+          "id": "adapt",
+          "name": "适应跳",
+          "exercises": [
+            {"id":"basic-one","name":"慢速基础跳","durationSeconds":60,"restSeconds":30,"repeat":2,"announce":"慢速基础跳，先找到稳定节奏","cues":["手腕发力"]},
+            {"id":"basic-final","name":"基础跳衔接","durationSeconds":60,"restSeconds":0,"repeat":1,"announce":"继续基础跳，准备进入主训","cues":["保持轻柔落地"]}
+          ]
+        },
+        {
+          "id": "main-a",
+          "name": "主训 A · 间歇",
+          "exercises": [
+            {"id":"basic-interval","name":"基础跳","durationSeconds":45,"restSeconds":15,"repeat":5,"announce":"基础跳，手腕发力，前脚掌落地放轻","cues":["保持稳定节奏"]},
+            {"id":"alternate-interval","name":"左右脚交替跳","durationSeconds":45,"restSeconds":15,"repeat":5,"announce":"左右脚交替跳，像原地慢跑一样","cues":["身体保持直立"]}
+          ]
+        },
+        {
+          "id": "main-b",
+          "name": "主训 B · 变式",
+          "exercises": [
+            {"id":"high-knee","name":"高抬腿跳","durationSeconds":30,"restSeconds":30,"repeat":2,"announce":"高抬腿跳，保持核心稳定","cues":["落地保持轻柔"]},
+            {"id":"jumping-jack","name":"开合跳","durationSeconds":30,"restSeconds":30,"repeat":2,"announce":"开合跳，控制左右幅度","cues":["膝盖朝脚尖方向"]},
+            {"id":"front-back","name":"前后跳","durationSeconds":30,"restSeconds":30,"repeat":2,"announce":"前后跳，移动幅度保持小","cues":["上身保持稳定"]},
+            {"id":"double-under","name":"双摇挑战","durationSeconds":30,"restSeconds":30,"repeat":3,"announce":"双摇挑战，无法稳定完成时改为快速基础跳","cues":["可随时改为快速基础跳"]}
+          ]
+        },
+        {
+          "id": "cooldown",
+          "name": "降温",
+          "exercises": [
+            {"id":"slow","name":"慢速跳","durationSeconds":120,"restSeconds":0,"repeat":1,"announce":"降低跳速","cues":["让呼吸逐步恢复"]},
+            {"id":"march","name":"原地踏步","durationSeconds":120,"restSeconds":0,"repeat":1,"announce":"放下跳绳，开始原地踏步","cues":["不要突然停下"]}
+          ]
+        },
+        {
+          "id": "stretch",
+          "name": "拉伸",
+          "exercises": [
+            {"id":"calf","name":"小腿拉伸","durationSeconds":60,"restSeconds":0,"repeat":2,"announce":"小腿拉伸，左右侧依次完成","cues":["脚跟保持贴地"]},
+            {"id":"achilles","name":"跟腱拉伸","durationSeconds":45,"restSeconds":0,"repeat":2,"announce":"跟腱拉伸，左右侧依次完成","cues":["屈膝但脚跟不抬起"]},
+            {"id":"ankle","name":"脚踝活动","durationSeconds":30,"restSeconds":0,"repeat":2,"announce":"脚踝轻柔活动","cues":["不要做到疼痛"]},
+            {"id":"shoulder","name":"肩部拉伸","durationSeconds":45,"restSeconds":0,"repeat":1,"announce":"肩部放松拉伸","cues":["保持自然呼吸"]},
+            {"id":"forearm","name":"前臂拉伸","durationSeconds":45,"restSeconds":0,"repeat":1,"announce":"前臂和手腕拉伸","cues":["力度温和"]}
+          ]
+        }
+      ]
+    },
+    {
+      "id": "jump-rope-advanced-45",
+      "title": "45 分钟进阶跳绳",
+      "level": "advanced",
+      "description": "增加主训组数和变式密度，双摇不稳定时仍可降级。",
+      "expectedDurationSeconds": 2700,
+      "voice": {
+        "countdownLast": 5,
+        "preAnnounceOnRest": true,
+        "rate": 1.0,
+        "enabled": true
+      },
+      "phases": [
+        {
+          "id": "warmup",
+          "name": "热身",
+          "exercises": [
+            {"id":"wrist","name":"手腕绕环","durationSeconds":60,"restSeconds":0,"repeat":1,"announce":"手腕绕环","cues":["肩膀放松"]},
+            {"id":"ankle","name":"脚踝绕环","durationSeconds":60,"restSeconds":0,"repeat":1,"announce":"脚踝绕环","cues":["左右脚交替"]},
+            {"id":"calf","name":"提踵","durationSeconds":60,"restSeconds":0,"repeat":1,"announce":"开始提踵","cues":["缓慢落下"]},
+            {"id":"shadow","name":"无绳空跳","durationSeconds":120,"restSeconds":0,"repeat":1,"announce":"无绳空跳，找到节奏","cues":["前脚掌轻触地面"]}
+          ]
+        },
+        {
+          "id": "adapt",
+          "name": "适应跳",
+          "exercises": [
+            {"id":"basic-one","name":"慢速基础跳","durationSeconds":60,"restSeconds":30,"repeat":2,"announce":"慢速基础跳","cues":["手腕发力"]},
+            {"id":"basic-final","name":"基础跳衔接","durationSeconds":60,"restSeconds":0,"repeat":1,"announce":"继续基础跳，准备进入主训","cues":["保持轻柔落地"]}
+          ]
+        },
+        {
+          "id": "main-a",
+          "name": "主训 A · 间歇",
+          "exercises": [
+            {"id":"basic-interval","name":"快速基础跳","durationSeconds":45,"restSeconds":15,"repeat":6,"announce":"快速基础跳，保持落地轻盈","cues":["动作质量优先"]},
+            {"id":"alternate-interval","name":"左右脚交替跳","durationSeconds":45,"restSeconds":15,"repeat":6,"announce":"左右脚交替跳","cues":["身体保持直立"]}
+          ]
+        },
+        {
+          "id": "main-b",
+          "name": "主训 B · 变式",
+          "exercises": [
+            {"id":"high-knee","name":"高抬腿跳","durationSeconds":30,"restSeconds":30,"repeat":3,"announce":"高抬腿跳，保持核心稳定","cues":["落地保持轻柔"]},
+            {"id":"jumping-jack","name":"开合跳","durationSeconds":30,"restSeconds":30,"repeat":3,"announce":"开合跳，控制左右幅度","cues":["膝盖朝脚尖方向"]},
+            {"id":"front-back","name":"前后跳","durationSeconds":30,"restSeconds":30,"repeat":3,"announce":"前后跳，移动幅度保持小","cues":["上身保持稳定"]},
+            {"id":"double-under","name":"双摇挑战","durationSeconds":30,"restSeconds":30,"repeat":3,"announce":"双摇挑战，无法稳定完成时改为快速基础跳","cues":["可随时改为快速基础跳"]}
+          ]
+        },
+        {
+          "id": "cooldown",
+          "name": "降温",
+          "exercises": [
+            {"id":"slow","name":"慢速跳","durationSeconds":120,"restSeconds":0,"repeat":1,"announce":"降低跳速","cues":["让呼吸逐步恢复"]},
+            {"id":"march","name":"原地踏步","durationSeconds":180,"restSeconds":0,"repeat":1,"announce":"放下跳绳，开始原地踏步","cues":["不要突然停下"]}
+          ]
+        },
+        {
+          "id": "stretch",
+          "name": "拉伸",
+          "exercises": [
+            {"id":"calf","name":"小腿拉伸","durationSeconds":60,"restSeconds":0,"repeat":2,"announce":"小腿拉伸，左右侧依次完成","cues":["脚跟保持贴地"]},
+            {"id":"achilles","name":"跟腱拉伸","durationSeconds":45,"restSeconds":0,"repeat":2,"announce":"跟腱拉伸，左右侧依次完成","cues":["屈膝但脚跟不抬起"]},
+            {"id":"ankle","name":"脚踝活动","durationSeconds":30,"restSeconds":0,"repeat":2,"announce":"脚踝轻柔活动","cues":["不要做到疼痛"]},
+            {"id":"shoulder","name":"肩部拉伸","durationSeconds":75,"restSeconds":0,"repeat":1,"announce":"肩部放松拉伸","cues":["保持自然呼吸"]},
+            {"id":"forearm","name":"前臂拉伸","durationSeconds":75,"restSeconds":0,"repeat":1,"announce":"前臂和手腕拉伸","cues":["力度温和"]}
+          ]
+        }
+      ]
+    }
+  ]
+}

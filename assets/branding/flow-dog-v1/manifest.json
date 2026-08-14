@@ -1,0 +1,36 @@
+{
+  "version": "flow-dog-v1",
+  "character": "原创训练小犬 Flow：蜜桃毛色、象牙白面颊与腹部、深蓝头带及运动装备",
+  "promptVersion": "flow-dog-v1-original-training-puppy",
+  "source": "参考图仅用于圆润手绘贴纸质感，不复刻其具体角色、服饰、姿势或构图",
+  "reviewStatus": "pending-human-visual-review",
+  "rightsStatus": "blocked-pending-reference-rights-confirmation",
+  "generation": {
+    "method": "OpenAI 图像生成后经本地裁切、色键透明化和尺寸规范化",
+    "outputOwnershipNote": "生成工具的输出归属不等于第三方权利不侵权保证",
+    "commercialRelease": "未获人工版权审核与参考图权利确认前禁止发布"
+  },
+  "referenceEvidence": {
+    "inputType": "用户提供的三张风格参考截屏",
+    "ownerOrLicense": "待确认",
+    "sourceUrl": "待确认",
+    "permissionRecord": "待确认"
+  },
+  "canvas": "512x512 transparent PNG",
+  "variants": {
+    "navy": "浅色页面用深蓝线稿与蜜桃、象牙白主体",
+    "peach-light": "深色页面用象牙白外轮廓与高对比蜜桃主体"
+  },
+  "actions": [
+    "01-pointing-guide", "02-running", "03-side-lunge-stretch", "04-seated-meditation", "05-jumping-jack",
+    "06-high-knees", "07-sprint", "08-jump-rope", "09-burpee", "10-squat",
+    "11-forward-lunge", "12-push-up", "13-plank", "14-mountain-climber", "15-sit-up-crunch",
+    "16-dumbbell-curl", "17-dumbbell-overhead-press", "18-standing-side-stretch", "19-seated-forward-fold", "20-tree-pose-balance"
+  ],
+  "sourceSha256": {
+    "lightSprite": "337abd2dacf9cc1ecff0c13b8f57e0110a97b0f60bea5ea1069bc7b3be7ac49b",
+    "darkSprite": "e4c481489d9b74f56a33a1c3979a86802374d84c1aa747928183a2fe11417467",
+    "avatar256": "4b2bb17140b2c3ff3584dc407776f52e35fd99fb134b914a2f8a21065b866d13",
+    "lockup1600": "b459fa1e667c04e564c25f4104c492737c527822fa4555e764e3e8cd89d2b01e"
+  }
+}

@@ -1,0 +1,97 @@
+{
+  "courses": [
+    {
+      "id": "knee-ankle-stability-v1",
+      "kind": "functional_circuit",
+      "title": "膝踝稳定与小肌群激活循环",
+      "level": "beginner",
+      "description": "按次数完成膝、髋与踝控制动作；本课程不替代诊断或治疗。出现疼痛或不稳定增加时请立即停止。",
+      "expectedDurationSeconds": 300,
+      "roundOptions": [2, 3],
+      "defaultRounds": 2,
+      "preflightChecks": [
+        "我已完成运动前筛查，且现在没有严重肿胀、不能负重、关节锁住或打软腿等情况。",
+        "我会以无痛、可控的幅度完成动作；疼痛或不稳定增加时立即停止。"
+      ],
+      "voice": {
+        "countdownLast": 0,
+        "preAnnounceOnRest": false,
+        "rate": 1.0,
+        "enabled": true
+      },
+      "phases": [
+        {
+          "id": "knee-ankle-stability",
+          "name": "膝踝稳定循环",
+          "exercises": [
+            {
+              "id": "peterson-step-down",
+              "name": "Peterson 下台阶",
+              "libraryExerciseId": "exercise-peterson-step-down",
+              "completionMode": "repetitions",
+              "targetRepetitions": 10,
+              "repetitionUnit": "per_side",
+              "durationSeconds": 60,
+              "restSeconds": 0,
+              "repeat": 1,
+              "announce": "",
+              "cues": ["站在低台阶边缘，缓慢屈膝下放。", "骨盆保持稳定，膝盖对准第二脚趾。"]
+            },
+            {
+              "id": "single-leg-glute-bridge",
+              "name": "单腿臀桥",
+              "libraryExerciseId": "exercise-single-leg-glute-bridge",
+              "completionMode": "repetitions",
+              "targetRepetitions": 12,
+              "repetitionUnit": "per_side",
+              "durationSeconds": 60,
+              "restSeconds": 0,
+              "repeat": 1,
+              "announce": "",
+              "cues": ["脚跟稳定支撑，抬起骨盆。", "不要用腰部代偿，保持动作可控。"]
+            },
+            {
+              "id": "single-leg-calf-raise",
+              "name": "单腿提踵",
+              "libraryExerciseId": "exercise-single-leg-calf-raise",
+              "completionMode": "repetitions",
+              "targetRepetitions": 16,
+              "repetitionUnit": "per_side",
+              "durationSeconds": 60,
+              "restSeconds": 0,
+              "repeat": 1,
+              "announce": "",
+              "cues": ["必要时轻扶固定物保持平衡。", "缓慢抬起和下放脚跟，不借力弹跳。"]
+            },
+            {
+              "id": "tibialis-raise",
+              "name": "站姿勾脚尖",
+              "libraryExerciseId": "exercise-tibialis-raise",
+              "completionMode": "repetitions",
+              "targetRepetitions": 20,
+              "repetitionUnit": "total",
+              "durationSeconds": 60,
+              "restSeconds": 0,
+              "repeat": 1,
+              "announce": "",
+              "cues": ["脚跟稳定，缓慢勾起脚尖。", "双侧交替或同时完成，动作全程可控。"]
+            },
+            {
+              "id": "split-stance-bent-knee-calf-raise",
+              "name": "分腿站姿屈膝提踵",
+              "libraryExerciseId": "exercise-split-stance-bent-knee-calf-raise",
+              "completionMode": "repetitions",
+              "targetRepetitions": 12,
+              "repetitionUnit": "per_side",
+              "durationSeconds": 60,
+              "restSeconds": 0,
+              "repeat": 1,
+              "announce": "",
+              "cues": ["前后分腿，前腿轻微屈膝。", "保持脚掌稳定，缓慢抬高和下放后脚跟。"]
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

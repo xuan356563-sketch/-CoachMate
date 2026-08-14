@@ -1,0 +1,14 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1024 1024" role="img" aria-labelledby="title">
+  <title id="title">智练 TrainMate 仅营销展示使用的印刷纹理</title>
+  <g id="marketing-texture" fill="#19172C">
+    <circle cx="92" cy="124" r="11"/><circle cx="211" cy="87" r="6"/><circle cx="354" cy="146" r="9"/><circle cx="491" cy="96" r="5"/><circle cx="642" cy="139" r="12"/><circle cx="801" cy="91" r="7"/><circle cx="932" cy="151" r="10"/>
+    <circle cx="143" cy="303" r="7"/><circle cx="278" cy="254" r="13"/><circle cx="433" cy="318" r="6"/><circle cx="576" cy="267" r="9"/><circle cx="734" cy="325" r="5"/><circle cx="890" cy="275" r="12"/>
+    <circle cx="78" cy="488" r="8"/><circle cx="229" cy="438" r="5"/><circle cx="378" cy="503" r="12"/><circle cx="527" cy="452" r="7"/><circle cx="681" cy="509" r="10"/><circle cx="842" cy="461" r="6"/><circle cx="953" cy="522" r="9"/>
+    <circle cx="132" cy="684" r="12"/><circle cx="302" cy="632" r="7"/><circle cx="456" cy="699" r="5"/><circle cx="617" cy="649" r="11"/><circle cx="781" cy="708" r="8"/><circle cx="917" cy="657" r="5"/>
+    <circle cx="83" cy="879" r="6"/><circle cx="247" cy="827" r="10"/><circle cx="414" cy="895" r="7"/><circle cx="568" cy="842" r="13"/><circle cx="732" cy="902" r="5"/><circle cx="886" cy="854" r="9"/>
+  </g>
+  <g id="marketing-strokes" fill="none" stroke="#FFB27D" stroke-width="10" stroke-linecap="round">
+    <path d="M45 216C118 189 174 194 236 219"/><path d="M518 202C602 177 669 184 749 215"/><path d="M280 389C361 359 425 367 501 397"/><path d="M720 403C801 375 864 382 969 420"/>
+    <path d="M42 596C129 568 193 576 266 610"/><path d="M498 593C575 564 644 572 720 606"/><path d="M246 782C330 753 397 763 473 798"/><path d="M704 793C785 766 850 774 971 815"/>
+  </g>
+</svg>

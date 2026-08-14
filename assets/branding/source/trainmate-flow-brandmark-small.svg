@@ -1,0 +1,13 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1024 1024" role="img" aria-labelledby="title">
+  <title id="title">智练 TrainMate Flow 三度前倾小尺寸头像</title>
+  <g id="flow-avatar-small" transform="translate(-56 0) rotate(3 512 540)">
+    <path id="ribbon-long" d="M860 404C901 357 944 347 979 370" fill="none" stroke="#FFB27D" stroke-width="50" stroke-linecap="round"/>
+    <path id="ribbon-short" d="M866 438C894 464 916 490 933 516" fill="none" stroke="#FFB27D" stroke-width="46" stroke-linecap="round"/>
+    <path id="flow-head" d="M178 720C133 568 167 374 257 259C319 180 403 132 476 160C536 183 565 235 645 251C742 270 826 313 866 393C921 504 905 708 819 818C730 931 487 930 301 872C230 850 190 803 178 720Z" fill="#19172C"/>
+    <path id="training-headband" d="M199 443C207 404 246 382 302 371C441 343 626 348 785 385C835 397 860 421 855 451C850 481 823 493 786 483C624 443 433 442 274 480C231 490 192 475 199 443Z" fill="#FFB27D"/>
+    <path id="headband-knot" d="M827 394C844 380 868 382 882 399C895 415 890 438 871 451C853 462 831 454 823 435C817 420 818 404 827 394Z" fill="#FFB27D"/>
+    <path id="ai-visor" d="M258 550C258 500 296 472 351 472L700 475C757 476 787 505 785 552L783 597C781 644 743 670 687 671L350 669C292 668 258 638 258 591Z" fill="#FFFDFC"/>
+    <circle id="face-eye-dot" cx="402" cy="566" r="27" fill="#19172C"/>
+    <path id="face-eye-arc" d="M552 589Q621 543 692 581" fill="none" stroke="#19172C" stroke-width="31" stroke-linecap="round"/>
+  </g>
+</svg>
