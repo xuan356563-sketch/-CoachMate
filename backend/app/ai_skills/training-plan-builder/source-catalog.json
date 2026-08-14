@@ -1,0 +1,526 @@
+{
+  "schema_version": 2,
+  "bundle_id": "all-training-skills-bundle",
+  "bundle_filename": "all-training-skills-bundle.zip",
+  "bundle_sha256": "a7585bc334a80fe1521052d5800860763cd4b49110e7bd26cb84de0b28cf3a57",
+  "archive_entry_count": 258,
+  "skill_count": 50,
+  "license_status": "unverified",
+  "raw_sources_packaged": false,
+  "review_scope": "contract_and_safety_only",
+  "modules": [
+    {
+      "id": "bdmt-conditioning",
+      "group": "badminton",
+      "archive_path": "badminton/bdmt-conditioning/SKILL.md",
+      "source_sha256": "06f09f13531ed943ba6e152a6bc873c8f428e1ecdeaad31602060184639a6461",
+      "audit_level": "unverified",
+      "status": "catalog_only",
+      "reason_code": "unsupported_sport_and_template",
+      "runtime_targets": []
+    },
+    {
+      "id": "bdmt-footwork",
+      "group": "badminton",
+      "archive_path": "badminton/bdmt-footwork/SKILL.md",
+      "source_sha256": "4844e9f4f80cd48fec327f5cfa8a5f108a079b9d620ac04d563bd74f2a85cb22",
+      "audit_level": "unverified",
+      "status": "catalog_only",
+      "reason_code": "unsupported_sport_and_template",
+      "runtime_targets": []
+    },
+    {
+      "id": "bdmt-strokes",
+      "group": "badminton",
+      "archive_path": "badminton/bdmt-strokes/SKILL.md",
+      "source_sha256": "ef1a1c7e426cf7252af1c29a48ecdcadb16d1931a88be5cf7061f68887a563a9",
+      "audit_level": "unverified",
+      "status": "catalog_only",
+      "reason_code": "technique_or_tactics_outside_prescription",
+      "runtime_targets": []
+    },
+    {
+      "id": "bdmt-tactics",
+      "group": "badminton",
+      "archive_path": "badminton/bdmt-tactics/SKILL.md",
+      "source_sha256": "0b9bcbae8f9a134c092f4ade5a5a02b102b77854b8edb306900bb58cbd09da32",
+      "audit_level": "unverified",
+      "status": "catalog_only",
+      "reason_code": "technique_or_tactics_outside_prescription",
+      "runtime_targets": []
+    },
+    {
+      "id": "ldstr-bone-stress",
+      "group": "changpao-liliang",
+      "archive_path": "changpao-liliang/ldstr-bone-stress/SKILL.md",
+      "source_sha256": "e307e825e110611d9f338e696315e866b6a5cc69d7d76a0bca8e4871aeb87605",
+      "audit_level": "self_declared",
+      "status": "blocked",
+      "reason_code": "injury_or_medical_out_of_scope",
+      "runtime_targets": []
+    },
+    {
+      "id": "ldstr-injury-prevention",
+      "group": "changpao-liliang",
+      "archive_path": "changpao-liliang/ldstr-injury-prevention/SKILL.md",
+      "source_sha256": "ccb09ab41b40259b2c5dff04fd76ed603deb5f08a5dfd2c71c0609f8a6d8e6af",
+      "audit_level": "self_declared",
+      "status": "blocked",
+      "reason_code": "injury_or_medical_out_of_scope",
+      "runtime_targets": []
+    },
+    {
+      "id": "ldstr-load-management",
+      "group": "changpao-liliang",
+      "archive_path": "changpao-liliang/ldstr-load-management/SKILL.md",
+      "source_sha256": "17f357b16abd352eae3b15caba901864352b2a076c6d1c2bac4369ef86108bcd",
+      "audit_level": "self_declared",
+      "status": "catalog_only",
+      "reason_code": "health_load_metrics_out_of_contract",
+      "runtime_targets": []
+    },
+    {
+      "id": "ldstr-running-durability",
+      "group": "changpao-liliang",
+      "archive_path": "changpao-liliang/ldstr-running-durability/SKILL.md",
+      "source_sha256": "642f65b6e79f73a0dfdd6d9ff0c78912d15a1baffde73733a1f51b3396f77480",
+      "audit_level": "self_declared",
+      "status": "runtime_approved",
+      "reason_code": "approved_for_marathon_fragment",
+      "runtime_targets": ["marathon"]
+    },
+    {
+      "id": "kinetic-chain-selection",
+      "group": "jichu-jidonglixue",
+      "archive_path": "jichu-jidonglixue/kinetic-chain-selection/SKILL.md",
+      "source_sha256": "606c8bebb02059e512d64aff28ed318827c24c16849cdf14823dffc7e92afbc4",
+      "audit_level": "author_self_tested",
+      "status": "blocked",
+      "reason_code": "rehabilitation_out_of_scope",
+      "runtime_targets": []
+    },
+    {
+      "id": "length-tension-force-couple",
+      "group": "jichu-jidonglixue",
+      "archive_path": "jichu-jidonglixue/length-tension-force-couple/SKILL.md",
+      "source_sha256": "8a21827d8193978c09cb8e466a4168b2e8afcfd6d81aedebe687a4dfca340727",
+      "audit_level": "author_self_tested",
+      "status": "catalog_only",
+      "reason_code": "local_exercise_catalog_owned",
+      "runtime_targets": []
+    },
+    {
+      "id": "lever-systems",
+      "group": "jichu-jidonglixue",
+      "archive_path": "jichu-jidonglixue/lever-systems/SKILL.md",
+      "source_sha256": "16070f3e3f5cf16d5110f358bd78cfb19c631d73f47e8c89cc6e30bf235dda62",
+      "audit_level": "author_self_tested",
+      "status": "catalog_only",
+      "reason_code": "local_exercise_catalog_owned",
+      "runtime_targets": []
+    },
+    {
+      "id": "muscle-contraction-types",
+      "group": "jichu-jidonglixue",
+      "archive_path": "jichu-jidonglixue/muscle-contraction-types/SKILL.md",
+      "source_sha256": "1f192da99abfd5fe699f09895bcd603978e0e2ec85ba3ca4fa2fa9f2054dd17d",
+      "audit_level": "author_self_tested",
+      "status": "catalog_only",
+      "reason_code": "local_exercise_catalog_owned",
+      "runtime_targets": []
+    },
+    {
+      "id": "muscle-functional-roles",
+      "group": "jichu-jidonglixue",
+      "archive_path": "jichu-jidonglixue/muscle-functional-roles/SKILL.md",
+      "source_sha256": "6746b2bc1f17942f82d9abc305b59a3ee91b787a2c6071564ae09012023e31db",
+      "audit_level": "author_self_tested",
+      "status": "catalog_only",
+      "reason_code": "local_exercise_catalog_owned",
+      "runtime_targets": []
+    },
+    {
+      "id": "planes-of-motion",
+      "group": "jichu-jidonglixue",
+      "archive_path": "jichu-jidonglixue/planes-of-motion/SKILL.md",
+      "source_sha256": "eb21ab47ce8dbb5c124544a08982fa0d7a878bf3e2bd0b9f9cf5cc8943f61bc8",
+      "audit_level": "author_self_tested",
+      "status": "catalog_only",
+      "reason_code": "local_exercise_catalog_owned",
+      "runtime_targets": []
+    },
+    {
+      "id": "periodization-models",
+      "group": "liliang-xunlian-jichu",
+      "archive_path": "liliang-xunlian-jichu/periodization-models/SKILL.md",
+      "source_sha256": "b59ac75e92691fd3da76f3adf8226b304fbd4d943aa07b8130d1fde09c9a4639",
+      "audit_level": "author_self_tested",
+      "status": "runtime_approved",
+      "reason_code": "approved_for_base_runtime",
+      "runtime_targets": ["base"]
+    },
+    {
+      "id": "progressive-overload",
+      "group": "liliang-xunlian-jichu",
+      "archive_path": "liliang-xunlian-jichu/progressive-overload/SKILL.md",
+      "source_sha256": "50e9100d4f2e09132455efce38c78fc532b1d6f0db9373367d6c3a8e9dda8b3b",
+      "audit_level": "author_self_tested",
+      "status": "runtime_approved",
+      "reason_code": "approved_for_base_runtime",
+      "runtime_targets": ["base"]
+    },
+    {
+      "id": "recovery-supercompensation",
+      "group": "liliang-xunlian-jichu",
+      "archive_path": "liliang-xunlian-jichu/recovery-supercompensation/SKILL.md",
+      "source_sha256": "5e2c3e9795e824d9fc3436622f6e0dfe97385d532b25b75375efb515e6d13db5",
+      "audit_level": "author_self_tested",
+      "status": "runtime_approved",
+      "reason_code": "approved_for_base_runtime",
+      "runtime_targets": ["base"]
+    },
+    {
+      "id": "rpe-rir-autoregulation",
+      "group": "liliang-xunlian-jichu",
+      "archive_path": "liliang-xunlian-jichu/rpe-rir-autoregulation/SKILL.md",
+      "source_sha256": "80e68505682067b191db4955beb43062f7fc1bcc54f29d741eee5ade939b7f0d",
+      "audit_level": "author_self_tested",
+      "status": "catalog_only",
+      "reason_code": "rpe_rir_output_owned_by_local_compiler",
+      "runtime_targets": []
+    },
+    {
+      "id": "specificity-said",
+      "group": "liliang-xunlian-jichu",
+      "archive_path": "liliang-xunlian-jichu/specificity-said/SKILL.md",
+      "source_sha256": "b887c2c76beaf9054234725e8c4db39fcedf7a1132059cd35ea856c79015879a",
+      "audit_level": "author_self_tested",
+      "status": "runtime_approved",
+      "reason_code": "approved_for_base_runtime",
+      "runtime_targets": ["base"]
+    },
+    {
+      "id": "volume-landmarks",
+      "group": "liliang-xunlian-jichu",
+      "archive_path": "liliang-xunlian-jichu/volume-landmarks/SKILL.md",
+      "source_sha256": "f83f71a62598b1be7045f08cd23e204cce88e917b57b3f670092a7e1cac9bde6",
+      "audit_level": "author_self_tested",
+      "status": "runtime_approved",
+      "reason_code": "approved_for_base_runtime",
+      "runtime_targets": ["base"]
+    },
+    {
+      "id": "endsc-interference-effect",
+      "group": "nailipao-sc",
+      "archive_path": "nailipao-sc/endsc-interference-effect/SKILL.md",
+      "source_sha256": "4f1dae1d833709757f9de9ee9b137495536f344eaabec614d76b551262d15edf",
+      "audit_level": "self_declared",
+      "status": "runtime_approved",
+      "reason_code": "approved_for_marathon_fragment",
+      "runtime_targets": ["marathon"]
+    },
+    {
+      "id": "endsc-season-periodization",
+      "group": "nailipao-sc",
+      "archive_path": "nailipao-sc/endsc-season-periodization/SKILL.md",
+      "source_sha256": "2eb733b329ecd39a5bd4e1762392a63af85080d81b4d4503287bd16e6e60eb4a",
+      "audit_level": "self_declared",
+      "status": "runtime_approved",
+      "reason_code": "approved_for_marathon_fragment",
+      "runtime_targets": ["marathon"]
+    },
+    {
+      "id": "endsc-session-sequencing",
+      "group": "nailipao-sc",
+      "archive_path": "nailipao-sc/endsc-session-sequencing/SKILL.md",
+      "source_sha256": "77f5c79701c860030007aeedb29d0a447d5766ca0286a41896649ebd65f295d9",
+      "audit_level": "self_declared",
+      "status": "runtime_approved",
+      "reason_code": "approved_for_marathon_fragment",
+      "runtime_targets": ["marathon"]
+    },
+    {
+      "id": "endsc-strength-running-economy",
+      "group": "nailipao-sc",
+      "archive_path": "nailipao-sc/endsc-strength-running-economy/SKILL.md",
+      "source_sha256": "3bb5bcf935fcbffa5398c9da2a7a498da69097eee07d21bdb38a4cfe0cb488b8",
+      "audit_level": "self_declared",
+      "status": "runtime_approved",
+      "reason_code": "approved_for_marathon_fragment",
+      "runtime_targets": ["marathon"]
+    },
+    {
+      "id": "acute-variables-config",
+      "group": "nasm-cpt",
+      "archive_path": "nasm-cpt/acute-variables-config/SKILL.md",
+      "source_sha256": "52a08776cd80a9d2a883b61c4f77f995fae1a038db1a0ece5a25bd6f5b19efda",
+      "audit_level": "author_self_tested",
+      "status": "catalog_only",
+      "reason_code": "sets_reps_load_owned_by_local_templates",
+      "runtime_targets": []
+    },
+    {
+      "id": "behavior-change-coaching",
+      "group": "nasm-cpt",
+      "archive_path": "nasm-cpt/behavior-change-coaching/SKILL.md",
+      "source_sha256": "dc9bc5ab1e437c8f95194c4bdff8dc8c7ba1665636e61f21041360ca4229ab7a",
+      "audit_level": "author_self_tested",
+      "status": "catalog_only",
+      "reason_code": "outside_initial_plan_prescription",
+      "runtime_targets": []
+    },
+    {
+      "id": "cardio-hr-zones",
+      "group": "nasm-cpt",
+      "archive_path": "nasm-cpt/cardio-hr-zones/SKILL.md",
+      "source_sha256": "416f674e6e98ec445b360de7d72dd1d04e5e33db2f9a9bbe11a208164c85e166",
+      "audit_level": "author_self_tested",
+      "status": "catalog_only",
+      "reason_code": "heart_rate_data_out_of_contract",
+      "runtime_targets": []
+    },
+    {
+      "id": "corrective-exercise-continuum",
+      "group": "nasm-cpt",
+      "archive_path": "nasm-cpt/corrective-exercise-continuum/SKILL.md",
+      "source_sha256": "1986850179c96d9e5291c4201446d2ed31c1ef13abe55b62e044966666f36d68",
+      "audit_level": "author_self_tested",
+      "status": "blocked",
+      "reason_code": "rehabilitation_out_of_scope",
+      "runtime_targets": []
+    },
+    {
+      "id": "opt-model-phase-select",
+      "group": "nasm-cpt",
+      "archive_path": "nasm-cpt/opt-model-phase-select/SKILL.md",
+      "source_sha256": "1f34ec587a353e0e78ab493e8c608a0d010d73840321c37daacca1943d445a1f",
+      "audit_level": "author_self_tested",
+      "status": "runtime_approved",
+      "reason_code": "approved_for_base_runtime",
+      "runtime_targets": ["base"]
+    },
+    {
+      "id": "overhead-squat-assessment",
+      "group": "nasm-cpt",
+      "archive_path": "nasm-cpt/overhead-squat-assessment/SKILL.md",
+      "source_sha256": "f5043cf16a35e41d5d8272ed542bd0025a670707946e75b3875c82601ad4d64a",
+      "audit_level": "author_self_tested",
+      "status": "blocked",
+      "reason_code": "health_assessment_out_of_scope",
+      "runtime_targets": []
+    },
+    {
+      "id": "runstr-plyometrics",
+      "group": "paobu-liliang",
+      "archive_path": "paobu-liliang/runstr-plyometrics/SKILL.md",
+      "source_sha256": "2dba07e4208091f5a5eead4b7fb0bf2fbad640060efb5790731b0eeb6a04f3eb",
+      "audit_level": "self_declared",
+      "status": "catalog_only",
+      "reason_code": "requires_high_impact_template_and_gate",
+      "runtime_targets": []
+    },
+    {
+      "id": "runstr-running-economy",
+      "group": "paobu-liliang",
+      "archive_path": "paobu-liliang/runstr-running-economy/SKILL.md",
+      "source_sha256": "74832d96d9440aa20f151f48451e630b444951547558db660133714ac83102b3",
+      "audit_level": "self_declared",
+      "status": "runtime_approved",
+      "reason_code": "approved_for_marathon_fragment",
+      "runtime_targets": ["marathon"]
+    },
+    {
+      "id": "runstr-single-leg-stability",
+      "group": "paobu-liliang",
+      "archive_path": "paobu-liliang/runstr-single-leg-stability/SKILL.md",
+      "source_sha256": "03438d84f185337cbced35de195025e7a5bf7e2a8bb69b11f26151f3d1860ac0",
+      "audit_level": "self_declared",
+      "status": "catalog_only",
+      "reason_code": "exercise_selection_owned_by_local_templates",
+      "runtime_targets": []
+    },
+    {
+      "id": "runstr-tendon-elasticity",
+      "group": "paobu-liliang",
+      "archive_path": "paobu-liliang/runstr-tendon-elasticity/SKILL.md",
+      "source_sha256": "ecf43d404fe74ce6a901fc3368014624879dbfc3eb7c93c230e789f92babe3e6",
+      "audit_level": "self_declared",
+      "status": "catalog_only",
+      "reason_code": "requires_high_impact_template_and_gate",
+      "runtime_targets": []
+    },
+    {
+      "id": "pc-energy-systems",
+      "group": "ti-neng-xunlian",
+      "archive_path": "ti-neng-xunlian/pc-energy-systems/SKILL.md",
+      "source_sha256": "4bbb6945dc3304cbd38871ebfe3e6a50a9a6102ec7371f72683d4df1b65dff80",
+      "audit_level": "unverified",
+      "status": "runtime_approved",
+      "reason_code": "approved_for_base_runtime",
+      "runtime_targets": ["base"]
+    },
+    {
+      "id": "pc-gpp-work-capacity",
+      "group": "ti-neng-xunlian",
+      "archive_path": "ti-neng-xunlian/pc-gpp-work-capacity/SKILL.md",
+      "source_sha256": "4df108ee7bf90a83581096bbb167da70e627338c0e62389393db342d90eace83",
+      "audit_level": "unverified",
+      "status": "runtime_approved",
+      "reason_code": "approved_for_base_runtime",
+      "runtime_targets": ["base"]
+    },
+    {
+      "id": "pc-ramp-warmup",
+      "group": "ti-neng-xunlian",
+      "archive_path": "ti-neng-xunlian/pc-ramp-warmup/SKILL.md",
+      "source_sha256": "36d7cfe86ade13ed90cb4f83995776d735deb0082436948b3847d4944c99adba",
+      "audit_level": "unverified",
+      "status": "catalog_only",
+      "reason_code": "warmup_actions_owned_by_local_templates",
+      "runtime_targets": []
+    },
+    {
+      "id": "pc-saq-training",
+      "group": "ti-neng-xunlian",
+      "archive_path": "ti-neng-xunlian/pc-saq-training/SKILL.md",
+      "source_sha256": "b19168c0504a81fc1538057752dabbac8f2f8167b542bf87183330a9cb12c0ea",
+      "audit_level": "unverified",
+      "status": "catalog_only",
+      "reason_code": "requires_local_saq_template",
+      "runtime_targets": []
+    },
+    {
+      "id": "trailrun-race-pacing",
+      "group": "yueyepao-zhe",
+      "archive_path": "yueyepao-zhe/trailrun-race-pacing/SKILL.md",
+      "source_sha256": "843abbdbde91ac6edab2d95a0347d5463ad1b8ae2558f1bb824ca476a4849107",
+      "audit_level": "self_declared",
+      "status": "catalog_only",
+      "reason_code": "race_operations_outside_prescription",
+      "runtime_targets": []
+    },
+    {
+      "id": "trailrun-race-prep",
+      "group": "yueyepao-zhe",
+      "archive_path": "yueyepao-zhe/trailrun-race-prep/SKILL.md",
+      "source_sha256": "05c7613adc4524fadd1d37badf5d7ecdfa51297cbe82b62be8570705be28fc45",
+      "audit_level": "self_declared",
+      "status": "catalog_only",
+      "reason_code": "race_operations_outside_prescription",
+      "runtime_targets": []
+    },
+    {
+      "id": "trailrun-road-to-trail",
+      "group": "yueyepao-zhe",
+      "archive_path": "yueyepao-zhe/trailrun-road-to-trail/SKILL.md",
+      "source_sha256": "b1491fe0900ee04ef16f45f172566cc5c4ec0d6fb90a685fc829dda4a77c6a20",
+      "audit_level": "self_declared",
+      "status": "runtime_approved",
+      "reason_code": "approved_for_trail_fragment",
+      "runtime_targets": ["trail_running"]
+    },
+    {
+      "id": "trailrun-run-walk-strategy",
+      "group": "yueyepao-zhe",
+      "archive_path": "yueyepao-zhe/trailrun-run-walk-strategy/SKILL.md",
+      "source_sha256": "d67ca30a019662f330c64ff902b3c37531eff00ddb325e7968fccfb72bd8b07e",
+      "audit_level": "self_declared",
+      "status": "runtime_approved",
+      "reason_code": "approved_for_trail_fragment",
+      "runtime_targets": ["trail_running"]
+    },
+    {
+      "id": "trailguide-terrain-endurance",
+      "group": "yueyepao-zhinan",
+      "archive_path": "yueyepao-zhinan/trailguide-terrain-endurance/SKILL.md",
+      "source_sha256": "e58975bf7e025e696fb15d83bd4450fd55d0c3c4fbafe2663fbf3b34bf8ce5af",
+      "audit_level": "self_declared",
+      "status": "runtime_approved",
+      "reason_code": "approved_for_trail_fragment",
+      "runtime_targets": ["trail_running"]
+    },
+    {
+      "id": "trailguide-uphill-conditioning",
+      "group": "yueyepao-zhinan",
+      "archive_path": "yueyepao-zhinan/trailguide-uphill-conditioning/SKILL.md",
+      "source_sha256": "35475f0ae72870167bb86e59726eeceb591c4bc2ef89b8b7cf5bec314d4ec83e",
+      "audit_level": "self_declared",
+      "status": "runtime_approved",
+      "reason_code": "approved_for_trail_fragment",
+      "runtime_targets": ["trail_running"]
+    },
+    {
+      "id": "trailguide-vert-periodization",
+      "group": "yueyepao-zhinan",
+      "archive_path": "yueyepao-zhinan/trailguide-vert-periodization/SKILL.md",
+      "source_sha256": "d2ae2fa0f6f056a433c0f275cbf1385c82960c77f0941955ecd870e4dea30d92",
+      "audit_level": "self_declared",
+      "status": "runtime_approved",
+      "reason_code": "approved_for_trail_fragment",
+      "runtime_targets": ["trail_running"]
+    },
+    {
+      "id": "trailguide-vertical-training",
+      "group": "yueyepao-zhinan",
+      "archive_path": "yueyepao-zhinan/trailguide-vertical-training/SKILL.md",
+      "source_sha256": "8f6c3cf641a1333a7051a54419fbbbcb44dbe7007e2b2022633e2c18b01b89bb",
+      "audit_level": "self_declared",
+      "status": "runtime_approved",
+      "reason_code": "approved_for_trail_fragment",
+      "runtime_targets": ["trail_running"]
+    },
+    {
+      "id": "ultratrail-downhill-technique",
+      "group": "zhongji-yueye",
+      "archive_path": "zhongji-yueye/ultratrail-downhill-technique/SKILL.md",
+      "source_sha256": "b95eeea54614966e4669188fccb50828435c6a4b6c29e506bd738b5af4c16da9",
+      "audit_level": "self_declared",
+      "status": "catalog_only",
+      "reason_code": "requires_local_technique_template",
+      "runtime_targets": []
+    },
+    {
+      "id": "ultratrail-fueling-hydration",
+      "group": "zhongji-yueye",
+      "archive_path": "zhongji-yueye/ultratrail-fueling-hydration/SKILL.md",
+      "source_sha256": "cb6f4aec6cc1c647ae69a59e7f92344c2353a82aa4ff73bbb259176304a8814b",
+      "audit_level": "self_declared",
+      "status": "blocked",
+      "reason_code": "nutrition_out_of_scope",
+      "runtime_targets": []
+    },
+    {
+      "id": "ultratrail-technical-footwork",
+      "group": "zhongji-yueye",
+      "archive_path": "zhongji-yueye/ultratrail-technical-footwork/SKILL.md",
+      "source_sha256": "a79a6ffb1a742a6e38e1cb3974460fef4b4c59cc9874458bc4fab10afe6cacf0",
+      "audit_level": "self_declared",
+      "status": "catalog_only",
+      "reason_code": "requires_local_technique_template",
+      "runtime_targets": []
+    },
+    {
+      "id": "ultratrail-uphill-hiking",
+      "group": "zhongji-yueye",
+      "archive_path": "zhongji-yueye/ultratrail-uphill-hiking/SKILL.md",
+      "source_sha256": "61af75be9c4ffc9a50944cc9834da416b1f5cbacf5b41b5352f784a1740750d0",
+      "audit_level": "self_declared",
+      "status": "runtime_approved",
+      "reason_code": "approved_for_trail_fragment",
+      "runtime_targets": ["trail_running"]
+    }
+  ],
+  "external_sources": [
+    {
+      "id": "xiaosun-abc-cycle",
+      "source_filename": "训练处方Skill_ABC循环渐进法_20260718.md",
+      "source_sha256": "d1e203b0fd1f1709e43e4d589a83d55063157fdea2143a7917eacc23142857ee",
+      "audit_level": "unverified",
+      "status": "runtime_approved",
+      "reason_code": "approved_for_strength_fragment",
+      "runtime_targets": ["strength"],
+      "license_status": "unverified",
+      "raw_source_packaged": false
+    }
+  ]
+}

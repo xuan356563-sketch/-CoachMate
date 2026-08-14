@@ -1,0 +1,47 @@
+{
+  "contract_name": "trainmate-coach",
+  "contract_version": 1,
+  "rule_set_version": "coach-rules-1.0.0",
+  "renderer_mode": "deterministic_only",
+  "authorities": {
+    "training_engine": ["allowed_actions", "intensity_ceiling", "duration_ceiling", "reason_codes"],
+    "safety": ["remove_actions", "tighten_ceiling", "raise_risk", "required_blocks"],
+    "companion": ["choose_allowed_action", "tone", "timing", "surface_confirmed_memory"],
+    "renderer": ["render_allowlisted_slots"]
+  },
+  "invariants": [
+    "training_requires_current_structured_snapshot",
+    "safety_never_relaxes",
+    "companion_never_adds_action",
+    "renderer_never_adds_number_or_action",
+    "writes_require_user_confirmation",
+    "dual_end_merge_is_strict_intersection",
+    "memory_requires_source_confidence_validity_and_user_control"
+  ],
+  "memory_categories": [
+    "preference",
+    "obstacle",
+    "effective_strategy",
+    "ritual",
+    "boundary",
+    "milestone"
+  ],
+  "memory_retention_days": {
+    "preference": 180,
+    "obstacle": 90,
+    "effective_strategy": 90,
+    "ritual": 180,
+    "milestone": 365,
+    "deletion_tombstone": 30
+  },
+  "state_snapshot": {
+    "max_age_hours": 6,
+    "may_cross_local_day": false
+  },
+  "cloud_projection": {
+    "default_enabled": false,
+    "raw_chat_allowed": false,
+    "raw_health_samples_allowed": false,
+    "free_text_evidence_allowed": false
+  }
+}

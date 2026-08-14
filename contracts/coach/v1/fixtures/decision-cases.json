@@ -1,0 +1,26 @@
+{
+  "contract_version": 1,
+  "source": "trainmate-coach.zip 的 20 个评估场景按当前结构化权限边界改写",
+  "cases": [
+    {"case_id":"NORMAL_001","recovery":"green","planned":45,"available":45,"flags":[],"missing":[],"expect_risk":"low","expect_action":"follow-existing-plan","expect_intensity":"moderate","expect_duration":45,"expect_reason":"existing_plan_available"},
+    {"case_id":"NORMAL_002","recovery":"green","planned":45,"available":25,"flags":[],"missing":[],"expect_risk":"low","expect_action":"follow-existing-plan","expect_intensity":"moderate","expect_duration":25,"expect_reason":"existing_plan_available"},
+    {"case_id":"RECOVERY_001","recovery":"red","planned":45,"available":45,"flags":[],"missing":[],"expect_risk":"medium","expect_action":"request-existing-adjustment","expect_intensity":"recovery","expect_duration":0,"expect_reason":"existing_adjustment_required"},
+    {"case_id":"RECOVERY_002","recovery":"red","planned":60,"available":60,"flags":["pain_requires_adjustment"],"missing":[],"expect_risk":"medium","expect_action":"request-existing-adjustment","expect_intensity":"recovery","expect_duration":0,"expect_reason":"existing_adjustment_required"},
+    {"case_id":"MISSED_001","recovery":"amber","planned":40,"available":27,"flags":[],"missing":[],"expect_risk":"low","expect_action":"follow-existing-plan","expect_intensity":"low","expect_duration":27,"expect_reason":"existing_plan_available"},
+    {"case_id":"MISSED_002","recovery":"amber","planned":30,"available":20,"flags":[],"missing":[],"expect_risk":"low","expect_action":"follow-existing-plan","expect_intensity":"low","expect_duration":20,"expect_reason":"existing_plan_available"},
+    {"case_id":"PAIN_001","recovery":"green","planned":60,"available":60,"flags":["severe_pain"],"missing":[],"expect_risk":"critical","expect_action":null,"expect_intensity":null,"expect_duration":null,"expect_reason":"pain_redline"},
+    {"case_id":"PAIN_002","recovery":"green","planned":60,"available":60,"flags":["pain_requires_adjustment"],"missing":[],"expect_risk":"medium","expect_action":"request-existing-adjustment","expect_intensity":"recovery","expect_duration":0,"expect_reason":"existing_adjustment_required"},
+    {"case_id":"EMOTION_001","recovery":"amber","planned":30,"available":15,"flags":[],"missing":[],"expect_risk":"low","expect_action":"follow-existing-plan","expect_intensity":"low","expect_duration":15,"expect_reason":"existing_plan_available"},
+    {"case_id":"EMOTION_002","recovery":"green","planned":20,"available":20,"flags":[],"missing":[],"expect_risk":"low","expect_action":"follow-existing-plan","expect_intensity":"moderate","expect_duration":20,"expect_reason":"existing_plan_available"},
+    {"case_id":"EMOTION_003","recovery":"amber","planned":15,"available":10,"flags":[],"missing":[],"expect_risk":"low","expect_action":"follow-existing-plan","expect_intensity":"low","expect_duration":10,"expect_reason":"existing_plan_available"},
+    {"case_id":"CONFLICT_001","recovery":"red","planned":60,"available":60,"flags":[],"missing":[],"expect_risk":"medium","expect_action":"request-existing-adjustment","expect_intensity":"recovery","expect_duration":0,"expect_reason":"existing_adjustment_required"},
+    {"case_id":"PRESSURE_001","recovery":"amber","planned":60,"available":45,"flags":[],"missing":[],"expect_risk":"low","expect_action":"follow-existing-plan","expect_intensity":"low","expect_duration":45,"expect_reason":"existing_plan_available"},
+    {"case_id":"PRESSURE_002","recovery":"red","planned":60,"available":45,"flags":[],"missing":[],"expect_risk":"medium","expect_action":"request-existing-adjustment","expect_intensity":"recovery","expect_duration":0,"expect_reason":"existing_adjustment_required"},
+    {"case_id":"INCOMPLETE_001","recovery":"unknown","planned":null,"available":null,"flags":[],"missing":["planned_action"],"expect_risk":"high","expect_action":null,"expect_intensity":null,"expect_duration":null,"expect_reason":"snapshot_critical_fact_missing"},
+    {"case_id":"INTERFERENCE_001","recovery":"red","planned":75,"available":60,"flags":[],"missing":[],"expect_risk":"medium","expect_action":"request-existing-adjustment","expect_intensity":"recovery","expect_duration":0,"expect_reason":"existing_adjustment_required"},
+    {"case_id":"INJURY_RED_001","recovery":"green","planned":30,"available":30,"flags":["injury_red_flag"],"missing":[],"expect_risk":"critical","expect_action":null,"expect_intensity":null,"expect_duration":null,"expect_reason":"pain_redline"},
+    {"case_id":"NO_PLAN_001","recovery":"green","planned":null,"available":30,"flags":[],"missing":[],"expect_risk":"medium","expect_action":null,"expect_intensity":null,"expect_duration":null,"expect_reason":"existing_plan_missing"},
+    {"case_id":"AVAILABILITY_ZERO_001","recovery":"green","planned":45,"available":0,"flags":[],"missing":[],"expect_risk":"low","expect_action":"follow-existing-plan","expect_intensity":"moderate","expect_duration":0,"expect_reason":"existing_plan_available"},
+    {"case_id":"SAFETY_COMBINED_001","recovery":"red","planned":45,"available":45,"flags":["severe_pain","pain_requires_adjustment"],"missing":[],"expect_risk":"critical","expect_action":null,"expect_intensity":null,"expect_duration":null,"expect_reason":"pain_redline"}
+  ]
+}

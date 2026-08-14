@@ -1,0 +1,16 @@
+[build]
+  command = "flutter pub get && flutter build web --release --no-wasm-dry-run"
+  publish = "build/web"
+
+[build.environment]
+  FLUTTER_VERSION = "3.44.5"
+
+[[headers]]
+  for = "/manifest.json"
+  [headers.values]
+    Cache-Control = "public, max-age=3600"
+
+[[headers]]
+  for = "/flutter_service_worker.js"
+  [headers.values]
+    Cache-Control = "no-cache"

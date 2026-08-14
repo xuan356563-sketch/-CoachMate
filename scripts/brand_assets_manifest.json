@@ -1,0 +1,143 @@
+{
+    "schemaVersion": 2,
+    "colors": {
+        "ink": "#19172C",
+        "deepInk": "#11101F",
+        "paper": "#FFFDFC",
+        "peach": "#FFB27D",
+        "peachLight": "#FFE2B8"
+    },
+    "sourceDirectory": "assets/branding/source",
+    "appIconMaster": {
+        "file": "trainmate-flow-logo-final-20260717.png",
+        "sha256": "8370687c15f3ffa5c131906853ceb845e87ee9b052c759abafc9cd8a2492d365",
+        "width": 1254,
+        "height": 1254,
+        "mode": "RGB",
+        "maskableScale": 0.9,
+        "maskableBackground": "#FEFEFE"
+    },
+    "formalSources": [
+        {
+            "file": "trainmate-flow-brandmark.svg",
+            "kind": "brandmark"
+        },
+        {
+            "file": "trainmate-flow-brandmark-small.svg",
+            "kind": "brandmark-small"
+        },
+        {
+            "file": "trainmate-flow-brandmark-reverse.svg",
+            "kind": "brandmark"
+        },
+        {
+            "file": "trainmate-flow-brandmark-mono.svg",
+            "kind": "brandmark"
+        },
+        {
+            "file": "trainmate-flow-character.svg",
+            "kind": "character"
+        },
+        {
+            "file": "trainmate-flow-wordmark.svg",
+            "kind": "formal"
+        },
+        {
+            "file": "trainmate-flow-wordmark-horizontal.svg",
+            "kind": "formal"
+        },
+        {
+            "file": "trainmate-flow-lockup.svg",
+            "kind": "lockup"
+        },
+        {
+            "file": "trainmate-flow-character-lockup.svg",
+            "kind": "character"
+        },
+        {
+            "file": "trainmate-flow-submark.svg",
+            "kind": "formal"
+        },
+        {
+            "file": "trainmate-flow-app-icon.svg",
+            "kind": "app-icon"
+        },
+        {
+            "file": "trainmate-flow-app-icon-maskable.svg",
+            "kind": "app-icon-maskable"
+        }
+    ],
+    "marketingTexture": "trainmate-flow-marketing-texture.svg",
+    "exportSizes": [
+        16,
+        24,
+        32,
+        48,
+        64,
+        128,
+        256,
+        512,
+        1024
+    ],
+    "characterExportSizes": [
+        96,
+        128,
+        256,
+        512,
+        1024
+    ],
+    "smallSourceMaxSize": 48,
+    "avatarSources": {
+        "small": "trainmate-flow-brandmark-small.svg",
+        "standard": "trainmate-flow-brandmark.svg"
+    },
+    "exports": {
+        "directory": "assets/branding/exports/png",
+        "avatarPattern": "trainmate-flow-brandmark-{size}.png",
+        "characterPattern": "trainmate-flow-character-{size}.png",
+        "lockupFile": "trainmate-flow-lockup-1600.png",
+        "finalLogoFile": "trainmate-flow-logo-final-256.png",
+        "finalLockupFile": "trainmate-flow-logo-final-lockup-1600.png"
+    },
+    "platformSources": {
+        "ios": [
+            "trainmate-flow-logo-final-20260717.png"
+        ],
+        "android": [
+            "trainmate-flow-logo-final-20260717.png"
+        ],
+        "web": [
+            "trainmate-flow-logo-final-20260717.png"
+        ]
+    },
+    "iosContents": "ios/Runner/Assets.xcassets/AppIcon.appiconset/Contents.json",
+    "androidLegacy": {
+        "mdpi": 48,
+        "hdpi": 72,
+        "xhdpi": 96,
+        "xxhdpi": 144,
+        "xxxhdpi": 192
+    },
+    "androidAdaptiveForeground": {
+        "mdpi": 108,
+        "hdpi": 162,
+        "xhdpi": 216,
+        "xxhdpi": 324,
+        "xxxhdpi": 432
+    },
+    "android": {
+        "resourceRoot": "android/app/src/main/res",
+        "adaptiveIcon": "mipmap-anydpi-v26/ic_launcher.xml",
+        "colors": "values/colors.xml",
+        "backgroundResource": "@color/trainmate_icon_background",
+        "foregroundResource": "@drawable/ic_launcher_foreground",
+        "backgroundColorName": "trainmate_icon_background"
+    },
+    "web": {
+        "favicon.png": 16,
+        "icons/Icon-192.png": 192,
+        "icons/Icon-512.png": 512,
+        "icons/Icon-maskable-192.png": 192,
+        "icons/Icon-maskable-512.png": 512
+    }
+}

@@ -1,0 +1,139 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://trainmate.local/contracts/coach/v1/coach-contract.schema.json",
+  "title": "TrainMate Coach V1 数据契约",
+  "type": "object",
+  "oneOf": [
+    { "$ref": "#/$defs/training_state_snapshot" },
+    { "$ref": "#/$defs/coach_memory" },
+    { "$ref": "#/$defs/evaluation_request" },
+    { "$ref": "#/$defs/decision_envelope" }
+  ],
+  "$defs": {
+    "sha256": {
+      "type": "string",
+      "pattern": "^[a-f0-9]{64}$"
+    },
+    "source_ref": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["source_kind", "source_local_id", "source_digest", "observed_at"],
+      "properties": {
+        "source_kind": { "type": "string", "minLength": 1, "maxLength": 40 },
+        "source_local_id": { "type": "string", "minLength": 1, "maxLength": 160 },
+        "source_digest": { "$ref": "#/$defs/sha256" },
+        "observed_at": { "type": "string", "format": "date-time" },
+        "summary_key": { "type": "string", "maxLength": 120 }
+      }
+    },
+    "training_state_snapshot": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "snapshot_id", "athlete_profile_id", "contract_version", "contract_hash",
+        "rule_set_version", "generated_at", "valid_until", "local_date",
+        "time_zone_name", "source_digest", "source_refs", "safety_flags",
+        "quality_codes", "missing_fields"
+      ],
+      "properties": {
+        "snapshot_id": { "type": "string", "minLength": 1 },
+        "athlete_profile_id": { "type": "string", "minLength": 1 },
+        "contract_version": { "const": 1 },
+        "contract_hash": { "$ref": "#/$defs/sha256" },
+        "rule_set_version": { "const": "coach-rules-1.0.0" },
+        "generated_at": { "type": "string", "format": "date-time" },
+        "valid_until": { "type": "string", "format": "date-time" },
+        "local_date": { "type": "string", "format": "date" },
+        "time_zone_name": { "type": "string", "minLength": 1 },
+        "source_digest": { "$ref": "#/$defs/sha256" },
+        "source_refs": { "type": "array", "items": { "$ref": "#/$defs/source_ref" } },
+        "planned_action_id": { "type": ["string", "null"] },
+        "planned_duration_minutes": { "type": ["integer", "null"], "minimum": 1, "maximum": 360 },
+        "available_minutes": { "type": ["integer", "null"], "minimum": 1, "maximum": 360 },
+        "max_pain_score": { "type": ["integer", "null"], "minimum": 0, "maximum": 10 },
+        "recovery_band": { "enum": ["unknown", "green", "amber", "red"] },
+        "completed_sessions_7d": { "type": "integer", "minimum": 0 },
+        "missed_sessions_7d": { "type": "integer", "minimum": 0 },
+        "safety_flags": { "type": "array", "items": { "type": "string" }, "uniqueItems": true },
+        "quality_codes": { "type": "array", "items": { "type": "string" }, "uniqueItems": true },
+        "missing_fields": { "type": "array", "items": { "type": "string" }, "uniqueItems": true }
+      }
+    },
+    "coach_memory": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "memory_id", "athlete_profile_id", "category", "subject", "value",
+        "display_text", "sources", "confidence_bps", "importance_bps",
+        "sensitivity", "status", "version", "validity_policy", "valid_from",
+        "may_mention", "user_confirmed", "sync_allowed"
+      ],
+      "properties": {
+        "memory_id": { "type": "string", "minLength": 1 },
+        "athlete_profile_id": { "type": "string", "minLength": 1 },
+        "category": { "enum": ["preference", "obstacle", "effective_strategy", "ritual", "boundary", "milestone"] },
+        "subject": { "type": "string", "minLength": 1, "maxLength": 80 },
+        "value": { "type": "object" },
+        "display_text": { "type": "string", "maxLength": 240 },
+        "sources": { "type": "array", "minItems": 1, "items": { "$ref": "#/$defs/source_ref" } },
+        "confidence_bps": { "type": "integer", "minimum": 0, "maximum": 10000 },
+        "importance_bps": { "type": "integer", "minimum": 0, "maximum": 10000 },
+        "sensitivity": { "enum": ["low", "medium", "high"] },
+        "status": { "enum": ["candidate", "ready_for_review", "active", "superseded", "deleted", "expired"] },
+        "version": { "type": "integer", "minimum": 1 },
+        "validity_policy": { "enum": ["expires_at", "until_revoked"] },
+        "valid_from": { "type": "string", "format": "date-time" },
+        "valid_until": { "type": ["string", "null"], "format": "date-time" },
+        "may_mention": { "type": "boolean" },
+        "user_confirmed": { "type": "boolean" },
+        "sync_allowed": { "type": "boolean" },
+        "confirmation_basis": { "enum": ["none", "explicit_command", "panel_confirmation"] },
+        "superseded_by": { "type": ["string", "null"] }
+      }
+    },
+    "evaluation_request": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "turn_id", "snapshot_id", "snapshot_digest", "memory_set_digest",
+        "intent", "emotion", "contract_version", "contract_hash",
+        "rule_set_version", "requested_action_ids"
+      ],
+      "properties": {
+        "turn_id": { "type": "string", "minLength": 1 },
+        "snapshot_id": { "type": "string", "minLength": 1 },
+        "snapshot_digest": { "$ref": "#/$defs/sha256" },
+        "memory_set_digest": { "$ref": "#/$defs/sha256" },
+        "intent": { "type": "string", "minLength": 1 },
+        "emotion": { "type": "string", "minLength": 1 },
+        "contract_version": { "const": 1 },
+        "contract_hash": { "$ref": "#/$defs/sha256" },
+        "rule_set_version": { "const": "coach-rules-1.0.0" },
+        "requested_action_ids": { "type": "array", "items": { "type": "string" }, "uniqueItems": true }
+      }
+    },
+    "decision_envelope": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "turn_id", "snapshot_id", "snapshot_digest", "memory_set_digest",
+        "contract_version", "contract_hash", "rule_set_version", "allowed",
+        "forbidden_action_ids", "risk_level", "reason_codes", "required_blocks"
+      ],
+      "properties": {
+        "turn_id": { "type": "string" },
+        "snapshot_id": { "type": "string" },
+        "snapshot_digest": { "$ref": "#/$defs/sha256" },
+        "memory_set_digest": { "$ref": "#/$defs/sha256" },
+        "contract_version": { "const": 1 },
+        "contract_hash": { "$ref": "#/$defs/sha256" },
+        "rule_set_version": { "const": "coach-rules-1.0.0" },
+        "allowed": { "type": "array" },
+        "forbidden_action_ids": { "type": "array", "items": { "type": "string" }, "uniqueItems": true },
+        "risk_level": { "enum": ["low", "medium", "high", "critical"] },
+        "reason_codes": { "type": "array", "items": { "type": "string" }, "uniqueItems": true },
+        "required_blocks": { "type": "array", "items": { "type": "string" }, "uniqueItems": true }
+      }
+    }
+  }
+}

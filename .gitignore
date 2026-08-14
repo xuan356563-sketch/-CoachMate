@@ -35,6 +35,23 @@ migrate_working_dir/
 /build/
 /coverage/
 
+# Python 后端本地环境
+/backend/.env
+/backend/.venv/
+/backend/.pytest_cache/
+/backend/.ruff_cache/
+**/__pycache__/
+
+# 生产部署密钥、证书和本机发布状态
+/deploy/.env.deploy
+/deploy/production.env
+/deploy/certs/*
+!/deploy/certs/README.md
+/deploy/state/
+
+# 历史交付包（重复存放在 恢复资料/ 目录，不入库）
+/outputs/*.zip
+
 # Symbolication related
 app.*.symbols
 

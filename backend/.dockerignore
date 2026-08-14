@@ -1,0 +1,9 @@
+._*
+**/._*
+.env
+.venv/
+.pytest_cache/
+.ruff_cache/
+**/__pycache__/
+tests/
+compose.yaml

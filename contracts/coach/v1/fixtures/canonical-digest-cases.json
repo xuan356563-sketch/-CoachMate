@@ -1,0 +1,20 @@
+{
+  "contract_version": 1,
+  "cases": [
+    {
+      "case_id": "canonical-object-cn",
+      "value": {"b": "中文", "a": 1},
+      "expected_sha256": "db1e1d174330db0f00974178407b16d090326f28edd3798338fe91c275dc5466"
+    },
+    {
+      "case_id": "canonical-nested-list",
+      "value": [3, {"z": false, "a": null}],
+      "expected_sha256": "fe1adb10596ecc0938b1e6ce7ae7fefe803fe9f188a15b5a41106ccaf4063fc7"
+    },
+    {
+      "case_id": "canonical-decision",
+      "value": {"risk": "low", "actions": ["follow-existing-plan"]},
+      "expected_sha256": "05b1ec6267d3231cbf61ba8943511e2fddc6776759fc254d09a6e4603be4a9ba"
+    }
+  ]
+}
