@@ -30,16 +30,17 @@ void main() {
     );
   }
 
-  testWidgets('四项完整选中状态视觉基线', (WidgetTester tester) async {
-    configureView(tester, size: const Size(393, 440));
+  testWidgets('完整选中状态视觉基线', (WidgetTester tester) async {
+    final Size viewSize = Size(393, 110.0 * bottomNavItems.length);
+    configureView(tester, size: viewSize);
 
     await tester.pumpWidget(
       MaterialApp(
         debugShowCheckedModeBanner: false,
         theme: TDesignTheme.lightTheme,
         home: MediaQuery(
-          data: const MediaQueryData(
-            size: Size(393, 440),
+          data: MediaQueryData(
+            size: viewSize,
             disableAnimations: true,
           ),
           child: ColoredBox(

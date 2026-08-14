@@ -181,7 +181,7 @@ class GuidedWorkoutCourse {
 
   String get durationLabel {
     if (kind == GuidedWorkoutCourseKind.functionalCircuit) {
-      return '${defaultRounds} 轮 · 自定节奏';
+      return '$defaultRounds 轮 · 自定节奏';
     }
     return '${expectedDurationSecondsForRounds(defaultRounds) ~/ 60} 分钟';
   }
