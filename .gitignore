@@ -62,3 +62,10 @@ app.*.map.json
 /android/app/debug
 /android/app/profile
 /android/app/release
+
+# Android 正式签名（密钥绝不入库）
+/android/key.properties
+/android/app/upload-keystore.jks
+/android/app/upload-keystore.keystore
+/android/*.jks
+/android/*.keystore
