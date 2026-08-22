@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 
-import '../../../core/theme/trainflow_tokens.dart';
 import '../../../core/widgets/trainflow_widgets.dart';
 import '../../../data/models/training_load_curve.dart';
 import '../../dashboard/training_mvp_controller.dart';
@@ -38,7 +37,7 @@ class TrainingLoadCard extends StatelessWidget {
                   style: Theme.of(context)
                       .textTheme
                       .titleMedium
-                      ?.copyWith(fontWeight: FontWeight.w800),
+                      ?.copyWith(fontWeight: FontWeight.w600),
                 ),
               ),
               ToneBadge(label: state.trainingStatusLabel),
@@ -65,7 +64,7 @@ class TrainingLoadCard extends StatelessWidget {
               style: Theme.of(context)
                   .textTheme
                   .bodyMedium
-                  ?.copyWith(fontWeight: FontWeight.w800),
+                  ?.copyWith(fontWeight: FontWeight.w600),
             ),
             const SizedBox(height: 4),
             Text(
@@ -118,14 +117,14 @@ class _LoadBar extends StatelessWidget {
                 style: Theme.of(context)
                     .textTheme
                     .bodyMedium
-                    ?.copyWith(fontWeight: FontWeight.w800),
+                    ?.copyWith(fontWeight: FontWeight.w600),
               ),
             ),
             Text(
               '$score',
               style: Theme.of(context).textTheme.labelLarge?.copyWith(
                     color: color,
-                    fontWeight: FontWeight.w800,
+                    fontWeight: FontWeight.w600,
                   ),
             ),
           ],

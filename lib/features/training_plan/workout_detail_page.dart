@@ -80,7 +80,7 @@ class WorkoutDetailPage extends ConsumerWidget {
                   const SizedBox(width: 8),
                   ToneBadge(
                     label: workout.intensity,
-                    color: AppColors.secondary,
+                    color: TrainFlowTokens.accent,
                   ),
                 ],
               ),
@@ -97,7 +97,7 @@ class WorkoutDetailPage extends ConsumerWidget {
                         in workout.dimensionFocus.primary)
                       ToneBadge(
                         label: '主维度 · ${dimension.label}',
-                        color: AppColors.primary,
+                        color: TrainFlowTokens.accent,
                       ),
                     for (final TrainingDimension dimension
                         in workout.dimensionFocus.touch)
@@ -109,7 +109,7 @@ class WorkoutDetailPage extends ConsumerWidget {
                 const SizedBox(height: 10),
                 DecoratedBox(
                   decoration: BoxDecoration(
-                    color: AppColors.primaryLightest,
+                    color: TrainFlowTokens.darkTrainingRaised,
                     borderRadius: BorderRadius.circular(8),
                   ),
                   child: Padding(
@@ -122,14 +122,14 @@ class WorkoutDetailPage extends ConsumerWidget {
                           style: Theme.of(context)
                               .textTheme
                               .bodyMedium
-                              ?.copyWith(fontWeight: FontWeight.w800),
+                              ?.copyWith(fontWeight: FontWeight.w600),
                         ),
                         const SizedBox(height: 4),
                         Text(
                           latestAdjustment!.reason,
                           style:
                               Theme.of(context).textTheme.bodySmall?.copyWith(
-                                    color: AppColors.textSecondary,
+                                    color: TrainFlowTokens.darkTrainingMuted,
                                   ),
                         ),
                       ],
@@ -154,13 +154,13 @@ class WorkoutDetailPage extends ConsumerWidget {
               Text(
                 state.planAdjustmentStatusMessage,
                 style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                      color: AppColors.textSecondary,
+                      color: TrainFlowTokens.darkTrainingMuted,
                     ),
               ),
               const SizedBox(height: 12),
               const DecoratedBox(
                 decoration: BoxDecoration(
-                  color: AppColors.primaryLightest,
+                  color: TrainFlowTokens.darkTrainingRaised,
                   borderRadius: BorderRadius.all(Radius.circular(8)),
                 ),
                 child: Padding(
@@ -341,13 +341,13 @@ class _PlanAdjustmentSheetState extends ConsumerState<_PlanAdjustmentSheet> {
                 style: Theme.of(context)
                     .textTheme
                     .titleLarge
-                    ?.copyWith(fontWeight: FontWeight.w800),
+                    ?.copyWith(fontWeight: FontWeight.w600),
               ),
               const SizedBox(height: 6),
               Text(
                 '只调整本次执行时长与强度，原始动作、训练依据和安全约束保持不变。',
                 style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                      color: AppColors.textSecondary,
+                      color: TrainFlowTokens.darkTrainingMuted,
                     ),
               ),
               const SizedBox(height: 16),
@@ -442,7 +442,7 @@ Color _decisionColor(TrainingDecisionType decisionType) {
     case TrainingDecisionType.technique:
       return AppColors.secondary;
     case TrainingDecisionType.rest:
-      return AppColors.textSecondary;
+      return TrainFlowTokens.darkTrainingMuted;
   }
 }
 
@@ -466,14 +466,14 @@ class _WorkoutBlock extends StatelessWidget {
             style: Theme.of(context)
                 .textTheme
                 .titleMedium
-                ?.copyWith(fontWeight: FontWeight.w800),
+                ?.copyWith(fontWeight: FontWeight.w600),
           ),
           const SizedBox(height: 10),
           if (items.isEmpty)
             Text(
               '本日无该模块安排。',
               style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                    color: AppColors.textSecondary,
+                    color: TrainFlowTokens.darkTrainingMuted,
                   ),
             )
           else
@@ -511,7 +511,7 @@ class _WorkoutExerciseLinksCard extends StatelessWidget {
             style: Theme.of(context)
                 .textTheme
                 .titleMedium
-                ?.copyWith(fontWeight: FontWeight.w800),
+                ?.copyWith(fontWeight: FontWeight.w600),
           ),
           const SizedBox(height: 10),
           for (final WorkoutExerciseLink link in sortedLinks) ...[
@@ -553,12 +553,12 @@ class _WorkoutExerciseLinkRow extends StatelessWidget {
       children: [
         CircleAvatar(
           radius: 13,
-          backgroundColor: AppColors.primaryLightest,
+          backgroundColor: TrainFlowTokens.darkTrainingRaised,
           child: Text(
             '${link.sequence}',
             style: Theme.of(context).textTheme.labelMedium?.copyWith(
-                  color: AppColors.primary,
-                  fontWeight: FontWeight.w800,
+                  color: TrainFlowTokens.accent,
+                  fontWeight: FontWeight.w600,
                 ),
           ),
         ),
@@ -575,7 +575,7 @@ class _WorkoutExerciseLinkRow extends StatelessWidget {
                       style: Theme.of(context)
                           .textTheme
                           .bodyMedium
-                          ?.copyWith(fontWeight: FontWeight.w800),
+                          ?.copyWith(fontWeight: FontWeight.w600),
                     ),
                   ),
                   ToneBadge(label: link.module.label),
@@ -587,7 +587,7 @@ class _WorkoutExerciseLinkRow extends StatelessWidget {
                     ? '动作库暂未找到该关联。'
                     : '器械：${exercise!.equipment.join('、')}',
                 style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                      color: AppColors.textSecondary,
+                      color: TrainFlowTokens.darkTrainingMuted,
                     ),
               ),
               if (exercise != null) ...[
@@ -609,7 +609,7 @@ class _WorkoutExerciseLinkRow extends StatelessWidget {
                   Text(
                     '呼吸：${link.breathingCue}',
                     style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                          color: AppColors.textSecondary,
+                          color: TrainFlowTokens.darkTrainingMuted,
                         ),
                   ),
                 ],

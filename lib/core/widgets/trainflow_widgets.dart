@@ -8,7 +8,8 @@ import '../theme/trainflow_tokens.dart';
 import 'trainmate_action_character.dart';
 
 export '../theme/trainflow_tokens.dart'
-    show TrainFlowCardTone, TrainFlowHeaderVariant, TrainFlowPageLayout;
+    show TrainFlowTokens, TrainFlowCardTone, TrainFlowHeaderVariant,
+        TrainFlowPageLayout;
 export 'trainmate_back_button.dart';
 
 class TrainFlowPage extends StatelessWidget {
@@ -53,11 +54,11 @@ class TrainFlowPage extends StatelessWidget {
             TrainFlowHeaderVariant.compact,
         };
     final Color pageBackground = switch (layout) {
-      TrainFlowPageLayout.report => AppColors.primaryLightest,
-      TrainFlowPageLayout.legal => AppColors.white,
+      TrainFlowPageLayout.report => TrainFlowTokens.darkTrainingRaised,
+      TrainFlowPageLayout.legal => TrainFlowTokens.darkTrainingCard,
       TrainFlowPageLayout.detail ||
       TrainFlowPageLayout.form =>
-        AppColors.background,
+        TrainFlowTokens.darkTrainingSurface,
     };
     final Widget header = switch (resolvedHeaderVariant) {
       TrainFlowHeaderVariant.organic => OrganicPageHeader(
@@ -79,78 +80,84 @@ class TrainFlowPage extends StatelessWidget {
       TrainFlowHeaderVariant.none => const SizedBox.shrink(),
     };
 
-    return ColoredBox(
-      key: ValueKey<String>('trainflow-page-layout-${layout.name}'),
-      color: AppColors.primary,
-      child: Center(
-        child: ConstrainedBox(
-          key: const ValueKey<String>('trainflow-mobile-canvas'),
-          constraints: const BoxConstraints(
-            maxWidth: TrainFlowTokens.pageMaxWidth,
-          ),
-          child: ColoredBox(
-            color: pageBackground,
-            child: SafeArea(
-              child: Column(
-                children: [
-                  Expanded(
-                    child: ListView(
-                      padding: EdgeInsets.zero,
-                      children: [
-                        header,
-                        DecoratedBox(
-                          key: const ValueKey<String>(
-                            'trainflow-page-content-surface',
-                          ),
-                          decoration: BoxDecoration(
-                            color: pageBackground,
-                            borderRadius: const BorderRadius.vertical(
-                              top: Radius.circular(
-                                TrainFlowTokens.sectionRadius,
+    return TrainMateVisualScope(
+      mode: TrainMateVisualMode.darkTraining,
+      child: Theme(
+        data: TrainMateVisualScope.darkHubTheme(context),
+        child: ColoredBox(
+          key: ValueKey<String>('trainflow-page-layout-${layout.name}'),
+          color: TrainFlowTokens.darkTrainingSurface,
+          child: Center(
+            child: ConstrainedBox(
+              key: const ValueKey<String>('trainflow-mobile-canvas'),
+              constraints: const BoxConstraints(
+                maxWidth: TrainFlowTokens.pageMaxWidth,
+              ),
+              child: ColoredBox(
+                color: pageBackground,
+                child: SafeArea(
+                  child: Column(
+                    children: [
+                      Expanded(
+                        child: ListView(
+                          padding: EdgeInsets.zero,
+                          children: [
+                            header,
+                            DecoratedBox(
+                              key: const ValueKey<String>(
+                                'trainflow-page-content-surface',
+                              ),
+                              decoration: BoxDecoration(
+                                color: pageBackground,
+                                borderRadius: const BorderRadius.vertical(
+                                  top: Radius.circular(
+                                    TrainFlowTokens.sectionRadius,
+                                  ),
+                                ),
+                              ),
+                              child: Padding(
+                                padding: const EdgeInsets.only(top: 12),
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                                  children: <Widget>[
+                                    for (int index = 0;
+                                        index < children.length;
+                                        index++)
+                                      Padding(
+                                        padding: EdgeInsets.fromLTRB(
+                                          TrainFlowTokens.pageGutter,
+                                          index == 0 ? 8 : 0,
+                                          TrainFlowTokens.pageGutter,
+                                          0,
+                                        ),
+                                        child: animateChildren
+                                            ? MotionEntrance(
+                                                index: index,
+                                                child: children[index],
+                                              )
+                                            : children[index],
+                                      ),
+                                    if (includeDisclaimer)
+                                      const Padding(
+                                        padding: EdgeInsets.fromLTRB(
+                                          TrainFlowTokens.pageGutter,
+                                          4,
+                                          TrainFlowTokens.pageGutter,
+                                          24,
+                                        ),
+                                        child: TrainFlowMedicalDisclaimer(),
+                                      ),
+                                  ],
+                                ),
                               ),
                             ),
-                          ),
-                          child: Padding(
-                            padding: const EdgeInsets.only(top: 12),
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.stretch,
-                              children: <Widget>[
-                                for (int index = 0;
-                                    index < children.length;
-                                    index++)
-                                  Padding(
-                                    padding: EdgeInsets.fromLTRB(
-                                      TrainFlowTokens.pageGutter,
-                                      index == 0 ? 8 : 0,
-                                      TrainFlowTokens.pageGutter,
-                                      0,
-                                    ),
-                                    child: animateChildren
-                                        ? MotionEntrance(
-                                            index: index,
-                                            child: children[index],
-                                          )
-                                        : children[index],
-                                  ),
-                                if (includeDisclaimer)
-                                  const Padding(
-                                    padding: EdgeInsets.fromLTRB(
-                                      TrainFlowTokens.pageGutter,
-                                      4,
-                                      TrainFlowTokens.pageGutter,
-                                      24,
-                                    ),
-                                    child: TrainFlowMedicalDisclaimer(),
-                                  ),
-                              ],
-                            ),
-                          ),
+                          ],
                         ),
-                      ],
-                    ),
+                      ),
+                      if (bottom != null) bottom!,
+                    ],
                   ),
-                  if (bottom != null) bottom!,
-                ],
+                ),
               ),
             ),
           ),
@@ -183,7 +190,7 @@ class OrganicPageHeader extends StatelessWidget {
     final Widget effectiveArtwork = artwork ??
         const TrainMateActionCharacter(
           action: TrainMateAction.running,
-          backgroundColor: AppColors.primary,
+          backgroundColor: TrainFlowTokens.darkTrainingRaised,
         );
     return SizedBox(
       key: const ValueKey<String>('trainflow-organic-header'),
@@ -193,7 +200,7 @@ class OrganicPageHeader extends StatelessWidget {
           Positioned.fill(
             child: ClipPath(
               clipper: const _OrganicHeaderClipper(),
-              child: const ColoredBox(color: AppColors.primary),
+              child: const ColoredBox(color: TrainFlowTokens.darkTrainingRaised),
             ),
           ),
           if (leading != null)
@@ -227,8 +234,8 @@ class OrganicPageHeader extends StatelessWidget {
                                 .textTheme
                                 .labelMedium
                                 ?.copyWith(
-                                  color: AppColors.secondary,
-                                  fontWeight: FontWeight.w800,
+                                  color: TrainFlowTokens.accent,
+                                  fontWeight: FontWeight.w600,
                                   letterSpacing: 0,
                                 ),
                           ),
@@ -245,7 +252,7 @@ class OrganicPageHeader extends StatelessWidget {
                                 color: AppColors.white,
                                 fontSize: 24,
                                 height: 1.15,
-                                fontWeight: FontWeight.w900,
+                                fontWeight: FontWeight.w700,
                                 letterSpacing: 0,
                               ),
                         ),
@@ -578,6 +585,10 @@ class _TrainFlowExpandableState extends State<TrainFlowExpandable> {
       context,
       TrainFlowMotion.selection,
     );
+    final bool scoped = TrainMateVisualScope.maybeOf(context) != null;
+    final Color summaryColor = scoped
+        ? TrainMateVisualScope.muted(context)
+        : AppColors.textSecondary;
     final Widget detail = _expanded
         ? Padding(
             padding: const EdgeInsets.only(top: 8),
@@ -615,7 +626,7 @@ class _TrainFlowExpandableState extends State<TrainFlowExpandable> {
                             style: Theme.of(context)
                                 .textTheme
                                 .titleMedium
-                                ?.copyWith(fontWeight: FontWeight.w800),
+                                ?.copyWith(fontWeight: FontWeight.w600),
                           ),
                           if (!_expanded) ...[
                             const SizedBox(height: 3),
@@ -627,7 +638,7 @@ class _TrainFlowExpandableState extends State<TrainFlowExpandable> {
                                   .textTheme
                                   .bodySmall
                                   ?.copyWith(
-                                    color: AppColors.textSecondary,
+                                    color: summaryColor,
                                   ),
                             ),
                           ],
@@ -702,7 +713,7 @@ class SectionTitle extends StatelessWidget {
               title,
               style: Theme.of(context).textTheme.titleMedium?.copyWith(
                     color: foreground,
-                    fontWeight: FontWeight.w900,
+                    fontWeight: FontWeight.w700,
                     letterSpacing: 0,
                   ),
             ),
@@ -801,7 +812,7 @@ class MetricPill extends StatelessWidget {
             overflow: TextOverflow.ellipsis,
             style: Theme.of(context).textTheme.titleMedium?.copyWith(
                   color: foreground,
-                  fontWeight: FontWeight.w900,
+                  fontWeight: FontWeight.w700,
                   letterSpacing: 0,
                 ),
           ),
@@ -864,7 +875,7 @@ class ToneBadge extends StatelessWidget {
           overflow: TextOverflow.ellipsis,
           style: Theme.of(context).textTheme.labelMedium?.copyWith(
                 color: foreground,
-                fontWeight: FontWeight.w800,
+                fontWeight: FontWeight.w600,
                 letterSpacing: 0,
               ),
         ),
@@ -885,6 +896,13 @@ class InfoRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final bool scoped = TrainMateVisualScope.maybeOf(context) != null;
+    final Color labelColor = scoped
+        ? TrainMateVisualScope.muted(context)
+        : AppColors.textSecondary;
+    final Color valueColor = scoped
+        ? TrainMateVisualScope.foreground(context)
+        : AppColors.textPrimary;
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 6),
       child: Row(
@@ -895,7 +913,7 @@ class InfoRow extends StatelessWidget {
             child: Text(
               label,
               style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                    color: AppColors.textSecondary,
+                    color: labelColor,
                     letterSpacing: 0,
                   ),
             ),
@@ -904,7 +922,7 @@ class InfoRow extends StatelessWidget {
             child: Text(
               value,
               style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                    color: AppColors.textPrimary,
+                    color: valueColor,
                     fontWeight: FontWeight.w700,
                     letterSpacing: 0,
                   ),
@@ -942,7 +960,9 @@ class _CompactPageHeader extends StatelessWidget {
         children: [
           if (leading != null) ...[
             IconTheme(
-              data: const IconThemeData(color: AppColors.primary),
+              data: const IconThemeData(
+                color: TrainFlowTokens.darkTrainingOnSurface,
+              ),
               child: leading!,
             ),
             const SizedBox(width: 4),
@@ -955,8 +975,8 @@ class _CompactPageHeader extends StatelessWidget {
                   Text(
                     eyebrow!,
                     style: Theme.of(context).textTheme.labelMedium?.copyWith(
-                          color: AppColors.secondaryDark,
-                          fontWeight: FontWeight.w800,
+                          color: TrainFlowTokens.accent,
+                          fontWeight: FontWeight.w600,
                         ),
                   ),
                   const SizedBox(height: 4),
@@ -964,9 +984,9 @@ class _CompactPageHeader extends StatelessWidget {
                 Text(
                   title,
                   style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-                        color: AppColors.textPrimary,
+                        color: TrainFlowTokens.darkTrainingOnSurface,
                         fontSize: 22,
-                        fontWeight: FontWeight.w900,
+                        fontWeight: FontWeight.w700,
                         letterSpacing: 0,
                       ),
                 ),
@@ -975,7 +995,7 @@ class _CompactPageHeader extends StatelessWidget {
                   Text(
                     subtitle!,
                     style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                          color: AppColors.textSecondary,
+                          color: TrainFlowTokens.darkTrainingMuted,
                           letterSpacing: 0,
                         ),
                   ),
@@ -1042,12 +1062,16 @@ class TrainFlowMedicalDisclaimer extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final bool scoped = TrainMateVisualScope.maybeOf(context) != null;
+    final Color color = scoped
+        ? TrainMateVisualScope.muted(context)
+        : AppColors.textSecondary;
     return Padding(
       padding: const EdgeInsets.only(top: 8),
       child: Text(
         '免责声明：本系统提供训练建议，不替代医生或物理治疗师诊断；明显疼痛、持续疼痛或疼痛 ≥7 分时请停止相关训练并就医。',
         style: Theme.of(context).textTheme.bodySmall?.copyWith(
-              color: AppColors.textSecondary,
+              color: color,
               height: 1.45,
               letterSpacing: 0,
             ),

@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:trainflow_ai/core/constants/app_colors.dart';
 import 'package:trainflow_ai/core/theme/tdesign_theme.dart';
-import 'package:trainflow_ai/core/theme/trainflow_tokens.dart';
 import 'package:trainflow_ai/core/widgets/trainmate_action_character.dart';
 import 'package:trainflow_ai/core/widgets/trainmate_action_mappings.dart';
 import 'package:trainflow_ai/core/widgets/trainflow_widgets.dart';
@@ -42,7 +41,7 @@ void main() {
     );
   });
 
-  test('Flow V2 资产覆盖全部动作并仅回退到旧版 Flow', () {
+  test('MATE C-08 覆盖全部动作并保留 Flow 两级回退', () {
     final Set<String> navyPaths = <String>{
       for (final TrainMateAction action in TrainMateAction.values)
         TrainMateActionAssets.path(action, TrainMateCharacterVariant.navy),
@@ -59,13 +58,27 @@ void main() {
     expect(darkPaths, hasLength(TrainMateAction.values.length));
     expect(
       navyPaths.every(
-        (String path) => path.contains('flow-v2-color-detail'),
+        (String path) => path.contains('mate-feast-bag-v2'),
       ),
       isTrue,
     );
     expect(
       darkPaths.every(
-        (String path) => path.contains('flow-v2-color-detail'),
+        (String path) => path.contains('mate-feast-bag-v2'),
+      ),
+      isTrue,
+    );
+    final Set<String> flowV2Paths = <String>{
+      for (final TrainMateAction action in TrainMateAction.values)
+        for (final TrainMateCharacterVariant variant
+            in TrainMateCharacterVariant.values)
+          TrainMateActionAssets.flowV2Path(action, variant),
+    };
+    expect(
+      flowV2Paths.every(
+        (String path) => path.startsWith(
+          'assets/branding/flow-v2-color-detail/action-characters/',
+        ),
       ),
       isTrue,
     );
@@ -76,7 +89,12 @@ void main() {
           TrainMateActionAssets.legacyPath(action, variant),
     };
     expect(
-      <String>{...navyPaths, ...darkPaths, ...legacyPaths}.every(
+      <String>{
+        ...navyPaths,
+        ...darkPaths,
+        ...flowV2Paths,
+        ...legacyPaths,
+      }.every(
         (String path) => !path.contains('flow-dog-v1'),
       ),
       isTrue,
@@ -154,7 +172,7 @@ void main() {
     );
   });
 
-  testWidgets('深色页头加载浅蜜桃版，浅色卡片加载墨兰版', (tester) async {
+  testWidgets('深紫页头加载浅色人物，浅色卡片加载墨兰人物', (tester) async {
     await tester.pumpWidget(
       MaterialApp(
         theme: TDesignTheme.lightTheme,
@@ -176,10 +194,9 @@ void main() {
       ),
     );
 
+    // 页头（深紫底）加载浅色（peachLight）；卡片（白底）加载墨兰（navy）。
     expect(
-      find.byKey(
-        const ValueKey<String>('trainmate-action-running-peachLight'),
-      ),
+      find.byKey(const ValueKey<String>('trainmate-action-running-peachLight')),
       findsOneWidget,
     );
     expect(

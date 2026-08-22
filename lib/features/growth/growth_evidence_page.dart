@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 
 import '../../app/router/app_routes.dart';
 import '../../core/constants/app_colors.dart';
+import '../../core/widgets/emp_system.dart';
 import '../../core/widgets/trainmate_action_character.dart';
 import '../../core/widgets/trainmate_showcase_widgets.dart';
 import '../../core/widgets/trainflow_widgets.dart';
@@ -225,13 +226,13 @@ class _GrowthTimelineEntryCard extends StatelessWidget {
                       style: Theme.of(context)
                           .textTheme
                           .titleMedium
-                          ?.copyWith(fontWeight: FontWeight.w900),
+                          ?.copyWith(fontWeight: FontWeight.w700),
                     ),
                     const SizedBox(height: 4),
                     Text(
                       entry.dateLabel,
                       style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                            color: AppColors.textSecondary,
+                            color: TrainFlowTokens.darkTrainingMuted,
                           ),
                     ),
                   ],
@@ -246,7 +247,7 @@ class _GrowthTimelineEntryCard extends StatelessWidget {
           Text(
             '来源：${entry.sourceLabel}',
             style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                  color: AppColors.textSecondary,
+                  color: TrainFlowTokens.darkTrainingMuted,
                 ),
           ),
           if (entry.destination != null) ...[
@@ -332,7 +333,7 @@ class _RunContextReviewCardState extends ConsumerState<RunContextReviewCard> {
                 style: Theme.of(context)
                     .textTheme
                     .titleMedium
-                    ?.copyWith(fontWeight: FontWeight.w800),
+                    ?.copyWith(fontWeight: FontWeight.w600),
               ),
               const SizedBox(height: 6),
               const Text(
@@ -492,7 +493,7 @@ class _StrengthPrimaryExerciseCardState
                 style: Theme.of(context)
                     .textTheme
                     .titleMedium
-                    ?.copyWith(fontWeight: FontWeight.w800),
+                    ?.copyWith(fontWeight: FontWeight.w600),
               ),
               const SizedBox(height: 6),
               const Text(
@@ -520,7 +521,7 @@ class _StrengthPrimaryExerciseCardState
                 Text(
                   _message!,
                   style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                        color: AppColors.textSecondary,
+                        color: TrainFlowTokens.darkTrainingMuted,
                       ),
                 ),
               ],
@@ -661,14 +662,14 @@ class _MetricGroupCard extends StatelessWidget {
             style: Theme.of(context)
                 .textTheme
                 .titleMedium
-                ?.copyWith(fontWeight: FontWeight.w800),
+                ?.copyWith(fontWeight: FontWeight.w600),
           ),
           const SizedBox(height: 8),
           if (metrics.isEmpty)
             Text(
               emptyMessage,
               style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                    color: AppColors.textSecondary,
+                    color: TrainFlowTokens.darkTrainingMuted,
                   ),
             )
           else
@@ -682,7 +683,7 @@ class _MetricGroupCard extends StatelessWidget {
             Text(
               '身体慢变量仅在月报或你主动查看时展示，不会出现在日常首页。',
               style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                    color: AppColors.textSecondary,
+                    color: TrainFlowTokens.darkTrainingMuted,
                   ),
             ),
           ],
@@ -709,6 +710,18 @@ class _MetricStatusRow extends StatelessWidget {
         child: Row(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
+            Padding(
+              padding: const EdgeInsets.only(top: 6),
+              child: Container(
+                width: 8,
+                height: 8,
+                decoration: BoxDecoration(
+                  color: _metricStatusColor(metric.status),
+                  shape: BoxShape.circle,
+                ),
+              ),
+            ),
+            const SizedBox(width: 10),
             Expanded(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -724,7 +737,7 @@ class _MetricStatusRow extends StatelessWidget {
                   Text(
                     _metricDetail(metric),
                     style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                          color: AppColors.textSecondary,
+                          color: TrainFlowTokens.darkTrainingMuted,
                         ),
                   ),
                 ],
@@ -792,7 +805,7 @@ String _metricStatusLabel(MetricStatus status) => switch (status) {
 Color _metricStatusColor(MetricStatus status) => switch (status) {
       MetricStatus.ready => AppColors.success,
       MetricStatus.accumulating => AppColors.secondaryDark,
-      MetricStatus.unavailable => AppColors.textSecondary,
+      MetricStatus.unavailable => TrainFlowTokens.darkTrainingMuted,
       MetricStatus.invalidated => AppColors.warningDark,
       MetricStatus.failed => AppColors.danger,
     };
@@ -862,7 +875,7 @@ class _LevelEvidenceCard extends StatelessWidget {
           Row(
             children: [
               const Icon(Icons.workspace_premium_outlined,
-                  color: AppColors.primary),
+                  color: TrainFlowTokens.accent),
               const SizedBox(width: 8),
               Expanded(
                 child: Text(
@@ -870,32 +883,50 @@ class _LevelEvidenceCard extends StatelessWidget {
                   style: Theme.of(context)
                       .textTheme
                       .titleLarge
-                      ?.copyWith(fontWeight: FontWeight.w900),
+                      ?.copyWith(fontWeight: FontWeight.w700),
                 ),
               ),
-              ToneBadge(label: '峰值 ${levelState.peakXp} XP'),
+              EmpBadge(
+                label: '峰值 ${levelState.peakXp} XP',
+                tone: EmpBadgeTone.yellow,
+                icon: Icons.emoji_events_outlined,
+              ),
             ],
           ),
           const SizedBox(height: 12),
-          LinearProgressIndicator(
-            value: progress.progress,
-            minHeight: 8,
-            color: AppColors.primary,
-            backgroundColor: AppColors.primary.withValues(alpha: 0.12),
-            borderRadius: BorderRadius.circular(999),
+          Row(
+            children: <Widget>[
+              EmpProgressRing(
+                progress: progress.progress,
+                size: 56,
+                strokeWidth: 6,
+                color: TrainFlowTokens.accent,
+                trackColor: TrainFlowTokens.darkTrainingRaised,
+              ),
+              const SizedBox(width: 14),
+              Expanded(
+                child: Text(
+                  '当前有效 XP ${progress.currentXp}/'
+                  '${progress.nextLevelXp}。',
+                  style: Theme.of(context).textTheme.titleSmall?.copyWith(
+                        fontWeight: FontWeight.w600,
+                      ),
+                ),
+              ),
+            ],
           ),
           const SizedBox(height: 8),
           Text(
-            '当前有效 XP ${progress.currentXp}/${progress.nextLevelXp}。等级只记录已达成峰值，不会因删除或修订而倒退。',
+            '等级只记录已达成峰值，不会因删除或修订而倒退。',
             style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                  color: AppColors.textSecondary,
+                  color: TrainFlowTokens.darkTrainingMuted,
                 ),
           ),
           const SizedBox(height: 8),
           Text(
             statusMessage,
             style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                  color: AppColors.textSecondary,
+                  color: TrainFlowTokens.darkTrainingMuted,
                 ),
           ),
         ],
@@ -919,7 +950,7 @@ class _GrowthWeeklyReportsCard extends StatelessWidget {
           Row(
             children: [
               const Icon(Icons.calendar_view_week_outlined,
-                  color: AppColors.primary),
+                  color: TrainFlowTokens.accent),
               const SizedBox(width: 8),
               Expanded(
                 child: Text(
@@ -927,7 +958,7 @@ class _GrowthWeeklyReportsCard extends StatelessWidget {
                   style: Theme.of(context)
                       .textTheme
                       .titleMedium
-                      ?.copyWith(fontWeight: FontWeight.w800),
+                      ?.copyWith(fontWeight: FontWeight.w600),
                 ),
               ),
               ToneBadge(label: latest.isLocked ? '已锁定' : '本周可更新'),
@@ -947,7 +978,7 @@ class _GrowthWeeklyReportsCard extends StatelessWidget {
                 child: MetricPill(
                   label: '完成率',
                   value: latest.completionRateLabel,
-                  color: AppColors.secondary,
+                  color: TrainFlowTokens.accent,
                 ),
               ),
             ],
@@ -956,7 +987,7 @@ class _GrowthWeeklyReportsCard extends StatelessWidget {
           Text(
             latest.recoverySummary,
             style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                  color: AppColors.textSecondary,
+                  color: TrainFlowTokens.darkTrainingMuted,
                 ),
           ),
         ],
@@ -970,25 +1001,12 @@ class _EmptyEvidenceCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return TrainFlowCard(
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            '尚未形成成长证据',
-            style: Theme.of(context)
-                .textTheme
-                .titleMedium
-                ?.copyWith(fontWeight: FontWeight.w800),
-          ),
-          const SizedBox(height: 8),
-          Text(
+    return const TrainFlowCard(
+      child: EmpEmptyState(
+        icon: Icons.auto_awesome_outlined,
+        title: '尚未形成成长证据',
+        description:
             '完成一次达到 50% 的训练、导入历史活动或保存健康记录后，这里会展示来源、数据完整度和模型贡献。',
-            style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                  color: AppColors.textSecondary,
-                ),
-          ),
-        ],
       ),
     );
   }
@@ -1002,7 +1020,7 @@ class _GrowthEvidenceEventCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final Color tone =
-        event.isRevoked ? AppColors.textSecondary : AppColors.primary;
+        event.isRevoked ? TrainFlowTokens.darkTrainingMuted : AppColors.primary;
     return TrainFlowCard(
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -1026,13 +1044,13 @@ class _GrowthEvidenceEventCard extends StatelessWidget {
                       style: Theme.of(context)
                           .textTheme
                           .titleMedium
-                          ?.copyWith(fontWeight: FontWeight.w800),
+                          ?.copyWith(fontWeight: FontWeight.w600),
                     ),
                     const SizedBox(height: 3),
                     Text(
                       _eventDateLabel(event),
                       style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                            color: AppColors.textSecondary,
+                            color: TrainFlowTokens.darkTrainingMuted,
                           ),
                     ),
                   ],
@@ -1061,7 +1079,7 @@ class _GrowthEvidenceEventCard extends StatelessWidget {
             ),
           ] else ...[
             const SizedBox(height: 10),
-            const ToneBadge(label: '不计成长分', color: AppColors.textSecondary),
+            const ToneBadge(label: '不计成长分', color: TrainFlowTokens.darkTrainingMuted),
           ],
           if (event.impacts.isNotEmpty) ...[
             const SizedBox(height: 10),
@@ -1070,7 +1088,7 @@ class _GrowthEvidenceEventCard extends StatelessWidget {
               style: Theme.of(context)
                   .textTheme
                   .bodySmall
-                  ?.copyWith(fontWeight: FontWeight.w800),
+                  ?.copyWith(fontWeight: FontWeight.w600),
             ),
             const SizedBox(height: 6),
             Wrap(
@@ -1098,7 +1116,7 @@ class _GrowthEvidenceEventCard extends StatelessWidget {
           Text(
             '来源 ${event.sourceTable}:${event.sourceId} · 模型 v${event.modelVersion}',
             style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                  color: AppColors.textSecondary,
+                  color: TrainFlowTokens.darkTrainingMuted,
                 ),
           ),
         ],

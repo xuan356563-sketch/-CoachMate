@@ -4,8 +4,9 @@ import 'package:go_router/go_router.dart';
 
 import '../../app/router/app_routes.dart';
 import '../../core/constants/app_colors.dart';
+import '../../core/design_system/trainmate_primitives.dart';
 import '../../core/theme/trainmate_visual_mode.dart';
-import '../../core/theme/trainflow_tokens.dart';
+import '../../core/widgets/emp_system.dart';
 import '../../core/widgets/flow_mascot.dart';
 import '../../core/widgets/trainmate_showcase_widgets.dart';
 import '../../core/widgets/trainflow_widgets.dart';
@@ -264,6 +265,15 @@ class _TodayTrainingPageState extends ConsumerState<TodayTrainingPage> {
         onStartWorkout: _startWorkoutFromShowcase,
       ),
       children: [
+        EmpStatPanel(
+          value: '${state.readinessScore}',
+          unit: '今日准备度',
+          secondary: state.readinessLabel,
+          progress: (state.readinessScore / 100).clamp(0, 1),
+          color: TrainFlowTokens.accent,
+          foreground: TrainFlowTokens.onAccent,
+        ),
+        const SizedBox(height: 20),
         TrainMateStatusStrip(
           semanticLabel: '今日最新状态，点击进入签到',
           onTap: () => context.push(AppRoutes.dailyCheckIn),
@@ -274,7 +284,7 @@ class _TodayTrainingPageState extends ConsumerState<TodayTrainingPage> {
                   ? '待记录'
                   : '${latestMetric.sleepHours.toStringAsFixed(1)}h',
               icon: Icons.bedtime_outlined,
-              color: AppColors.primaryLightest,
+              color: TrainFlowTokens.darkTrainingRaised,
             ),
             TrainMateStatusMetric(
               label: '准备度',
@@ -296,7 +306,7 @@ class _TodayTrainingPageState extends ConsumerState<TodayTrainingPage> {
                   ? '待记录'
                   : '${latestMetric.sorenessLevel}/10',
               icon: Icons.accessibility_new_outlined,
-              color: AppColors.primaryLightest,
+              color: TrainFlowTokens.darkTrainingRaised,
             ),
             TrainMateStatusMetric(
               label: '心情',
@@ -307,6 +317,15 @@ class _TodayTrainingPageState extends ConsumerState<TodayTrainingPage> {
               color: AppColors.secondaryLight,
             ),
           ],
+        ),
+        const SizedBox(height: 20),
+        EmpIllustrationCard(
+          title: '今日成就',
+          subtitle:
+              '已完成 ${growthDashboard.completedTaskCount}/${growthDashboard.totalTaskCount} 项 · 完成度 ${(growthDashboard.completionRate * 100).round()}%',
+          bg: TrainFlowTokens.yellow,
+          actionLabel: '去完成',
+          onAction: _startWorkoutFromShowcase,
         ),
         const SizedBox(height: 20),
         TrainMateOverviewGrid(
@@ -401,7 +420,7 @@ class _TodayOverviewCard extends StatelessWidget {
                 style: Theme.of(context)
                     .textTheme
                     .bodySmall
-                    ?.copyWith(color: TrainMateVisualScope.muted(context))),
+                    ?.copyWith(color: TrainFlowTokens.darkTrainingMuted)),
           ],
         ),
       ),
@@ -426,12 +445,12 @@ class _TrainingRecordEntryCard extends StatelessWidget {
                 width: 44,
                 height: 44,
                 decoration: BoxDecoration(
-                  color: AppColors.primaryLight,
+                  color: TrainFlowTokens.darkTrainingRaised,
                   borderRadius: BorderRadius.circular(14),
                 ),
                 child: const Icon(
                   Icons.edit_calendar_outlined,
-                  color: AppColors.primary,
+                  color: TrainFlowTokens.accent,
                 ),
               ),
               const SizedBox(width: 12),
@@ -444,12 +463,14 @@ class _TrainingRecordEntryCard extends StatelessWidget {
                       style: Theme.of(context)
                           .textTheme
                           .titleMedium
-                          ?.copyWith(fontWeight: FontWeight.w900),
+                          ?.copyWith(fontWeight: FontWeight.w700),
                     ),
                     const SizedBox(height: 2),
-                    const Text(
+                    Text(
                       '记录计划内训练或额外运动，保存后更新成长证据。',
-                      style: TextStyle(color: AppColors.textSecondary),
+                      style: TextStyle(
+                        color: TrainFlowTokens.darkTrainingMuted,
+                      ),
                     ),
                   ],
                 ),
@@ -457,17 +478,15 @@ class _TrainingRecordEntryCard extends StatelessWidget {
             ],
           ),
           const SizedBox(height: 14),
-          SizedBox(
-            width: double.infinity,
-            child: FilledButton.icon(
-              key: const ValueKey<String>('today-training-record-entry'),
-              onPressed: () => showTrainingRecordEditor(
-                context: context,
-                workout: workout,
-              ),
-              icon: const Icon(Icons.add),
-              label: const Text('记录今日训练'),
+          TrainMateButton(
+            key: const ValueKey<String>('today-training-record-entry'),
+            label: '记录今日训练',
+            icon: Icons.add,
+            onPressed: () => showTrainingRecordEditor(
+              context: context,
+              workout: workout,
             ),
+            expand: true,
           ),
         ],
       ),
@@ -509,19 +528,38 @@ class _TodayGrowthCard extends StatelessWidget {
             growthLabel: '$dayLabel · ${dashboard.level.label}',
           ),
           const SizedBox(height: 12),
-          LinearProgressIndicator(
-            value: dashboard.level.progress,
-            minHeight: 8,
-            color: AppColors.primary,
-            backgroundColor: AppColors.primary.withValues(alpha: 0.12),
-            borderRadius: BorderRadius.circular(999),
-          ),
-          const SizedBox(height: 8),
-          Text(
-            '成长经验 ${dashboard.level.currentXp}/${dashboard.level.nextLevelXp}',
-            style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                  color: AppColors.textSecondary,
+          Row(
+            children: <Widget>[
+              EmpProgressRing(
+                progress: dashboard.level.progress,
+                size: 56,
+                strokeWidth: 6,
+                color: TrainFlowTokens.accent,
+                trackColor: TrainFlowTokens.darkTrainingRaised,
+              ),
+              const SizedBox(width: 14),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: <Widget>[
+                    Text(
+                      '成长经验 ${dashboard.level.currentXp}/'
+                      '${dashboard.level.nextLevelXp}',
+                      style: Theme.of(context).textTheme.titleSmall?.copyWith(
+                            fontWeight: FontWeight.w600,
+                          ),
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      '目标达成 ${(dashboard.level.progress * 100).round()}%',
+                      style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                            color: TrainFlowTokens.darkTrainingMuted,
+                          ),
+                    ),
+                  ],
                 ),
+              ),
+            ],
           ),
           const SizedBox(height: 12),
           Text(
@@ -529,7 +567,7 @@ class _TodayGrowthCard extends StatelessWidget {
             style: Theme.of(context)
                 .textTheme
                 .titleMedium
-                ?.copyWith(fontWeight: FontWeight.w800),
+                ?.copyWith(fontWeight: FontWeight.w600),
           ),
           const SizedBox(height: 8),
           InfoRow(
@@ -559,7 +597,7 @@ class _TodayGrowthCard extends StatelessWidget {
                 Text(
                   dashboard.raceCountdownLabel,
                   style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                        color: AppColors.textSecondary,
+                        color: TrainFlowTokens.darkTrainingMuted,
                       ),
                 ),
                 const SizedBox(height: 10),
@@ -575,7 +613,7 @@ class _TodayGrowthCard extends StatelessWidget {
                           size: 18,
                           color: task.completed
                               ? AppColors.success
-                              : AppColors.textSecondary,
+                              : TrainFlowTokens.darkTrainingMuted,
                         ),
                         const SizedBox(width: 8),
                         Expanded(child: Text(task.title)),
@@ -586,14 +624,14 @@ class _TodayGrowthCard extends StatelessWidget {
                 Text(
                   isSynchronizing ? '正在核对真实记录…' : statusMessage,
                   style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                        color: AppColors.textSecondary,
+                        color: TrainFlowTokens.darkTrainingMuted,
                       ),
                 ),
                 const SizedBox(height: 8),
                 Text(
                   '计算依据：${projection.calculationBasis}',
                   style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                        color: AppColors.textSecondary,
+                        color: TrainFlowTokens.darkTrainingMuted,
                       ),
                 ),
                 Align(
@@ -662,10 +700,10 @@ class _RhythmCompactEntry extends StatelessWidget {
           child: Row(
             children: [
               CircleAvatar(
-                backgroundColor: AppColors.primary.withValues(alpha: 0.12),
+                backgroundColor: TrainFlowTokens.darkTrainingRaised,
                 child: const Icon(
                   Icons.monitor_heart_outlined,
-                  color: AppColors.primary,
+                  color: TrainFlowTokens.accent,
                 ),
               ),
               const SizedBox(width: 12),
@@ -678,14 +716,14 @@ class _RhythmCompactEntry extends StatelessWidget {
                       style: Theme.of(context)
                           .textTheme
                           .titleMedium
-                          ?.copyWith(fontWeight: FontWeight.w900),
+                          ?.copyWith(fontWeight: FontWeight.w700),
                     ),
                     Text(
                       '$subtitle · $growthLabel',
                       maxLines: 2,
                       overflow: TextOverflow.ellipsis,
                       style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                            color: AppColors.textSecondary,
+                            color: TrainFlowTokens.darkTrainingMuted,
                           ),
                     ),
                   ],
@@ -695,8 +733,8 @@ class _RhythmCompactEntry extends StatelessWidget {
               Text(
                 trailing,
                 style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                      color: AppColors.primary,
-                      fontWeight: FontWeight.w900,
+                      color: TrainFlowTokens.accent,
+                      fontWeight: FontWeight.w700,
                     ),
               ),
               const Icon(Icons.chevron_right),
@@ -723,7 +761,7 @@ class _WorkerProfileStrategyCard extends StatelessWidget {
         children: [
           Row(
             children: [
-              const Icon(Icons.work_outline, color: AppColors.secondary),
+              const Icon(Icons.work_outline, color: TrainFlowTokens.accent),
               const SizedBox(width: 8),
               Expanded(
                 child: Text(
@@ -731,7 +769,7 @@ class _WorkerProfileStrategyCard extends StatelessWidget {
                   style: Theme.of(context)
                       .textTheme
                       .titleMedium
-                      ?.copyWith(fontWeight: FontWeight.w800),
+                      ?.copyWith(fontWeight: FontWeight.w600),
                 ),
               ),
               ToneBadge(label: profile.workerProfileType.label),
@@ -743,7 +781,7 @@ class _WorkerProfileStrategyCard extends StatelessWidget {
           Text(
             profile.workerProfileType.strategy,
             style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                  color: AppColors.textSecondary,
+                  color: TrainFlowTokens.darkTrainingMuted,
                 ),
           ),
         ],
@@ -763,7 +801,7 @@ class _DailyCheckInPreviewCard extends StatelessWidget {
         children: [
           Row(
             children: [
-              const Icon(Icons.fact_check_outlined, color: AppColors.primary),
+              const Icon(Icons.fact_check_outlined, color: TrainFlowTokens.accent),
               const SizedBox(width: 8),
               Expanded(
                 child: Text(
@@ -771,7 +809,7 @@ class _DailyCheckInPreviewCard extends StatelessWidget {
                   style: Theme.of(context)
                       .textTheme
                       .titleMedium
-                      ?.copyWith(fontWeight: FontWeight.w800),
+                      ?.copyWith(fontWeight: FontWeight.w600),
                 ),
               ),
             ],
@@ -780,7 +818,7 @@ class _DailyCheckInPreviewCard extends StatelessWidget {
           Text(
             '打开后再填写今天的主观状态；首页不展示身体慢变量或推断结论。',
             style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                  color: AppColors.textSecondary,
+                  color: TrainFlowTokens.darkTrainingMuted,
                 ),
           ),
           const SizedBox(height: 12),
@@ -812,7 +850,7 @@ class _DailyAdjustmentPreviewCard extends StatelessWidget {
         children: [
           Row(
             children: [
-              const Icon(Icons.tune, color: AppColors.primary),
+              const Icon(Icons.tune, color: TrainFlowTokens.accent),
               const SizedBox(width: 8),
               Expanded(
                 child: Text(
@@ -820,7 +858,7 @@ class _DailyAdjustmentPreviewCard extends StatelessWidget {
                   style: Theme.of(context)
                       .textTheme
                       .titleMedium
-                      ?.copyWith(fontWeight: FontWeight.w800),
+                      ?.copyWith(fontWeight: FontWeight.w600),
                 ),
               ),
               ToneBadge(
@@ -843,7 +881,7 @@ class _DailyAdjustmentPreviewCard extends StatelessWidget {
           Text(
             state.dailyAdjustmentStatusMessage,
             style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                  color: AppColors.textSecondary,
+                  color: TrainFlowTokens.darkTrainingMuted,
                 ),
           ),
           const SizedBox(height: 12),
@@ -887,13 +925,13 @@ class _PainRiskCard extends StatelessWidget {
                   style: Theme.of(context)
                       .textTheme
                       .titleMedium
-                      ?.copyWith(fontWeight: FontWeight.w800),
+                      ?.copyWith(fontWeight: FontWeight.w600),
                 ),
                 const SizedBox(height: 4),
                 Text(
                   '${painLog.bodyPart}疼痛 ${painLog.painLevel}/10 · ${painLog.timing.label}',
                   style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                        color: AppColors.textSecondary,
+                        color: TrainFlowTokens.darkTrainingMuted,
                       ),
                 ),
               ],
@@ -919,7 +957,7 @@ class _OnboardingPromptCard extends ConsumerWidget {
         children: [
           Row(
             children: [
-              const Icon(Icons.assignment_ind, color: AppColors.primary),
+              const Icon(Icons.assignment_ind, color: TrainFlowTokens.accent),
               const SizedBox(width: 8),
               Expanded(
                 child: Text(
@@ -927,7 +965,7 @@ class _OnboardingPromptCard extends ConsumerWidget {
                   style: Theme.of(context)
                       .textTheme
                       .titleMedium
-                      ?.copyWith(fontWeight: FontWeight.w800),
+                      ?.copyWith(fontWeight: FontWeight.w600),
                 ),
               ),
             ],
@@ -936,7 +974,7 @@ class _OnboardingPromptCard extends ConsumerWidget {
           Text(
             '当前先使用本地 Mock 档案生成训练建议，后续可以接真实问卷和存储。',
             style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                  color: AppColors.textSecondary,
+                  color: TrainFlowTokens.darkTrainingMuted,
                 ),
           ),
           const SizedBox(height: 14),
@@ -1013,7 +1051,7 @@ class _WorkoutSummaryCard extends ConsumerWidget {
                   style: Theme.of(context)
                       .textTheme
                       .titleLarge
-                      ?.copyWith(fontWeight: FontWeight.w800),
+                      ?.copyWith(fontWeight: FontWeight.w600),
                 ),
               ),
               ToneBadge(label: workout.trainingType.label),
@@ -1025,16 +1063,12 @@ class _WorkoutSummaryCard extends ConsumerWidget {
             ],
           ),
           const SizedBox(height: 12),
-          SizedBox(
-            width: double.infinity,
-            child: FilledButton.icon(
-              key: const ValueKey<String>('today-workout-start-button'),
-              onPressed: () => _startPlayer(context, ref),
-              icon: const Icon(Icons.play_arrow),
-              label: Text(
-                '开始跟练 · 约 ${workout.estimatedMinutes} 分钟',
-              ),
-            ),
+          TrainMateButton(
+            key: const ValueKey<String>('today-workout-start-button'),
+            label: '开始跟练 · 约 ${workout.estimatedMinutes} 分钟',
+            icon: Icons.play_arrow,
+            onPressed: () => _startPlayer(context, ref),
+            expand: true,
           ),
           const SizedBox(height: 12),
           TrainFlowExpandable(
@@ -1065,7 +1099,7 @@ class _WorkoutSummaryCard extends ConsumerWidget {
               key: const ValueKey<String>('today-workout-coach-notes-full'),
               workout.coachNotes,
               style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                    color: AppColors.textSecondary,
+                    color: TrainFlowTokens.darkTrainingMuted,
                   ),
             ),
           ),
@@ -1094,7 +1128,7 @@ class _FiveStepFlow extends StatelessWidget {
         Text(
           '以上流程总时长计入 ${workout.estimatedMinutes} 分钟训练预算。',
           style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                color: AppColors.textSecondary,
+                color: TrainFlowTokens.darkTrainingMuted,
               ),
         ),
       ],
@@ -1124,12 +1158,12 @@ class _StepLine extends StatelessWidget {
         children: [
           CircleAvatar(
             radius: 12,
-            backgroundColor: AppColors.primaryLightest,
+            backgroundColor: TrainFlowTokens.darkTrainingRaised,
             child: Text(
               '$index',
               style: Theme.of(context).textTheme.labelSmall?.copyWith(
-                    color: AppColors.primary,
-                    fontWeight: FontWeight.w800,
+                    color: TrainFlowTokens.accent,
+                    fontWeight: FontWeight.w600,
                   ),
             ),
           ),
@@ -1141,7 +1175,7 @@ class _StepLine extends StatelessWidget {
                 children: [
                   TextSpan(
                     text: '$title：',
-                    style: const TextStyle(fontWeight: FontWeight.w800),
+                    style: const TextStyle(fontWeight: FontWeight.w600),
                   ),
                   TextSpan(text: value),
                 ],
@@ -1178,14 +1212,14 @@ class _RecentTrainingRecordsCard extends StatelessWidget {
             style: Theme.of(context)
                 .textTheme
                 .titleMedium
-                ?.copyWith(fontWeight: FontWeight.w800),
+                ?.copyWith(fontWeight: FontWeight.w600),
           ),
           const SizedBox(height: 12),
           if (visibleLogs.isEmpty)
             Text(
               '还没有完整训练记录，完成今日训练后会显示在这里。',
               style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                    color: AppColors.textSecondary,
+                    color: TrainFlowTokens.darkTrainingMuted,
                   ),
             )
           else
@@ -1217,7 +1251,7 @@ class _TrainingLogRow extends StatelessWidget {
               child: Text(
                 _trainingLogDateLabel(log.createdAt),
                 style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                      color: AppColors.textSecondary,
+                      color: TrainFlowTokens.darkTrainingMuted,
                       fontWeight: FontWeight.w700,
                     ),
               ),
@@ -1243,7 +1277,7 @@ class _TrainingLogRow extends StatelessWidget {
           Text(
             note,
             style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                  color: AppColors.textSecondary,
+                  color: TrainFlowTokens.darkTrainingMuted,
                 ),
           ),
         ],
@@ -1274,7 +1308,7 @@ Color _trainingLogStatusColor(TrainingLog log) {
   if (log.normalizedCompletionPercentage > 0) {
     return AppColors.warningDark;
   }
-  return AppColors.textSecondary;
+  return TrainFlowTokens.darkTrainingMuted;
 }
 
 DateTime _weekStart(DateTime value) {
@@ -1293,7 +1327,7 @@ Color _decisionColor(TrainingDecisionType decisionType) {
     case TrainingDecisionType.technique:
       return AppColors.secondary;
     case TrainingDecisionType.rest:
-      return AppColors.textSecondary;
+      return TrainFlowTokens.darkTrainingMuted;
   }
 }
 
@@ -1324,7 +1358,7 @@ class _CoachAdviceCard extends StatelessWidget {
                   const Icon(
                     Icons.bolt,
                     size: 18,
-                    color: AppColors.primary,
+                    color: TrainFlowTokens.accent,
                   ),
                   const SizedBox(width: 8),
                   Expanded(child: Text(item)),

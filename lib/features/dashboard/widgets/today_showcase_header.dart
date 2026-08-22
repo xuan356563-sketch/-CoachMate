@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../../../core/constants/app_colors.dart';
+import '../../../core/theme/trainflow_tokens.dart';
 import '../../../core/widgets/trainmate_action_character.dart';
 import '../../../core/widgets/trainmate_showcase_widgets.dart';
 import '../../../data/models/workout_day.dart';
@@ -77,7 +78,7 @@ class TodayShowcaseHeader extends StatelessWidget {
             child: ExcludeSemantics(
               child: DecoratedBox(
                 decoration: BoxDecoration(
-                  color: const Color(0xFF2A2A28),
+                  color: TrainFlowTokens.darkTrainingRaised,
                   borderRadius: BorderRadius.circular(14),
                 ),
                 child: Padding(
@@ -86,7 +87,7 @@ class TodayShowcaseHeader extends StatelessWidget {
                   child: Text(
                     '$growthLabel · $growthXp/$nextLevelXp XP · $completionPercent%',
                     style: Theme.of(context).textTheme.labelSmall?.copyWith(
-                          color: const Color(0xFFE0FF64),
+                          color: TrainFlowTokens.accent,
                           fontWeight: FontWeight.w700,
                         ),
                   ),

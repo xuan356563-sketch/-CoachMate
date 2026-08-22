@@ -8,40 +8,66 @@ enum TrainFlowCardTone { paper, ink, peach, outline }
 enum TrainFlowPageLayout { detail, form, report, legal }
 
 abstract final class TrainFlowTokens {
-  /// Indore 主标签体系的唯一交互强调色。
-  static const Color accent = Color(0xFFE0FF64);
-  static const Color onAccent = Color(0xFF181814);
-  static const Color darkTrainingSurface = Color(0xFF181814);
-  static const Color darkTrainingCard = Color(0xFF21211D);
-  static const Color darkTrainingRaised = Color(0xFF2A2A28);
-  static const Color darkTrainingHighest = Color(0xFF353634);
-  static const Color darkTrainingOnSurface = Color(0xFFFFFFFF);
-  static const Color darkTrainingMuted = Color(0xFF8E8E88);
-  static const Color lightCompanionSurface = Color(0xFFF4F3F1);
-  static const Color lightCompanionCard = Color(0xFFFFFFFF);
-  static const Color lightCompanionOnSurface = Color(0xFF1A1A18);
-  static const Color lightCompanionMuted = Color(0xFF6B6B66);
+  /// 品牌主色：深紫（主要操作 / 进度 / 选中态）。
+  static const Color accent = Color(0xFF6C3DF4);
+  static const Color accentDark = Color(0xFF191331);
+  static const Color accentLight = Color(0xFFEEE8FF);
+  static const Color accentGlow = Color(0x596C3DF4);
+  static const Color onAccent = Color(0xFFFFFFFF);
 
-  static const Color ink = Color(0xFF19172C);
-  static const Color inkDeep = Color(0xFF11101F);
-  static const Color paper = Color(0xFFFFFDFC);
-  static const Color peach = Color(0xFFFFB27D);
-  static const Color peachLight = Color(0xFFFFE2B8);
-  static const Color page = Color(0xFFF4F2F5);
-  static const Color text = Color(0xFF181722);
-  static const Color textMuted = Color(0xFF6F6C78);
+  // 品牌与功能色（计划 5.1 / 5.2：深紫主色 + 多色功能强调）。
+  static const Color brandDark = Color(0xFF191331);
+  static const Color purple = Color(0xFF6C3DF4);
+  static const Color purpleSoft = Color(0xFFEEE8FF);
+  static const Color yellow = Color(0xFFFFD54A);
+  static const Color pink = Color(0xFFF083C6);
+  static const Color coral = Color(0xFFFF665B);
+  static const Color blue = Color(0xFF438CF5);
+  static const Color mint = Color(0xFF67E6B1);
+
+  // 语义状态色（计划 5.1：成功 / 提醒 / 错误 / 信息）。
+  static const Color success = Color(0xFF2DBE7F);
+  static const Color warning = Color(0xFFF4A62A);
+  static const Color error = Color(0xFFE84A5F);
+  static const Color info = Color(0xFF438CF5);
+
+  // 浅色暖灰底 + 白色卡片的语义分层（原「darkTraining*」命名保留，语义已切换为浅色品牌层）。
+  static const Color darkTrainingSurface = Color(0xFFF6F6F4);
+  static const Color darkTrainingCard = Color(0xFFFFFFFF);
+  static const Color darkTrainingRaised = Color(0xFFECEDEF);
+  static const Color darkTrainingHighest = Color(0xFFEEE8FF);
+  static const Color darkTrainingOnSurface = Color(0xFF171522);
+  static const Color darkTrainingMuted = Color(0xFF686574);
+  static const Color darkTrainingTextTertiary = Color(0xFF9693A1);
+  // 浅色背景渐变（场景头）。
+  static const Color darkTrainingGradientTop = Color(0xFFFFFFFF);
+  static const Color darkTrainingGradientBottom = Color(0xFFF6F6F4);
+  static const Color lightCompanionSurface = Color(0xFFF6F6F4);
+  static const Color lightCompanionCard = Color(0xFFFFFFFF);
+  static const Color lightCompanionOnSurface = Color(0xFF171522);
+  static const Color lightCompanionMuted = Color(0xFF686574);
+
+  static const Color ink = Color(0xFF191331);
+  static const Color inkDeep = Color(0xFF130E26);
+  static const Color paper = Color(0xFFFFFFFF);
+  static const Color peach = Color(0xFFF083C6);
+  static const Color peachLight = Color(0xFFFDE7F6);
+  static const Color page = Color(0xFFF6F6F4);
+  static const Color text = Color(0xFF171522);
+  static const Color textMuted = Color(0xFF686574);
+  static const Color border = Color(0xFFE7E5EB);
   static const Color navigationSurface = Color(0xFFFFFFFF);
-  static const Color navigationPillSurface = Color(0xB3FFFFFF);
-  static const Color navigationInk = darkTrainingSurface;
+  static const Color navigationPillSurface = Color(0xFFFFFFFF);
+  static const Color navigationInk = brandDark;
   static const Color navigationAccent = accent;
-  static const Color navigationInactive = Color(0xFF3E3A3E);
-  static const Color navigationLabelInactive = Color(0xFFA19B9D);
+  static const Color navigationInactive = Color(0xFF9693A1);
+  static const Color navigationLabelInactive = Color(0xFF9693A1);
   static const Color navigationSelectedFace = accent;
-  static const Color navigationGlassBorder = Color(0x8CFFFFFF);
-  static const Color navigationGlassShadow = Color(0x1F19172C);
+  static const Color navigationGlassBorder = Color(0xFFE7E5EB);
+  static const Color navigationGlassShadow = Color(0x1F191331);
 
   static const double pageMaxWidth = 430;
-  static const List<double> spacing = <double>[8, 12, 16, 20, 24, 32];
+  static const List<double> spacing = <double>[4, 8, 12, 16, 20, 24, 32, 40];
   static const double heroRadius = 40;
   static const double sectionRadius = 32;
   static const double cardRadius = 24;
@@ -52,8 +78,8 @@ abstract final class TrainFlowTokens {
   static const double mainTabPageGutter = 20;
   static const double mainTabCardGap = 12;
   static const double mainTabCardPadding = 16;
-  static const double mainTabCardRadius = 14;
-  static const double mainTabControlRadius = 14;
+  static const double mainTabCardRadius = 16;
+  static const double mainTabControlRadius = 16;
   static const double bottomNavigationHorizontalInset = 40;
   static const double bottomNavigationMinimumHorizontalInset = 16;
   static const double bottomNavigationMinimumItemWidth = 48;
@@ -97,16 +123,19 @@ abstract final class TrainFlowTokens {
 }
 
 abstract final class TrainFlowMotion {
-  static const Duration route = Duration(milliseconds: 220);
-  static const Duration entrance = Duration(milliseconds: 200);
+  // CycleGo 方案包动效数值：页面转场 300ms、数字滚动 800ms、进度环 1200ms、
+  // Tab 胶囊 200ms、图标 150ms、按钮按压 100ms。
+  static const Duration route = Duration(milliseconds: 300);
+  static const Duration entrance = Duration(milliseconds: 300);
   static const Duration cardStagger = Duration(milliseconds: 40);
-  static const Duration value = Duration(milliseconds: 450);
-  static const Duration button = Duration(milliseconds: 120);
-  static const Duration selection = Duration(milliseconds: 320);
-  static const Duration sceneEntrance = Duration(milliseconds: 260);
+  static const Duration value = Duration(milliseconds: 800);
+  static const Duration progressRing = Duration(milliseconds: 1200);
+  static const Duration button = Duration(milliseconds: 100);
+  static const Duration selection = Duration(milliseconds: 200);
+  static const Duration sceneEntrance = Duration(milliseconds: 300);
   static const Duration navigationStandardSelection =
-      Duration(milliseconds: 180);
-  static const Curve easeOut = Cubic(0.23, 1, 0.32, 1);
+      Duration(milliseconds: 150);
+  static const Curve easeOut = Cubic(0.4, 0, 0.2, 1);
 
   static bool isEnabled(BuildContext context) {
     return !(MediaQuery.maybeOf(context)?.disableAnimations ?? false);

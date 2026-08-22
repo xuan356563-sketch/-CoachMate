@@ -1,10 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 
-import '../constants/app_colors.dart';
+import '../theme/trainflow_tokens.dart';
 import 'trainmate_action_character.dart';
 
 /// 智练 TrainMate 业务子页面统一返回按钮。
+///
+/// CycleGo 白图标钮样式：暖黑界面里的白色圆形锚点 + 深色图标。
 class TrainMateBackButton extends StatelessWidget {
   final String fallbackRoute;
   final VoidCallback? onPressed;
@@ -19,10 +21,8 @@ class TrainMateBackButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final Color foreground = IconTheme.of(context).color ?? AppColors.primary;
-    final bool isOnDarkHeader = foreground.computeLuminance() > 0.7;
-    final Color characterBackground =
-        isOnDarkHeader ? AppColors.primary : AppColors.background;
+    final Color foreground = TrainFlowTokens.darkTrainingSurface;
+    const Color characterBackground = Colors.white;
 
     void handleBack() {
       if (onPressed != null) {
@@ -42,7 +42,9 @@ class TrainMateBackButton extends StatelessWidget {
       child: Tooltip(
         message: '返回',
         child: Material(
-          color: Colors.transparent,
+          color: Colors.white,
+          shape: const CircleBorder(),
+          clipBehavior: Clip.antiAlias,
           child: InkResponse(
             onTap: handleBack,
             radius: 24,

@@ -3,31 +3,31 @@ import 'package:flutter/material.dart';
 import '../theme/trainflow_tokens.dart';
 
 class AppColors {
-  // 品牌色
+  // 品牌色（深紫 + 紫/粉功能色）
   static const Color primary = TrainFlowTokens.ink;
   static const Color primaryLight = TrainFlowTokens.peachLight;
   static const Color primaryDark = TrainFlowTokens.inkDeep;
-  static const Color primaryLightest = Color(0xFFFFF1E5);
+  static const Color primaryLightest = Color(0xFFEEE8FF);
   static const Color secondary = TrainFlowTokens.peach;
-  static const Color secondaryLight = Color(0xFFFFE8D6);
-  static const Color secondaryDark = Color(0xFFF59A61);
+  static const Color secondaryLight = Color(0xFFFDE7F6);
+  static const Color secondaryDark = Color(0xFFC944A9);
 
   // 伙伴系统 LCD 专用颜色
-  static const Color petInk = Color(0xFF19172C);
-  static const Color petInkDeep = Color(0xFF11101F);
-  static const Color petPeach = Color(0xFFFFB27D);
-  static const Color petPeachLight = Color(0xFFFFE2B8);
-  static const Color petPaper = Color(0xFFFFFDFC);
+  static const Color petInk = Color(0xFF191331);
+  static const Color petInkDeep = Color(0xFF130E26);
+  static const Color petPeach = Color(0xFFF083C6);
+  static const Color petPeachLight = Color(0xFFFDE7F6);
+  static const Color petPaper = Color(0xFFFFFFFF);
   static const Color petLcd = Color(0xFFA3B58C);
   static const Color petLcdDim = Color(0xFF98AA80);
   static const Color petLcdPixel = Color(0xFF1C2415);
 
   // 业务状态色仅用于完成、预警和风险反馈
-  static const Color success = Color(0xFF2E9B68);
-  static const Color warning = Color(0xFFF0A13A);
-  static const Color warningDark = Color(0xFFB96B14);
-  static const Color danger = Color(0xFFD84B4B);
-  static const Color dangerDark = Color(0xFFAA2E2E);
+  static const Color success = Color(0xFF2DBE7F);
+  static const Color warning = Color(0xFFF4A62A);
+  static const Color warningDark = Color(0xFFC98200);
+  static const Color danger = Color(0xFFE84A5F);
+  static const Color dangerDark = Color(0xFFC2383A);
 
   // 中性色
   static const Color white = TrainFlowTokens.paper;

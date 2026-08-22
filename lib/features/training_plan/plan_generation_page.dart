@@ -3,7 +3,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../app/router/app_routes.dart';
-import '../../core/constants/app_colors.dart';
+import '../../core/constants/app_brand.dart';
 import '../../core/widgets/trainflow_widgets.dart';
 import '../../data/models/ai_artifact.dart';
 import '../../data/models/generated_training_plan.dart';
@@ -279,7 +279,7 @@ class _PlanStatusNotice extends StatelessWidget {
             style: Theme.of(context)
                 .textTheme
                 .titleMedium
-                ?.copyWith(fontWeight: FontWeight.w800),
+                ?.copyWith(fontWeight: FontWeight.w600),
           ),
           const SizedBox(height: 8),
           Text(
@@ -310,7 +310,7 @@ class _ProfilePreflightCard extends ConsumerWidget {
             style: Theme.of(context)
                 .textTheme
                 .titleMedium
-                ?.copyWith(fontWeight: FontWeight.w800),
+                ?.copyWith(fontWeight: FontWeight.w600),
           ),
           const SizedBox(height: 8),
           InfoRow(
@@ -395,11 +395,13 @@ class _ClearanceCard extends StatelessWidget {
             style: Theme.of(context)
                 .textTheme
                 .titleMedium
-                ?.copyWith(fontWeight: FontWeight.w800),
+                ?.copyWith(fontWeight: FontWeight.w600),
           ),
           const SizedBox(height: 8),
-          const Text(
-              'TrainMate 不复制 PAR-Q+ 题目，也不保存答案或许可文件。请在官方页面完成流程后，只记录结果状态。'),
+          Text(
+            '${AppBrand.displayName} 不复制 PAR-Q+ 题目，也不保存答案或许可文件。'
+            '请在官方页面完成流程后，只记录结果状态。',
+          ),
           const SizedBox(height: 10),
           SizedBox(
             width: double.infinity,
@@ -446,7 +448,7 @@ class _ClearanceCard extends StatelessWidget {
               error: (_, __) => '无法读取本机筛查状态，请重试。',
             ),
             style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                  color: AppColors.textSecondary,
+                  color: TrainFlowTokens.darkTrainingMuted,
                 ),
           ),
           const SizedBox(height: 10),
@@ -488,7 +490,7 @@ class _PopulationModeCard extends StatelessWidget {
             style: Theme.of(context)
                 .textTheme
                 .titleMedium
-                ?.copyWith(fontWeight: FontWeight.w800),
+                ?.copyWith(fontWeight: FontWeight.w600),
           ),
           const SizedBox(height: 8),
           const Text('本机根据档案给出推荐；你可以改选。模式只决定候选模板，不会跳过安全审计。'),
@@ -516,7 +518,7 @@ class _PopulationModeCard extends StatelessWidget {
                               : Icons.radio_button_off,
                           color: option.id == selectedId
                               ? Theme.of(context).colorScheme.primary
-                              : AppColors.textSecondary,
+                              : TrainFlowTokens.darkTrainingMuted,
                         ),
                         const SizedBox(width: 4),
                         Expanded(
@@ -539,7 +541,7 @@ class _PopulationModeCard extends StatelessWidget {
                                     .textTheme
                                     .bodySmall
                                     ?.copyWith(
-                                      color: AppColors.textSecondary,
+                                      color: TrainFlowTokens.darkTrainingMuted,
                                     ),
                               ),
                             ],
@@ -585,7 +587,7 @@ class _OutboundSummaryCard extends StatelessWidget {
             style: Theme.of(context)
                 .textTheme
                 .titleMedium
-                ?.copyWith(fontWeight: FontWeight.w800),
+                ?.copyWith(fontWeight: FontWeight.w600),
           ),
           const SizedBox(height: 8),
           const Text('发送前会转换为白名单代码，不发送姓名、年龄、身体数据、伤病史、筛查结果、疼痛、HealthKit 或训练日志。'),
@@ -644,7 +646,7 @@ class _GenerationGateCard extends StatelessWidget {
             style: Theme.of(context)
                 .textTheme
                 .titleMedium
-                ?.copyWith(fontWeight: FontWeight.w800),
+                ?.copyWith(fontWeight: FontWeight.w600),
           ),
           const SizedBox(height: 8),
           if (blockers.isEmpty)
@@ -686,7 +688,7 @@ class _GenerationGateCard extends StatelessWidget {
               error: (_, __) => 'Skill 能力读取失败，现有计划不会改变。',
             ),
             style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                  color: AppColors.textSecondary,
+                  color: TrainFlowTokens.darkTrainingMuted,
                 ),
           ),
         ],
@@ -712,7 +714,7 @@ class _PlanPreviewCard extends StatelessWidget {
             style: Theme.of(context)
                 .textTheme
                 .titleMedium
-                ?.copyWith(fontWeight: FontWeight.w800),
+                ?.copyWith(fontWeight: FontWeight.w600),
           ),
           const SizedBox(height: 8),
           InfoRow(
@@ -750,7 +752,7 @@ class _PlanPreviewCard extends StatelessWidget {
           Text(
             '以上哈希只用于 Skill 来源溯源，不代表科学证据。训练依据仍只使用本地 EvidenceSource。',
             style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                  color: AppColors.textSecondary,
+                  color: TrainFlowTokens.darkTrainingMuted,
                 ),
           ),
           const SizedBox(height: 10),
@@ -790,7 +792,7 @@ class _AcceptedRecoveryCard extends StatelessWidget {
             style: Theme.of(context)
                 .textTheme
                 .titleMedium
-                ?.copyWith(fontWeight: FontWeight.w800),
+                ?.copyWith(fontWeight: FontWeight.w600),
           ),
           const SizedBox(height: 8),
           const Text('应用会从已确认的结构化处方重建本地草稿，并先联网复核 Skill 与开关状态。'),
@@ -851,7 +853,7 @@ class _WeekPreview extends StatelessWidget {
                     )
                     .join(' · '),
             style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                  color: AppColors.textSecondary,
+                  color: TrainFlowTokens.darkTrainingMuted,
                 ),
           ),
         ],
@@ -885,7 +887,7 @@ class _PlanAuditCard extends StatelessWidget {
                   style: Theme.of(context)
                       .textTheme
                       .titleMedium
-                      ?.copyWith(fontWeight: FontWeight.w800),
+                      ?.copyWith(fontWeight: FontWeight.w600),
                 ),
               ),
               ToneBadge(label: planState.canActivateDraft ? '可确认' : '已阻断'),
@@ -934,7 +936,7 @@ class _PlanDifferenceCard extends StatelessWidget {
             style: Theme.of(context)
                 .textTheme
                 .titleMedium
-                ?.copyWith(fontWeight: FontWeight.w800),
+                ?.copyWith(fontWeight: FontWeight.w600),
           ),
           const SizedBox(height: 8),
           InfoRow(
@@ -975,13 +977,13 @@ class _DraftDecisionCard extends StatelessWidget {
             style: Theme.of(context)
                 .textTheme
                 .titleMedium
-                ?.copyWith(fontWeight: FontWeight.w800),
+                ?.copyWith(fontWeight: FontWeight.w600),
           ),
           const SizedBox(height: 8),
           Text(
             generation?.statusMessage ?? '生成结果尚未就绪。',
             style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                  color: AppColors.textSecondary,
+                  color: TrainFlowTokens.darkTrainingMuted,
                 ),
           ),
           const SizedBox(height: 12),
@@ -1031,7 +1033,7 @@ class _PlanHistoryCard extends StatelessWidget {
             style: Theme.of(context)
                 .textTheme
                 .titleMedium
-                ?.copyWith(fontWeight: FontWeight.w800),
+                ?.copyWith(fontWeight: FontWeight.w600),
           ),
           const SizedBox(height: 8),
           for (final GeneratedPlanVersion version in versions) ...<Widget>[

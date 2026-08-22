@@ -11,32 +11,37 @@ import 'package:trainflow_ai/core/widgets/trainmate_showcase_widgets.dart';
 import 'package:trainflow_ai/core/widgets/trainflow_widgets.dart';
 
 void main() {
-  test('品牌视觉令牌保持深蓝橙固定色值', () {
-    expect(AppColors.primary, const Color(0xFF19172C));
-    expect(AppColors.white, const Color(0xFFFFFDFC));
-    expect(AppColors.secondary, const Color(0xFFFFB27D));
-    expect(AppColors.primaryLight, const Color(0xFFFFE2B8));
-    expect(AppColors.background, const Color(0xFFF4F2F5));
+  test('品牌视觉令牌锁定深紫主色 + 粉功能色固定值', () {
+    expect(AppColors.primary, const Color(0xFF191331));
+    expect(AppColors.white, const Color(0xFFFFFFFF));
+    expect(AppColors.secondary, const Color(0xFFF083C6));
+    expect(AppColors.primaryLight, const Color(0xFFFDE7F6));
+    expect(AppColors.background, const Color(0xFFF6F6F4));
   });
 
-  test('Indore 主标签视觉令牌锁定深浅主题、青柠强调与紧凑布局', () {
-    expect(TrainFlowTokens.accent, const Color(0xFFE0FF64));
-    expect(TrainFlowTokens.onAccent, const Color(0xFF181814));
-    expect(TrainFlowTokens.darkTrainingSurface, const Color(0xFF181814));
-    expect(TrainFlowTokens.darkTrainingCard, const Color(0xFF21211D));
-    expect(TrainFlowTokens.darkTrainingRaised, const Color(0xFF2A2A28));
-    expect(TrainFlowTokens.darkTrainingHighest, const Color(0xFF353634));
-    expect(TrainFlowTokens.lightCompanionSurface, const Color(0xFFF4F3F1));
+  test('浅色深紫令牌锁定白/暖灰底 + 深紫主色 + 多色功能强调', () {
+    expect(TrainFlowTokens.accent, const Color(0xFF6C3DF4));
+    expect(TrainFlowTokens.onAccent, const Color(0xFFFFFFFF));
+    expect(TrainFlowTokens.brandDark, const Color(0xFF191331));
+    expect(TrainFlowTokens.darkTrainingSurface, const Color(0xFFF6F6F4));
+    expect(TrainFlowTokens.darkTrainingCard, const Color(0xFFFFFFFF));
+    expect(TrainFlowTokens.darkTrainingRaised, const Color(0xFFECEDEF));
+    expect(TrainFlowTokens.darkTrainingHighest, const Color(0xFFEEE8FF));
+    expect(TrainFlowTokens.darkTrainingMuted, const Color(0xFF686574));
+    expect(TrainFlowTokens.yellow, const Color(0xFFFFD54A));
+    expect(TrainFlowTokens.pink, const Color(0xFFF083C6));
+    expect(TrainFlowTokens.mint, const Color(0xFF67E6B1));
+    expect(TrainFlowTokens.lightCompanionSurface, const Color(0xFFF6F6F4));
     expect(TrainFlowTokens.lightCompanionCard, const Color(0xFFFFFFFF));
-    expect(TrainFlowTokens.mainTabCardRadius, 14);
+    expect(TrainFlowTokens.mainTabCardRadius, 16);
     expect(TrainFlowTokens.mainTabPageGutter, 20);
     expect(TrainFlowTokens.mainTabCardGap, 12);
     expect(TrainFlowTokens.mainTabCardPadding, 16);
   });
 
-  test('青柠主行动在暖黑训练底色上的文字对比满足 AA', () {
-    final double contrast = (TrainFlowTokens.accent.computeLuminance() + .05) /
-        (TrainFlowTokens.onAccent.computeLuminance() + .05);
+  test('白字在深紫主色上的文字对比满足 AA', () {
+    final double contrast = (TrainFlowTokens.onAccent.computeLuminance() + .05) /
+        (TrainFlowTokens.accent.computeLuminance() + .05);
     expect(contrast, greaterThanOrEqualTo(4.5));
   });
 
@@ -183,7 +188,7 @@ void main() {
     expect(find.byType(MotionEntrance), findsNothing);
   });
 
-  testWidgets('显式开启的分区入场动画在 280ms 内结束', (tester) async {
+  testWidgets('显式开启的分区入场动画在 400ms 内结束', (tester) async {
     await tester.pumpWidget(
       const MaterialApp(
         home: Scaffold(
@@ -199,7 +204,7 @@ void main() {
     );
 
     expect(find.byType(MotionEntrance), findsNWidgets(3));
-    await tester.pump(const Duration(milliseconds: 280));
+    await tester.pump(const Duration(milliseconds: 400));
     expect(find.byType(Opacity), findsNWidgets(3));
     expect(
       tester
@@ -465,37 +470,65 @@ void main() {
     expect(FlowMascotPalette.brand.mouth, const Color(0xFFFF6B4A));
   });
 
-  test('官方 Ninja Flow 用于品牌标，Flow V2 保持动作角色与旧标回退', () {
+  test('官方 Logo 体系用于品牌职责并保留 C-08、Flow V2 与旧 Flow 回退', () {
     expect(
       TrainMateBrandAssets.brandmark,
-      'assets/branding/exports/png/trainmate-flow-logo-final-256.png',
+      'assets/branding/coachmate-official-logo-v1/exports/png/'
+      'coachmate-device-panel-1024.png',
     );
     expect(
       TrainMateBrandAssets.character,
-      'assets/branding/flow-v2-color-detail/exports/png/'
-      'trainmate-flow-character-1024.png',
+      'assets/branding/coachmate-official-logo-v1/exports/png/'
+      'coachmate-brand-character-1024.png',
     );
     expect(
       TrainMateBrandAssets.lockup,
-      'assets/branding/exports/png/trainmate-flow-logo-final-lockup-1600.png',
+      'assets/branding/coachmate-official-logo-v1/exports/png/'
+      'coachmate-official-lockup-2048x1152.png',
+    );
+    expect(
+      TrainMateBrandAssets.mateV2Brandmark,
+      'assets/branding/mate-feast-bag-v2/exports/png/'
+      'mate-feast-brandmark-1024.png',
+    );
+    expect(
+      TrainMateBrandAssets.mateV2Character,
+      'assets/branding/mate-feast-bag-v2/exports/png/'
+      'mate-feast-character-1024.png',
+    );
+    expect(
+      TrainMateBrandAssets.mateV2Lockup,
+      'assets/branding/mate-feast-bag-v2/exports/png/'
+      'mate-feast-compact-mark-1024.png',
+    );
+    expect(
+      TrainMateBrandAssets.flowV2Brandmark,
+      'assets/branding/exports/png/trainmate-flow-logo-final-256.png',
     );
     expect(
       TrainMateBrandAssets.legacyBrandmark,
-      'assets/branding/exports/png/trainmate-flow-logo-final-256.png',
+      'assets/branding/exports/png/trainmate-flow-brandmark-256.png',
     );
     expect(
       TrainMateBrandAssets.legacyLockup,
       'assets/branding/exports/png/'
-      'trainmate-flow-logo-final-lockup-1600.png',
+      'trainmate-flow-lockup-1600.png',
     );
     expect(
       <String>[
         TrainMateBrandAssets.brandmark,
         TrainMateBrandAssets.character,
         TrainMateBrandAssets.lockup,
+        TrainMateBrandAssets.mateV2Brandmark,
+        TrainMateBrandAssets.mateV2Character,
+        TrainMateBrandAssets.mateV2Lockup,
+        TrainMateBrandAssets.flowV2Brandmark,
+        TrainMateBrandAssets.flowV2Character,
+        TrainMateBrandAssets.flowV2Lockup,
         TrainMateBrandAssets.legacyBrandmark,
+        TrainMateBrandAssets.legacyCharacter,
         TrainMateBrandAssets.legacyLockup,
-      ].every((String path) => !path.contains('flow-dog-v1')),
+      ].every((String path) => !path.contains('mate-food-bag-v1')),
       isTrue,
     );
   });
@@ -581,7 +614,7 @@ void main() {
     expect(tester.takeException(), isNull);
   });
 
-  testWidgets('新主品牌组合标使用正式 PNG 并适配手机宽度', (tester) async {
+  testWidgets('官方完整组合标保持原图文字并适配手机宽度', (tester) async {
     tester.view.physicalSize = const Size(393, 852);
     tester.view.devicePixelRatio = 1;
     addTearDown(tester.view.resetPhysicalSize);
@@ -597,12 +630,67 @@ void main() {
 
     final Finder lockup =
         find.byKey(const ValueKey<String>('trainmate-brand-lockup'));
-    final Image image = tester.widget<Image>(lockup);
-    final AssetImage provider = image.image as AssetImage;
 
     expect(lockup, findsOneWidget);
-    expect(provider.assetName, TrainMateBrandAssets.lockup);
+    expect(
+      find.descendant(
+        of: lockup,
+        matching: find.byKey(
+          const ValueKey<String>('trainmate-brand-lockup-image'),
+        ),
+      ),
+      findsOneWidget,
+    );
+    expect(
+      find.descendant(
+        of: lockup,
+        matching: find.byWidgetPredicate((Widget widget) {
+          return widget is Image &&
+              widget.image is AssetImage &&
+              (widget.image as AssetImage).assetName ==
+                  TrainMateBrandAssets.lockup;
+        }),
+      ),
+      findsOneWidget,
+    );
     expect(tester.getSize(lockup).width, lessThanOrEqualTo(393));
+    expect(tester.takeException(), isNull);
+  });
+
+  testWidgets('完整品牌人物与小尺寸品牌标职责分离', (tester) async {
+    await tester.pumpWidget(
+      const MaterialApp(
+        home: Scaffold(
+          body: Row(
+            children: <Widget>[
+              TrainMateBrandmark(size: 44),
+              TrainMateBrandCharacter(size: 128),
+            ],
+          ),
+        ),
+      ),
+    );
+
+    final Image brandmarkImage = tester.widget<Image>(
+      find.byKey(const ValueKey<String>('trainmate-brandmark')),
+    );
+    final Image brandCharacterImage = tester.widget<Image>(
+      find.byKey(const ValueKey<String>('trainmate-brand-character')),
+    );
+    expect(
+      (brandmarkImage.image as AssetImage).assetName,
+      TrainMateBrandAssets.brandmark,
+    );
+    expect(
+      (brandCharacterImage.image as AssetImage).assetName,
+      TrainMateBrandAssets.character,
+    );
+    expect(
+        tester.getSize(find.byType(TrainMateBrandmark)), const Size.square(44));
+    expect(
+      tester.getSize(find.byType(TrainMateBrandCharacter)),
+      const Size.square(128),
+    );
     expect(tester.takeException(), isNull);
   });
 
@@ -685,7 +773,7 @@ void main() {
     expect(tester.takeException(), isNull);
   });
 
-  test('全页面视觉令牌使用分层圆角与固定间距', () {
+  test('全页面视觉令牌使用分层圆角与 4pt 网格间距', () {
     expect(TrainFlowTokens.heroRadius, 40);
     expect(TrainFlowTokens.sectionRadius, 32);
     expect(TrainFlowTokens.cardRadius, 24);
@@ -693,7 +781,7 @@ void main() {
     expect(TrainFlowTokens.pillRadius, 999);
     expect(
       TrainFlowTokens.spacing,
-      const <double>[8, 12, 16, 20, 24, 32],
+      const <double>[4, 8, 12, 16, 20, 24, 32, 40],
     );
   });
 

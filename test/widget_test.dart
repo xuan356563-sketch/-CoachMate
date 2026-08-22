@@ -1662,9 +1662,9 @@ void main() {
     );
     expect(onboardingPrompt, findsOneWidget);
     const List<String> navigationLabels = <String>[
-      '运动搭子',
       '训练计划',
       '今日训练',
+      '运动搭子',
       '动作库',
       '我的',
     ];
@@ -1810,7 +1810,7 @@ void main() {
     await tester.tap(find.widgetWithText(FilledButton, '暂停计时'));
     await tester.pump();
 
-    await tester.tap(find.byKey(const Key('bottom-nav-item-2')));
+    await tester.tap(find.byKey(const Key('bottom-nav-item-1')));
     await tester.pumpAndSettle();
 
     expect(find.text('晨间报告'), findsNothing);
@@ -1879,7 +1879,7 @@ void main() {
     expect(find.text('主动提醒'), findsOneWidget);
     expect(find.text('跟随训练日程'), findsOneWidget);
 
-    await tester.tap(find.byKey(const Key('bottom-nav-item-2')));
+    await tester.tap(find.byKey(const Key('bottom-nav-item-1')));
     await tester.pumpAndSettle();
 
     expect(find.text('恢复倒计时'), findsNothing);
@@ -1937,7 +1937,7 @@ void main() {
 
     expect(find.textContaining('已应用今日调整'), findsOneWidget);
 
-    await tester.tap(find.byKey(const Key('bottom-nav-item-2')));
+    await tester.tap(find.byKey(const Key('bottom-nav-item-1')));
     await tester.pumpAndSettle();
 
     expect(find.text('今日照吃卡'), findsNothing);
@@ -1962,7 +1962,7 @@ void main() {
     expect(find.text('ATL'), findsOneWidget);
     expect(find.text('TSB'), findsOneWidget);
 
-    await tester.tap(find.byKey(const Key('bottom-nav-item-2')));
+    await tester.tap(find.byKey(const Key('bottom-nav-item-1')));
     await tester.pumpAndSettle();
 
     await tester.scrollUntilVisible(
@@ -2109,7 +2109,7 @@ void main() {
     expect(find.text('4 周重点'), findsOneWidget);
     expect(find.textContaining('每周'), findsWidgets);
 
-    await tester.tap(find.byKey(const Key('bottom-nav-item-2')));
+    await tester.tap(find.byKey(const Key('bottom-nav-item-1')));
     await tester.pumpAndSettle();
 
     await tester.scrollUntilVisible(
@@ -2866,6 +2866,10 @@ void main() {
     expect(find.text('比赛'), findsOneWidget);
     expect(find.text('备赛'), findsOneWidget);
     expect(find.text('完赛'), findsOneWidget);
+    await tester.ensureVisible(
+      find.byKey(const ValueKey<String>('race-import-toggle')),
+    );
+    await tester.pumpAndSettle();
     await tester.tap(find.byKey(const ValueKey<String>('race-import-toggle')));
     await tester.pumpAndSettle();
     expect(find.text('赛事导入'), findsOneWidget);
@@ -2897,7 +2901,7 @@ void main() {
     Navigator.of(tester.element(find.byType(DraggableScrollableSheet))).pop();
     await tester.pumpAndSettle();
 
-    await tester.tap(find.byKey(const Key('bottom-nav-item-2')));
+    await tester.tap(find.byKey(const Key('bottom-nav-item-1')));
     await tester.pumpAndSettle();
 
     await tester.scrollUntilVisible(
@@ -3058,7 +3062,7 @@ void main() {
     expect(find.text('疼痛红线已触发'), findsOneWidget);
     expect(find.textContaining('停止相关训练并就医'), findsWidgets);
 
-    await tester.tap(find.byKey(const Key('bottom-nav-item-2')));
+    await tester.tap(find.byKey(const Key('bottom-nav-item-1')));
     await tester.pumpAndSettle();
 
     await tester.scrollUntilVisible(

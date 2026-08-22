@@ -4,7 +4,7 @@ import 'package:go_router/go_router.dart';
 import 'package:trainflow_ai/app/router/app_routes.dart';
 import 'package:trainflow_ai/core/constants/app_colors.dart';
 import 'package:trainflow_ai/core/theme/trainmate_visual_mode.dart';
-import 'package:trainflow_ai/core/theme/trainflow_tokens.dart';
+import 'package:trainflow_ai/core/widgets/coach_mate_orb.dart';
 import 'package:trainflow_ai/core/widgets/trainmate_branding.dart';
 import 'package:trainflow_ai/core/widgets/trainmate_showcase_widgets.dart';
 import 'package:trainflow_ai/core/widgets/trainflow_widgets.dart';
@@ -13,7 +13,6 @@ import 'package:trainflow_ai/features/companion/application/companion_controller
 import 'package:trainflow_ai/features/companion/domain/coach_contracts.dart';
 import 'package:trainflow_ai/features/companion/domain/companion_models.dart';
 import 'package:trainflow_ai/features/pet/presentation/pet_first_egg_page.dart';
-import 'package:trainflow_ai/features/pet/presentation/illustrated_pet_renderer.dart';
 import 'package:trainflow_ai/features/pet/presentation/pet_labels.dart';
 
 class CompanionFeedPage extends ConsumerStatefulWidget {
@@ -35,7 +34,7 @@ class _CompanionFeedPageState extends ConsumerState<CompanionFeedPage> {
         ref.watch(companionControllerProvider);
     return asyncState.when(
       loading: () => const _CompanionHubStatePage(
-        title: '正在唤醒衡衡狸',
+        title: '正在唤醒袋小满',
         message: '只在本机读取已有训练、活动与恢复事实。',
         icon: Icons.pets_outlined,
       ),
@@ -76,127 +75,244 @@ class _ReadyCompanionFeed extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final PetCompanion pet = state.pet!;
-    final CompanionMessage? latestMessage =
-        state.messages.isEmpty ? null : state.messages.last;
-    return TrainMateImmersiveHubPage(
-      includeDisclaimer: false,
+    final bool empty = state.messages.isEmpty;
+    return TrainMateVisualScope(
       mode: TrainMateVisualMode.darkTraining,
-      hero: TrainMateSceneHero(
-        sceneAsset:
-            'assets/images/immersive_scenes/trainmate_companion_room.png',
-        greeting: '你好，${state.displayName}',
-        dateLabel: state.relationshipState!.label,
-        character: IllustratedPetRenderer(
-          species: pet.species,
-          stage: pet.stage,
-          mood: pet.mood,
-          size: 164,
-          semanticLabel: '${state.displayName}的衡衡狸形象',
-        ),
-        taskTitle: latestMessage == null ? '今天它安静陪着' : '衡衡狸的最新消息',
-        taskSubtitle: latestMessage?.body ?? '没有可靠事实时，少说一句。',
-        taskIcon: Icons.pets_outlined,
-        actionTooltip: '记忆与来源',
-        onAction: () => context.push(AppRoutes.companionMemories),
-        onTaskTap: () => context.push(AppRoutes.companionArchive),
-        taskTrailing: IconButton(
-          tooltip: '搭子设置',
-          onPressed: () => _showSettings(context, ref, state),
-          icon: Icon(
-            Icons.tune_outlined,
-            color: TrainMateVisualScope.foreground(context),
+      child: Theme(
+        data: TrainMateVisualScope.darkHubTheme(context),
+        child: ColoredBox(
+          color: TrainFlowTokens.darkTrainingSurface,
+          child: SafeArea(
+            child: Column(
+              children: <Widget>[
+                _CompanionTopBar(
+                  displayName: state.displayName,
+                  relationshipLabel: state.relationshipState!.label,
+                  onSettings: () => _showSettings(context, ref, state),
+                ),
+                Expanded(
+                  child: ListView(
+                    padding: const EdgeInsets.fromLTRB(
+                      TrainFlowTokens.mainTabPageGutter,
+                      4,
+                      TrainFlowTokens.mainTabPageGutter,
+                      12,
+                    ),
+                    children: <Widget>[
+                      if (empty)
+                        _CompanionWelcome(
+                          displayName: state.displayName,
+                          relationshipLabel: state.relationshipState!.label,
+                          statusMessage: state.statusMessage,
+                          stageLabel: petStageLabel(pet.stage),
+                          moodLabel: petMoodLabel(pet.mood),
+                          coachAvailable: state.coachAvailable,
+                        )
+                      else
+                        ...state.messages
+                            .toList(growable: false)
+                            .reversed
+                            .map((CompanionMessage message) => Padding(
+                                  padding: const EdgeInsets.only(bottom: 12),
+                                  child: Align(
+                                    alignment: message.messageRole ==
+                                            CompanionMessageRole.user
+                                        ? Alignment.centerRight
+                                        : Alignment.centerLeft,
+                                    child: ConstrainedBox(
+                                      constraints:
+                                          const BoxConstraints(maxWidth: 520),
+                                      child: CompanionMessageCard(
+                                        key: ValueKey<String>(
+                                          'companion-message-'
+                                          '${message.messageId}',
+                                        ),
+                                        message: message,
+                                        highlighted: message.messageId ==
+                                            highlightedMessageId,
+                                        onAction:
+                                            (CompanionAction action) async {
+                                          if (action.kind ==
+                                              CompanionActionKind.dismiss) {
+                                            await ref
+                                                .read(companionControllerProvider
+                                                    .notifier)
+                                                .dismissToday(
+                                                  message: message,
+                                                );
+                                            return;
+                                          }
+                                          final String? route = action.route;
+                                          if (route != null &&
+                                              context.mounted) {
+                                            context.push(route);
+                                          }
+                                        },
+                                      ),
+                                    ),
+                                  ),
+                                )),
+                    ],
+                  ),
+                ),
+                _CoachComposer(
+                  enabled: state.coachAvailable,
+                  companionName: state.displayName,
+                ),
+                const SizedBox(height: 8),
+              ],
+            ),
           ),
         ),
       ),
-      children: <Widget>[
-        TrainMateStatusStrip(
-          semanticLabel: '伙伴状态',
-          onTap: () => context.push(AppRoutes.companionArchive),
-          metrics: <TrainMateStatusMetric>[
-            TrainMateStatusMetric(
-                label: '关系',
-                value: state.relationshipState!.label,
-                icon: Icons.favorite_outline),
-            TrainMateStatusMetric(
-                label: '消息',
-                value: '${state.messages.length} 条',
-                icon: Icons.chat_bubble_outline,
-                color: TrainFlowTokens.accent),
-            TrainMateStatusMetric(
-                label: '教练',
-                value: state.coachAvailable ? '可用' : '未开启',
-                icon: Icons.smart_toy_outlined),
-          ],
-        ),
-        const SizedBox(height: 20),
-        _CompanionRelationshipCard(
-          pet: pet,
-          relationshipState: state.relationshipState!,
-          statusMessage: state.statusMessage,
-        ),
-        const SizedBox(height: 12),
-        if (state.messages.isEmpty)
-          TrainFlowCard(
-            child: Row(
-              children: <Widget>[
-                Icon(
-                  Icons.nightlight_round,
+    );
+  }
+}
+
+/// 聊天式顶部条：搭子设置 + 关系状态 + 记忆入口。
+class _CompanionTopBar extends StatelessWidget {
+  const _CompanionTopBar({
+    required this.displayName,
+    required this.relationshipLabel,
+    required this.onSettings,
+  });
+
+  final String displayName;
+  final String relationshipLabel;
+  final VoidCallback onSettings;
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(8, 8, 12, 4),
+      child: Row(
+        children: <Widget>[
+          IconButton(
+            tooltip: '搭子设置',
+            onPressed: onSettings,
+            icon: Icon(
+              Icons.tune_outlined,
+              color: TrainFlowTokens.darkTrainingOnSurface,
+            ),
+          ),
+          const SizedBox(width: 4),
+          Expanded(
+            child: Text(
+              '$displayName · $relationshipLabel',
+              style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                    color: TrainFlowTokens.darkTrainingMuted,
+                  ),
+            ),
+          ),
+          TextButton.icon(
+            onPressed: () => context.push(AppRoutes.companionMemories),
+            icon: const Icon(Icons.auto_stories_outlined, size: 18),
+            label: const Text('记忆'),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+/// 参考图欢迎页形态：大球体头像 + 问候 + 渐变标题 + 状态标签。
+class _CompanionWelcome extends StatelessWidget {
+  const _CompanionWelcome({
+    required this.displayName,
+    required this.relationshipLabel,
+    required this.statusMessage,
+    required this.stageLabel,
+    required this.moodLabel,
+    required this.coachAvailable,
+  });
+
+  final String displayName;
+  final String relationshipLabel;
+  final String statusMessage;
+  final String stageLabel;
+  final String moodLabel;
+  final bool coachAvailable;
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.only(top: 36),
+      child: Column(
+        children: <Widget>[
+          const CoachMateOrb(size: 140, active: true, phase: 0.3),
+          const SizedBox(height: 28),
+          Text(
+            '你好，$displayName',
+            textAlign: TextAlign.center,
+            style: Theme.of(context).textTheme.displaySmall?.copyWith(
+                  color: TrainFlowTokens.darkTrainingOnSurface,
+                ),
+          ),
+          const SizedBox(height: 6),
+          const _WelcomeGradientText('我能帮你什么？'),
+          const SizedBox(height: 14),
+          Text(
+            statusMessage,
+            textAlign: TextAlign.center,
+            style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                   color: TrainFlowTokens.darkTrainingMuted,
                 ),
-                const SizedBox(width: 10),
-                Expanded(
-                  child: Text(
-                    '今天它安静陪着。没有可靠事实时，少说一句。',
-                    style: Theme.of(context).textTheme.bodyMedium,
-                  ),
-                ),
-              ],
+          ),
+          const SizedBox(height: 20),
+          Wrap(
+            spacing: 8,
+            runSpacing: 8,
+            alignment: WrapAlignment.center,
+            children: <Widget>[
+              ToneBadge(label: relationshipLabel),
+              ToneBadge(label: stageLabel),
+              ToneBadge(label: moodLabel),
+              ToneBadge(label: coachAvailable ? 'AI 教练可用' : 'AI 教练未开启'),
+            ],
+          ),
+          const SizedBox(height: 28),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: <Widget>[
+              OutlinedButton.icon(
+                onPressed: () => context.push(AppRoutes.companionMemories),
+                icon: const Icon(Icons.auto_stories_outlined),
+                label: const Text('记忆与来源'),
+              ),
+              const SizedBox(width: 12),
+              OutlinedButton.icon(
+                onPressed: () => context.push(AppRoutes.companionArchive),
+                icon: const Icon(Icons.folder_open_outlined),
+                label: const Text('成长档案'),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+/// 渐变强调标题（品牌渐变：蜜桃 → 荧光绿）。
+class _WelcomeGradientText extends StatelessWidget {
+  const _WelcomeGradientText(this.text);
+
+  final String text;
+
+  @override
+  Widget build(BuildContext context) {
+    return ShaderMask(
+      shaderCallback: (Rect bounds) => const LinearGradient(
+        colors: <Color>[Color(0xFFF083C6), Color(0xFF6C3DF4)],
+      ).createShader(bounds),
+      child: Text(
+        text,
+        textAlign: TextAlign.center,
+        style: Theme.of(context).textTheme.titleLarge?.copyWith(
+              color: Colors.white,
+              fontWeight: FontWeight.w600,
             ),
-          )
-        else
-          ...state.messages
-              .toList(growable: false)
-              .reversed
-              .map((CompanionMessage message) => Padding(
-                    padding: const EdgeInsets.only(bottom: 12),
-                    child: Align(
-                      alignment:
-                          message.messageRole == CompanionMessageRole.user
-                              ? Alignment.centerRight
-                              : Alignment.centerLeft,
-                      child: ConstrainedBox(
-                        constraints: const BoxConstraints(maxWidth: 520),
-                        child: CompanionMessageCard(
-                          key: ValueKey<String>(
-                              'companion-message-${message.messageId}'),
-                          message: message,
-                          highlighted:
-                              message.messageId == highlightedMessageId,
-                          onAction: (CompanionAction action) async {
-                            if (action.kind == CompanionActionKind.dismiss) {
-                              await ref
-                                  .read(companionControllerProvider.notifier)
-                                  .dismissToday(message: message);
-                              return;
-                            }
-                            final String? route = action.route;
-                            if (route != null && context.mounted) {
-                              context.push(route);
-                            }
-                          },
-                        ),
-                      ),
-                    ),
-                  )),
-        const SizedBox(height: 4),
-        _CoachComposer(enabled: state.coachAvailable),
-        const SizedBox(height: 8),
-        TextButton.icon(
-          onPressed: () => context.push(AppRoutes.companionArchive),
-          icon: const Icon(Icons.auto_stories_outlined),
-          label: const Text('查看成长档案'),
-        ),
-      ],
+      ),
     );
   }
 }
@@ -217,7 +333,7 @@ class CompanionMessageCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final bool isUser = message.messageRole == CompanionMessageRole.user;
     return Semantics(
-      label: '${isUser ? '我的' : '衡衡狸'}消息：${message.body}',
+      label: '${isUser ? '我的' : '伙伴'}消息：${message.body}',
       child: TrainFlowCard(
         tone: highlighted || isUser
             ? TrainFlowCardTone.peach
@@ -324,9 +440,13 @@ class _FactChip extends StatelessWidget {
 }
 
 class _CoachComposer extends ConsumerStatefulWidget {
-  const _CoachComposer({required this.enabled});
+  const _CoachComposer({
+    required this.enabled,
+    required this.companionName,
+  });
 
   final bool enabled;
+  final String companionName;
 
   @override
   ConsumerState<_CoachComposer> createState() => _CoachComposerState();
@@ -357,9 +477,16 @@ class _CoachComposerState extends ConsumerState<_CoachComposer> {
             maxLength: 500,
             textInputAction: TextInputAction.send,
             onSubmitted: (_) => _send(),
-            decoration: const InputDecoration(
-              labelText: '和衡衡狸说说',
-              hintText: '例如：今天练什么？或“记住：我喜欢先热身”',
+            decoration: InputDecoration(
+              labelText: '和${widget.companionName}说说',
+              hintText: '今天练什么？或“记住：我喜欢先热身”',
+              suffixIcon: IconButton(
+                tooltip: '语音输入',
+                onPressed: widget.enabled && !_sending
+                    ? _requestVoice
+                    : null,
+                icon: const Icon(Icons.mic_outlined),
+              ),
             ),
           ),
           const SizedBox(height: 8),
@@ -403,6 +530,12 @@ class _CoachComposerState extends ConsumerState<_CoachComposer> {
       if (mounted) setState(() => _sending = false);
     }
   }
+
+  void _requestVoice() {
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(content: Text('语音输入即将上线，先用文字聊聊吧。')),
+    );
+  }
 }
 
 Future<void> _showFactSource(
@@ -444,7 +577,7 @@ class _CompanionUnavailable extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return _CompanionHubStatePage(
-      title: '衡衡狸暂时不可用',
+      title: '袋小满暂时不可用',
       message: message,
       icon: Icons.pets_outlined,
     );
@@ -472,7 +605,7 @@ class _CompanionHubStatePage extends StatelessWidget {
             'assets/images/immersive_scenes/trainmate_companion_room.png',
         greeting: '你好，训练者',
         dateLabel: '运动搭子',
-        character: TrainMateBrandmark(size: 128),
+        character: const TrainMateBrandCharacter(size: 128),
         taskTitle: title,
         taskSubtitle: message,
         taskIcon: icon,
@@ -484,59 +617,6 @@ class _CompanionHubStatePage extends StatelessWidget {
           icon: icon,
         ),
       ],
-    );
-  }
-}
-
-class _CompanionRelationshipCard extends StatelessWidget {
-  const _CompanionRelationshipCard({
-    required this.pet,
-    required this.relationshipState,
-    required this.statusMessage,
-  });
-
-  final PetCompanion pet;
-  final RelationshipState relationshipState;
-  final String statusMessage;
-
-  @override
-  Widget build(BuildContext context) {
-    return TrainFlowCard(
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: <Widget>[
-          Row(
-            children: <Widget>[
-              const Icon(Icons.favorite_outline),
-              const SizedBox(width: 8),
-              Expanded(
-                child: Text(
-                  '陪伴状态',
-                  style: Theme.of(context)
-                      .textTheme
-                      .titleMedium
-                      ?.copyWith(fontWeight: FontWeight.w800),
-                ),
-              ),
-              ToneBadge(label: relationshipState.label),
-            ],
-          ),
-          const SizedBox(height: 12),
-          Text(
-            '${petStageLabel(pet.stage)} · ${petMoodLabel(pet.mood)}',
-            style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                  fontWeight: FontWeight.w700,
-                ),
-          ),
-          const SizedBox(height: 4),
-          Text(
-            statusMessage,
-            style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                  color: TrainFlowTokens.darkTrainingMuted,
-                ),
-          ),
-        ],
-      ),
     );
   }
 }
@@ -576,7 +656,7 @@ Future<void> _showSettings(
                 TextField(
                   controller: nameController,
                   maxLength: 12,
-                  decoration: const InputDecoration(labelText: '衡衡狸名称'),
+                  decoration: const InputDecoration(labelText: '伙伴名称'),
                 ),
                 const SizedBox(height: 8),
                 DropdownButtonFormField<DisturbTier>(

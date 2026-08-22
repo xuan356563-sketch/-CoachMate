@@ -5,7 +5,6 @@ import 'package:go_router/go_router.dart';
 import '../../app/router/app_routes.dart';
 import '../../core/constants/app_colors.dart';
 import '../../core/theme/trainmate_visual_mode.dart';
-import '../../core/theme/trainflow_tokens.dart';
 import '../../core/widgets/flow_mascot.dart';
 import '../../core/widgets/trainmate_showcase_widgets.dart';
 import '../../core/widgets/trainflow_widgets.dart';
@@ -183,7 +182,7 @@ class PlanListPage extends ConsumerWidget {
                       style: Theme.of(context)
                           .textTheme
                           .titleMedium
-                          ?.copyWith(fontWeight: FontWeight.w800),
+                          ?.copyWith(fontWeight: FontWeight.w600),
                     ),
                   ),
                   if (fourWeekPlan.executionLocked)
@@ -222,7 +221,7 @@ class PlanListPage extends ConsumerWidget {
               children: [
                 const Icon(
                   Icons.emoji_events_outlined,
-                  color: AppColors.secondary,
+                  color: TrainFlowTokens.accent,
                 ),
                 const SizedBox(width: 12),
                 Expanded(
@@ -234,13 +233,13 @@ class PlanListPage extends ConsumerWidget {
                         style: Theme.of(context)
                             .textTheme
                             .titleMedium
-                            ?.copyWith(fontWeight: FontWeight.w800),
+                            ?.copyWith(fontWeight: FontWeight.w600),
                       ),
                       const SizedBox(height: 4),
                       Text(
                         '导入赛事并查看备赛阶段、倒计时和赛后成绩。',
                         style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                              color: AppColors.textSecondary,
+                              color: TrainFlowTokens.darkTrainingMuted,
                             ),
                       ),
                     ],
@@ -295,7 +294,7 @@ class PlanListPage extends ConsumerWidget {
                         style: Theme.of(context)
                             .textTheme
                             .titleLarge
-                            ?.copyWith(fontWeight: FontWeight.w800),
+                            ?.copyWith(fontWeight: FontWeight.w600),
                       ),
                     ),
                     ToneBadge(label: '${state.plans[index].durationWeeks} 周'),
@@ -305,7 +304,7 @@ class PlanListPage extends ConsumerWidget {
                 Text(
                   state.plans[index].description,
                   style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                        color: AppColors.textSecondary,
+                        color: TrainFlowTokens.darkTrainingMuted,
                       ),
                 ),
                 const SizedBox(height: 12),
@@ -377,7 +376,7 @@ class _PlanRevisionSectionState extends ConsumerState<_PlanRevisionSection> {
             style: Theme.of(context)
                 .textTheme
                 .titleMedium
-                ?.copyWith(fontWeight: FontWeight.w800),
+                ?.copyWith(fontWeight: FontWeight.w600),
           ),
           const SizedBox(height: 6),
           const Text('系统会从实际日程与训练日志自动计算；只有结构性变化才建议云端重排，并且确认后才生效。'),
@@ -417,7 +416,7 @@ class _PlanRevisionSectionState extends ConsumerState<_PlanRevisionSection> {
           Text(
             revision.statusMessage,
             style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                  color: AppColors.textSecondary,
+                  color: TrainFlowTokens.darkTrainingMuted,
                 ),
           ),
           if (revision.proposal != null) ...<Widget>[
@@ -502,7 +501,7 @@ class _AcwrAdjustmentProposalSection extends ConsumerWidget {
               child: Text(
                 value.statusMessage,
                 style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                      color: AppColors.textSecondary,
+                      color: TrainFlowTokens.darkTrainingMuted,
                     ),
               ),
             ),
@@ -537,7 +536,7 @@ class _AdjustmentProposalCard extends ConsumerWidget {
                   style: Theme.of(context)
                       .textTheme
                       .titleMedium
-                      ?.copyWith(fontWeight: FontWeight.w800),
+                      ?.copyWith(fontWeight: FontWeight.w600),
                 ),
               ),
               ToneBadge(label: _proposalStatusLabel(proposal.status)),
@@ -562,7 +561,7 @@ class _AdjustmentProposalCard extends ConsumerWidget {
             Text(
               '将按以下不可变快照一次性应用；任一训练日已变化都会停止整组修改：',
               style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                    color: AppColors.textSecondary,
+                    color: TrainFlowTokens.darkTrainingMuted,
                   ),
             ),
             const SizedBox(height: 6),
@@ -649,7 +648,7 @@ class _FourWeekOverview extends StatelessWidget {
           Text(
             state.statusMessage,
             style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                  color: AppColors.textSecondary,
+                  color: TrainFlowTokens.darkTrainingMuted,
                 ),
           ),
           const SizedBox(height: 12),
@@ -670,14 +669,14 @@ class _FourWeekOverview extends StatelessWidget {
                           style: Theme.of(context)
                               .textTheme
                               .titleSmall
-                              ?.copyWith(fontWeight: FontWeight.w800),
+                              ?.copyWith(fontWeight: FontWeight.w600),
                         ),
                         const SizedBox(height: 3),
                         Text(
                           week.focus,
                           style:
                               Theme.of(context).textTheme.bodySmall?.copyWith(
-                                    color: AppColors.textSecondary,
+                                    color: TrainFlowTokens.darkTrainingMuted,
                                   ),
                         ),
                       ],
@@ -716,7 +715,7 @@ class _ScheduledWeekCard extends StatelessWidget {
             style: Theme.of(context)
                 .textTheme
                 .titleMedium
-                ?.copyWith(fontWeight: FontWeight.w800),
+                ?.copyWith(fontWeight: FontWeight.w600),
           ),
           const SizedBox(height: 10),
           if (workouts.isEmpty)
@@ -780,8 +779,8 @@ class _WeekDayMarker extends StatelessWidget {
           Text(
             'D${index + 1}',
             style: Theme.of(context).textTheme.labelSmall?.copyWith(
-                  color: AppColors.primary,
-                  fontWeight: FontWeight.w800,
+                  color: TrainFlowTokens.darkTrainingMuted,
+                  fontWeight: FontWeight.w600,
                 ),
           ),
           const SizedBox(height: 6),
@@ -789,14 +788,23 @@ class _WeekDayMarker extends StatelessWidget {
             width: 34,
             height: 34,
             decoration: BoxDecoration(
-              color: hasWorkout ? AppColors.primary : AppColors.white,
+              color: hasWorkout
+                  ? TrainFlowTokens.accent
+                  : TrainFlowTokens.darkTrainingRaised,
               shape: BoxShape.circle,
-              border: Border.all(color: AppColors.primary, width: 1.5),
+              border: Border.all(
+                color: hasWorkout
+                    ? TrainFlowTokens.accent
+                    : TrainFlowTokens.darkTrainingHighest,
+                width: 1.5,
+              ),
             ),
             child: Icon(
               hasWorkout ? Icons.fitness_center : Icons.hotel_outlined,
               size: 16,
-              color: hasWorkout ? AppColors.secondary : AppColors.primary,
+              color: hasWorkout
+                  ? TrainFlowTokens.onAccent
+                  : TrainFlowTokens.darkTrainingMuted,
             ),
           ),
           const SizedBox(height: 6),
@@ -806,7 +814,7 @@ class _WeekDayMarker extends StatelessWidget {
             overflow: TextOverflow.ellipsis,
             textAlign: TextAlign.center,
             style: Theme.of(context).textTheme.labelSmall?.copyWith(
-                  color: AppColors.primary,
+                  color: TrainMateVisualScope.foreground(context),
                   fontSize: 9,
                 ),
           ),
@@ -831,7 +839,7 @@ class _WorkoutPreview extends StatelessWidget {
           ToneBadge(
             label:
                 'D${day.dayIndex} ${day.trainingType.label}/${day.decisionType.label}',
-            color: AppColors.secondary,
+            color: TrainFlowTokens.accent,
           ),
       ],
     );

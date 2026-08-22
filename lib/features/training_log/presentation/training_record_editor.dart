@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../core/constants/app_colors.dart';
+import '../../../core/theme/trainflow_tokens.dart';
 import '../../../data/local/trainmate_structured_database_gateway.dart';
 import '../../../data/models/exercise.dart';
 import '../../../data/models/training_log.dart';
@@ -236,7 +237,7 @@ class _TrainingRecordEditorState extends ConsumerState<TrainingRecordEditor> {
               padding: EdgeInsets.all(20),
               child: Text(
                 '从动作库添加',
-                style: TextStyle(fontSize: 20, fontWeight: FontWeight.w800),
+                style: TextStyle(fontSize: 20, fontWeight: FontWeight.w600),
               ),
             ),
             const Divider(height: 1),
@@ -400,13 +401,13 @@ class _TrainingRecordEditorState extends ConsumerState<TrainingRecordEditor> {
                           '${now.month}月${now.day}日训练',
                           style:
                               Theme.of(context).textTheme.titleMedium?.copyWith(
-                                    fontWeight: FontWeight.w900,
+                                    fontWeight: FontWeight.w700,
                                   ),
                         ),
                         const Text(
                           '训练后复盘',
                           style: TextStyle(
-                            color: AppColors.textSecondary,
+                            color: TrainFlowTokens.darkTrainingMuted,
                             fontSize: 12,
                           ),
                         ),
@@ -660,7 +661,7 @@ class _TrainingRecordEditorState extends ConsumerState<TrainingRecordEditor> {
                     const SizedBox(height: 4),
                     const Text(
                       '实际动作记录',
-                      style: TextStyle(color: AppColors.textSecondary),
+                      style: TextStyle(color: TrainFlowTokens.darkTrainingMuted),
                     ),
                     const SizedBox(height: 10),
                     for (int index = 0;
@@ -774,13 +775,13 @@ class _EditorSectionTitle extends StatelessWidget {
             style: Theme.of(context)
                 .textTheme
                 .titleMedium
-                ?.copyWith(fontWeight: FontWeight.w900),
+                ?.copyWith(fontWeight: FontWeight.w700),
           ),
         ),
         Text(
           trailing,
           style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                color: AppColors.textSecondary,
+                color: TrainFlowTokens.darkTrainingMuted,
               ),
         ),
       ],
@@ -811,7 +812,7 @@ class _MetricEditorCard extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: <Widget>[
-          Text(label, style: const TextStyle(color: AppColors.textSecondary)),
+          Text(label, style: const TextStyle(color: TrainFlowTokens.darkTrainingMuted)),
           const SizedBox(height: 6),
           Row(
             crossAxisAlignment: CrossAxisAlignment.end,
@@ -868,7 +869,7 @@ class _ExerciseRecordCardState extends State<_ExerciseRecordCard> {
                   style: Theme.of(context)
                       .textTheme
                       .titleMedium
-                      ?.copyWith(fontWeight: FontWeight.w900),
+                      ?.copyWith(fontWeight: FontWeight.w700),
                 ),
               ),
               IconButton(
@@ -880,7 +881,7 @@ class _ExerciseRecordCardState extends State<_ExerciseRecordCard> {
           ),
           Text(
             '计划 ${draft.plannedSetCount} 组 x ${draft.repetitionsPerSet} 次',
-            style: const TextStyle(color: AppColors.textSecondary),
+            style: const TextStyle(color: TrainFlowTokens.darkTrainingMuted),
           ),
           const SizedBox(height: 10),
           Row(
@@ -901,7 +902,7 @@ class _ExerciseRecordCardState extends State<_ExerciseRecordCard> {
                   style: Theme.of(context)
                       .textTheme
                       .titleMedium
-                      ?.copyWith(fontWeight: FontWeight.w900),
+                      ?.copyWith(fontWeight: FontWeight.w700),
                 ),
               ),
               IconButton.filledTonal(

@@ -6,7 +6,10 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../app/router/app_routes.dart';
+import '../../../core/constants/app_brand.dart';
 import '../../../core/constants/app_colors.dart';
+import '../../../core/design_system/trainmate_primitives.dart';
+import '../../../core/widgets/emp_system.dart';
 import '../../../core/widgets/trainmate_action_character.dart';
 import '../../../core/widgets/trainmate_branding.dart';
 import '../../../core/widgets/trainmate_showcase_widgets.dart';
@@ -36,7 +39,7 @@ class AuthLoadingPage extends StatelessWidget {
               backgroundColor: AppColors.primary,
             ),
             SizedBox(height: 20),
-            CircularProgressIndicator(color: AppColors.secondary),
+            CircularProgressIndicator(color: TrainFlowTokens.accent),
             SizedBox(height: 12),
             Text(
               '正在检查登录状态',
@@ -100,7 +103,7 @@ class _LoginPageState extends ConsumerState<LoginPage> {
         ref.watch(firstRunOnboardingControllerProvider).value?.stage;
 
     return TrainFlowPage(
-      title: '登录智练 TrainMate',
+      title: '登录 ${AppBrand.displayName}',
       layout: TrainFlowPageLayout.form,
       subtitle: firstRunStage == OnboardingStage.login
           ? '3/4 · 登录失败不会丢失刚才确认的本地草稿。'
@@ -126,9 +129,21 @@ class _LoginPageState extends ConsumerState<LoginPage> {
       ),
       includeDisclaimer: false,
       children: [
+        if (firstRunStage == OnboardingStage.login)
+          Align(
+            alignment: Alignment.centerLeft,
+            child: Padding(
+              padding: const EdgeInsets.only(bottom: 12),
+              child: EmpBadge(
+                label: '首次建档 · 第 3 步 / 共 4 步',
+                tone: EmpBadgeTone.pink,
+                icon: Icons.flag_outlined,
+              ),
+            ),
+          ),
         const Padding(
           padding: EdgeInsets.only(top: 4, bottom: 12),
-          child: Center(child: TrainMateBrandLockup()),
+          child: Center(child: TrainMateBrandLockup(height: 168)),
         ),
         TrainFlowCard(
           tone: TrainFlowCardTone.peach,
@@ -140,13 +155,13 @@ class _LoginPageState extends ConsumerState<LoginPage> {
                 style: Theme.of(context)
                     .textTheme
                     .titleLarge
-                    ?.copyWith(fontWeight: FontWeight.w900),
+                    ?.copyWith(fontWeight: FontWeight.w700),
               ),
               const SizedBox(height: 6),
               Text(
                 _usePhone ? '验证码会发送至手机。访问令牌只保存在内存中。' : '验证码会发送至邮箱。访问令牌只保存在内存中。',
                 style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                      color: AppColors.textSecondary,
+                      color: TrainFlowTokens.darkTrainingMuted,
                     ),
               ),
               const SizedBox(height: 16),
@@ -288,19 +303,13 @@ class _LoginPageState extends ConsumerState<LoginPage> {
                 ),
               ],
               const SizedBox(height: 16),
-              SizedBox(
-                width: double.infinity,
-                child: FilledButton.icon(
-                  key: const ValueKey<String>('auth-login'),
-                  onPressed: authState?.isBusy == true ? null : _login,
-                  icon: authState?.isBusy == true
-                      ? const SizedBox.square(
-                          dimension: 18,
-                          child: CircularProgressIndicator(strokeWidth: 2),
-                        )
-                      : const Icon(Icons.login),
-                  label: const Text('登录并进入智练 TrainMate'),
-                ),
+              TrainMateButton(
+                key: const ValueKey<String>('auth-login'),
+                label: '登录并进入${AppBrand.displayName}',
+                icon: Icons.login,
+                loading: authState?.isBusy == true,
+                onPressed: authState?.isBusy == true ? null : _login,
+                expand: true,
               ),
               if (ref.watch(localPreviewEnabledProvider)) ...[
                 const SizedBox(height: 12),
@@ -318,7 +327,7 @@ class _LoginPageState extends ConsumerState<LoginPage> {
                 Text(
                   '仅用于当前调试版本，不发送验证码，也不会创建云端账号。',
                   style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                        color: AppColors.textSecondary,
+                        color: TrainFlowTokens.darkTrainingMuted,
                       ),
                 ),
               ],
@@ -487,7 +496,7 @@ class AccountSwitchPage extends ConsumerWidget {
                 style: Theme.of(context)
                     .textTheme
                     .titleLarge
-                    ?.copyWith(fontWeight: FontWeight.w900),
+                    ?.copyWith(fontWeight: FontWeight.w700),
               ),
               const SizedBox(height: 8),
               const Text(
@@ -549,7 +558,10 @@ class TermsPage extends StatelessWidget {
       title: '服务协议',
       version: 'internal-test-2026-07-13.1',
       sections: [
-        ('内部测试说明', '本协议仅用于智练 TrainMate 内部测试，不构成正式商业服务条款。'),
+        (
+          '内部测试说明',
+          '本协议仅用于${AppBrand.displayName} 内部测试，不构成正式商业服务条款。',
+        ),
         ('邮箱账号与访问', '邮箱验证码用于保护 App 访问和调用赛事图片识别服务，不代表训练数据已经云同步。'),
         ('训练建议边界', '训练建议属于决策辅助，不替代医生、康复师或持证教练的专业判断。'),
         ('账号切换', '同一设备切换不同账号前必须由用户确认，系统不会直接展示旧账号数据。'),
@@ -593,7 +605,7 @@ class _LegalPage extends StatelessWidget {
       title: title,
       layout: TrainFlowPageLayout.legal,
       subtitle: '内部测试版本 $version',
-      eyebrow: '智练 TrainMate',
+      eyebrow: AppBrand.displayName,
       headerVariant: TrainFlowHeaderVariant.compact,
       includeDisclaimer: false,
       action: IconButton(
@@ -613,7 +625,7 @@ class _LegalPage extends StatelessWidget {
                   style: Theme.of(context)
                       .textTheme
                       .titleMedium
-                      ?.copyWith(fontWeight: FontWeight.w900),
+                      ?.copyWith(fontWeight: FontWeight.w700),
                 ),
                 const SizedBox(height: 8),
                 Text(body),

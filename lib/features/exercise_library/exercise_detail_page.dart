@@ -95,7 +95,7 @@ class ExerciseDetailPage extends ConsumerWidget {
                   style: Theme.of(context)
                       .textTheme
                       .titleMedium
-                      ?.copyWith(fontWeight: FontWeight.w800),
+                      ?.copyWith(fontWeight: FontWeight.w600),
                 ),
                 const SizedBox(height: 10),
                 InfoRow(
@@ -120,7 +120,7 @@ class ExerciseDetailPage extends ConsumerWidget {
                   style: Theme.of(context)
                       .textTheme
                       .titleMedium
-                      ?.copyWith(fontWeight: FontWeight.w800),
+                      ?.copyWith(fontWeight: FontWeight.w600),
                 ),
                 const SizedBox(height: 10),
                 InfoRow(label: '动作模式', value: bodyProfile.movementPattern),
@@ -159,7 +159,7 @@ class ExerciseDetailPage extends ConsumerWidget {
                   style: Theme.of(context)
                       .textTheme
                       .titleMedium
-                      ?.copyWith(fontWeight: FontWeight.w800),
+                      ?.copyWith(fontWeight: FontWeight.w600),
                 ),
                 if (exercise.breathingCue.isNotEmpty)
                   InfoRow(label: '呼吸方式', value: exercise.breathingCue),
@@ -192,7 +192,7 @@ class ExerciseDetailPage extends ConsumerWidget {
                 style: Theme.of(context)
                     .textTheme
                     .titleMedium
-                    ?.copyWith(fontWeight: FontWeight.w800),
+                    ?.copyWith(fontWeight: FontWeight.w600),
               ),
               const SizedBox(height: 10),
               for (final source in exercise.evidenceSources) ...[
@@ -204,12 +204,12 @@ class ExerciseDetailPage extends ConsumerWidget {
                         style: Theme.of(context)
                             .textTheme
                             .titleSmall
-                            ?.copyWith(fontWeight: FontWeight.w800),
+                            ?.copyWith(fontWeight: FontWeight.w600),
                       ),
                     ),
                     ToneBadge(
                       label: source.sourceType.label,
-                      color: AppColors.secondary,
+                      color: TrainFlowTokens.accent,
                     ),
                   ],
                 ),
@@ -217,7 +217,7 @@ class ExerciseDetailPage extends ConsumerWidget {
                 Text(
                   source.citationLabel,
                   style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                        color: AppColors.textSecondary,
+                        color: TrainFlowTokens.darkTrainingMuted,
                         fontWeight: FontWeight.w700,
                       ),
                 ),
@@ -227,7 +227,7 @@ class ExerciseDetailPage extends ConsumerWidget {
                 Text(
                   '适用原因：${source.note}',
                   style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                        color: AppColors.textSecondary,
+                        color: TrainFlowTokens.darkTrainingMuted,
                       ),
                 ),
                 if (source != exercise.evidenceSources.last)
@@ -264,7 +264,7 @@ class _ExerciseRelationsCard extends StatelessWidget {
             style: Theme.of(context)
                 .textTheme
                 .titleMedium
-                ?.copyWith(fontWeight: FontWeight.w800),
+                ?.copyWith(fontWeight: FontWeight.w600),
           ),
           const SizedBox(height: 8),
           for (final ExerciseRelation relation in relations) ...[
@@ -301,7 +301,7 @@ class _ExerciseRelationRow extends StatelessWidget {
         child: Row(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Icon(_iconFor(relation.type), color: AppColors.secondary),
+            Icon(_iconFor(relation.type), color: TrainFlowTokens.accent),
             const SizedBox(width: 10),
             Expanded(
               child: Column(
@@ -317,7 +317,7 @@ class _ExerciseRelationRow extends StatelessWidget {
                           style: Theme.of(context)
                               .textTheme
                               .bodyMedium
-                              ?.copyWith(fontWeight: FontWeight.w800),
+                              ?.copyWith(fontWeight: FontWeight.w600),
                         ),
                       ),
                     ],
@@ -326,7 +326,7 @@ class _ExerciseRelationRow extends StatelessWidget {
                   Text(
                     relation.reason,
                     style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                          color: AppColors.textSecondary,
+                          color: TrainFlowTokens.darkTrainingMuted,
                         ),
                   ),
                 ],
@@ -336,7 +336,7 @@ class _ExerciseRelationRow extends StatelessWidget {
               const Padding(
                 padding: EdgeInsets.only(top: 4),
                 child:
-                    Icon(Icons.chevron_right, color: AppColors.textSecondary),
+                    Icon(Icons.chevron_right, color: TrainFlowTokens.darkTrainingMuted),
               ),
           ],
         ),
@@ -374,7 +374,7 @@ class _ExerciseBlock extends StatelessWidget {
             style: Theme.of(context)
                 .textTheme
                 .titleMedium
-                ?.copyWith(fontWeight: FontWeight.w800),
+                ?.copyWith(fontWeight: FontWeight.w600),
           ),
           const SizedBox(height: 10),
           for (final String item in items) ...[

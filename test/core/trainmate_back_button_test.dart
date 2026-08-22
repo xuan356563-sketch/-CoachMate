@@ -49,8 +49,8 @@ void main() {
         findsOneWidget,
       );
 
-      final String expectedVariant =
-          variant == TrainFlowHeaderVariant.organic ? 'peachLight' : 'navy';
+      // 白图标钮：人物置于白底上，加载墨兰（navy）变体。
+      final String expectedVariant = 'navy';
       expect(
         find.byKey(
           ValueKey<String>(

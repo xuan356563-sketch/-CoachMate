@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 import 'package:trainflow_ai/app/navigation/main_shell.dart';
-import 'package:trainflow_ai/app/navigation/trainmate_bottom_navigation.dart';
+import 'package:trainflow_ai/app/navigation/trainmate_bottom_navigation_v2.dart';
 import 'package:trainflow_ai/core/theme/tdesign_theme.dart';
 import 'package:trainflow_ai/core/theme/trainflow_tokens.dart';
 
@@ -21,17 +21,17 @@ void main() {
     required int selectedIndex,
     required ValueChanged<int> onDestinationSelected,
   }) {
-    return TrainMateBottomNavigation(
+    return TrainMateBottomNavigationV2(
       items: bottomNavItems,
       selectedIndex: selectedIndex,
-      surfaceColor: TrainFlowTokens.navigationSurface,
-      animationDuration: TrainFlowMotion.selection,
+      surfaceColor: TrainFlowTokens.darkTrainingSurface,
+      animationDuration: Duration.zero,
       onDestinationSelected: onDestinationSelected,
     );
   }
 
-  testWidgets('完整选中状态视觉基线', (WidgetTester tester) async {
-    final Size viewSize = Size(393, 110.0 * bottomNavItems.length);
+  testWidgets('5 tab 完整视觉基线（含中央球体）', (WidgetTester tester) async {
+    final Size viewSize = Size(393, 120.0 * bottomNavItems.length);
     configureView(tester, size: viewSize);
 
     await tester.pumpWidget(
@@ -44,12 +44,12 @@ void main() {
             disableAnimations: true,
           ),
           child: ColoredBox(
-            color: TrainFlowTokens.navigationSurface,
+            color: TrainFlowTokens.darkTrainingSurface,
             child: Column(
               children: <Widget>[
                 for (int index = 0; index < bottomNavItems.length; index += 1)
                   SizedBox(
-                    height: 110,
+                    height: 120,
                     child: Align(
                       alignment: Alignment.bottomCenter,
                       child: navigation(
@@ -72,42 +72,33 @@ void main() {
     );
   });
 
-  testWidgets('单圆槽连续滑行 160ms 的视觉基线', (WidgetTester tester) async {
+  testWidgets('中央球体选中态视觉基线', (WidgetTester tester) async {
     configureView(tester, size: const Size(393, 124));
-    final ValueNotifier<int> selectedIndex = ValueNotifier<int>(0);
-    addTearDown(selectedIndex.dispose);
 
     await tester.pumpWidget(
       MaterialApp(
         debugShowCheckedModeBanner: false,
         theme: TDesignTheme.lightTheme,
         home: MediaQuery(
-          data: const MediaQueryData(size: Size(393, 124)),
+          data: const MediaQueryData(
+            size: Size(393, 124),
+            disableAnimations: true,
+          ),
           child: Scaffold(
-            backgroundColor: TrainFlowTokens.navigationSurface,
-            bottomNavigationBar: ValueListenableBuilder<int>(
-              valueListenable: selectedIndex,
-              builder: (BuildContext context, int value, Widget? child) {
-                return navigation(
-                  selectedIndex: value,
-                  onDestinationSelected: (int index) {
-                    selectedIndex.value = index;
-                  },
-                );
-              },
+            backgroundColor: TrainFlowTokens.darkTrainingSurface,
+            bottomNavigationBar: navigation(
+              selectedIndex: 2,
+              onDestinationSelected: (_) {},
             ),
           ),
         ),
       ),
     );
     await tester.pump();
-    await tester.tap(find.byKey(const Key('bottom-nav-item-3')));
-    await tester.pump();
-    await tester.pump(const Duration(milliseconds: 160));
 
     await expectLater(
       find.byType(MaterialApp),
-      matchesGoldenFile('baselines/navigation-liquid-handoff-midpoint.png'),
+      matchesGoldenFile('baselines/navigation-orb-active.png'),
     );
   });
 }

@@ -55,6 +55,8 @@ flutter:
     - assets/images/
     - assets/images/exercises/
     - assets/images/exercises/free-exercise-db/
+    - assets/images/exercises/ai-female/
+    - assets/images/exercises/ai-male/
     - assets/images/icons/
     - assets/fonts/
     - assets/training/
@@ -71,3 +73,8 @@ flutter:
     - assets/branding/flow-v2-color-detail/exports/png/
     - assets/branding/flow-v2-color-detail/action-characters/navy/
     - assets/branding/flow-v2-color-detail/action-characters/peach-light/
+    - assets/branding/mate-feast-bag-v2/exports/png/
+    - assets/branding/mate-feast-bag-v2/action-characters/navy/
+    - assets/branding/mate-feast-bag-v2/action-characters/peach-light/
+    - assets/branding/mate-feast-bag-v2/companion-states/
+    - assets/branding/coachmate-official-logo-v1/exports/png/

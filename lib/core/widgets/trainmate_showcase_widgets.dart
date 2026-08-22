@@ -48,7 +48,7 @@ class TrainMateImmersiveHubPage extends StatelessWidget {
       ),
       borderSide: BorderSide(color: raised),
     );
-    final Brightness brightness = dark ? Brightness.dark : Brightness.light;
+    final Brightness brightness = Brightness.light;
     final ColorScheme colorScheme = baseTheme.colorScheme.copyWith(
       brightness: brightness,
       primary: TrainFlowTokens.accent,
@@ -282,7 +282,12 @@ class TrainMateSceneHero extends StatelessWidget {
                 begin: Alignment.topCenter,
                 end: Alignment.bottomCenter,
                 colors: dark
-                    ? const <Color>[Color(0x00181814), Color(0x8C181814)]
+                    ? <Color>[
+                        TrainFlowTokens.darkTrainingGradientTop
+                            .withValues(alpha: 0),
+                        TrainFlowTokens.darkTrainingGradientBottom
+                            .withValues(alpha: 0.55),
+                      ]
                     : const <Color>[Color(0x00F4F3F1), Color(0x33F4F3F1)],
               ),
             ),
@@ -701,7 +706,9 @@ class _TrainMateTrainingTrackPainter extends CustomPainter {
       size.width - stroke,
     );
     final Paint base = Paint()
-      ..color = dark ? const Color(0xFF4A4A45) : const Color(0xFFD9D8D4)
+      ..color = dark
+          ? TrainFlowTokens.darkTrainingRaised
+          : const Color(0xFFD9D8D4)
       ..style = PaintingStyle.stroke
       ..strokeWidth = stroke
       ..strokeCap = StrokeCap.round;
@@ -729,7 +736,9 @@ class _TrainMateTrainingTrackPainter extends CustomPainter {
       final Paint paint = Paint()
         ..color = index == currentDay
             ? TrainFlowTokens.accent
-            : (dark ? const Color(0xFF696964) : const Color(0xFFC5C4C0));
+            : (dark
+                ? TrainFlowTokens.darkTrainingRaised
+                : const Color(0xFFC5C4C0));
       canvas.drawRRect(
         RRect.fromRectAndRadius(bar, Radius.circular(barWidth / 2)),
         paint,
@@ -804,8 +813,8 @@ class TrainMateHubHeader extends StatelessWidget {
     required this.metrics,
     this.eyebrow,
     this.semanticLabel,
-    this.backgroundColor = AppColors.white,
-    this.accentColor = AppColors.primaryLight,
+    this.backgroundColor = TrainFlowTokens.darkTrainingRaised,
+    this.accentColor = TrainFlowTokens.darkTrainingHighest,
     this.action,
   });
 
@@ -851,8 +860,8 @@ class TrainMateHubHeader extends StatelessWidget {
                                 .textTheme
                                 .labelLarge
                                 ?.copyWith(
-                                  color: AppColors.secondaryDark,
-                                  fontWeight: FontWeight.w900,
+                                  color: TrainFlowTokens.accent,
+                                  fontWeight: FontWeight.w700,
                                 ),
                           ),
                           const SizedBox(height: 6),
@@ -863,10 +872,10 @@ class TrainMateHubHeader extends StatelessWidget {
                               .textTheme
                               .headlineLarge
                               ?.copyWith(
-                                color: AppColors.primary,
+                                color: TrainFlowTokens.darkTrainingOnSurface,
                                 fontSize: 28,
                                 height: 1.12,
-                                fontWeight: FontWeight.w900,
+                                fontWeight: FontWeight.w700,
                               ),
                         ),
                         const SizedBox(height: 8),
@@ -874,7 +883,7 @@ class TrainMateHubHeader extends StatelessWidget {
                           subtitle,
                           style:
                               Theme.of(context).textTheme.bodyMedium?.copyWith(
-                                    color: AppColors.textSecondary,
+                                    color: TrainFlowTokens.darkTrainingMuted,
                                     height: 1.4,
                                   ),
                         ),
@@ -932,8 +941,10 @@ class TrainMateHubMetric extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final bool dark = tone == TrainFlowCardTone.ink;
-    final Color background = dark ? AppColors.primary : AppColors.primaryLight;
-    final Color foreground = dark ? AppColors.white : AppColors.primary;
+    final Color background = dark
+        ? TrainFlowTokens.darkTrainingRaised
+        : TrainFlowTokens.darkTrainingHighest;
+    final Color foreground = TrainFlowTokens.darkTrainingOnSurface;
     return Semantics(
       label: '$label，$value',
       child: DecoratedBox(
@@ -948,14 +959,15 @@ class TrainMateHubMetric extends StatelessWidget {
             children: <Widget>[
               if (icon != null) ...<Widget>[
                 Icon(icon,
-                    size: 18, color: dark ? AppColors.secondary : foreground),
+                    size: 18,
+                    color: dark ? TrainFlowTokens.accent : foreground),
                 const SizedBox(width: 7),
               ],
               Text(
                 label,
                 style: Theme.of(context).textTheme.labelMedium?.copyWith(
                       color: foreground.withValues(alpha: 0.72),
-                      fontWeight: FontWeight.w800,
+                      fontWeight: FontWeight.w600,
                     ),
               ),
               const SizedBox(width: 7),
@@ -963,7 +975,7 @@ class TrainMateHubMetric extends StatelessWidget {
                 value,
                 style: Theme.of(context).textTheme.labelLarge?.copyWith(
                       color: foreground,
-                      fontWeight: FontWeight.w900,
+                      fontWeight: FontWeight.w700,
                     ),
               ),
             ],
@@ -978,7 +990,7 @@ class TrainMateSectionSurface extends StatelessWidget {
   const TrainMateSectionSurface({
     super.key,
     required this.child,
-    this.color = AppColors.background,
+    this.color = TrainFlowTokens.darkTrainingSurface,
     this.padding = const EdgeInsets.fromLTRB(16, 20, 16, 24),
   });
 
@@ -1051,7 +1063,7 @@ class TrainMateStatePanel extends StatelessWidget {
             Text(
               title,
               style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                    fontWeight: FontWeight.w900,
+                    fontWeight: FontWeight.w700,
                   ),
             ),
             const SizedBox(height: 6),
@@ -1131,76 +1143,85 @@ class TrainMateImmersivePage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return ColoredBox(
-      key: const ValueKey<String>('trainmate-immersive-page'),
-      color: AppColors.primary,
-      child: Center(
-        child: ConstrainedBox(
-          constraints:
-              const BoxConstraints(maxWidth: TrainFlowTokens.pageMaxWidth),
-          child: SafeArea(
-            child: Column(
-              children: <Widget>[
-                Padding(
-                  padding: const EdgeInsets.fromLTRB(12, 12, 16, 16),
-                  child: Row(
-                    children: <Widget>[
-                      if (leading != null) leading!,
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
+    return TrainMateVisualScope(
+      mode: TrainMateVisualMode.darkTraining,
+      child: Theme(
+        data: TrainMateVisualScope.darkHubTheme(context),
+        child: ColoredBox(
+          key: const ValueKey<String>('trainmate-immersive-page'),
+          color: TrainFlowTokens.darkTrainingSurface,
+          child: Center(
+            child: ConstrainedBox(
+              constraints:
+                  const BoxConstraints(maxWidth: TrainFlowTokens.pageMaxWidth),
+              child: SafeArea(
+                child: Column(
+                  children: <Widget>[
+                    Padding(
+                      padding: const EdgeInsets.fromLTRB(12, 12, 16, 16),
+                      child: Row(
+                        children: <Widget>[
+                          if (leading != null) leading!,
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: <Widget>[
+                                Text(
+                                  title,
+                                  style: Theme.of(context)
+                                      .textTheme
+                                      .titleLarge
+                                      ?.copyWith(
+                                        color: TrainFlowTokens
+                                            .darkTrainingOnSurface,
+                                        fontWeight: FontWeight.w700,
+                                      ),
+                                ),
+                                Text(
+                                  subtitle,
+                                  style: Theme.of(context)
+                                      .textTheme
+                                      .bodySmall
+                                      ?.copyWith(
+                                        color: TrainFlowTokens
+                                            .darkTrainingOnSurface
+                                            .withValues(alpha: 0.72),
+                                      ),
+                                ),
+                              ],
+                            ),
+                          ),
+                          if (artwork != null)
+                            SizedBox.square(
+                              dimension: 72,
+                              child: FittedBox(child: artwork!),
+                            ),
+                        ],
+                      ),
+                    ),
+                    Expanded(
+                      child: DecoratedBox(
+                        decoration: const BoxDecoration(
+                          color: TrainFlowTokens.darkTrainingSurface,
+                          borderRadius: BorderRadius.vertical(
+                            top:
+                                Radius.circular(TrainFlowTokens.sectionRadius),
+                          ),
+                        ),
+                        child: ListView(
+                          padding: const EdgeInsets.fromLTRB(16, 20, 16, 24),
                           children: <Widget>[
-                            Text(
-                              title,
-                              style: Theme.of(context)
-                                  .textTheme
-                                  .titleLarge
-                                  ?.copyWith(
-                                    color: AppColors.white,
-                                    fontWeight: FontWeight.w900,
-                                  ),
-                            ),
-                            Text(
-                              subtitle,
-                              style: Theme.of(context)
-                                  .textTheme
-                                  .bodySmall
-                                  ?.copyWith(
-                                    color:
-                                        AppColors.white.withValues(alpha: 0.72),
-                                  ),
-                            ),
+                            ...children,
+                            if (includeDisclaimer)
+                              const TrainFlowMedicalDisclaimer(),
                           ],
                         ),
                       ),
-                      if (artwork != null)
-                        SizedBox.square(
-                          dimension: 72,
-                          child: FittedBox(child: artwork!),
-                        ),
-                    ],
-                  ),
-                ),
-                Expanded(
-                  child: DecoratedBox(
-                    decoration: const BoxDecoration(
-                      color: AppColors.background,
-                      borderRadius: BorderRadius.vertical(
-                        top: Radius.circular(TrainFlowTokens.sectionRadius),
-                      ),
                     ),
-                    child: ListView(
-                      padding: const EdgeInsets.fromLTRB(16, 20, 16, 24),
-                      children: <Widget>[
-                        ...children,
-                        if (includeDisclaimer)
-                          const TrainFlowMedicalDisclaimer(),
-                      ],
-                    ),
-                  ),
+                    if (bottom != null) bottom!,
+                  ],
                 ),
-                if (bottom != null) bottom!,
-              ],
+              ),
             ),
           ),
         ),
@@ -1215,8 +1236,8 @@ class TrainMateShowcasePage extends StatelessWidget {
     super.key,
     required this.showcase,
     required this.children,
-    this.showcaseBackground = AppColors.white,
-    this.contentBackground = AppColors.background,
+    this.showcaseBackground = TrainFlowTokens.darkTrainingRaised,
+    this.contentBackground = TrainFlowTokens.darkTrainingSurface,
     this.includeDisclaimer = true,
     this.bottom,
     this.lazyChildren = false,
@@ -1268,22 +1289,28 @@ class TrainMateShowcasePage extends StatelessWidget {
               ),
             ],
           );
-    return ColoredBox(
-      color: AppColors.primary,
-      child: Center(
-        child: ConstrainedBox(
-          key: const ValueKey<String>('trainmate-showcase-mobile-canvas'),
-          constraints: const BoxConstraints(
-            maxWidth: TrainFlowTokens.pageMaxWidth,
-          ),
-          child: ColoredBox(
-            color: showcaseBackground,
-            child: SafeArea(
-              child: Column(
-                children: <Widget>[
-                  Expanded(child: scrollable),
-                  if (bottom != null) bottom!,
-                ],
+    return TrainMateVisualScope(
+      mode: TrainMateVisualMode.darkTraining,
+      child: Theme(
+        data: TrainMateVisualScope.darkHubTheme(context),
+        child: ColoredBox(
+          color: TrainFlowTokens.darkTrainingSurface,
+          child: Center(
+            child: ConstrainedBox(
+              key: const ValueKey<String>('trainmate-showcase-mobile-canvas'),
+              constraints: const BoxConstraints(
+                maxWidth: TrainFlowTokens.pageMaxWidth,
+              ),
+              child: ColoredBox(
+                color: showcaseBackground,
+                child: SafeArea(
+                  child: Column(
+                    children: <Widget>[
+                      Expanded(child: scrollable),
+                      if (bottom != null) bottom!,
+                    ],
+                  ),
+                ),
               ),
             ),
           ),
@@ -1406,7 +1433,7 @@ class TrainMateMetricCapsule extends StatelessWidget {
                 overflow: TextOverflow.ellipsis,
                 style: Theme.of(context).textTheme.labelMedium?.copyWith(
                       color: foregroundColor.withValues(alpha: 0.72),
-                      fontWeight: FontWeight.w800,
+                      fontWeight: FontWeight.w600,
                     ),
               ),
               const SizedBox(height: 5),
@@ -1422,7 +1449,7 @@ class TrainMateMetricCapsule extends StatelessWidget {
                           color: accentColor,
                           fontSize: 30,
                           height: 1,
-                          fontWeight: FontWeight.w900,
+                          fontWeight: FontWeight.w700,
                         ),
                       ),
                       if (suffix != null)
@@ -1431,7 +1458,7 @@ class TrainMateMetricCapsule extends StatelessWidget {
                           style: TextStyle(
                             color: foregroundColor,
                             fontSize: 12,
-                            fontWeight: FontWeight.w800,
+                            fontWeight: FontWeight.w600,
                           ),
                         ),
                     ],
@@ -1480,7 +1507,7 @@ class TrainMateProgressRail extends StatelessWidget {
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
                   style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                        fontWeight: FontWeight.w900,
+                        fontWeight: FontWeight.w700,
                       ),
                 ),
               ),
@@ -1494,7 +1521,7 @@ class TrainMateProgressRail extends StatelessWidget {
                     maxLines: 1,
                     style: Theme.of(context).textTheme.labelLarge?.copyWith(
                           color: AppColors.textSecondary,
-                          fontWeight: FontWeight.w800,
+                          fontWeight: FontWeight.w600,
                         ),
                   ),
                 ),
@@ -1578,7 +1605,7 @@ class TrainMateRecordTile extends StatelessWidget {
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
                       style: Theme.of(context).textTheme.titleSmall?.copyWith(
-                            fontWeight: FontWeight.w900,
+                            fontWeight: FontWeight.w700,
                           ),
                     ),
                     const SizedBox(height: 3),

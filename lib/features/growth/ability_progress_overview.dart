@@ -4,6 +4,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../core/constants/app_colors.dart';
+import '../../core/design_system/trainmate_states.dart';
+import '../../core/theme/trainmate_visual_mode.dart';
 import '../../core/widgets/trainflow_widgets.dart';
 import '../../data/models/training_metrics.dart';
 
@@ -200,6 +202,10 @@ class AbilityProgressOverview extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    // 骨架屏：真实异步加载时先展示占位，避免闪现「数据积累中」文案。
+    if (metrics.isLoading) {
+      return _AbilityOverviewSkeleton(compact: compact);
+    }
     final AbilityProgressSnapshot snapshot = metrics.when(
       data: const AbilityProgressSelector().build,
       loading: () => const AbilityProgressSelector().build(
@@ -208,6 +214,17 @@ class AbilityProgressOverview extends StatelessWidget {
       error: (Object error, StackTrace stackTrace) =>
           const AbilityProgressSelector().build(const <MetricAggregate>[]),
     );
+    final bool scoped = TrainMateVisualScope.maybeOf(context) != null;
+    final Color accentColor =
+        scoped ? TrainFlowTokens.accent : AppColors.primary;
+    final Color mutedColor = scoped
+        ? TrainFlowTokens.darkTrainingMuted
+        : TrainFlowTokens.darkTrainingMuted;
+    final Color sparkLineColor = accentColor;
+    final Color sparkDotColor =
+        scoped ? TrainFlowTokens.accent : AppColors.secondaryDark;
+    final Color sparkBaselineColor =
+        scoped ? TrainFlowTokens.darkTrainingRaised : AppColors.border;
     return Semantics(
       label: '能力进步总览，包含负荷、力量主项和同配速心率三项趋势',
       button: onTap != null,
@@ -228,7 +245,7 @@ class AbilityProgressOverview extends StatelessWidget {
               children: [
                 Row(
                   children: [
-                    const Icon(Icons.show_chart, color: AppColors.primary),
+                    Icon(Icons.show_chart, color: accentColor),
                     const SizedBox(width: 8),
                     Expanded(
                       child: Text(
@@ -236,19 +253,24 @@ class AbilityProgressOverview extends StatelessWidget {
                         style: Theme.of(context)
                             .textTheme
                             .titleMedium
-                            ?.copyWith(fontWeight: FontWeight.w900),
+                            ?.copyWith(fontWeight: FontWeight.w700),
                       ),
                     ),
                     if (onTap != null)
-                      const Icon(Icons.chevron_right,
-                          color: AppColors.textSecondary),
+                      Icon(Icons.chevron_right, color: mutedColor),
                   ],
                 ),
                 const SizedBox(height: 8),
                 for (int index = 0;
                     index < snapshot.series.length;
                     index++) ...[
-                  _AbilitySeriesRow(series: snapshot.series[index]),
+                  _AbilitySeriesRow(
+                    series: snapshot.series[index],
+                    mutedColor: mutedColor,
+                    sparkLineColor: sparkLineColor,
+                    sparkDotColor: sparkDotColor,
+                    sparkBaselineColor: sparkBaselineColor,
+                  ),
                   if (index != snapshot.series.length - 1)
                     const Divider(height: 10),
                 ],
@@ -261,10 +283,70 @@ class AbilityProgressOverview extends StatelessWidget {
   }
 }
 
+class _AbilityOverviewSkeleton extends StatelessWidget {
+  const _AbilityOverviewSkeleton({required this.compact});
+
+  final bool compact;
+
+  @override
+  Widget build(BuildContext context) {
+    return Semantics(
+      label: '能力进步数据加载中',
+      child: TrainFlowCard(
+        key: ValueKey<String>(
+          compact
+              ? 'ability-progress-overview-compact'
+              : 'ability-progress-overview-full',
+        ),
+        tone: compact ? TrainFlowCardTone.peach : TrainFlowCardTone.paper,
+        child: Padding(
+          padding: const EdgeInsets.all(2),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: <Widget>[
+              const TrainMateSkeleton(width: 150, height: 18),
+              const SizedBox(height: 14),
+              for (int index = 0; index < 3; index += 1) ...<Widget>[
+                const Row(
+                  children: <Widget>[
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: <Widget>[
+                          TrainMateSkeleton(width: 110, height: 12),
+                          SizedBox(height: 6),
+                          TrainMateSkeleton(height: 10),
+                        ],
+                      ),
+                    ),
+                    SizedBox(width: 12),
+                    TrainMateSkeleton(size: Size(82, 34)),
+                  ],
+                ),
+                if (index < 2) const SizedBox(height: 12),
+              ],
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
 class _AbilitySeriesRow extends StatelessWidget {
-  const _AbilitySeriesRow({required this.series});
+  const _AbilitySeriesRow({
+    required this.series,
+    required this.mutedColor,
+    required this.sparkLineColor,
+    required this.sparkDotColor,
+    required this.sparkBaselineColor,
+  });
 
   final AbilityProgressSeries series;
+  final Color mutedColor;
+  final Color sparkLineColor;
+  final Color sparkDotColor;
+  final Color sparkBaselineColor;
 
   @override
   Widget build(BuildContext context) {
@@ -284,7 +366,7 @@ class _AbilitySeriesRow extends StatelessWidget {
                   style: Theme.of(context)
                       .textTheme
                       .bodyMedium
-                      ?.copyWith(fontWeight: FontWeight.w800),
+                      ?.copyWith(fontWeight: FontWeight.w600),
                 ),
                 const SizedBox(height: 3),
                 Text(
@@ -292,7 +374,7 @@ class _AbilitySeriesRow extends StatelessWidget {
                   maxLines: 2,
                   overflow: TextOverflow.ellipsis,
                   style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                        color: AppColors.textSecondary,
+                        color: mutedColor,
                         height: 1.15,
                       ),
                 ),
@@ -304,7 +386,12 @@ class _AbilitySeriesRow extends StatelessWidget {
             label: '${series.title}趋势，共 ${series.points.length} 个兼容数据点',
             child: CustomPaint(
               size: const Size(82, 34),
-              painter: _AbilitySparklinePainter(series.points),
+              painter: _AbilitySparklinePainter(
+                series.points,
+                lineColor: sparkLineColor,
+                dotColor: sparkDotColor,
+                baselineColor: sparkBaselineColor,
+              ),
             ),
           ),
         ],
@@ -314,14 +401,22 @@ class _AbilitySeriesRow extends StatelessWidget {
 }
 
 class _AbilitySparklinePainter extends CustomPainter {
-  const _AbilitySparklinePainter(this.points);
+  const _AbilitySparklinePainter(
+    this.points, {
+    required this.lineColor,
+    required this.dotColor,
+    required this.baselineColor,
+  });
 
   final List<AbilityProgressPoint> points;
+  final Color lineColor;
+  final Color dotColor;
+  final Color baselineColor;
 
   @override
   void paint(Canvas canvas, Size size) {
     final Paint baseline = Paint()
-      ..color = AppColors.border
+      ..color = baselineColor
       ..strokeWidth = 1;
     canvas.drawLine(
       Offset(0, size.height - 2),
@@ -349,7 +444,7 @@ class _AbilitySparklinePainter extends CustomPainter {
       }
     }
     final Paint line = Paint()
-      ..color = AppColors.primary
+      ..color = lineColor
       ..strokeWidth = 2
       ..style = PaintingStyle.stroke
       ..strokeCap = StrokeCap.round
@@ -362,12 +457,17 @@ class _AbilitySparklinePainter extends CustomPainter {
     canvas.drawCircle(
       Offset(lastX, lastY),
       3,
-      Paint()..color = AppColors.secondaryDark,
+      Paint()..color = dotColor,
     );
   }
 
   @override
   bool shouldRepaint(covariant _AbilitySparklinePainter oldDelegate) {
+    if (oldDelegate.lineColor != lineColor ||
+        oldDelegate.dotColor != dotColor ||
+        oldDelegate.baselineColor != baselineColor) {
+      return true;
+    }
     if (oldDelegate.points.length != points.length) return true;
     for (int index = 0; index < points.length; index += 1) {
       if (oldDelegate.points[index].value != points[index].value ||

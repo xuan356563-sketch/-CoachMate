@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 
 import '../../../core/constants/app_colors.dart';
-import '../../../core/theme/trainflow_tokens.dart';
 import '../../../core/widgets/trainmate_action_character.dart';
 import '../../../core/widgets/trainmate_showcase_widgets.dart';
 import '../../../core/widgets/trainflow_widgets.dart';

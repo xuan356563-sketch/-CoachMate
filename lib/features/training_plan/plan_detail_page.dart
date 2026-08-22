@@ -66,7 +66,7 @@ class PlanDetailPage extends ConsumerWidget {
               Text(
                 plan.description,
                 style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                      color: AppColors.textSecondary,
+                      color: TrainFlowTokens.darkTrainingMuted,
                     ),
               ),
             ],
@@ -90,7 +90,7 @@ class PlanDetailPage extends ConsumerWidget {
                     style: Theme.of(context)
                         .textTheme
                         .titleMedium
-                        ?.copyWith(fontWeight: FontWeight.w800),
+                        ?.copyWith(fontWeight: FontWeight.w600),
                   ),
                 ),
                 Expanded(
@@ -102,7 +102,7 @@ class PlanDetailPage extends ConsumerWidget {
                         style: Theme.of(context)
                             .textTheme
                             .titleMedium
-                            ?.copyWith(fontWeight: FontWeight.w800),
+                            ?.copyWith(fontWeight: FontWeight.w600),
                       ),
                       const SizedBox(height: 4),
                       Text(
@@ -194,20 +194,20 @@ class _EvidenceList extends StatelessWidget {
               style: Theme.of(context)
                   .textTheme
                   .titleSmall
-                  ?.copyWith(fontWeight: FontWeight.w800),
+                  ?.copyWith(fontWeight: FontWeight.w600),
             ),
             const SizedBox(height: 4),
             Text(
               '${source.author} · ${source.sourceType.label}',
               style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                    color: AppColors.textSecondary,
+                    color: TrainFlowTokens.darkTrainingMuted,
                   ),
             ),
             const SizedBox(height: 6),
             Text(
               source.citationLabel,
               style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                    color: AppColors.textSecondary,
+                    color: TrainFlowTokens.darkTrainingMuted,
                     fontWeight: FontWeight.w700,
                   ),
             ),
@@ -236,7 +236,7 @@ class _RuleAuditCard extends StatelessWidget {
         children: [
           Row(
             children: [
-              const Icon(Icons.verified_outlined, color: AppColors.primary),
+              const Icon(Icons.verified_outlined, color: TrainFlowTokens.accent),
               const SizedBox(width: 8),
               Expanded(
                 child: Text(
@@ -244,7 +244,7 @@ class _RuleAuditCard extends StatelessWidget {
                   style: Theme.of(context)
                       .textTheme
                       .titleLarge
-                      ?.copyWith(fontWeight: FontWeight.w800),
+                      ?.copyWith(fontWeight: FontWeight.w600),
                 ),
               ),
               ToneBadge(
@@ -267,7 +267,7 @@ class _RuleAuditCard extends StatelessWidget {
                 child: MetricPill(
                   label: '引用',
                   value: '${report.citationCount} 条',
-                  color: AppColors.secondary,
+                  color: TrainFlowTokens.accent,
                 ),
               ),
             ],
@@ -287,7 +287,7 @@ class _RuleAuditCard extends StatelessWidget {
                 child: MetricPill(
                   label: '最长时长',
                   value: '${report.maxEstimatedMinutes} 分钟',
-                  color: AppColors.primary,
+                  color: TrainFlowTokens.accent,
                 ),
               ),
             ],
@@ -312,13 +312,13 @@ class _RuleAuditCard extends StatelessWidget {
                         style: Theme.of(context)
                             .textTheme
                             .bodyMedium
-                            ?.copyWith(fontWeight: FontWeight.w800),
+                            ?.copyWith(fontWeight: FontWeight.w600),
                       ),
                       const SizedBox(height: 3),
                       Text(
                         item.description,
                         style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                              color: AppColors.textSecondary,
+                              color: TrainFlowTokens.darkTrainingMuted,
                             ),
                       ),
                     ],

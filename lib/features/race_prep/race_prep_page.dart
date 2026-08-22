@@ -4,6 +4,9 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../app/router/app_routes.dart';
 import '../../core/constants/app_colors.dart';
+import '../../core/design_system/trainmate_primitives.dart';
+import '../../core/design_system/trainmate_states.dart';
+import '../../core/widgets/emp_system.dart';
 import '../../core/widgets/flow_mascot.dart';
 import '../../core/widgets/trainflow_widgets.dart';
 import '../../data/models/evidence_source.dart';
@@ -138,6 +141,20 @@ class _RacePrepPageState extends ConsumerState<RacePrepPage> {
       ),
       artwork: FloatingFlowMascot(size: 72, spec: mascotSpec),
       children: [
+        if (orderedRaces.isNotEmpty)
+          EmpIllustrationCard(
+            title: '下一场挑战',
+            subtitle:
+                '距 ${orderedRaces.first.name} 还有 ${raceDaysUntil(orderedRaces.first, now)} 天 · 陪你科学备赛',
+            bg: TrainFlowTokens.blue,
+            actionLabel: '查看排期',
+            onAction: () => _openRaceDetail(
+              context,
+              race: orderedRaces.first,
+              state: state,
+            ),
+          ),
+        const SizedBox(height: 20),
         _RaceScheduleTabs(
           selectedTab: _selectedTab,
           preparingCount: state.races
@@ -309,9 +326,9 @@ class _RaceTabButton extends StatelessWidget {
                 label,
                 style: Theme.of(context).textTheme.headlineSmall?.copyWith(
                       color: selected
-                          ? AppColors.textPrimary
-                          : AppColors.textSecondary,
-                      fontWeight: FontWeight.w900,
+                          ? TrainFlowTokens.darkTrainingOnSurface
+                          : TrainFlowTokens.darkTrainingMuted,
+                      fontWeight: FontWeight.w700,
                     ),
               ),
               const SizedBox(height: 4),
@@ -320,7 +337,7 @@ class _RaceTabButton extends StatelessWidget {
                 width: selected ? 44 : 0,
                 height: 5,
                 decoration: BoxDecoration(
-                  color: AppColors.secondary,
+                  color: TrainFlowTokens.accent,
                   borderRadius: BorderRadius.circular(99),
                 ),
               ),
@@ -355,6 +372,13 @@ class _RaceScheduleCard extends StatelessWidget {
             : days < 0
                 ? '已过期'
                 : '$days';
+    final (String statusLabel, EmpBadgeTone statusTone) = isCompleted
+        ? ('已完赛', EmpBadgeTone.mint)
+        : awaitingConfirmation
+            ? ('待确认', EmpBadgeTone.yellow)
+            : days == 0
+                ? ('今天', EmpBadgeTone.pink)
+                : ('$days 天后', EmpBadgeTone.blue);
     return Padding(
       padding: const EdgeInsets.only(bottom: 14),
       child: Material(
@@ -373,19 +397,29 @@ class _RaceScheduleCard extends StatelessWidget {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text(
-                        race.name,
-                        maxLines: 2,
-                        overflow: TextOverflow.ellipsis,
-                        style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                              fontWeight: FontWeight.w800,
+                      Row(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: <Widget>[
+                          Expanded(
+                            child: Text(
+                              race.name,
+                              maxLines: 2,
+                              overflow: TextOverflow.ellipsis,
+                              style: Theme.of(context)
+                                  .textTheme
+                                  .titleLarge
+                                  ?.copyWith(fontWeight: FontWeight.w600),
                             ),
+                          ),
+                          const SizedBox(width: 8),
+                          EmpBadge(label: statusLabel, tone: statusTone),
+                        ],
                       ),
                       const SizedBox(height: 12),
                       Text(
                         '${race.raceDateLabel}  |  ${race.type.label}',
                         style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                              color: AppColors.textSecondary,
+                              color: TrainFlowTokens.darkTrainingMuted,
                             ),
                       ),
                       const SizedBox(height: 12),
@@ -396,8 +430,8 @@ class _RaceScheduleCard extends StatelessWidget {
                                 ? '待确认成绩 ›'
                                 : '去备赛 ›',
                         style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                              color: AppColors.secondary,
-                              fontWeight: FontWeight.w800,
+                              color: TrainFlowTokens.accent,
+                              fontWeight: FontWeight.w600,
                             ),
                       ),
                     ],
@@ -412,8 +446,8 @@ class _RaceScheduleCard extends StatelessWidget {
                       style: Theme.of(context).textTheme.displaySmall?.copyWith(
                             color: isCompleted
                                 ? AppColors.primary
-                                : AppColors.textPrimary,
-                            fontWeight: FontWeight.w900,
+                                : TrainFlowTokens.darkTrainingOnSurface,
+                            fontWeight: FontWeight.w700,
                           ),
                     ),
                     if (!isCompleted && days > 0)
@@ -421,7 +455,7 @@ class _RaceScheduleCard extends StatelessWidget {
                         '天',
                         style:
                             Theme.of(context).textTheme.titleMedium?.copyWith(
-                                  color: AppColors.textSecondary,
+                                  color: TrainFlowTokens.darkTrainingMuted,
                                 ),
                       ),
                     if (awaitingConfirmation)
@@ -445,12 +479,13 @@ class _RaceScheduleEmptyState extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return TrainFlowCard(
-      child: Text(
-        tab == RaceScheduleTab.preparing
-            ? '还没有待备赛赛事，添加比赛后会自动显示倒计时。'
-            : '还没有已确认的正式比赛成绩。',
-      ),
+    final bool preparing = tab == RaceScheduleTab.preparing;
+    return TrainMateEmptyState(
+      title: preparing ? '还没有待备赛赛事' : '还没有完赛成绩',
+      message: preparing
+          ? '添加比赛后会自动显示倒计时与备赛节奏。'
+          : '确认正式比赛成绩后会显示在这里。',
+      icon: preparing ? Icons.flag_outlined : Icons.emoji_events_outlined,
     );
   }
 }
@@ -472,7 +507,7 @@ class _RaceImportCard extends ConsumerWidget {
         children: [
           Row(
             children: [
-              const Icon(Icons.event_note, color: AppColors.secondary),
+              const Icon(Icons.event_note, color: TrainFlowTokens.accent),
               const SizedBox(width: 8),
               Expanded(
                 child: Text(
@@ -480,7 +515,7 @@ class _RaceImportCard extends ConsumerWidget {
                   style: Theme.of(context)
                       .textTheme
                       .titleMedium
-                      ?.copyWith(fontWeight: FontWeight.w800),
+                      ?.copyWith(fontWeight: FontWeight.w600),
                 ),
               ),
               const ToneBadge(label: '本地 races'),
@@ -490,7 +525,7 @@ class _RaceImportCard extends ConsumerWidget {
           Text(
             '先粘贴赛事名称、类型、日期、目标和赛道信息；导入后会写入本地 races，并使用本地规则生成周期、装备、策略和自动排期。',
             style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                  color: AppColors.textSecondary,
+                  color: TrainFlowTokens.darkTrainingMuted,
                 ),
           ),
           const SizedBox(height: 14),
@@ -519,23 +554,21 @@ class _RaceImportCard extends ConsumerWidget {
             },
           ),
           const SizedBox(height: 12),
-          SizedBox(
-            width: double.infinity,
-            child: FilledButton.icon(
-              onPressed: () {
-                ref
-                    .read(trainingMvpProvider.notifier)
-                    .importRaceText(ref.read(raceImportTextProvider));
-              },
-              icon: const Icon(Icons.playlist_add_check),
-              label: const Text('导入比赛'),
-            ),
+          TrainMateButton(
+            label: '导入比赛',
+            icon: Icons.playlist_add_check,
+            onPressed: () {
+              ref
+                  .read(trainingMvpProvider.notifier)
+                  .importRaceText(ref.read(raceImportTextProvider));
+            },
+            expand: true,
           ),
           const SizedBox(height: 10),
           Text(
             statusMessage,
             style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                  color: AppColors.textSecondary,
+                  color: TrainFlowTokens.darkTrainingMuted,
                 ),
           ),
         ],
@@ -564,7 +597,7 @@ class _RaceImageRecognitionBlock extends ConsumerWidget {
         Row(
           children: [
             const Icon(Icons.document_scanner_outlined,
-                color: AppColors.primary),
+                color: TrainFlowTokens.accent),
             const SizedBox(width: 8),
             Expanded(
               child: Text(
@@ -572,7 +605,7 @@ class _RaceImageRecognitionBlock extends ConsumerWidget {
                 style: Theme.of(context)
                     .textTheme
                     .titleSmall
-                    ?.copyWith(fontWeight: FontWeight.w900),
+                    ?.copyWith(fontWeight: FontWeight.w700),
               ),
             ),
             if (state.image != null)
@@ -591,7 +624,7 @@ class _RaceImageRecognitionBlock extends ConsumerWidget {
         Text(
           '图片会发送至 MiniMax-M3 提取明确可见的赛事信息，结果不会自动导入或保存图片。',
           style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                color: AppColors.textSecondary,
+                color: TrainFlowTokens.darkTrainingMuted,
               ),
         ),
         const SizedBox(height: 10),
@@ -707,7 +740,7 @@ class _RaceImageRecognitionBlock extends ConsumerWidget {
                   style: Theme.of(context)
                       .textTheme
                       .titleSmall
-                      ?.copyWith(fontWeight: FontWeight.w900),
+                      ?.copyWith(fontWeight: FontWeight.w700),
                 ),
               ),
               ToneBadge(label: '匹配 ${state.result!.matchedFieldCount} 项'),
@@ -771,7 +804,7 @@ class _RecognizedField extends StatelessWidget {
             child: Text(
               label,
               style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                    color: AppColors.textSecondary,
+                    color: TrainFlowTokens.darkTrainingMuted,
                   ),
             ),
           ),
@@ -814,7 +847,7 @@ class _RacePlanCard extends StatelessWidget {
                   style: Theme.of(context)
                       .textTheme
                       .titleLarge
-                      ?.copyWith(fontWeight: FontWeight.w800),
+                      ?.copyWith(fontWeight: FontWeight.w600),
                 ),
               ),
               ToneBadge(label: race.type.label),
@@ -897,7 +930,7 @@ class _OfficialRaceResultBlock extends ConsumerWidget {
             Row(
               children: [
                 const Icon(Icons.workspace_premium_outlined,
-                    color: AppColors.primary),
+                    color: TrainFlowTokens.accent),
                 const SizedBox(width: 8),
                 Expanded(
                   child: Text(
@@ -905,7 +938,7 @@ class _OfficialRaceResultBlock extends ConsumerWidget {
                     style: Theme.of(context)
                         .textTheme
                         .titleMedium
-                        ?.copyWith(fontWeight: FontWeight.w800),
+                        ?.copyWith(fontWeight: FontWeight.w600),
                   ),
                 ),
                 ToneBadge(
@@ -918,8 +951,8 @@ class _OfficialRaceResultBlock extends ConsumerWidget {
               Text(
                 result!.durationLabel,
                 style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-                      fontWeight: FontWeight.w900,
-                      color: AppColors.primary,
+                      fontWeight: FontWeight.w700,
+                      color: TrainFlowTokens.accent,
                     ),
               ),
               const SizedBox(height: 6),
@@ -927,7 +960,7 @@ class _OfficialRaceResultBlock extends ConsumerWidget {
                 '确认于 ${_dateTimeLabel(result.confirmedAt)} · '
                 '关联 ${_trainingLogLabel(currentState, linkedLog)}',
                 style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                      color: AppColors.textSecondary,
+                      color: TrainFlowTokens.darkTrainingMuted,
                     ),
               ),
               const SizedBox(height: 8),
@@ -945,7 +978,7 @@ class _OfficialRaceResultBlock extends ConsumerWidget {
                         ? '原关联训练记录已不可用，当前成绩不再作为 PB 展示，请重新关联确认。'
                         : '只有你明确确认并关联训练记录的正式比赛成绩，才会标记为 PB；旧成绩文本不会自动转换。',
                 style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                      color: AppColors.textSecondary,
+                      color: TrainFlowTokens.darkTrainingMuted,
                     ),
               ),
               const SizedBox(height: 10),
@@ -974,7 +1007,7 @@ class _OfficialRaceResultBlock extends ConsumerWidget {
                 Text(
                   '还没有可关联的比赛当天完整训练记录。请先保存已完成且包含实际时长或距离的训练反馈。',
                   style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                        color: AppColors.textSecondary,
+                        color: TrainFlowTokens.darkTrainingMuted,
                       ),
                 ),
               ],
@@ -1194,7 +1227,7 @@ class _RacePhaseList extends StatelessWidget {
           style: Theme.of(context)
               .textTheme
               .titleMedium
-              ?.copyWith(fontWeight: FontWeight.w800),
+              ?.copyWith(fontWeight: FontWeight.w600),
         ),
         const SizedBox(height: 10),
         for (final RaceTrainingPhase phase in phases) ...[
@@ -1223,7 +1256,7 @@ class _RacePhaseList extends StatelessWidget {
                     Text(
                       phase.keyWorkouts.join(' / '),
                       style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                            color: AppColors.textSecondary,
+                            color: TrainFlowTokens.darkTrainingMuted,
                           ),
                     ),
                   ],
@@ -1260,7 +1293,7 @@ class _RaceAutoScheduleBlock extends StatelessWidget {
           children: [
             Row(
               children: [
-                const Icon(Icons.event_available, color: AppColors.primary),
+                const Icon(Icons.event_available, color: TrainFlowTokens.accent),
                 const SizedBox(width: 8),
                 Expanded(
                   child: Text(
@@ -1268,7 +1301,7 @@ class _RaceAutoScheduleBlock extends StatelessWidget {
                     style: Theme.of(context)
                         .textTheme
                         .titleMedium
-                        ?.copyWith(fontWeight: FontWeight.w800),
+                        ?.copyWith(fontWeight: FontWeight.w600),
                   ),
                 ),
                 ToneBadge(label: schedule.countdownLabel),
@@ -1278,7 +1311,7 @@ class _RaceAutoScheduleBlock extends StatelessWidget {
             Text(
               schedule.statusLabel,
               style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                    color: AppColors.textSecondary,
+                    color: TrainFlowTokens.darkTrainingMuted,
                   ),
             ),
             if (currentItem != null) ...[
@@ -1292,7 +1325,7 @@ class _RaceAutoScheduleBlock extends StatelessWidget {
                 style: Theme.of(context)
                     .textTheme
                     .titleSmall
-                    ?.copyWith(fontWeight: FontWeight.w800),
+                    ?.copyWith(fontWeight: FontWeight.w600),
               ),
               const SizedBox(height: 6),
               for (final String workout in currentItem.keyWorkouts)
@@ -1304,21 +1337,21 @@ class _RaceAutoScheduleBlock extends StatelessWidget {
               Text(
                 '补给：${currentItem.nutritionCue}',
                 style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                      color: AppColors.textSecondary,
+                      color: TrainFlowTokens.darkTrainingMuted,
                     ),
               ),
               const SizedBox(height: 4),
               Text(
                 '恢复：${currentItem.recoveryRule}',
                 style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                      color: AppColors.textSecondary,
+                      color: TrainFlowTokens.darkTrainingMuted,
                     ),
               ),
               const SizedBox(height: 4),
               Text(
                 '安全门槛：${currentItem.safetyGate}',
                 style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                      color: AppColors.textSecondary,
+                      color: TrainFlowTokens.darkTrainingMuted,
                     ),
               ),
             ],
@@ -1350,7 +1383,7 @@ class _TextListBlock extends StatelessWidget {
             style: Theme.of(context)
                 .textTheme
                 .titleMedium
-                ?.copyWith(fontWeight: FontWeight.w800),
+                ?.copyWith(fontWeight: FontWeight.w600),
           ),
           const SizedBox(height: 8),
           for (final String item in items)
@@ -1360,7 +1393,7 @@ class _TextListBlock extends StatelessWidget {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   const Icon(Icons.check_circle_outline,
-                      size: 18, color: AppColors.primary),
+                      size: 18, color: TrainFlowTokens.accent),
                   const SizedBox(width: 8),
                   Expanded(child: Text(item)),
                 ],
@@ -1389,14 +1422,14 @@ class _RaceStrategyBlock extends StatelessWidget {
             style: Theme.of(context)
                 .textTheme
                 .titleMedium
-                ?.copyWith(fontWeight: FontWeight.w800),
+                ?.copyWith(fontWeight: FontWeight.w600),
           ),
           const SizedBox(height: 8),
           for (final RaceStrategySection section in sections) ...[
             Text(
               section.title,
               style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                    fontWeight: FontWeight.w800,
+                    fontWeight: FontWeight.w600,
                   ),
             ),
             const SizedBox(height: 4),
@@ -1426,14 +1459,14 @@ class _RaceEvidenceBlock extends StatelessWidget {
             style: Theme.of(context)
                 .textTheme
                 .titleMedium
-                ?.copyWith(fontWeight: FontWeight.w800),
+                ?.copyWith(fontWeight: FontWeight.w600),
           ),
           const SizedBox(height: 8),
           for (final EvidenceSource source in sources) ...[
             Text(
               source.citationLabel,
               style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                    color: AppColors.textSecondary,
+                    color: TrainFlowTokens.darkTrainingMuted,
                     fontWeight: FontWeight.w700,
                   ),
             ),
@@ -1443,7 +1476,7 @@ class _RaceEvidenceBlock extends StatelessWidget {
             Text(
               '适用原因：${source.note}',
               style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                    color: AppColors.textSecondary,
+                    color: TrainFlowTokens.darkTrainingMuted,
                   ),
             ),
             if (source != sources.last) const Divider(height: 18),
@@ -1465,6 +1498,6 @@ Color _phaseColor(RacePhaseType phaseType) {
     case RacePhaseType.taper:
       return AppColors.danger;
     case RacePhaseType.raceWeek:
-      return AppColors.textSecondary;
+      return TrainFlowTokens.darkTrainingMuted;
   }
 }

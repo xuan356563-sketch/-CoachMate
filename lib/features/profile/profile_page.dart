@@ -5,7 +5,7 @@ import 'package:go_router/go_router.dart';
 import '../../app/router/app_routes.dart';
 import '../../core/constants/app_colors.dart';
 import '../../core/theme/trainmate_visual_mode.dart';
-import '../../core/theme/trainflow_tokens.dart';
+import '../../core/widgets/emp_system.dart';
 import '../../core/widgets/flow_mascot.dart';
 import '../../core/widgets/trainmate_showcase_widgets.dart';
 import '../../core/widgets/trainflow_widgets.dart';
@@ -147,11 +147,21 @@ class ProfilePage extends ConsumerWidget {
             children: [
               Row(
                 children: [
-                  const CircleAvatar(
-                    backgroundColor: TrainFlowTokens.darkTrainingRaised,
-                    child: Icon(
+                  Container(
+                    width: 72,
+                    height: 72,
+                    decoration: BoxDecoration(
+                      shape: BoxShape.circle,
+                      color: TrainFlowTokens.darkTrainingRaised,
+                      border: Border.all(
+                        color: TrainFlowTokens.pink,
+                        width: 3,
+                      ),
+                    ),
+                    child: const Icon(
                       Icons.person,
                       color: TrainFlowTokens.accent,
+                      size: 40,
                     ),
                   ),
                   const SizedBox(width: 12),
@@ -164,7 +174,7 @@ class ProfilePage extends ConsumerWidget {
                           style: Theme.of(context)
                               .textTheme
                               .titleLarge
-                              ?.copyWith(fontWeight: FontWeight.w800),
+                              ?.copyWith(fontWeight: FontWeight.w600),
                         ),
                         const SizedBox(height: 4),
                         Text(
@@ -222,7 +232,7 @@ class ProfilePage extends ConsumerWidget {
                 style: Theme.of(context)
                     .textTheme
                     .titleSmall
-                    ?.copyWith(fontWeight: FontWeight.w800),
+                    ?.copyWith(fontWeight: FontWeight.w600),
               ),
               const SizedBox(height: 6),
               Text(
@@ -252,7 +262,7 @@ class ProfilePage extends ConsumerWidget {
                   style: Theme.of(context)
                       .textTheme
                       .titleMedium
-                      ?.copyWith(fontWeight: FontWeight.w800),
+                      ?.copyWith(fontWeight: FontWeight.w600),
                 ),
                 const SizedBox(height: 8),
                 const Text('匿名记录承诺、每日履约、线下押金状态和第 14 天继续决定。'),
@@ -309,7 +319,7 @@ class ProfilePage extends ConsumerWidget {
                       style: Theme.of(context)
                           .textTheme
                           .titleMedium
-                          ?.copyWith(fontWeight: FontWeight.w800),
+                          ?.copyWith(fontWeight: FontWeight.w600),
                     ),
                   ),
                 ],
@@ -370,7 +380,7 @@ class ProfilePage extends ConsumerWidget {
                           style: Theme.of(context)
                               .textTheme
                               .titleMedium
-                              ?.copyWith(fontWeight: FontWeight.w800),
+                              ?.copyWith(fontWeight: FontWeight.w600),
                         ),
                       ),
                       ToneBadge(
@@ -425,7 +435,7 @@ class _TrainingCalendarCardState extends ConsumerState<_TrainingCalendarCard> {
                   style: Theme.of(context)
                       .textTheme
                       .titleLarge
-                      ?.copyWith(fontWeight: FontWeight.w800),
+                      ?.copyWith(fontWeight: FontWeight.w600),
                 ),
               ),
               ToneBadge(label: '${schedule.workouts.length} 项已排期'),
@@ -612,7 +622,7 @@ class _AccountCard extends ConsumerWidget {
                       style: Theme.of(context)
                           .textTheme
                           .titleMedium
-                          ?.copyWith(fontWeight: FontWeight.w900),
+                          ?.copyWith(fontWeight: FontWeight.w700),
                     ),
                     const SizedBox(height: 4),
                     Text(
@@ -649,7 +659,7 @@ class _AccountCard extends ConsumerWidget {
                         style: Theme.of(context)
                             .textTheme
                             .titleSmall
-                            ?.copyWith(fontWeight: FontWeight.w800),
+                            ?.copyWith(fontWeight: FontWeight.w600),
                       ),
                       const SizedBox(height: 3),
                       Text(
@@ -868,7 +878,7 @@ class _UserInsightPreviewCard extends StatelessWidget {
                 style: Theme.of(context)
                     .textTheme
                     .titleMedium
-                    ?.copyWith(fontWeight: FontWeight.w800),
+                    ?.copyWith(fontWeight: FontWeight.w600),
               ),
               ToneBadge(label: state.userInsightSummaryLabel),
             ],
@@ -913,7 +923,7 @@ class _WeeklyReportPreviewCard extends StatelessWidget {
                   style: Theme.of(context)
                       .textTheme
                       .titleMedium
-                      ?.copyWith(fontWeight: FontWeight.w800),
+                      ?.copyWith(fontWeight: FontWeight.w600),
                 ),
               ),
               const ToneBadge(label: '本地计算'),
@@ -971,7 +981,7 @@ class _AchievementSummaryCard extends StatelessWidget {
                   style: Theme.of(context)
                       .textTheme
                       .titleLarge
-                      ?.copyWith(fontWeight: FontWeight.w800),
+                      ?.copyWith(fontWeight: FontWeight.w600),
                 ),
               ),
               ToneBadge(
@@ -1012,7 +1022,7 @@ class _AchievementSummaryCard extends StatelessWidget {
                           style: Theme.of(context)
                               .textTheme
                               .titleSmall
-                              ?.copyWith(fontWeight: FontWeight.w800),
+                              ?.copyWith(fontWeight: FontWeight.w600),
                         ),
                       ),
                       ToneBadge(
@@ -1119,12 +1129,8 @@ class _AchievementTile extends StatelessWidget {
                       style: Theme.of(context)
                           .textTheme
                           .titleMedium
-                          ?.copyWith(fontWeight: FontWeight.w800),
+                          ?.copyWith(fontWeight: FontWeight.w600),
                     ),
-                  ),
-                  ToneBadge(
-                    label: badgeLabel,
-                    color: color,
                   ),
                 ],
               ),
@@ -1146,12 +1152,21 @@ class _AchievementTile extends StatelessWidget {
                 ),
               ],
               const SizedBox(height: 10),
-              LinearProgressIndicator(
-                value: progress.progress,
-                minHeight: 7,
-                color: color,
-                backgroundColor: color.withValues(alpha: 0.12),
-                borderRadius: BorderRadius.circular(999),
+              Row(
+                children: <Widget>[
+                  EmpProgressRing(
+                    progress: progress.progress,
+                    size: 40,
+                    strokeWidth: 5,
+                    color: color,
+                    trackColor: color.withValues(alpha: 0.15),
+                  ),
+                  const SizedBox(width: 10),
+                  EmpBadge(
+                    label: badgeLabel,
+                    tone: _achievementBadgeTone(progress.unlocked),
+                  ),
+                ],
               ),
             ],
           ),
@@ -1189,7 +1204,7 @@ class _AppleHealthCard extends ConsumerWidget {
                   style: Theme.of(context)
                       .textTheme
                       .titleLarge
-                      ?.copyWith(fontWeight: FontWeight.w800),
+                      ?.copyWith(fontWeight: FontWeight.w600),
                 ),
               ),
               ToneBadge(
@@ -1369,7 +1384,7 @@ class _HealthPermissionStageTile extends StatelessWidget {
                   style: Theme.of(context)
                       .textTheme
                       .titleSmall
-                      ?.copyWith(fontWeight: FontWeight.w800),
+                      ?.copyWith(fontWeight: FontWeight.w600),
                 ),
               ),
               ToneBadge(
@@ -1480,7 +1495,7 @@ class _RehabStatusCard extends StatelessWidget {
                   style: Theme.of(context)
                       .textTheme
                       .titleMedium
-                      ?.copyWith(fontWeight: FontWeight.w800),
+                      ?.copyWith(fontWeight: FontWeight.w600),
                 ),
               ),
               if (painLog != null)
@@ -1549,7 +1564,7 @@ class _BodyDataPreviewCard extends StatelessWidget {
                   style: Theme.of(context)
                       .textTheme
                       .titleMedium
-                      ?.copyWith(fontWeight: FontWeight.w800),
+                      ?.copyWith(fontWeight: FontWeight.w600),
                 ),
               ),
               const ToneBadge(label: '7 日趋势'),
@@ -1605,7 +1620,7 @@ class _NutritionPreviewCard extends StatelessWidget {
                   style: Theme.of(context)
                       .textTheme
                       .titleMedium
-                      ?.copyWith(fontWeight: FontWeight.w800),
+                      ?.copyWith(fontWeight: FontWeight.w600),
                 ),
               ),
               ToneBadge(label: guide.scenario.label),
@@ -1646,4 +1661,8 @@ Color _achievementColor(AchievementCategory category) {
     case AchievementCategory.safety:
       return AppColors.warningDark;
   }
+}
+
+EmpBadgeTone _achievementBadgeTone(bool unlocked) {
+  return unlocked ? EmpBadgeTone.mint : EmpBadgeTone.neutral;
 }

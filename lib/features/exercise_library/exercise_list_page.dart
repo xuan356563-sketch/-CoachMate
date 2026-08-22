@@ -5,7 +5,6 @@ import 'package:go_router/go_router.dart';
 import '../../app/router/app_routes.dart';
 import '../../core/constants/app_colors.dart';
 import '../../core/theme/trainmate_visual_mode.dart';
-import '../../core/theme/trainflow_tokens.dart';
 import '../../core/widgets/flow_mascot.dart';
 import '../../core/widgets/trainmate_action_character.dart';
 import '../../core/widgets/trainmate_showcase_widgets.dart';
@@ -340,7 +339,7 @@ class _KneeAnkleCircuitCard extends StatelessWidget {
       onTap: onStart,
       child: Row(
         children: <Widget>[
-          const Icon(Icons.directions_walk, color: AppColors.primary, size: 34),
+          const Icon(Icons.directions_walk, color: TrainFlowTokens.accent, size: 34),
           const SizedBox(width: 12),
           Expanded(
             child: Column(
@@ -351,19 +350,19 @@ class _KneeAnkleCircuitCard extends StatelessWidget {
                   style: Theme.of(context)
                       .textTheme
                       .titleMedium
-                      ?.copyWith(fontWeight: FontWeight.w900),
+                      ?.copyWith(fontWeight: FontWeight.w700),
                 ),
                 const SizedBox(height: 4),
                 Text(
                   '5 个动作 · 2–3 轮 · 用户确认后开始跟练',
                   style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                        color: AppColors.textSecondary,
+                        color: TrainFlowTokens.darkTrainingMuted,
                       ),
                 ),
               ],
             ),
           ),
-          const Icon(Icons.chevron_right, color: AppColors.primary),
+          const Icon(Icons.chevron_right, color: TrainFlowTokens.accent),
         ],
       ),
     );
@@ -516,14 +515,17 @@ class _ExerciseTile extends StatelessWidget {
                 width: 34,
                 height: 34,
                 decoration: BoxDecoration(
-                  color: AppColors.primaryLight,
+                  color: TrainFlowTokens.darkTrainingRaised,
                   shape: BoxShape.circle,
-                  border: Border.all(color: AppColors.primary, width: 1.5),
+                  border: Border.all(
+                    color: TrainFlowTokens.darkTrainingHighest,
+                    width: 1.5,
+                  ),
                 ),
                 child: const Icon(
                   Icons.directions_run,
                   size: 18,
-                  color: AppColors.primary,
+                  color: TrainFlowTokens.accent,
                 ),
               ),
               const Spacer(),
@@ -534,8 +536,8 @@ class _ExerciseTile extends StatelessWidget {
                     hasPreciseMedia ? Icons.gif_box_outlined : Icons.image,
                     size: 20,
                     color: hasPreciseMedia
-                        ? AppColors.primary
-                        : AppColors.secondaryDark,
+                        ? TrainFlowTokens.accent
+                        : TrainFlowTokens.darkTrainingMuted,
                   ),
                 ),
             ],
@@ -546,7 +548,7 @@ class _ExerciseTile extends StatelessWidget {
             maxLines: 2,
             overflow: TextOverflow.ellipsis,
             style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                  fontWeight: FontWeight.w900,
+                  fontWeight: FontWeight.w700,
                 ),
           ),
           const SizedBox(height: 5),
@@ -554,7 +556,7 @@ class _ExerciseTile extends StatelessWidget {
             alignment: Alignment.centerLeft,
             child: ToneBadge(
               label: exercise.category.label,
-              color: AppColors.secondary,
+              color: TrainFlowTokens.accent,
             ),
           ),
           if (!exerciseFocusProfile(exercise).isEmpty) ...[
@@ -567,7 +569,7 @@ class _ExerciseTile extends StatelessWidget {
                   .map(
                     (ExerciseFocusTag tag) => ToneBadge(
                       label: tag.label,
-                      color: AppColors.primary,
+                      color: TrainFlowTokens.accent,
                     ),
                   )
                   .toList(growable: false),
@@ -579,7 +581,7 @@ class _ExerciseTile extends StatelessWidget {
             maxLines: 2,
             overflow: TextOverflow.ellipsis,
             style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                  color: AppColors.textSecondary,
+                  color: TrainFlowTokens.darkTrainingMuted,
                 ),
           ),
           const Spacer(),
@@ -590,7 +592,7 @@ class _ExerciseTile extends StatelessWidget {
             maxLines: 2,
             overflow: TextOverflow.ellipsis,
             style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                  color: AppColors.textPrimary,
+                  color: TrainMateVisualScope.foreground(context),
                   fontWeight: FontWeight.w700,
                 ),
           ),
@@ -617,7 +619,7 @@ class _MotionCheckPreviewCard extends StatelessWidget {
         children: [
           Row(
             children: [
-              const Icon(Icons.motion_photos_on, color: AppColors.primary),
+              const Icon(Icons.motion_photos_on, color: TrainFlowTokens.accent),
               const SizedBox(width: 8),
               Expanded(
                 child: Text(
@@ -625,7 +627,7 @@ class _MotionCheckPreviewCard extends StatelessWidget {
                   style: Theme.of(context)
                       .textTheme
                       .titleMedium
-                      ?.copyWith(fontWeight: FontWeight.w800),
+                      ?.copyWith(fontWeight: FontWeight.w600),
                 ),
               ),
               ToneBadge(label: '${rule.score} 分'),
@@ -644,7 +646,7 @@ class _MotionCheckPreviewCard extends StatelessWidget {
                 ? '当前为本地规则 Mock，不做真实视频识别。'
                 : '动作质量风险已进入每日调整，训练会按 Body Engine 解释更保守地处理。',
             style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                  color: AppColors.textSecondary,
+                  color: TrainFlowTokens.darkTrainingMuted,
                 ),
           ),
           const SizedBox(height: 12),
