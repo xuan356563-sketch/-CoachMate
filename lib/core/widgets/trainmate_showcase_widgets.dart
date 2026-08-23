@@ -261,10 +261,17 @@ class TrainMateSceneHero extends StatelessWidget {
         fit: StackFit.expand,
         clipBehavior: Clip.none,
         children: <Widget>[
-          ColoredBox(
-            color: dark
-                ? TrainFlowTokens.darkTrainingSurface
-                : TrainFlowTokens.lightCompanionSurface,
+          DecoratedBox(
+            decoration: const BoxDecoration(
+              gradient: LinearGradient(
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+                colors: <Color>[
+                  TrainFlowTokens.accent, // #6C3DF4 主紫
+                  TrainFlowTokens.brandDark, // #191331 深紫
+                ],
+              ),
+            ),
           ),
           Opacity(
             opacity: dark ? 0.13 : 0.08,
