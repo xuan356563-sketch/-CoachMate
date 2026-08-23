@@ -403,25 +403,44 @@ class _TodayOverviewCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return TrainFlowCard(
-      child: ConstrainedBox(
-        constraints: BoxConstraints(minHeight: wide ? 118 : 142),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-          children: <Widget>[
-            Icon(icon, color: TrainFlowTokens.accent),
-            const SizedBox(height: 10),
-            TrainMateMetricValue(value: value, label: label),
-            const SizedBox(height: 3),
-            Text(detail,
-                maxLines: 2,
-                overflow: TextOverflow.ellipsis,
-                style: Theme.of(context)
-                    .textTheme
-                    .bodySmall
-                    ?.copyWith(color: TrainFlowTokens.darkTrainingMuted)),
-          ],
+    return Container(
+      decoration: BoxDecoration(
+        gradient: const LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: <Color>[TrainFlowTokens.purpleSoft, Colors.white],
+        ),
+        borderRadius: BorderRadius.circular(TrainFlowTokens.mainTabCardRadius),
+        border: Border.all(color: TrainFlowTokens.border),
+      ),
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: ConstrainedBox(
+          constraints: BoxConstraints(minHeight: wide ? 90 : 114),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: <Widget>[
+              Container(
+                padding: const EdgeInsets.all(6),
+                decoration: BoxDecoration(
+                  color: TrainFlowTokens.accent.withValues(alpha: 0.12),
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: Icon(icon, color: TrainFlowTokens.accent, size: 20),
+              ),
+              const SizedBox(height: 10),
+              TrainMateMetricValue(value: value, label: label),
+              const SizedBox(height: 3),
+              Text(detail,
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
+                  style: Theme.of(context)
+                      .textTheme
+                      .bodySmall
+                      ?.copyWith(color: TrainFlowTokens.darkTrainingMuted)),
+            ],
+          ),
         ),
       ),
     );
