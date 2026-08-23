@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import '../../core/constants/app_colors.dart';
 import '../../core/widgets/trainflow_widgets.dart';
 import '../../data/models/evidence_source.dart';
 import '../dashboard/training_mvp_controller.dart';
@@ -26,7 +25,7 @@ class AiCoachPage extends ConsumerWidget {
                 style: Theme.of(context)
                     .textTheme
                     .titleMedium
-                    ?.copyWith(fontWeight: FontWeight.w800),
+                    ?.copyWith(fontWeight: FontWeight.w600),
               ),
               const SizedBox(height: 12),
               for (final String advice in state.coachAdvices) ...[
@@ -52,12 +51,12 @@ class AiCoachPage extends ConsumerWidget {
                         style: Theme.of(context)
                             .textTheme
                             .titleSmall
-                            ?.copyWith(fontWeight: FontWeight.w800),
+                            ?.copyWith(fontWeight: FontWeight.w600),
                       ),
                     ),
                     ToneBadge(
                       label: source.sourceType.label,
-                      color: AppColors.secondary,
+                      color: TrainFlowTokens.accent,
                     ),
                   ],
                 ),
@@ -65,7 +64,7 @@ class AiCoachPage extends ConsumerWidget {
                 Text(
                   source.citationLabel,
                   style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                        color: AppColors.textSecondary,
+                        color: TrainFlowTokens.darkTrainingMuted,
                         fontWeight: FontWeight.w700,
                       ),
                 ),
@@ -75,7 +74,7 @@ class AiCoachPage extends ConsumerWidget {
                 Text(
                   '适用原因：${source.note}',
                   style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                        color: AppColors.textSecondary,
+                        color: TrainFlowTokens.darkTrainingMuted,
                       ),
                 ),
                 if (source != state.todayWorkout.evidenceSources.last)

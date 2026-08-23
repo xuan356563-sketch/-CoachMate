@@ -42,7 +42,7 @@ class _ReminderSettingsCard extends ConsumerWidget {
           Row(
             children: [
               const Icon(Icons.notifications_active_outlined,
-                  color: AppColors.primary),
+                  color: TrainFlowTokens.accent),
               const SizedBox(width: 8),
               Expanded(
                 child: Text(
@@ -50,7 +50,7 @@ class _ReminderSettingsCard extends ConsumerWidget {
                   style: Theme.of(context)
                       .textTheme
                       .titleLarge
-                      ?.copyWith(fontWeight: FontWeight.w800),
+                      ?.copyWith(fontWeight: FontWeight.w600),
                 ),
               ),
               ToneBadge(
@@ -91,7 +91,7 @@ class _ReminderSettingsCard extends ConsumerWidget {
           Text(
             state.reminderStatusMessage,
             style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                  color: AppColors.textSecondary,
+                  color: TrainFlowTokens.darkTrainingMuted,
                 ),
           ),
           const SizedBox(height: 12),
@@ -134,7 +134,7 @@ class _ReminderCard extends StatelessWidget {
                 _iconForReminder(reminder.type),
                 color: reminder.enabled
                     ? AppColors.primary
-                    : AppColors.textSecondary,
+                    : TrainFlowTokens.darkTrainingMuted,
               ),
               const SizedBox(width: 8),
               Expanded(
@@ -143,14 +143,14 @@ class _ReminderCard extends StatelessWidget {
                   style: Theme.of(context)
                       .textTheme
                       .titleMedium
-                      ?.copyWith(fontWeight: FontWeight.w800),
+                      ?.copyWith(fontWeight: FontWeight.w600),
                 ),
               ),
               ToneBadge(
                 label: reminder.priorityLabel,
                 color: reminder.enabled
                     ? AppColors.primary
-                    : AppColors.textSecondary,
+                    : TrainFlowTokens.darkTrainingMuted,
               ),
             ],
           ),

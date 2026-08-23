@@ -3,7 +3,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../app/router/app_routes.dart';
-import '../../../core/constants/app_colors.dart';
 import '../../../core/widgets/trainflow_widgets.dart';
 import '../../../data/models/pre_exercise_clearance.dart';
 import '../../dashboard/training_mvp_controller.dart';
@@ -51,7 +50,7 @@ class GuidedWorkoutCourseSection extends StatelessWidget {
                     children: [
                       const Icon(
                         Icons.sports_gymnastics,
-                        color: AppColors.primary,
+                        color: TrainFlowTokens.accent,
                       ),
                       const SizedBox(width: 10),
                       Expanded(
@@ -60,7 +59,7 @@ class GuidedWorkoutCourseSection extends StatelessWidget {
                           style: Theme.of(context)
                               .textTheme
                               .titleMedium
-                              ?.copyWith(fontWeight: FontWeight.w800),
+                              ?.copyWith(fontWeight: FontWeight.w600),
                         ),
                       ),
                       ToneBadge(label: course.levelLabel),
@@ -70,7 +69,7 @@ class GuidedWorkoutCourseSection extends StatelessWidget {
                   Text(
                     course.description,
                     style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                          color: AppColors.textSecondary,
+                          color: TrainFlowTokens.darkTrainingMuted,
                         ),
                   ),
                   const SizedBox(height: 10),
@@ -193,7 +192,7 @@ class _FunctionalCircuitDetailPageState
                     style: Theme.of(context)
                         .textTheme
                         .titleMedium
-                        ?.copyWith(fontWeight: FontWeight.w800),
+                        ?.copyWith(fontWeight: FontWeight.w600),
                   ),
                   const SizedBox(height: 10),
                   for (final GuidedWorkoutExercise exercise
@@ -219,7 +218,7 @@ class _FunctionalCircuitDetailPageState
                     style: Theme.of(context)
                         .textTheme
                         .titleMedium
-                        ?.copyWith(fontWeight: FontWeight.w800),
+                        ?.copyWith(fontWeight: FontWeight.w600),
                   ),
                   const SizedBox(height: 10),
                   Wrap(
@@ -248,7 +247,7 @@ class _FunctionalCircuitDetailPageState
                     style: Theme.of(context)
                         .textTheme
                         .titleMedium
-                        ?.copyWith(fontWeight: FontWeight.w800),
+                        ?.copyWith(fontWeight: FontWeight.w600),
                   ),
                   const SizedBox(height: 8),
                   const Text('如出现严重肿胀、不能负重、关节锁住或打软腿、红热伴发热，请不要开始本循环。'),
@@ -404,7 +403,7 @@ class GuidedWorkoutCourseDetailPage extends ConsumerWidget {
                     style: Theme.of(context)
                         .textTheme
                         .titleMedium
-                        ?.copyWith(fontWeight: FontWeight.w800),
+                        ?.copyWith(fontWeight: FontWeight.w600),
                   ),
                   const SizedBox(height: 10),
                   for (final GuidedWorkoutPhase phase in course.phases)
@@ -421,7 +420,7 @@ class GuidedWorkoutCourseDetailPage extends ConsumerWidget {
                 children: [
                   Text(
                     '开始前确认',
-                    style: TextStyle(fontWeight: FontWeight.w800),
+                    style: TextStyle(fontWeight: FontWeight.w600),
                   ),
                   SizedBox(height: 8),
                   Text('准备跳绳和防滑空间，穿着有缓冲的运动鞋。'),

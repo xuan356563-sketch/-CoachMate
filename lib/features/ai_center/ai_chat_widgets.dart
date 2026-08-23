@@ -42,7 +42,7 @@ class AiChatConversation extends ConsumerWidget {
               style: Theme.of(context)
                   .textTheme
                   .titleMedium
-                  ?.copyWith(fontWeight: FontWeight.w800),
+                  ?.copyWith(fontWeight: FontWeight.w600),
             ),
             const Spacer(),
             if (chat.sessions.length > 1)
@@ -78,7 +78,7 @@ class AiChatConversation extends ConsumerWidget {
         Text(
           chat.statusMessage,
           style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                color: AppColors.textSecondary,
+                color: TrainFlowTokens.darkTrainingMuted,
               ),
         ),
         const SizedBox(height: 8),
@@ -159,7 +159,7 @@ class _AiChatComposerState extends ConsumerState<AiChatComposer>
                 child: Text(
                   _voiceMessage!,
                   style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                        color: AppColors.textSecondary,
+                        color: TrainFlowTokens.darkTrainingMuted,
                       ),
                 ),
               ),
@@ -330,7 +330,7 @@ class _LocalStatusCards extends StatelessWidget {
                   child: Text(
                     '更新时间：${_dateTimeLabel(snapshot.bodyUpdatedAt!)}',
                     style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                          color: AppColors.textSecondary,
+                          color: TrainFlowTokens.darkTrainingMuted,
                         ),
                   ),
                 ),
@@ -367,7 +367,7 @@ class _MessageBubble extends StatelessWidget {
           border: Border.all(
             color: isLocal
                 ? AppColors.secondary
-                : AppColors.textSecondary.withValues(alpha: 0.18),
+                : TrainFlowTokens.darkTrainingMuted.withValues(alpha: 0.18),
           ),
         ),
         child: Column(
@@ -376,7 +376,7 @@ class _MessageBubble extends StatelessWidget {
             if (isLocal)
               const Text(
                 '本机状态',
-                style: TextStyle(fontWeight: FontWeight.w800),
+                style: TextStyle(fontWeight: FontWeight.w600),
               ),
             Text(
               message.content,

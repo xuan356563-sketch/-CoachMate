@@ -167,14 +167,14 @@ class _ConversationalProfileCardState
             style: Theme.of(context)
                 .textTheme
                 .titleMedium
-                ?.copyWith(fontWeight: FontWeight.w800),
+                ?.copyWith(fontWeight: FontWeight.w600),
           ),
           const SizedBox(height: 6),
           Text(
             '可以描述目标、主项目、经验、频次、时长和器械。'
             '年龄、身体指标、疼痛、伤病和联系方式只在本机识别并移除。',
             style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                  color: AppColors.textSecondary,
+                  color: TrainFlowTokens.darkTrainingMuted,
                 ),
           ),
           const SizedBox(height: 12),
@@ -215,7 +215,7 @@ class _ConversationalProfileCardState
           Text(
             _status,
             style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                  color: AppColors.textSecondary,
+                  color: TrainFlowTokens.darkTrainingMuted,
                 ),
           ),
           if (extraction != null &&
@@ -239,7 +239,7 @@ class _ConversationalProfileCardState
               style: Theme.of(context)
                   .textTheme
                   .titleSmall
-                  ?.copyWith(fontWeight: FontWeight.w800),
+                  ?.copyWith(fontWeight: FontWeight.w600),
             ),
             const SizedBox(height: 8),
             for (final ProfileFollowUpQuestion question
@@ -275,7 +275,7 @@ class _ConversationalProfileCardState
               style: Theme.of(context)
                   .textTheme
                   .titleSmall
-                  ?.copyWith(fontWeight: FontWeight.w800),
+                  ?.copyWith(fontWeight: FontWeight.w600),
             ),
             const SizedBox(height: 8),
             for (final MapEntry<String, String> row in _patch
@@ -293,7 +293,7 @@ class _ConversationalProfileCardState
               Text(
                 '仍需补充：${_proposal!.followUpCodes.map(_followUpLabel).join('、')}',
                 style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                      color: AppColors.textSecondary,
+                      color: TrainFlowTokens.darkTrainingMuted,
                     ),
               ),
             ],
@@ -310,7 +310,7 @@ class _ConversationalProfileCardState
             Text(
               '这里只更新页面草稿；仍需点击页面底部“确认资料并生成计划”才会正式保存。',
               style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                    color: AppColors.textSecondary,
+                    color: TrainFlowTokens.darkTrainingMuted,
                   ),
             ),
           ],

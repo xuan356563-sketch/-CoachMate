@@ -46,7 +46,7 @@ class _DataRightsPageState extends ConsumerState<DataRightsPage> {
         fallback: Icon(
           Icons.shield_outlined,
           size: 64,
-          color: AppColors.primary,
+          color: TrainFlowTokens.accent,
         ),
       ),
       children: <Widget>[
@@ -56,12 +56,12 @@ class _DataRightsPageState extends ConsumerState<DataRightsPage> {
             children: [
               const Row(
                 children: [
-                  Icon(Icons.file_download_outlined, color: AppColors.primary),
+                  Icon(Icons.file_download_outlined, color: TrainFlowTokens.accent),
                   SizedBox(width: 8),
                   Expanded(
                     child: Text(
                       '导出账号数据',
-                      style: TextStyle(fontWeight: FontWeight.w800),
+                      style: TextStyle(fontWeight: FontWeight.w600),
                     ),
                   ),
                 ],
@@ -95,7 +95,7 @@ class _DataRightsPageState extends ConsumerState<DataRightsPage> {
           style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                 color: state.deletionStatus?.isPending == true
                     ? AppColors.warningDark
-                    : AppColors.textSecondary,
+                    : TrainFlowTokens.darkTrainingMuted,
               ),
         ),
         const SizedBox(height: 24),
@@ -126,7 +126,7 @@ class _DeletionCard extends ConsumerWidget {
           children: [
             const Text(
               '账号删除申请待执行',
-              style: TextStyle(fontWeight: FontWeight.w800),
+              style: TextStyle(fontWeight: FontWeight.w600),
             ),
             const SizedBox(height: 8),
             Text(
@@ -160,7 +160,7 @@ class _DeletionCard extends ConsumerWidget {
               Expanded(
                 child: Text(
                   '删除账号',
-                  style: TextStyle(fontWeight: FontWeight.w800),
+                  style: TextStyle(fontWeight: FontWeight.w600),
                 ),
               ),
             ],

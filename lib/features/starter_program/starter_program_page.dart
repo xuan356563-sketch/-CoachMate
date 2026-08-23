@@ -53,7 +53,7 @@ class _StarterProgramSummaryCard extends ConsumerWidget {
         children: [
           Row(
             children: [
-              const Icon(Icons.flag_circle, color: AppColors.primary),
+              const Icon(Icons.flag_circle, color: TrainFlowTokens.accent),
               const SizedBox(width: 8),
               Expanded(
                 child: Text(
@@ -61,7 +61,7 @@ class _StarterProgramSummaryCard extends ConsumerWidget {
                   style: Theme.of(context)
                       .textTheme
                       .titleLarge
-                      ?.copyWith(fontWeight: FontWeight.w800),
+                      ?.copyWith(fontWeight: FontWeight.w600),
                 ),
               ),
               ToneBadge(label: state.starterProgramGoal.label),
@@ -100,7 +100,7 @@ class _StarterProgramSummaryCard extends ConsumerWidget {
                 child: MetricPill(
                   label: '累计成长日',
                   value: '${state.starterProgramStreak} 天',
-                  color: AppColors.secondary,
+                  color: TrainFlowTokens.accent,
                 ),
               ),
             ],
@@ -109,7 +109,7 @@ class _StarterProgramSummaryCard extends ConsumerWidget {
           Text(
             state.starterProgramStatusMessage,
             style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                  color: AppColors.textSecondary,
+                  color: TrainFlowTokens.darkTrainingMuted,
                 ),
           ),
         ],
@@ -145,7 +145,7 @@ class _StarterProgramTodayCard extends ConsumerWidget {
                   style: Theme.of(context)
                       .textTheme
                       .titleLarge
-                      ?.copyWith(fontWeight: FontWeight.w800),
+                      ?.copyWith(fontWeight: FontWeight.w600),
                 ),
               ),
               ToneBadge(label: day.dayLabel),
@@ -156,7 +156,7 @@ class _StarterProgramTodayCard extends ConsumerWidget {
             spacing: 8,
             runSpacing: 8,
             children: [
-              ToneBadge(label: day.weekTheme, color: AppColors.secondary),
+              ToneBadge(label: day.weekTheme, color: TrainFlowTokens.accent),
               ToneBadge(label: '${day.durationMinutes} 分钟'),
               if (day.isGraduationTest)
                 const ToneBadge(label: '毕业测试', color: AppColors.warningDark),
@@ -168,7 +168,7 @@ class _StarterProgramTodayCard extends ConsumerWidget {
             style: Theme.of(context)
                 .textTheme
                 .titleMedium
-                ?.copyWith(fontWeight: FontWeight.w800),
+                ?.copyWith(fontWeight: FontWeight.w600),
           ),
           const SizedBox(height: 8),
           for (final String step in trainingSteps)
@@ -178,7 +178,7 @@ class _StarterProgramTodayCard extends ConsumerWidget {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   const Icon(Icons.check_circle_outline,
-                      size: 18, color: AppColors.primary),
+                      size: 18, color: TrainFlowTokens.accent),
                   const SizedBox(width: 8),
                   Expanded(child: Text(step)),
                 ],
@@ -254,7 +254,7 @@ class _StarterGraduationPreviewCard extends StatelessWidget {
         children: [
           Row(
             children: [
-              const Icon(Icons.workspace_premium, color: AppColors.primary),
+              const Icon(Icons.workspace_premium, color: TrainFlowTokens.accent),
               const SizedBox(width: 8),
               Expanded(
                 child: Text(
@@ -262,7 +262,7 @@ class _StarterGraduationPreviewCard extends StatelessWidget {
                   style: Theme.of(context)
                       .textTheme
                       .titleMedium
-                      ?.copyWith(fontWeight: FontWeight.w800),
+                      ?.copyWith(fontWeight: FontWeight.w600),
                 ),
               ),
               ToneBadge(
@@ -277,7 +277,7 @@ class _StarterGraduationPreviewCard extends StatelessWidget {
           Text(
             report.transitionSummary,
             style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                  color: AppColors.textSecondary,
+                  color: TrainFlowTokens.darkTrainingMuted,
                 ),
           ),
           const SizedBox(height: 12),
@@ -294,7 +294,7 @@ class _StarterGraduationPreviewCard extends StatelessWidget {
                 child: MetricPill(
                   label: '心率趋势',
                   value: report.heartRateTrendLabel,
-                  color: AppColors.secondary,
+                  color: TrainFlowTokens.accent,
                 ),
               ),
             ],
@@ -330,14 +330,14 @@ class _StarterEvidenceCard extends StatelessWidget {
             style: Theme.of(context)
                 .textTheme
                 .titleMedium
-                ?.copyWith(fontWeight: FontWeight.w800),
+                ?.copyWith(fontWeight: FontWeight.w600),
           ),
           const SizedBox(height: 8),
           for (final EvidenceSource source in sources) ...[
             Text(
               source.citationLabel,
               style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                    color: AppColors.textSecondary,
+                    color: TrainFlowTokens.darkTrainingMuted,
                     fontWeight: FontWeight.w700,
                   ),
             ),
@@ -347,7 +347,7 @@ class _StarterEvidenceCard extends StatelessWidget {
             Text(
               '适用原因：${source.note}',
               style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                    color: AppColors.textSecondary,
+                    color: TrainFlowTokens.darkTrainingMuted,
                   ),
             ),
             if (source != sources.last) const Divider(height: 18),

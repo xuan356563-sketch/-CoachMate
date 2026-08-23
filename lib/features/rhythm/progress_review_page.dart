@@ -59,7 +59,7 @@ class _ReviewContent extends StatelessWidget {
                 style: Theme.of(context)
                     .textTheme
                     .titleLarge
-                    ?.copyWith(fontWeight: FontWeight.w900),
+                    ?.copyWith(fontWeight: FontWeight.w700),
               ),
               const SizedBox(height: 8),
               Text(
@@ -97,7 +97,7 @@ class _ReviewContent extends StatelessWidget {
                       ? '训练数据不足，本次只总结饮食与体重记录情况。'
                       : '以上是记录变化，不构成医学或减重效果判断。',
                   style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                        color: AppColors.textSecondary,
+                        color: TrainFlowTokens.darkTrainingMuted,
                       ),
                 ),
               ],
@@ -163,7 +163,7 @@ class _EvidenceStripCard extends StatelessWidget {
             style: Theme.of(context)
                 .textTheme
                 .titleMedium
-                ?.copyWith(fontWeight: FontWeight.w900),
+                ?.copyWith(fontWeight: FontWeight.w700),
           ),
           const SizedBox(height: 14),
           _HeatRow(

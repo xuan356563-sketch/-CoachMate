@@ -61,7 +61,7 @@ class _InsightSummaryCard extends ConsumerWidget {
         children: [
           Row(
             children: [
-              const Icon(Icons.psychology_alt, color: AppColors.primary),
+              const Icon(Icons.psychology_alt, color: TrainFlowTokens.accent),
               const SizedBox(width: 8),
               Expanded(
                 child: Text(
@@ -69,7 +69,7 @@ class _InsightSummaryCard extends ConsumerWidget {
                   style: Theme.of(context)
                       .textTheme
                       .titleLarge
-                      ?.copyWith(fontWeight: FontWeight.w800),
+                      ?.copyWith(fontWeight: FontWeight.w600),
                 ),
               ),
               ToneBadge(label: state.userInsightSummaryLabel),
@@ -89,7 +89,7 @@ class _InsightSummaryCard extends ConsumerWidget {
                 child: MetricPill(
                   label: '预测记录',
                   value: '${state.predictionLogs.length} 条',
-                  color: AppColors.secondary,
+                  color: TrainFlowTokens.accent,
                 ),
               ),
             ],
@@ -104,7 +104,7 @@ class _InsightSummaryCard extends ConsumerWidget {
           Text(
             state.userInsightStatusMessage,
             style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                  color: AppColors.textSecondary,
+                  color: TrainFlowTokens.darkTrainingMuted,
                 ),
           ),
           const SizedBox(height: 12),
@@ -123,7 +123,7 @@ class _InsightSummaryCard extends ConsumerWidget {
                     children: [
                       const Icon(
                         Icons.table_chart_outlined,
-                        color: AppColors.textSecondary,
+                        color: TrainFlowTokens.darkTrainingMuted,
                         size: 20,
                       ),
                       const SizedBox(width: 8),
@@ -133,12 +133,12 @@ class _InsightSummaryCard extends ConsumerWidget {
                           style: Theme.of(context)
                               .textTheme
                               .titleSmall
-                              ?.copyWith(fontWeight: FontWeight.w800),
+                              ?.copyWith(fontWeight: FontWeight.w600),
                         ),
                       ),
                       ToneBadge(
                         label: state.userInsightTableSummaryLabel,
-                        color: AppColors.textSecondary,
+                        color: TrainFlowTokens.darkTrainingMuted,
                       ),
                     ],
                   ),
@@ -156,7 +156,7 @@ class _InsightSummaryCard extends ConsumerWidget {
                         child: MetricPill(
                           label: 'user_profiles',
                           value: '${tableState.userProfiles.length} 行',
-                          color: AppColors.secondary,
+                          color: TrainFlowTokens.accent,
                         ),
                       ),
                     ],
@@ -187,7 +187,7 @@ class _InsightSummaryCard extends ConsumerWidget {
                         ? '尚未生成周度画像任务；当前页面展示的是实时派生结果。'
                         : '最近任务：${state.userInsightWeeklyTaskLabel}，${latestTask.statusLabel}。',
                     style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                          color: AppColors.textSecondary,
+                          color: TrainFlowTokens.darkTrainingMuted,
                         ),
                   ),
                   const SizedBox(height: 10),
@@ -227,7 +227,7 @@ class _TrustReviewCard extends StatelessWidget {
           Row(
             children: [
               const Icon(Icons.verified_user_outlined,
-                  color: AppColors.primary),
+                  color: TrainFlowTokens.accent),
               const SizedBox(width: 8),
               Expanded(
                 child: Text(
@@ -235,7 +235,7 @@ class _TrustReviewCard extends StatelessWidget {
                   style: Theme.of(context)
                       .textTheme
                       .titleLarge
-                      ?.copyWith(fontWeight: FontWeight.w800),
+                      ?.copyWith(fontWeight: FontWeight.w600),
                 ),
               ),
               ToneBadge(label: '本地透明'),
@@ -255,7 +255,7 @@ class _TrustReviewCard extends StatelessWidget {
                 child: MetricPill(
                   label: '不确定性',
                   value: report.uncertaintyLabel,
-                  color: AppColors.secondary,
+                  color: TrainFlowTokens.accent,
                 ),
               ),
             ],
@@ -266,7 +266,7 @@ class _TrustReviewCard extends StatelessWidget {
           Text(
             report.uncertaintyDetail,
             style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                  color: AppColors.textSecondary,
+                  color: TrainFlowTokens.darkTrainingMuted,
                 ),
           ),
           const SizedBox(height: 12),
@@ -274,7 +274,7 @@ class _TrustReviewCard extends StatelessWidget {
           Text(
             report.dataOwnershipDetail,
             style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                  color: AppColors.textSecondary,
+                  color: TrainFlowTokens.darkTrainingMuted,
                 ),
           ),
           const SizedBox(height: 12),
@@ -283,7 +283,7 @@ class _TrustReviewCard extends StatelessWidget {
             style: Theme.of(context)
                 .textTheme
                 .titleMedium
-                ?.copyWith(fontWeight: FontWeight.w800),
+                ?.copyWith(fontWeight: FontWeight.w600),
           ),
           const SizedBox(height: 8),
           for (final TrustReviewItem item in report.reviewItems.take(4))
@@ -321,7 +321,7 @@ class _InsightCard extends ConsumerWidget {
                   style: Theme.of(context)
                       .textTheme
                       .titleMedium
-                      ?.copyWith(fontWeight: FontWeight.w800),
+                      ?.copyWith(fontWeight: FontWeight.w600),
                 ),
               ),
               ToneBadge(label: insight.dimension.label, color: color),
@@ -344,7 +344,7 @@ class _InsightCard extends ConsumerWidget {
                 child: MetricPill(
                   label: '证据数',
                   value: '${insight.evidenceLabels.length} 条',
-                  color: AppColors.secondary,
+                  color: TrainFlowTokens.accent,
                 ),
               ),
             ],
@@ -353,14 +353,14 @@ class _InsightCard extends ConsumerWidget {
           Text(
             '证据：${insight.evidenceLabels.join(' / ')}',
             style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                  color: AppColors.textSecondary,
+                  color: TrainFlowTokens.darkTrainingMuted,
                 ),
           ),
           const SizedBox(height: 8),
           Text(
             '保守策略：${insight.conservativeAction}',
             style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                  color: AppColors.textSecondary,
+                  color: TrainFlowTokens.darkTrainingMuted,
                 ),
           ),
           const SizedBox(height: 12),
@@ -394,7 +394,7 @@ class _ProfileEventCard extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           CircleAvatar(
-            backgroundColor: AppColors.primaryLightest,
+            backgroundColor: TrainFlowTokens.darkTrainingRaised,
             child: Text(event.dateLabel),
           ),
           const SizedBox(width: 12),
@@ -410,7 +410,7 @@ class _ProfileEventCard extends StatelessWidget {
                         style: Theme.of(context)
                             .textTheme
                             .titleMedium
-                            ?.copyWith(fontWeight: FontWeight.w800),
+                            ?.copyWith(fontWeight: FontWeight.w600),
                       ),
                     ),
                     ToneBadge(label: event.type.label),
@@ -420,7 +420,7 @@ class _ProfileEventCard extends StatelessWidget {
                 Text(
                   event.detail,
                   style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                        color: AppColors.textSecondary,
+                        color: TrainFlowTokens.darkTrainingMuted,
                       ),
                 ),
               ],
@@ -451,7 +451,7 @@ class _PredictionCard extends StatelessWidget {
         children: [
           Row(
             children: [
-              const Icon(Icons.fact_check_outlined, color: AppColors.secondary),
+              const Icon(Icons.fact_check_outlined, color: TrainFlowTokens.accent),
               const SizedBox(width: 8),
               Expanded(
                 child: Text(
@@ -459,7 +459,7 @@ class _PredictionCard extends StatelessWidget {
                   style: Theme.of(context)
                       .textTheme
                       .titleMedium
-                      ?.copyWith(fontWeight: FontWeight.w800),
+                      ?.copyWith(fontWeight: FontWeight.w600),
                 ),
               ),
               ToneBadge(label: prediction.status.label, color: color),

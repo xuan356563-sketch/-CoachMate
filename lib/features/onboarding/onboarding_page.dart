@@ -3,7 +3,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../app/router/app_routes.dart';
-import '../../core/constants/app_colors.dart';
 import '../../core/widgets/trainmate_branding.dart';
 import '../../core/widgets/trainmate_action_character.dart';
 import '../../core/widgets/trainflow_widgets.dart';
@@ -70,7 +69,7 @@ class _OnboardingPageState extends ConsumerState<OnboardingPage> {
                 style: Theme.of(context)
                     .textTheme
                     .titleMedium
-                    ?.copyWith(fontWeight: FontWeight.w800),
+                    ?.copyWith(fontWeight: FontWeight.w600),
               ),
               const SizedBox(height: 12),
               TextFormField(
@@ -164,7 +163,7 @@ class _OnboardingPageState extends ConsumerState<OnboardingPage> {
               Text(
                 '状态年龄是长期行为与健康趋势的训练参考，不是医学年龄。',
                 style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                      color: AppColors.textSecondary,
+                      color: TrainFlowTokens.darkTrainingMuted,
                     ),
               ),
               const SizedBox(height: 12),
@@ -225,7 +224,7 @@ class _OnboardingPageState extends ConsumerState<OnboardingPage> {
                 style: Theme.of(context)
                     .textTheme
                     .titleMedium
-                    ?.copyWith(fontWeight: FontWeight.w800),
+                    ?.copyWith(fontWeight: FontWeight.w600),
               ),
               const SizedBox(height: 12),
               TextFormField(
@@ -376,7 +375,7 @@ class _OnboardingPageState extends ConsumerState<OnboardingPage> {
               Text(
                 '分型策略：${profile.workerProfileType.strategy}',
                 style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                      color: AppColors.textSecondary,
+                      color: TrainFlowTokens.darkTrainingMuted,
                     ),
               ),
               const SizedBox(height: 12),
@@ -405,7 +404,7 @@ class _OnboardingPageState extends ConsumerState<OnboardingPage> {
               Text(
                 '器械条件会参与今日训练替代；没有器械时不会继续安排必须使用器械的动作。',
                 style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                      color: AppColors.textSecondary,
+                      color: TrainFlowTokens.darkTrainingMuted,
                     ),
               ),
               const SizedBox(height: 12),
@@ -449,7 +448,7 @@ class _OnboardingPageState extends ConsumerState<OnboardingPage> {
               Text(
                 '分型只用于调整训练重点和表达方式，不替代疼痛红线、准备度和每日反馈等安全规则。',
                 style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                      color: AppColors.textSecondary,
+                      color: TrainFlowTokens.darkTrainingMuted,
                     ),
               ),
               const SizedBox(height: 16),

@@ -156,7 +156,7 @@ class _MonthlySummaryCard extends StatelessWidget {
                 style: Theme.of(context)
                     .textTheme
                     .titleLarge
-                    ?.copyWith(fontWeight: FontWeight.w900),
+                    ?.copyWith(fontWeight: FontWeight.w700),
               ),
               const SizedBox(height: 6),
               const Text('仅统计已结束的完整自然月；不会自动修改训练计划。'),
@@ -166,7 +166,7 @@ class _MonthlySummaryCard extends StatelessWidget {
                 style: Theme.of(context)
                     .textTheme
                     .titleMedium
-                    ?.copyWith(fontWeight: FontWeight.w800),
+                    ?.copyWith(fontWeight: FontWeight.w600),
               ),
               const SizedBox(height: 10),
               if (summary == null)
@@ -183,7 +183,7 @@ class _MonthlySummaryCard extends StatelessWidget {
                   style: Theme.of(context)
                       .textTheme
                       .titleMedium
-                      ?.copyWith(fontWeight: FontWeight.w800),
+                      ?.copyWith(fontWeight: FontWeight.w600),
                 ),
                 const SizedBox(height: 10),
                 _TrainingDimensionRadar(
@@ -196,7 +196,7 @@ class _MonthlySummaryCard extends StatelessWidget {
                 style: Theme.of(context)
                     .textTheme
                     .titleMedium
-                    ?.copyWith(fontWeight: FontWeight.w800),
+                    ?.copyWith(fontWeight: FontWeight.w600),
               ),
               const SizedBox(height: 10),
               if (summary == null)
@@ -208,7 +208,7 @@ class _MonthlySummaryCard extends StatelessWidget {
               Text(
                 '体重和体脂只描述变化，不判断好坏；其余结论使用固定阈值，不能替代医疗判断。',
                 style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                      color: AppColors.textSecondary,
+                      color: TrainFlowTokens.darkTrainingMuted,
                     ),
               ),
               if (summary != null) ...[
@@ -283,7 +283,7 @@ class _MonthlyMetricRow extends StatelessWidget {
   Widget build(BuildContext context) {
     final TextStyle? detailStyle =
         Theme.of(context).textTheme.bodySmall?.copyWith(
-              color: AppColors.textSecondary,
+              color: TrainFlowTokens.darkTrainingMuted,
             );
     return Padding(
       padding: EdgeInsets.only(bottom: compact ? 4 : 12),
@@ -392,7 +392,7 @@ class _PsychologyWeeklyCheckInCardState
           Row(
             children: [
               const Icon(Icons.psychology_alt_outlined,
-                  color: AppColors.primary),
+                  color: TrainFlowTokens.accent),
               const SizedBox(width: 8),
               Expanded(
                 child: Text(
@@ -400,7 +400,7 @@ class _PsychologyWeeklyCheckInCardState
                   style: Theme.of(context)
                       .textTheme
                       .titleLarge
-                      ?.copyWith(fontWeight: FontWeight.w900),
+                      ?.copyWith(fontWeight: FontWeight.w700),
                 ),
               ),
               if (report != null) ToneBadge(label: report.psychRiskLevel.label),
@@ -465,7 +465,7 @@ class _PsychologyWeeklyCheckInCardState
               style: Theme.of(context)
                   .textTheme
                   .titleMedium
-                  ?.copyWith(fontWeight: FontWeight.w800),
+                  ?.copyWith(fontWeight: FontWeight.w600),
             ),
             const SizedBox(height: 6),
             Wrap(
@@ -494,7 +494,7 @@ class _PsychologyWeeklyCheckInCardState
           Text(
             widget.state.weeklyReportSaveStatusMessage,
             style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                  color: AppColors.textSecondary,
+                  color: TrainFlowTokens.darkTrainingMuted,
                 ),
           ),
         ],
@@ -563,7 +563,7 @@ class _TrainingDimensionRadarPainter extends CustomPainter {
     final Offset center = size.center(Offset.zero);
     final double radius = math.min(size.width, size.height) * 0.38;
     final Paint grid = Paint()
-      ..color = AppColors.textSecondary.withValues(alpha: 0.25)
+      ..color = TrainFlowTokens.darkTrainingMuted.withValues(alpha: 0.25)
       ..style = PaintingStyle.stroke
       ..strokeWidth = 1;
     final Paint fill = Paint()
@@ -614,6 +614,23 @@ class _TrainingDimensionRadarPainter extends CustomPainter {
     canvas
       ..drawPath(polygon(actual), fill)
       ..drawPath(polygon(actual), stroke);
+    // 各训练维度数据点用多色区分（黄色/粉/蓝/薄荷绿/紫），套参考图多色数据。
+    const List<Color> dimensionColors = <Color>[
+      TrainFlowTokens.accent,
+      TrainFlowTokens.yellow,
+      TrainFlowTokens.pink,
+      TrainFlowTokens.blue,
+      TrainFlowTokens.mint,
+    ];
+    for (int index = 0; index < actual.length; index += 1) {
+      canvas.drawCircle(
+        actual[index],
+        3.5,
+        Paint()
+          ..color = dimensionColors[index % dimensionColors.length]
+          ..style = PaintingStyle.fill,
+      );
+    }
   }
 
   @override
@@ -692,7 +709,7 @@ class _LocalReportRevisionCardState extends State<LocalReportRevisionCard> {
         children: [
           Row(
             children: [
-              const Icon(Icons.description_outlined, color: AppColors.primary),
+              const Icon(Icons.description_outlined, color: TrainFlowTokens.accent),
               const SizedBox(width: 8),
               Expanded(
                 child: Text(
@@ -700,7 +717,7 @@ class _LocalReportRevisionCardState extends State<LocalReportRevisionCard> {
                   style: Theme.of(context)
                       .textTheme
                       .titleLarge
-                      ?.copyWith(fontWeight: FontWeight.w900),
+                      ?.copyWith(fontWeight: FontWeight.w700),
                 ),
               ),
               widget.reports.when(
@@ -730,7 +747,7 @@ class _LocalReportRevisionCardState extends State<LocalReportRevisionCard> {
                   Text(
                     '${latest.algorithmVersion} · ${latest.metricIds.length} 项输入指标 · 历史修订 ${value.length} 份',
                     style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                          color: AppColors.textSecondary,
+                          color: TrainFlowTokens.darkTrainingMuted,
                         ),
                   ),
                 ],
@@ -765,7 +782,7 @@ class _LocalReportRevisionCardState extends State<LocalReportRevisionCard> {
           Text(
             '叙事由设备内固定中文模板生成，不调用云端模型，也不覆盖历史修订。',
             style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                  color: AppColors.textSecondary,
+                  color: TrainFlowTokens.darkTrainingMuted,
                 ),
           ),
         ],
@@ -839,7 +856,7 @@ class _GrowthWeeklyReportCard extends StatelessWidget {
         children: [
           Row(
             children: [
-              const Icon(Icons.query_stats_outlined, color: AppColors.primary),
+              const Icon(Icons.query_stats_outlined, color: TrainFlowTokens.accent),
               const SizedBox(width: 8),
               Expanded(
                 child: Text(
@@ -847,7 +864,7 @@ class _GrowthWeeklyReportCard extends StatelessWidget {
                   style: Theme.of(context)
                       .textTheme
                       .titleLarge
-                      ?.copyWith(fontWeight: FontWeight.w900),
+                      ?.copyWith(fontWeight: FontWeight.w700),
                 ),
               ),
               ToneBadge(
@@ -864,7 +881,7 @@ class _GrowthWeeklyReportCard extends StatelessWidget {
             Text(
               '旧周报模型当前没有可展示记录；新的本地报告将以不可变修订保存。',
               style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                    color: AppColors.textSecondary,
+                    color: TrainFlowTokens.darkTrainingMuted,
                   ),
             )
           else
@@ -906,7 +923,7 @@ class WeeklyGrowthCompatibilitySummary extends StatelessWidget {
               child: MetricPill(
                 label: '完成率',
                 value: report.completionRateLabel,
-                color: AppColors.secondary,
+                color: TrainFlowTokens.accent,
               ),
             ),
           ],
@@ -924,14 +941,14 @@ class WeeklyGrowthCompatibilitySummary extends StatelessWidget {
         Text(
           '${report.recoverySummary} 已具备 ${report.availableIndexDimensions} 个兼容维度；少于 2 个维度时显示“数据不足”。',
           style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                color: AppColors.textSecondary,
+                color: TrainFlowTokens.darkTrainingMuted,
               ),
         ),
         const SizedBox(height: 8),
         Text(
           '这是旧 WeeklyGrowthReport 的只读兼容摘要；新的本地报告使用不可变修订，不覆盖历史内容。',
           style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                color: AppColors.textSecondary,
+                color: TrainFlowTokens.darkTrainingMuted,
               ),
         ),
       ],
@@ -962,13 +979,13 @@ class _LockedGrowthReportsCard extends StatelessWidget {
             style: Theme.of(context)
                 .textTheme
                 .titleMedium
-                ?.copyWith(fontWeight: FontWeight.w800),
+                ?.copyWith(fontWeight: FontWeight.w600),
           ),
           const SizedBox(height: 6),
           Text(
             '以下记录只用于兼容查看。新的本地报告会创建修订，不会覆盖历史内容。',
             style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                  color: AppColors.textSecondary,
+                  color: TrainFlowTokens.darkTrainingMuted,
                 ),
           ),
           const SizedBox(height: 10),

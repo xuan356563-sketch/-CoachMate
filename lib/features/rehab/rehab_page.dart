@@ -97,7 +97,7 @@ class RehabPage extends ConsumerWidget {
                 style: Theme.of(context)
                     .textTheme
                     .titleMedium
-                    ?.copyWith(fontWeight: FontWeight.w800),
+                    ?.copyWith(fontWeight: FontWeight.w600),
               ),
               const SizedBox(height: 14),
               DropdownButtonFormField<String>(
@@ -191,7 +191,7 @@ class RehabPage extends ConsumerWidget {
             child: Text(
               '还没有疼痛记录。记录后，今日训练和 AI 教练建议会立即更新。',
               style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                    color: AppColors.textSecondary,
+                    color: TrainFlowTokens.darkTrainingMuted,
                   ),
             ),
           )
@@ -225,7 +225,7 @@ class _RehabMedicalBoundaryCard extends StatelessWidget {
                   style: Theme.of(context)
                       .textTheme
                       .titleMedium
-                      ?.copyWith(fontWeight: FontWeight.w900),
+                      ?.copyWith(fontWeight: FontWeight.w700),
                 ),
               ),
             ],
@@ -240,7 +240,7 @@ class _RehabMedicalBoundaryCard extends StatelessWidget {
           Text(
             '应用中的“疼痛 ≥7 分或持续超过 14 天”是保守提醒阈值，不是医学诊断标准。',
             style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                  color: AppColors.textSecondary,
+                  color: TrainFlowTokens.darkTrainingMuted,
                   fontWeight: FontWeight.w700,
                 ),
           ),
@@ -277,7 +277,7 @@ class _CurrentRiskCard extends StatelessWidget {
                   style: Theme.of(context)
                       .textTheme
                       .titleLarge
-                      ?.copyWith(fontWeight: FontWeight.w800),
+                      ?.copyWith(fontWeight: FontWeight.w600),
                 ),
               ),
               ToneBadge(
@@ -319,7 +319,7 @@ class _PainLogCard extends StatelessWidget {
                   style: Theme.of(context)
                       .textTheme
                       .titleMedium
-                      ?.copyWith(fontWeight: FontWeight.w800),
+                      ?.copyWith(fontWeight: FontWeight.w600),
                 ),
               ),
               ToneBadge(
@@ -335,7 +335,7 @@ class _PainLogCard extends StatelessWidget {
             Text(
               painLog.note,
               style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                    color: AppColors.textSecondary,
+                    color: TrainFlowTokens.darkTrainingMuted,
                   ),
             ),
           ],

@@ -48,7 +48,7 @@ class MealGuidePage extends ConsumerWidget {
                 style: Theme.of(context)
                     .textTheme
                     .titleMedium
-                    ?.copyWith(fontWeight: FontWeight.w800),
+                    ?.copyWith(fontWeight: FontWeight.w600),
               ),
               const SizedBox(height: 12),
               DropdownButtonFormField<MealScenario>(
@@ -104,7 +104,7 @@ class _MealRecordCard extends ConsumerWidget {
         children: [
           Row(
             children: [
-              const Icon(Icons.edit_note_outlined, color: AppColors.primary),
+              const Icon(Icons.edit_note_outlined, color: TrainFlowTokens.accent),
               const SizedBox(width: 8),
               Expanded(
                 child: Text(
@@ -112,7 +112,7 @@ class _MealRecordCard extends ConsumerWidget {
                   style: Theme.of(context)
                       .textTheme
                       .titleMedium
-                      ?.copyWith(fontWeight: FontWeight.w900),
+                      ?.copyWith(fontWeight: FontWeight.w700),
                 ),
               ),
               ToneBadge(label: '近 15 天 $recordedDays/7 天'),
@@ -200,7 +200,7 @@ class _MealRecordSheetState extends ConsumerState<_MealRecordSheet> {
               style: Theme.of(context)
                   .textTheme
                   .titleLarge
-                  ?.copyWith(fontWeight: FontWeight.w900),
+                  ?.copyWith(fontWeight: FontWeight.w700),
             ),
             const SizedBox(height: 16),
             DropdownButtonFormField<MealType>(
@@ -292,10 +292,10 @@ class _MealGuideCard extends StatelessWidget {
                   style: Theme.of(context)
                       .textTheme
                       .titleLarge
-                      ?.copyWith(fontWeight: FontWeight.w800),
+                      ?.copyWith(fontWeight: FontWeight.w600),
                 ),
               ),
-              ToneBadge(label: guide.dayLabel, color: AppColors.secondary),
+              ToneBadge(label: guide.dayLabel, color: TrainFlowTokens.accent),
             ],
           ),
           const SizedBox(height: 12),
@@ -307,7 +307,7 @@ class _MealGuideCard extends StatelessWidget {
           Text(
             guide.reason,
             style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                  color: AppColors.textSecondary,
+                  color: TrainFlowTokens.darkTrainingMuted,
                 ),
           ),
           const SizedBox(height: 14),
@@ -357,14 +357,14 @@ class _EvidenceBlock extends StatelessWidget {
           style: Theme.of(context)
               .textTheme
               .titleSmall
-              ?.copyWith(fontWeight: FontWeight.w800),
+              ?.copyWith(fontWeight: FontWeight.w600),
         ),
         const SizedBox(height: 8),
         for (final EvidenceSource source in sources) ...[
           Text(
             source.citationLabel,
             style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                  color: AppColors.textSecondary,
+                  color: TrainFlowTokens.darkTrainingMuted,
                   fontWeight: FontWeight.w700,
                 ),
           ),
@@ -374,7 +374,7 @@ class _EvidenceBlock extends StatelessWidget {
           Text(
             '适用原因：${source.note}',
             style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                  color: AppColors.textSecondary,
+                  color: TrainFlowTokens.darkTrainingMuted,
                 ),
           ),
           if (source != sources.last) const Divider(height: 18),

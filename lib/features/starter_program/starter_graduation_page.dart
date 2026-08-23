@@ -59,7 +59,7 @@ class _GraduationSummaryCard extends StatelessWidget {
         children: [
           Row(
             children: [
-              const Icon(Icons.workspace_premium, color: AppColors.primary),
+              const Icon(Icons.workspace_premium, color: TrainFlowTokens.accent),
               const SizedBox(width: 8),
               Expanded(
                 child: Text(
@@ -67,7 +67,7 @@ class _GraduationSummaryCard extends StatelessWidget {
                   style: Theme.of(context)
                       .textTheme
                       .titleLarge
-                      ?.copyWith(fontWeight: FontWeight.w800),
+                      ?.copyWith(fontWeight: FontWeight.w600),
                 ),
               ),
               ToneBadge(
@@ -92,7 +92,7 @@ class _GraduationSummaryCard extends StatelessWidget {
                 child: MetricPill(
                   label: '完成天数',
                   value: '${report.completedDays}/${report.totalDays}',
-                  color: AppColors.secondary,
+                  color: TrainFlowTokens.accent,
                 ),
               ),
             ],
@@ -101,7 +101,7 @@ class _GraduationSummaryCard extends StatelessWidget {
           LinearProgressIndicator(
             value: report.completionRate,
             minHeight: 8,
-            color: AppColors.primary,
+            color: TrainFlowTokens.accent,
             backgroundColor: AppColors.primary.withValues(alpha: 0.12),
             borderRadius: BorderRadius.circular(999),
           ),
@@ -109,7 +109,7 @@ class _GraduationSummaryCard extends StatelessWidget {
           Text(
             '目标：${report.goalLabel} · 当前第 ${state.starterProgramDayIndex}/30 天 · 生成于 ${report.generatedDateLabel}',
             style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                  color: AppColors.textSecondary,
+                  color: TrainFlowTokens.darkTrainingMuted,
                 ),
           ),
         ],
@@ -134,7 +134,7 @@ class _AbilityAssessmentCard extends StatelessWidget {
             style: Theme.of(context)
                 .textTheme
                 .titleMedium
-                ?.copyWith(fontWeight: FontWeight.w800),
+                ?.copyWith(fontWeight: FontWeight.w600),
           ),
           const SizedBox(height: 10),
           Text(report.abilitySummary),
@@ -161,7 +161,7 @@ class _HeartRateTrendCard extends StatelessWidget {
         children: [
           Row(
             children: [
-              const Icon(Icons.favorite_outline, color: AppColors.primary),
+              const Icon(Icons.favorite_outline, color: TrainFlowTokens.accent),
               const SizedBox(width: 8),
               Expanded(
                 child: Text(
@@ -169,7 +169,7 @@ class _HeartRateTrendCard extends StatelessWidget {
                   style: Theme.of(context)
                       .textTheme
                       .titleMedium
-                      ?.copyWith(fontWeight: FontWeight.w800),
+                      ?.copyWith(fontWeight: FontWeight.w600),
                 ),
               ),
               ToneBadge(label: report.heartRateTrendLabel),
@@ -197,7 +197,7 @@ class _SubjectiveTrendCard extends StatelessWidget {
           Row(
             children: [
               const Icon(Icons.psychology_alt_outlined,
-                  color: AppColors.primary),
+                  color: TrainFlowTokens.accent),
               const SizedBox(width: 8),
               Expanded(
                 child: Text(
@@ -205,7 +205,7 @@ class _SubjectiveTrendCard extends StatelessWidget {
                   style: Theme.of(context)
                       .textTheme
                       .titleMedium
-                      ?.copyWith(fontWeight: FontWeight.w800),
+                      ?.copyWith(fontWeight: FontWeight.w600),
                 ),
               ),
               ToneBadge(label: report.subjectiveTrendLabel),
@@ -236,7 +236,7 @@ class _FormalPlanTransitionCard extends ConsumerWidget {
         children: [
           Row(
             children: [
-              const Icon(Icons.auto_awesome, color: AppColors.primary),
+              const Icon(Icons.auto_awesome, color: TrainFlowTokens.accent),
               const SizedBox(width: 8),
               Expanded(
                 child: Text(
@@ -244,7 +244,7 @@ class _FormalPlanTransitionCard extends ConsumerWidget {
                   style: Theme.of(context)
                       .textTheme
                       .titleMedium
-                      ?.copyWith(fontWeight: FontWeight.w800),
+                      ?.copyWith(fontWeight: FontWeight.w600),
                 ),
               ),
               ToneBadge(label: state.formalPlanUnlocked ? '已切换' : '待切换'),
@@ -258,7 +258,7 @@ class _FormalPlanTransitionCard extends ConsumerWidget {
           Text(
             state.formalPlanStatusMessage,
             style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                  color: AppColors.textSecondary,
+                  color: TrainFlowTokens.darkTrainingMuted,
                 ),
           ),
           if (state.formalAiPlan != null) ...[
@@ -306,7 +306,7 @@ class _FormalAiPlanGeneratedCard extends StatelessWidget {
   Widget build(BuildContext context) {
     return DecoratedBox(
       decoration: BoxDecoration(
-        color: AppColors.primaryLightest,
+        color: TrainFlowTokens.darkTrainingRaised,
         borderRadius: BorderRadius.circular(8),
       ),
       child: Padding(
@@ -319,7 +319,7 @@ class _FormalAiPlanGeneratedCard extends StatelessWidget {
               style: Theme.of(context)
                   .textTheme
                   .bodyMedium
-                  ?.copyWith(fontWeight: FontWeight.w800),
+                  ?.copyWith(fontWeight: FontWeight.w600),
             ),
             const SizedBox(height: 8),
             InfoRow(label: '周期名称', value: plan.title),
@@ -333,7 +333,7 @@ class _FormalAiPlanGeneratedCard extends StatelessWidget {
               style: Theme.of(context)
                   .textTheme
                   .bodySmall
-                  ?.copyWith(fontWeight: FontWeight.w800),
+                  ?.copyWith(fontWeight: FontWeight.w600),
             ),
             const SizedBox(height: 6),
             for (final String focus in plan.weeklyFocus)

@@ -81,7 +81,7 @@ class _CheckInStreakCard extends ConsumerWidget {
           Row(
             children: [
               const Icon(Icons.local_fire_department_outlined,
-                  color: AppColors.primary),
+                  color: TrainFlowTokens.accent),
               const SizedBox(width: 8),
               Expanded(
                 child: Text(
@@ -89,7 +89,7 @@ class _CheckInStreakCard extends ConsumerWidget {
                   style: Theme.of(context)
                       .textTheme
                       .titleMedium
-                      ?.copyWith(fontWeight: FontWeight.w900),
+                      ?.copyWith(fontWeight: FontWeight.w700),
                 ),
               ),
               ToneBadge(label: '连续 ${state.checkInStreak.currentStreak} 天'),
@@ -106,7 +106,7 @@ class _CheckInStreakCard extends ConsumerWidget {
                 ? '只按当天明确确认计数；计划恢复和安全暂停不会伪装成训练完成。'
                 : '里程碑已写入本地回执；庆祝动画不会作为训练证据。',
             style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                  color: AppColors.textSecondary,
+                  color: TrainFlowTokens.darkTrainingMuted,
                 ),
           ),
           const SizedBox(height: 10),
@@ -120,7 +120,7 @@ class _CheckInStreakCard extends ConsumerWidget {
                     : '连续 7 天',
                 color: state.checkInStreak.currentStreak >= 7
                     ? AppColors.success
-                    : AppColors.textSecondary,
+                    : TrainFlowTokens.darkTrainingMuted,
               ),
               ToneBadge(
                 label: state.checkInStreak.currentStreak >= 30
@@ -128,7 +128,7 @@ class _CheckInStreakCard extends ConsumerWidget {
                     : '连续 30 天',
                 color: state.checkInStreak.currentStreak >= 30
                     ? AppColors.success
-                    : AppColors.textSecondary,
+                    : TrainFlowTokens.darkTrainingMuted,
               ),
               for (final int target in <int>[60, 90, 180, 365])
                 ToneBadge(
@@ -137,7 +137,7 @@ class _CheckInStreakCard extends ConsumerWidget {
                       : '累计 $target 天',
                   color: state.checkInStreak.totalCheckInDays >= target
                       ? AppColors.success
-                      : AppColors.textSecondary,
+                      : TrainFlowTokens.darkTrainingMuted,
                 ),
             ],
           ),
@@ -174,7 +174,7 @@ class _TodayScheduleCard extends ConsumerWidget {
         children: [
           Row(
             children: [
-              const Icon(Icons.schedule, color: AppColors.primary),
+              const Icon(Icons.schedule, color: TrainFlowTokens.accent),
               const SizedBox(width: 8),
               Expanded(
                 child: Text(
@@ -182,7 +182,7 @@ class _TodayScheduleCard extends ConsumerWidget {
                   style: Theme.of(context)
                       .textTheme
                       .titleMedium
-                      ?.copyWith(fontWeight: FontWeight.w800),
+                      ?.copyWith(fontWeight: FontWeight.w600),
                 ),
               ),
               ToneBadge(label: workout?.version.label ?? '待安排'),
@@ -233,7 +233,7 @@ class _IntegratedReminderCard extends ConsumerWidget {
           Row(
             children: [
               const Icon(Icons.notifications_active_outlined,
-                  color: AppColors.primary),
+                  color: TrainFlowTokens.accent),
               const SizedBox(width: 8),
               Expanded(
                 child: Text(
@@ -241,7 +241,7 @@ class _IntegratedReminderCard extends ConsumerWidget {
                   style: Theme.of(context)
                       .textTheme
                       .titleMedium
-                      ?.copyWith(fontWeight: FontWeight.w800),
+                      ?.copyWith(fontWeight: FontWeight.w600),
                 ),
               ),
               Switch(
@@ -323,7 +323,7 @@ class _NoFailTrainingDayCard extends StatelessWidget {
         children: [
           Row(
             children: [
-              const Icon(Icons.flag_circle, color: AppColors.primary),
+              const Icon(Icons.flag_circle, color: TrainFlowTokens.accent),
               const SizedBox(width: 8),
               Expanded(
                 child: Text(
@@ -331,7 +331,7 @@ class _NoFailTrainingDayCard extends StatelessWidget {
                   style: Theme.of(context)
                       .textTheme
                       .titleMedium
-                      ?.copyWith(fontWeight: FontWeight.w800),
+                      ?.copyWith(fontWeight: FontWeight.w600),
                 ),
               ),
               ToneBadge(label: day.dayLabel),
@@ -347,7 +347,7 @@ class _NoFailTrainingDayCard extends StatelessWidget {
             style: Theme.of(context)
                 .textTheme
                 .titleSmall
-                ?.copyWith(fontWeight: FontWeight.w800),
+                ?.copyWith(fontWeight: FontWeight.w600),
           ),
           const SizedBox(height: 4),
           Text(minimumAction),
@@ -355,7 +355,7 @@ class _NoFailTrainingDayCard extends StatelessWidget {
           Text(
             state.starterProgramStatusMessage,
             style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                  color: AppColors.textSecondary,
+                  color: TrainFlowTokens.darkTrainingMuted,
                 ),
           ),
           const SizedBox(height: 12),
@@ -390,7 +390,7 @@ class _DailyCheckInSummaryCard extends StatelessWidget {
         children: [
           Row(
             children: [
-              const Icon(Icons.fact_check_outlined, color: AppColors.primary),
+              const Icon(Icons.fact_check_outlined, color: TrainFlowTokens.accent),
               const SizedBox(width: 8),
               Expanded(
                 child: Text(
@@ -398,7 +398,7 @@ class _DailyCheckInSummaryCard extends StatelessWidget {
                   style: Theme.of(context)
                       .textTheme
                       .titleLarge
-                      ?.copyWith(fontWeight: FontWeight.w800),
+                      ?.copyWith(fontWeight: FontWeight.w600),
                 ),
               ),
               ToneBadge(label: summary.modeLabel),
@@ -418,7 +418,7 @@ class _DailyCheckInSummaryCard extends StatelessWidget {
                 child: MetricPill(
                   label: '默认值',
                   value: summary.confidenceLabel,
-                  color: AppColors.secondary,
+                  color: TrainFlowTokens.accent,
                 ),
               ),
             ],
@@ -429,14 +429,14 @@ class _DailyCheckInSummaryCard extends StatelessWidget {
           Text(
             summary.sortExplanation,
             style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                  color: AppColors.textSecondary,
+                  color: TrainFlowTokens.darkTrainingMuted,
                 ),
           ),
           const SizedBox(height: 10),
           Text(
             state.dailyCheckInStatusMessage,
             style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                  color: AppColors.textSecondary,
+                  color: TrainFlowTokens.darkTrainingMuted,
                 ),
           ),
         ],
@@ -461,13 +461,13 @@ class _DailyCheckInPromptCard extends StatelessWidget {
             style: Theme.of(context)
                 .textTheme
                 .titleMedium
-                ?.copyWith(fontWeight: FontWeight.w800),
+                ?.copyWith(fontWeight: FontWeight.w600),
           ),
           const SizedBox(height: 10),
           Text(
             summary.sortExplanation,
             style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                  color: AppColors.textSecondary,
+                  color: TrainFlowTokens.darkTrainingMuted,
                 ),
           ),
           const SizedBox(height: 10),
@@ -517,13 +517,13 @@ class _DailyCheckInActionCard extends ConsumerWidget {
             style: Theme.of(context)
                 .textTheme
                 .titleMedium
-                ?.copyWith(fontWeight: FontWeight.w800),
+                ?.copyWith(fontWeight: FontWeight.w600),
           ),
           const SizedBox(height: 8),
           Text(
             '“和昨天一样”会沿用已保存值；恢复或暂停只保护连续成长，不生成训练完成、身体指标或训练 XP。',
             style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                  color: AppColors.textSecondary,
+                  color: TrainFlowTokens.darkTrainingMuted,
                 ),
           ),
           const SizedBox(height: 12),

@@ -34,7 +34,7 @@ class KnowledgeLibraryPage extends ConsumerWidget {
             children: [
               Row(
                 children: [
-                  const Icon(Icons.library_books, color: AppColors.primary),
+                  const Icon(Icons.library_books, color: TrainFlowTokens.accent),
                   const SizedBox(width: 8),
                   Expanded(
                     child: Text(
@@ -42,7 +42,7 @@ class KnowledgeLibraryPage extends ConsumerWidget {
                       style: Theme.of(context)
                           .textTheme
                           .titleLarge
-                          ?.copyWith(fontWeight: FontWeight.w800),
+                          ?.copyWith(fontWeight: FontWeight.w600),
                     ),
                   ),
                   const ToneBadge(label: '内部已审核'),
@@ -62,7 +62,7 @@ class KnowledgeLibraryPage extends ConsumerWidget {
                     child: MetricPill(
                       label: '引文',
                       value: '${state.bookQuotes.length} 条',
-                      color: AppColors.secondary,
+                      color: TrainFlowTokens.accent,
                     ),
                   ),
                 ],
@@ -87,7 +87,7 @@ class KnowledgeLibraryPage extends ConsumerWidget {
             child: Text(
               '没有匹配的书籍或引文。',
               style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                    color: AppColors.textSecondary,
+                    color: TrainFlowTokens.darkTrainingMuted,
                   ),
             ),
           )
@@ -116,7 +116,7 @@ class _KnowledgeSearchImportCard extends ConsumerWidget {
         children: [
           Row(
             children: [
-              const Icon(Icons.manage_search, color: AppColors.secondary),
+              const Icon(Icons.manage_search, color: TrainFlowTokens.accent),
               const SizedBox(width: 8),
               Expanded(
                 child: Text(
@@ -124,7 +124,7 @@ class _KnowledgeSearchImportCard extends ConsumerWidget {
                   style: Theme.of(context)
                       .textTheme
                       .titleMedium
-                      ?.copyWith(fontWeight: FontWeight.w800),
+                      ?.copyWith(fontWeight: FontWeight.w600),
                 ),
               ),
               ToneBadge(label: '${state.knowledgeSearchMatchCount} 本匹配'),
@@ -149,7 +149,7 @@ class _KnowledgeSearchImportCard extends ConsumerWidget {
           Text(
             state.knowledgeImportStatusMessage,
             style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                  color: AppColors.textSecondary,
+                  color: TrainFlowTokens.darkTrainingMuted,
                 ),
           ),
           const SizedBox(height: 12),
@@ -224,7 +224,7 @@ class _KnowledgeBookCard extends StatelessWidget {
                   style: Theme.of(context)
                       .textTheme
                       .titleMedium
-                      ?.copyWith(fontWeight: FontWeight.w800),
+                      ?.copyWith(fontWeight: FontWeight.w600),
                 ),
               ),
               ToneBadge(label: '${quotes.length} 条引文'),
@@ -234,7 +234,7 @@ class _KnowledgeBookCard extends StatelessWidget {
           Text(
             '${book.author} · ${book.edition}',
             style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                  color: AppColors.textSecondary,
+                  color: TrainFlowTokens.darkTrainingMuted,
                   fontWeight: FontWeight.w700,
                 ),
           ),
@@ -246,7 +246,7 @@ class _KnowledgeBookCard extends StatelessWidget {
             runSpacing: 8,
             children: [
               for (final KnowledgeArea area in book.areas)
-                ToneBadge(label: area.label, color: AppColors.secondary),
+                ToneBadge(label: area.label, color: TrainFlowTokens.accent),
             ],
           ),
           if (quotes.isNotEmpty) ...[
@@ -292,7 +292,7 @@ class _BookQuoteBlock extends StatelessWidget {
               Text(
                 locationLabel,
                 style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                      color: AppColors.textSecondary,
+                      color: TrainFlowTokens.darkTrainingMuted,
                       fontWeight: FontWeight.w700,
                     ),
               ),
@@ -313,7 +313,7 @@ class _BookQuoteBlock extends StatelessWidget {
               Text(
                 '适用原因：${quote.note}',
                 style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                      color: AppColors.textSecondary,
+                      color: TrainFlowTokens.darkTrainingMuted,
                     ),
               ),
               if (citations.isNotEmpty) ...[
@@ -323,7 +323,7 @@ class _BookQuoteBlock extends StatelessWidget {
                   style: Theme.of(context)
                       .textTheme
                       .titleSmall
-                      ?.copyWith(fontWeight: FontWeight.w800),
+                      ?.copyWith(fontWeight: FontWeight.w600),
                 ),
                 const SizedBox(height: 6),
                 for (final CitationLink citation in citations)
@@ -334,7 +334,7 @@ class _BookQuoteBlock extends StatelessWidget {
                       children: [
                         ToneBadge(
                           label: citation.targetType.label,
-                          color: AppColors.primary,
+                          color: TrainFlowTokens.accent,
                         ),
                         const SizedBox(width: 8),
                         Expanded(

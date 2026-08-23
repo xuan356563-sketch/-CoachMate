@@ -76,7 +76,7 @@ class _MotionCheckPageState extends ConsumerState<MotionCheckPage> {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(result.title,
-                      style: const TextStyle(fontWeight: FontWeight.w800)),
+                      style: const TextStyle(fontWeight: FontWeight.w600)),
                   const SizedBox(height: 8),
                   InfoRow(label: '评分', value: '${result.score} 分'),
                   InfoRow(label: '风险', value: result.riskLevel.label),
@@ -111,7 +111,7 @@ class _MotionPhotoRecognitionCard extends ConsumerWidget {
               style: Theme.of(context)
                   .textTheme
                   .titleLarge
-                  ?.copyWith(fontWeight: FontWeight.w800)),
+                  ?.copyWith(fontWeight: FontWeight.w600)),
           const SizedBox(height: 10),
           DropdownButtonFormField<String>(
             initialValue: state.ruleId,
@@ -293,7 +293,7 @@ class _AiMotionReviewPanel extends ConsumerWidget {
           style: Theme.of(context)
               .textTheme
               .titleSmall
-              ?.copyWith(fontWeight: FontWeight.w800),
+              ?.copyWith(fontWeight: FontWeight.w600),
         ),
         const SizedBox(height: 8),
         InfoRow(label: '评分', value: '${score.score} 分'),
@@ -312,7 +312,7 @@ class _AiMotionReviewPanel extends ConsumerWidget {
         Text(
           score.safetyNote,
           style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                color: AppColors.textSecondary,
+                color: TrainFlowTokens.darkTrainingMuted,
               ),
         ),
         if (artifact.warnings.isNotEmpty) ...[
@@ -502,7 +502,7 @@ class _MotionPipelineCard extends StatelessWidget {
         children: [
           Row(
             children: [
-              const Icon(Icons.motion_photos_on, color: AppColors.primary),
+              const Icon(Icons.motion_photos_on, color: TrainFlowTokens.accent),
               const SizedBox(width: 8),
               Expanded(
                 child: Text(
@@ -510,7 +510,7 @@ class _MotionPipelineCard extends StatelessWidget {
                   style: Theme.of(context)
                       .textTheme
                       .titleLarge
-                      ?.copyWith(fontWeight: FontWeight.w800),
+                      ?.copyWith(fontWeight: FontWeight.w600),
                 ),
               ),
               ToneBadge(label: '${state.motionChecks.length} 项'),
@@ -520,14 +520,14 @@ class _MotionPipelineCard extends StatelessWidget {
           Text(
             '本地规则 Mock：当前模拟图片/视频识别后的结果；另提供结构化关键点几何计算样例，生成角度、风险、置信度和训练决策影响。',
             style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                  color: AppColors.textSecondary,
+                  color: TrainFlowTokens.darkTrainingMuted,
                 ),
           ),
           const SizedBox(height: 12),
           Text(
             state.motionAnalysisStatusMessage,
             style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                  color: AppColors.textSecondary,
+                  color: TrainFlowTokens.darkTrainingMuted,
                 ),
           ),
           if (result != null) ...[
@@ -593,7 +593,7 @@ class _MotionRuleCard extends ConsumerWidget {
                   style: Theme.of(context)
                       .textTheme
                       .titleMedium
-                      ?.copyWith(fontWeight: FontWeight.w800),
+                      ?.copyWith(fontWeight: FontWeight.w600),
                 ),
               ),
               ToneBadge(label: '${rule.score} 分'),
@@ -606,13 +606,13 @@ class _MotionRuleCard extends ConsumerWidget {
           ),
           if (isLatest) ...[
             const SizedBox(height: 8),
-            ToneBadge(label: '已写入今日决策', color: AppColors.secondary),
+            ToneBadge(label: '已写入今日决策', color: TrainFlowTokens.accent),
           ],
           const SizedBox(height: 8),
           Text(
             rule.description,
             style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                  color: AppColors.textSecondary,
+                  color: TrainFlowTokens.darkTrainingMuted,
                 ),
           ),
           if (exercise != null) ...[
@@ -696,14 +696,14 @@ class _MotionEvidenceBlock extends StatelessWidget {
           style: Theme.of(context)
               .textTheme
               .titleSmall
-              ?.copyWith(fontWeight: FontWeight.w800),
+              ?.copyWith(fontWeight: FontWeight.w600),
         ),
         const SizedBox(height: 8),
         for (final EvidenceSource source in sources) ...[
           Text(
             source.citationLabel,
             style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                  color: AppColors.textSecondary,
+                  color: TrainFlowTokens.darkTrainingMuted,
                   fontWeight: FontWeight.w700,
                 ),
           ),
@@ -713,7 +713,7 @@ class _MotionEvidenceBlock extends StatelessWidget {
           Text(
             '适用原因：${source.note}',
             style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                  color: AppColors.textSecondary,
+                  color: TrainFlowTokens.darkTrainingMuted,
                 ),
           ),
           if (source != sources.last) const Divider(height: 18),

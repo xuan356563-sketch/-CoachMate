@@ -5,7 +5,9 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../app/router/app_routes.dart';
+import '../../core/constants/app_brand.dart';
 import '../../core/constants/app_colors.dart';
+import '../../core/design_system/trainmate_primitives.dart';
 import '../../core/widgets/trainmate_action_character.dart';
 import '../../core/widgets/trainmate_showcase_widgets.dart';
 import '../../core/widgets/trainflow_widgets.dart';
@@ -84,7 +86,7 @@ class _ActivityImportPreviewCard extends StatelessWidget {
         children: [
           Row(
             children: [
-              const Icon(Icons.route, color: AppColors.primary),
+              const Icon(Icons.route, color: TrainFlowTokens.accent),
               const SizedBox(width: 8),
               Expanded(
                 child: Text(
@@ -92,7 +94,7 @@ class _ActivityImportPreviewCard extends StatelessWidget {
                   style: Theme.of(context)
                       .textTheme
                       .titleMedium
-                      ?.copyWith(fontWeight: FontWeight.w800),
+                      ?.copyWith(fontWeight: FontWeight.w600),
                 ),
               ),
               ToneBadge(label: workout == null ? '待导入' : workout.source.label),
@@ -108,7 +110,7 @@ class _ActivityImportPreviewCard extends StatelessWidget {
           Text(
             '当前先支持 GPX 文本和 FIT 摘要粘贴；真实文件选择器后续再接。',
             style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                  color: AppColors.textSecondary,
+                  color: TrainFlowTokens.darkTrainingMuted,
                 ),
           ),
           const SizedBox(height: 12),
@@ -144,7 +146,7 @@ class _BodyMetricCsvImportCard extends ConsumerWidget {
         children: [
           Row(
             children: [
-              const Icon(Icons.table_view, color: AppColors.primary),
+              const Icon(Icons.table_view, color: TrainFlowTokens.accent),
               const SizedBox(width: 8),
               Expanded(
                 child: Text(
@@ -152,7 +154,7 @@ class _BodyMetricCsvImportCard extends ConsumerWidget {
                   style: Theme.of(context)
                       .textTheme
                       .titleMedium
-                      ?.copyWith(fontWeight: FontWeight.w800),
+                      ?.copyWith(fontWeight: FontWeight.w600),
                 ),
               ),
               ToneBadge(
@@ -164,7 +166,7 @@ class _BodyMetricCsvImportCard extends ConsumerWidget {
           Text(
             '粘贴 Apple 健康、手表或表格导出的身体数据 CSV，写入 body_metrics 后会刷新质量、趋势和指标目标。',
             style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                  color: AppColors.textSecondary,
+                  color: TrainFlowTokens.darkTrainingMuted,
                 ),
           ),
           const SizedBox(height: 12),
@@ -209,7 +211,7 @@ class _BodyMetricCsvImportCard extends ConsumerWidget {
           Text(
             state.bodyMetricImportStatusMessage,
             style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                  color: AppColors.textSecondary,
+                  color: TrainFlowTokens.darkTrainingMuted,
                 ),
           ),
           if (latestResult != null) ...[
@@ -227,7 +229,7 @@ class _BodyMetricCsvImportCard extends ConsumerWidget {
                   child: MetricPill(
                     label: '日期范围',
                     value: latestResult.dateRangeLabel,
-                    color: AppColors.secondary,
+                    color: TrainFlowTokens.accent,
                   ),
                 ),
               ],
@@ -259,7 +261,7 @@ class _BodyMetricSnapshotCard extends ConsumerWidget {
           Row(
             children: [
               const Icon(Icons.document_scanner_outlined,
-                  color: AppColors.primary),
+                  color: TrainFlowTokens.accent),
               const SizedBox(width: 8),
               Expanded(
                 child: Text(
@@ -267,7 +269,7 @@ class _BodyMetricSnapshotCard extends ConsumerWidget {
                   style: Theme.of(context)
                       .textTheme
                       .titleMedium
-                      ?.copyWith(fontWeight: FontWeight.w800),
+                      ?.copyWith(fontWeight: FontWeight.w600),
                 ),
               ),
               ToneBadge(label: pendingMetric == null ? '待识别' : '待确认'),
@@ -277,7 +279,7 @@ class _BodyMetricSnapshotCard extends ConsumerWidget {
           Text(
             '先粘贴体脂秤、手表或健康 App 截图中的文字，系统抽取指标；真实 OCR 和相册权限后续再接。',
             style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                  color: AppColors.textSecondary,
+                  color: TrainFlowTokens.darkTrainingMuted,
                 ),
           ),
           const SizedBox(height: 12),
@@ -346,7 +348,7 @@ class _BodyMetricSnapshotCard extends ConsumerWidget {
                   child: MetricPill(
                     label: '静息心率',
                     value: '${pendingMetric.restingHeartRate} bpm',
-                    color: AppColors.secondary,
+                    color: TrainFlowTokens.accent,
                   ),
                 ),
               ],
@@ -357,7 +359,7 @@ class _BodyMetricSnapshotCard extends ConsumerWidget {
             state.bodyMetricSnapshotStatusMessage,
             style: Theme.of(context).textTheme.bodySmall?.copyWith(
                   color: pendingMetric == null
-                      ? AppColors.textSecondary
+                      ? TrainFlowTokens.darkTrainingMuted
                       : AppColors.warningDark,
                 ),
           ),
@@ -387,13 +389,13 @@ class _BodyMetricExportCard extends ConsumerWidget {
             style: Theme.of(context)
                 .textTheme
                 .titleMedium
-                ?.copyWith(fontWeight: FontWeight.w800),
+                ?.copyWith(fontWeight: FontWeight.w600),
           ),
           const SizedBox(height: 8),
           Text(
             '本地版不上传身体数据。这里先提供 JSON/CSV 预览、本地导出包摘要和一键清除，后续再接系统保存、分享与数据库。',
             style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                  color: AppColors.textSecondary,
+                  color: TrainFlowTokens.darkTrainingMuted,
                 ),
           ),
           const SizedBox(height: 12),
@@ -485,8 +487,8 @@ class _BodyMetricExportCard extends ConsumerWidget {
                     builder: (BuildContext dialogContext) {
                       return AlertDialog(
                         title: const Text('清除全部身体数据？'),
-                        content: const Text(
-                          '这会删除 TrainMate 本地保存的身体记录和修订历史，且无法撤销。'
+                        content: Text(
+                          '这会删除${AppBrand.displayName} 本地保存的身体记录和修订历史，且无法撤销。'
                           '不会删除 Apple 健康中的原始数据，也不会清除训练记录。',
                         ),
                         actions: [
@@ -528,7 +530,7 @@ class _BodyMetricExportCard extends ConsumerWidget {
           const SizedBox(height: 12),
           DecoratedBox(
             decoration: BoxDecoration(
-              color: AppColors.primaryLightest,
+              color: TrainFlowTokens.darkTrainingRaised,
               borderRadius: BorderRadius.circular(8),
             ),
             child: Padding(
@@ -536,7 +538,7 @@ class _BodyMetricExportCard extends ConsumerWidget {
               child: Text(
                 exportPackageStatus,
                 style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                      color: AppColors.textPrimary,
+                      color: TrainFlowTokens.darkTrainingOnSurface,
                     ),
               ),
             ),
@@ -588,13 +590,13 @@ class _BodyMetricExportHistoryCard extends StatelessWidget {
               style: Theme.of(context)
                   .textTheme
                   .bodyMedium
-                  ?.copyWith(fontWeight: FontWeight.w800),
+                  ?.copyWith(fontWeight: FontWeight.w600),
             ),
             const SizedBox(height: 6),
             Text(
               state.bodyMetricExportStatusMessage,
               style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                    color: AppColors.textSecondary,
+                    color: TrainFlowTokens.darkTrainingMuted,
                   ),
             ),
             if (latestRecord != null) ...[
@@ -629,7 +631,7 @@ class _BodyMetricSummaryCard extends StatelessWidget {
         children: [
           Row(
             children: [
-              const Icon(Icons.monitor_heart, color: AppColors.primary),
+              const Icon(Icons.monitor_heart, color: TrainFlowTokens.accent),
               const SizedBox(width: 8),
               Expanded(
                 child: Text(
@@ -637,7 +639,7 @@ class _BodyMetricSummaryCard extends StatelessWidget {
                   style: Theme.of(context)
                       .textTheme
                       .titleLarge
-                      ?.copyWith(fontWeight: FontWeight.w800),
+                      ?.copyWith(fontWeight: FontWeight.w600),
                 ),
               ),
               if (latestMetric != null)
@@ -658,7 +660,7 @@ class _BodyMetricSummaryCard extends StatelessWidget {
                 child: MetricPill(
                   label: '静息心率',
                   value: '${state.averageRestingHr7d.round()} bpm',
-                  color: AppColors.secondary,
+                  color: TrainFlowTokens.accent,
                 ),
               ),
             ],
@@ -689,7 +691,7 @@ class _BodyMetricSummaryCard extends StatelessWidget {
                 ? '还没有身体数据，先完成一次快录。'
                 : '${latestMetric.measuredDateLabel} · ${latestMetric.moodLabel} · ${latestMetric.note}',
             style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                  color: AppColors.textSecondary,
+                  color: TrainFlowTokens.darkTrainingMuted,
                 ),
           ),
         ],
@@ -725,7 +727,7 @@ class _BodyDataQualityCard extends StatelessWidget {
                   style: Theme.of(context)
                       .textTheme
                       .titleLarge
-                      ?.copyWith(fontWeight: FontWeight.w800),
+                      ?.copyWith(fontWeight: FontWeight.w600),
                 ),
               ),
               ToneBadge(label: report.statusLabel, color: toneColor),
@@ -746,7 +748,7 @@ class _BodyDataQualityCard extends StatelessWidget {
                 child: MetricPill(
                   label: '记录数',
                   value: '${report.recordCount} 条',
-                  color: AppColors.secondary,
+                  color: TrainFlowTokens.accent,
                 ),
               ),
             ],
@@ -805,7 +807,7 @@ class _BodyMetricRevisionCard extends StatelessWidget {
         children: [
           Row(
             children: [
-              const Icon(Icons.history, color: AppColors.primary),
+              const Icon(Icons.history, color: TrainFlowTokens.accent),
               const SizedBox(width: 8),
               Expanded(
                 child: Text(
@@ -813,7 +815,7 @@ class _BodyMetricRevisionCard extends StatelessWidget {
                   style: Theme.of(context)
                       .textTheme
                       .titleLarge
-                      ?.copyWith(fontWeight: FontWeight.w800),
+                      ?.copyWith(fontWeight: FontWeight.w600),
                 ),
               ),
               ToneBadge(label: '${revisions.length} 条留痕'),
@@ -825,7 +827,7 @@ class _BodyMetricRevisionCard extends StatelessWidget {
                 ? '暂无修订记录；同日覆盖身体数据时会保留旧值、新值、来源和原因。'
                 : '同日覆盖已保留旧值、新值、来源和原因，供预测对账和数据复核使用。',
             style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                  color: AppColors.textSecondary,
+                  color: TrainFlowTokens.darkTrainingMuted,
                 ),
           ),
           if (recentRevisions.isNotEmpty) ...[
@@ -859,7 +861,7 @@ class _BodyMetricRevisionLine extends StatelessWidget {
                 style: Theme.of(context)
                     .textTheme
                     .bodyMedium
-                    ?.copyWith(fontWeight: FontWeight.w800),
+                    ?.copyWith(fontWeight: FontWeight.w600),
               ),
             ),
             ToneBadge(label: revision.revisedMetric.source.label),
@@ -873,7 +875,7 @@ class _BodyMetricRevisionLine extends StatelessWidget {
         Text(
           '修订时间：${revision.revisedAtLabel}',
           style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                color: AppColors.textSecondary,
+                color: TrainFlowTokens.darkTrainingMuted,
               ),
         ),
       ],
@@ -905,7 +907,7 @@ class _BodyMetricGoalCard extends StatelessWidget {
                   style: Theme.of(context)
                       .textTheme
                       .titleLarge
-                      ?.copyWith(fontWeight: FontWeight.w800),
+                      ?.copyWith(fontWeight: FontWeight.w600),
                 ),
               ),
               ToneBadge(
@@ -918,7 +920,7 @@ class _BodyMetricGoalCard extends StatelessWidget {
           Text(
             report.summary,
             style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                  color: AppColors.textSecondary,
+                  color: TrainFlowTokens.darkTrainingMuted,
                 ),
           ),
           const SizedBox(height: 12),
@@ -964,7 +966,7 @@ class _GoalProgressLine extends StatelessWidget {
                 style: Theme.of(context)
                     .textTheme
                     .bodyMedium
-                    ?.copyWith(fontWeight: FontWeight.w800),
+                    ?.copyWith(fontWeight: FontWeight.w600),
               ),
             ),
             ToneBadge(
@@ -974,12 +976,11 @@ class _GoalProgressLine extends StatelessWidget {
           ],
         ),
         const SizedBox(height: 8),
-        LinearProgressIndicator(
+        TrainMateProgressBar(
           value: goal.progress,
-          minHeight: 8,
           color: color,
-          backgroundColor: color.withValues(alpha: 0.12),
-          borderRadius: BorderRadius.circular(999),
+          trackColor: color.withValues(alpha: 0.12),
+          height: 8,
         ),
         const SizedBox(height: 8),
         InfoRow(label: '当前', value: goal.currentLabel),
@@ -988,7 +989,7 @@ class _GoalProgressLine extends StatelessWidget {
         Text(
           goal.guidance,
           style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                color: AppColors.textSecondary,
+                color: TrainFlowTokens.darkTrainingMuted,
               ),
         ),
       ],
@@ -1011,7 +1012,7 @@ class _QuickBodyMetricCard extends ConsumerWidget {
           children: [
             Text(
               '10 秒快录',
-              style: TextStyle(fontWeight: FontWeight.w800),
+              style: TextStyle(fontWeight: FontWeight.w600),
             ),
             SizedBox(height: 8),
             Text('尚未建立身体数据基线，快捷录入不会显示或预填示例值。请先使用完整截图或 CSV，并确认后再保存。'),
@@ -1035,13 +1036,13 @@ class _QuickBodyMetricCard extends ConsumerWidget {
             style: Theme.of(context)
                 .textTheme
                 .titleMedium
-                ?.copyWith(fontWeight: FontWeight.w800),
+                ?.copyWith(fontWeight: FontWeight.w600),
           ),
           const SizedBox(height: 8),
           Text(
             '默认预填上次值，日期可补录；异常值先确认再入库。',
             style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                  color: AppColors.textSecondary,
+                  color: TrainFlowTokens.darkTrainingMuted,
                 ),
           ),
           const SizedBox(height: 12),
@@ -1050,7 +1051,7 @@ class _QuickBodyMetricCard extends ConsumerWidget {
             style: Theme.of(context)
                 .textTheme
                 .bodyMedium
-                ?.copyWith(fontWeight: FontWeight.w800),
+                ?.copyWith(fontWeight: FontWeight.w600),
           ),
           const SizedBox(height: 8),
           Wrap(
@@ -1144,24 +1145,22 @@ class _QuickBodyMetricCard extends ConsumerWidget {
             },
           ),
           const SizedBox(height: 10),
-          SizedBox(
-            width: double.infinity,
-            child: FilledButton.icon(
-              onPressed: () {
-                ref
-                    .read(bodyMetricControllerProvider.notifier)
-                    .saveManualMetric(
-                      weightKg: weight,
-                      restingHeartRate: restingHr,
-                      hrvMs: hrv,
-                      sleepHours: sleep,
-                      fatigueLevel: fatigue,
-                      measuredAt: measuredAt,
-                    );
-              },
-              icon: const Icon(Icons.save_outlined),
-              label: const Text('保存身体数据'),
-            ),
+          TrainMateButton(
+            label: '保存身体数据',
+            icon: Icons.save_outlined,
+            onPressed: () {
+              ref
+                  .read(bodyMetricControllerProvider.notifier)
+                  .saveManualMetric(
+                    weightKg: weight,
+                    restingHeartRate: restingHr,
+                    hrvMs: hrv,
+                    sleepHours: sleep,
+                    fatigueLevel: fatigue,
+                    measuredAt: measuredAt,
+                  );
+            },
+            expand: true,
           ),
           if (state.pendingBodyMetric?.source == BodyMetricSource.manual) ...[
             const SizedBox(height: 8),
@@ -1183,7 +1182,7 @@ class _QuickBodyMetricCard extends ConsumerWidget {
             state.bodyMetricManualStatusMessage,
             style: Theme.of(context).textTheme.bodySmall?.copyWith(
                   color: state.pendingBodyMetric == null
-                      ? AppColors.textSecondary
+                      ? TrainFlowTokens.darkTrainingMuted
                       : AppColors.warningDark,
                 ),
           ),
@@ -1191,7 +1190,7 @@ class _QuickBodyMetricCard extends ConsumerWidget {
           Text(
             '上次记录：${currentMetric.measuredDateLabel} · ${currentMetric.weightKg.toStringAsFixed(1)} kg',
             style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                  color: AppColors.textSecondary,
+                  color: TrainFlowTokens.darkTrainingMuted,
                 ),
           ),
         ],
@@ -1310,7 +1309,7 @@ class _BodyMetricTrendChart extends StatelessWidget {
       children: [
         Row(
           children: [
-            const Icon(Icons.show_chart, color: AppColors.primary),
+            const Icon(Icons.show_chart, color: TrainFlowTokens.accent),
             const SizedBox(width: 8),
             Expanded(
               child: Text(
@@ -1318,7 +1317,7 @@ class _BodyMetricTrendChart extends StatelessWidget {
                 style: Theme.of(context)
                     .textTheme
                     .titleMedium
-                    ?.copyWith(fontWeight: FontWeight.w800),
+                    ?.copyWith(fontWeight: FontWeight.w600),
               ),
             ),
             ToneBadge(label: '${points.length} 条'),
@@ -1328,7 +1327,7 @@ class _BodyMetricTrendChart extends StatelessWidget {
         Text(
           '真实窗口数据 $rangeLabel，体重看下降方向，HRV 看恢复弹性，疲劳看风险抬升。',
           style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                color: AppColors.textSecondary,
+                color: TrainFlowTokens.darkTrainingMuted,
               ),
         ),
         const SizedBox(height: 12),
@@ -1344,7 +1343,7 @@ class _BodyMetricTrendChart extends StatelessWidget {
           spacing: 12,
           runSpacing: 6,
           children: [
-            _TrendLegendDot(label: '体重线', color: AppColors.primary),
+            _TrendLegendDot(label: '体重线', color: TrainFlowTokens.accent),
             _TrendLegendDot(label: 'HRV线', color: AppColors.success),
             _TrendLegendDot(label: '疲劳线', color: AppColors.warningDark),
           ],
@@ -1376,7 +1375,7 @@ class _TrendLegendDot extends StatelessWidget {
         Text(
           label,
           style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                color: AppColors.textSecondary,
+                color: TrainFlowTokens.darkTrainingMuted,
                 fontWeight: FontWeight.w700,
               ),
         ),
@@ -1397,7 +1396,7 @@ class _BodyMetricTrendChartPainter extends CustomPainter {
       ..color = AppColors.grayLightish.withValues(alpha: 0.4)
       ..strokeWidth = 1;
     final Paint axisPaint = Paint()
-      ..color = AppColors.textSecondary.withValues(alpha: 0.25)
+      ..color = TrainFlowTokens.darkTrainingMuted.withValues(alpha: 0.25)
       ..strokeWidth = 1;
 
     for (int i = 0; i <= 3; i += 1) {
@@ -1414,7 +1413,7 @@ class _BodyMetricTrendChartPainter extends CustomPainter {
       canvas: canvas,
       chartRect: chartRect,
       values: points.map((_BodyMetricTrendPoint point) => point.weightKg),
-      color: AppColors.primary,
+      color: TrainFlowTokens.accent,
     );
     _drawSeries(
       canvas: canvas,
@@ -1496,7 +1495,7 @@ class _BodyMetricTrendChartPainter extends CustomPainter {
       text: TextSpan(
         text: label,
         style: const TextStyle(
-          color: AppColors.textSecondary,
+          color: TrainFlowTokens.darkTrainingMuted,
           fontSize: 10,
           fontWeight: FontWeight.w600,
         ),
@@ -1529,7 +1528,7 @@ class _TrendWindowSelectorCard extends ConsumerWidget {
         children: [
           Row(
             children: [
-              const Icon(Icons.timeline, color: AppColors.primary),
+              const Icon(Icons.timeline, color: TrainFlowTokens.accent),
               const SizedBox(width: 8),
               Expanded(
                 child: Text(
@@ -1537,7 +1536,7 @@ class _TrendWindowSelectorCard extends ConsumerWidget {
                   style: Theme.of(context)
                       .textTheme
                       .titleMedium
-                      ?.copyWith(fontWeight: FontWeight.w800),
+                      ?.copyWith(fontWeight: FontWeight.w600),
                 ),
               ),
               ToneBadge(label: selectedWindow.label),
@@ -1565,7 +1564,7 @@ class _TrendWindowSelectorCard extends ConsumerWidget {
           Text(
             '7 日看短期波动，30/90 日看更稳定的体重、恢复和疲劳方向。',
             style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                  color: AppColors.textSecondary,
+                  color: TrainFlowTokens.darkTrainingMuted,
                 ),
           ),
         ],
@@ -1601,7 +1600,7 @@ class _TrendRow extends StatelessWidget {
             child: Text(
               label,
               style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                    color: AppColors.textSecondary,
+                    color: TrainFlowTokens.darkTrainingMuted,
                   ),
             ),
           ),
@@ -1612,14 +1611,14 @@ class _TrendRow extends StatelessWidget {
                 Text(
                   '最新 $latest · $windowLabel均值 $average',
                   style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                        fontWeight: FontWeight.w800,
+                        fontWeight: FontWeight.w600,
                       ),
                 ),
                 const SizedBox(height: 2),
                 Text(
                   note,
                   style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                        color: AppColors.textSecondary,
+                        color: TrainFlowTokens.darkTrainingMuted,
                       ),
                 ),
               ],
@@ -1644,7 +1643,7 @@ class _BodyTrendInsightCard extends StatelessWidget {
         children: [
           Row(
             children: [
-              const Icon(Icons.insights, color: AppColors.primary),
+              const Icon(Icons.insights, color: TrainFlowTokens.accent),
               const SizedBox(width: 8),
               Expanded(
                 child: Text(
@@ -1652,7 +1651,7 @@ class _BodyTrendInsightCard extends StatelessWidget {
                   style: Theme.of(context)
                       .textTheme
                       .titleLarge
-                      ?.copyWith(fontWeight: FontWeight.w800),
+                      ?.copyWith(fontWeight: FontWeight.w600),
                 ),
               ),
               ToneBadge(label: report.windowLabel),
@@ -1663,7 +1662,7 @@ class _BodyTrendInsightCard extends StatelessWidget {
           Text(
             report.weightTrendDetail,
             style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                  color: AppColors.textSecondary,
+                  color: TrainFlowTokens.darkTrainingMuted,
                 ),
           ),
           const SizedBox(height: 12),
@@ -1672,7 +1671,7 @@ class _BodyTrendInsightCard extends StatelessWidget {
             style: Theme.of(context)
                 .textTheme
                 .titleMedium
-                ?.copyWith(fontWeight: FontWeight.w800),
+                ?.copyWith(fontWeight: FontWeight.w600),
           ),
           const SizedBox(height: 8),
           for (final BodyTrendOverlay overlay in report.overlays)
@@ -1685,7 +1684,7 @@ class _BodyTrendInsightCard extends StatelessWidget {
           Text(
             report.milestoneDetail,
             style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                  color: AppColors.textSecondary,
+                  color: TrainFlowTokens.darkTrainingMuted,
                 ),
           ),
           const SizedBox(height: 12),
@@ -1693,7 +1692,7 @@ class _BodyTrendInsightCard extends StatelessWidget {
           Text(
             report.fatLossProtectionDetail,
             style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                  color: AppColors.textSecondary,
+                  color: TrainFlowTokens.darkTrainingMuted,
                 ),
           ),
         ],
@@ -1721,7 +1720,7 @@ class _BodyMetricLogCard extends StatelessWidget {
                   style: Theme.of(context)
                       .textTheme
                       .titleMedium
-                      ?.copyWith(fontWeight: FontWeight.w800),
+                      ?.copyWith(fontWeight: FontWeight.w600),
                 ),
               ),
               ToneBadge(label: metric.moodLabel),
@@ -1741,7 +1740,7 @@ class _BodyMetricLogCard extends StatelessWidget {
           Text(
             '${metric.source.label} · ${metric.note}',
             style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                  color: AppColors.textSecondary,
+                  color: TrainFlowTokens.darkTrainingMuted,
                 ),
           ),
         ],

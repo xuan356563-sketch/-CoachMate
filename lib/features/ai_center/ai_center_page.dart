@@ -58,7 +58,7 @@ class _AiCenterPageState extends ConsumerState<AiCenterPage> {
               semanticLabel: 'AI 训练指导插画',
               fallback: TrainMateActionCharacter(
                 action: characterAction,
-                backgroundColor: AppColors.white,
+                backgroundColor: TrainFlowTokens.darkTrainingRaised,
               ),
             ),
             metrics: <Widget>[
@@ -151,7 +151,7 @@ class _AiCenterPageState extends ConsumerState<AiCenterPage> {
               style: Theme.of(context)
                   .textTheme
                   .titleMedium
-                  ?.copyWith(fontWeight: FontWeight.w800),
+                  ?.copyWith(fontWeight: FontWeight.w600),
             ),
             const SizedBox(height: 8),
             const Text('完成官方筛查后生成预览；本地编译、安全审计和你的确认缺一不可。'),
@@ -199,7 +199,7 @@ class _AiCenterPageState extends ConsumerState<AiCenterPage> {
               style: Theme.of(context)
                   .textTheme
                   .titleMedium
-                  ?.copyWith(fontWeight: FontWeight.w800),
+                  ?.copyWith(fontWeight: FontWeight.w600),
             ),
             const SizedBox(height: 8),
             const Text('先在动作纠错中选择照片。每次上传前都要单独确认，照片不会保存到本地或云端。'),
@@ -240,7 +240,7 @@ class _AiCenterPageState extends ConsumerState<AiCenterPage> {
               style: Theme.of(context)
                   .textTheme
                   .titleMedium
-                  ?.copyWith(fontWeight: FontWeight.w800),
+                  ?.copyWith(fontWeight: FontWeight.w600),
             ),
             const SizedBox(height: 8),
             const Text(
@@ -383,7 +383,7 @@ class _TrainerArtifactCard extends StatelessWidget {
         children: [
           Row(
             children: [
-              const Icon(Icons.auto_awesome, color: AppColors.secondary),
+              const Icon(Icons.auto_awesome, color: TrainFlowTokens.accent),
               const SizedBox(width: 8),
               Expanded(
                 child: Text(
@@ -391,7 +391,7 @@ class _TrainerArtifactCard extends StatelessWidget {
                   style: Theme.of(context)
                       .textTheme
                       .titleMedium
-                      ?.copyWith(fontWeight: FontWeight.w800),
+                      ?.copyWith(fontWeight: FontWeight.w600),
                 ),
               ),
               ToneBadge(label: artifact.isPending ? '待确认' : '已确认'),
@@ -402,17 +402,17 @@ class _TrainerArtifactCard extends StatelessWidget {
           const Divider(height: 24),
           for (final AiTrainerWorkoutCard card in plan.workoutCards) ...[
             Text(card.title,
-                style: const TextStyle(fontWeight: FontWeight.w800)),
+                style: const TextStyle(fontWeight: FontWeight.w600)),
             const SizedBox(height: 4),
             Text(
                 '${card.durationMinutes} 分钟 · ${card.intensity} · ${card.focus.join(' / ')}'),
             Text(card.safetyNote,
-                style: const TextStyle(color: AppColors.textSecondary)),
+                style: const TextStyle(color: TrainFlowTokens.darkTrainingMuted)),
             const SizedBox(height: 10),
           ],
           if (plan.safetyNotes.isNotEmpty)
             Text('安全提示：${plan.safetyNotes.join('；')}',
-                style: const TextStyle(color: AppColors.textSecondary)),
+                style: const TextStyle(color: TrainFlowTokens.darkTrainingMuted)),
           _Warnings(warnings: artifact.warnings),
           const SizedBox(height: 12),
           Wrap(
@@ -461,14 +461,14 @@ class _RecoveryArtifactCard extends StatelessWidget {
         children: [
           Row(
             children: [
-              const Icon(Icons.favorite_border, color: AppColors.secondary),
+              const Icon(Icons.favorite_border, color: TrainFlowTokens.accent),
               const SizedBox(width: 8),
               Expanded(
                 child: Text('非健康计划适配预览 ${dashboard.readinessScore} 分',
                     style: Theme.of(context)
                         .textTheme
                         .titleMedium
-                        ?.copyWith(fontWeight: FontWeight.w800)),
+                        ?.copyWith(fontWeight: FontWeight.w600)),
               ),
               ToneBadge(label: artifact.isPending ? '待确认' : '已确认'),
             ],
@@ -477,7 +477,7 @@ class _RecoveryArtifactCard extends StatelessWidget {
           Text(
             '仅根据目标、运动项目与可用时间生成，不是身体恢复或生理测量。',
             style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                  color: AppColors.textSecondary,
+                  color: TrainFlowTokens.darkTrainingMuted,
                 ),
           ),
           const SizedBox(height: 10),
@@ -493,7 +493,7 @@ class _RecoveryArtifactCard extends StatelessWidget {
           ],
           const SizedBox(height: 6),
           Text(dashboard.safetyNote,
-              style: const TextStyle(color: AppColors.textSecondary)),
+              style: const TextStyle(color: TrainFlowTokens.darkTrainingMuted)),
           _Warnings(warnings: artifact.warnings),
           if (onAccept != null || onReject != null) ...[
             const SizedBox(height: 12),
@@ -534,7 +534,7 @@ class _MotionArtifactCard extends StatelessWidget {
               style: Theme.of(context)
                   .textTheme
                   .titleMedium
-                  ?.copyWith(fontWeight: FontWeight.w800)),
+                  ?.copyWith(fontWeight: FontWeight.w600)),
           const SizedBox(height: 8),
           InfoRow(label: '风险', value: _motionRiskLabel(score.riskLevel)),
           InfoRow(label: '置信度', value: '${(score.confidence * 100).round()}%'),
@@ -546,7 +546,7 @@ class _MotionArtifactCard extends StatelessWidget {
             Text('替代：${score.replacements.join('；')}'),
           const SizedBox(height: 6),
           Text(score.safetyNote,
-              style: const TextStyle(color: AppColors.textSecondary)),
+              style: const TextStyle(color: TrainFlowTokens.darkTrainingMuted)),
           _Warnings(warnings: artifact.warnings),
         ],
       ),

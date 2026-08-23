@@ -188,7 +188,7 @@ class _SelfUseAcceptancePageState extends ConsumerState<SelfUseAcceptancePage> {
             child: Text(
               '按开始日期开放记录；未来日期不会提前写入。当前开放到第 ${_availableThroughDayNumber()} 天。',
               style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                    color: AppColors.textSecondary,
+                    color: TrainFlowTokens.darkTrainingMuted,
                   ),
             ),
           ),
@@ -226,7 +226,7 @@ class _SelfUseAcceptancePageState extends ConsumerState<SelfUseAcceptancePage> {
             child: Text(
               '只有 14 天记录齐全后，才进入人工验收：逐条复核硬性规则、页面速度、手机触控和阻断性问题。这个页面不会替代真实连续使用。',
               style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                    color: AppColors.textSecondary,
+                    color: TrainFlowTokens.darkTrainingMuted,
                   ),
             ),
           ),
@@ -263,7 +263,7 @@ class _OverviewCard extends StatelessWidget {
         children: [
           Row(
             children: [
-              const Icon(Icons.fact_check_outlined, color: AppColors.primary),
+              const Icon(Icons.fact_check_outlined, color: TrainFlowTokens.accent),
               const SizedBox(width: 8),
               Expanded(
                 child: Text(
@@ -271,7 +271,7 @@ class _OverviewCard extends StatelessWidget {
                   style: Theme.of(context)
                       .textTheme
                       .titleMedium
-                      ?.copyWith(fontWeight: FontWeight.w800),
+                      ?.copyWith(fontWeight: FontWeight.w600),
                 ),
               ),
               ToneBadge(
@@ -289,7 +289,7 @@ class _OverviewCard extends StatelessWidget {
             LinearProgressIndicator(
               value: progress,
               minHeight: 8,
-              color: AppColors.primary,
+              color: TrainFlowTokens.accent,
               backgroundColor: AppColors.primary.withValues(alpha: 0.12),
               borderRadius: BorderRadius.circular(999),
             ),
@@ -297,7 +297,7 @@ class _OverviewCard extends StatelessWidget {
             Text(
               '开始日期：${_formatDate(record.startedAt!)}',
               style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                    color: AppColors.textSecondary,
+                    color: TrainFlowTokens.darkTrainingMuted,
                   ),
             ),
           ],
@@ -323,7 +323,7 @@ class _StartCard extends StatelessWidget {
             style: Theme.of(context)
                 .textTheme
                 .titleMedium
-                ?.copyWith(fontWeight: FontWeight.w800),
+                ?.copyWith(fontWeight: FontWeight.w600),
           ),
           const SizedBox(height: 8),
           const Text('每天完成后勾选，不要求为了通过验收而编造训练记录。'),
@@ -376,7 +376,7 @@ class _DailyAcceptanceCard extends StatelessWidget {
                   style: Theme.of(context)
                       .textTheme
                       .titleMedium
-                      ?.copyWith(fontWeight: FontWeight.w800),
+                      ?.copyWith(fontWeight: FontWeight.w600),
                 ),
               ),
               ToneBadge(

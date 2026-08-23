@@ -43,7 +43,7 @@ class ActivityImportPage extends ConsumerWidget {
             child: Text(
               '还没有导入记录。选择 GPX 文件或粘贴 FIT 摘要后，这里会显示训练效果和路线。',
               style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                    color: AppColors.textSecondary,
+                    color: TrainFlowTokens.darkTrainingMuted,
                   ),
             ),
           )
@@ -68,7 +68,7 @@ class _ActivityImportEditor extends ConsumerWidget {
         children: [
           Row(
             children: [
-              const Icon(Icons.upload_file, color: AppColors.primary),
+              const Icon(Icons.upload_file, color: TrainFlowTokens.accent),
               const SizedBox(width: 8),
               Expanded(
                 child: Text(
@@ -76,7 +76,7 @@ class _ActivityImportEditor extends ConsumerWidget {
                   style: Theme.of(context)
                       .textTheme
                       .titleMedium
-                      ?.copyWith(fontWeight: FontWeight.w800),
+                      ?.copyWith(fontWeight: FontWeight.w600),
                 ),
               ),
               const ToneBadge(label: '本地解析'),
@@ -86,7 +86,7 @@ class _ActivityImportEditor extends ConsumerWidget {
           Text(
             'GPX 使用系统文件选择器，原始经纬度只参与本次计算；持久化时仅保留去地理化路线形状。',
             style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                  color: AppColors.textSecondary,
+                  color: TrainFlowTokens.darkTrainingMuted,
                 ),
           ),
           const SizedBox(height: 12),
@@ -102,7 +102,7 @@ class _ActivityImportEditor extends ConsumerWidget {
           Text(
             '也可以粘贴 GPX 内容或 FIT 文本摘要：',
             style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                  color: AppColors.textSecondary,
+                  color: TrainFlowTokens.darkTrainingMuted,
                 ),
           ),
           const SizedBox(height: 8),
@@ -177,7 +177,7 @@ class _ActivityImportResultCard extends StatelessWidget {
         children: [
           Row(
             children: [
-              const Icon(Icons.fact_check, color: AppColors.secondary),
+              const Icon(Icons.fact_check, color: TrainFlowTokens.accent),
               const SizedBox(width: 8),
               Expanded(
                 child: Text(
@@ -185,7 +185,7 @@ class _ActivityImportResultCard extends StatelessWidget {
                   style: Theme.of(context)
                       .textTheme
                       .titleMedium
-                      ?.copyWith(fontWeight: FontWeight.w800),
+                      ?.copyWith(fontWeight: FontWeight.w600),
                 ),
               ),
               if (workout != null) ToneBadge(label: workout.source.label),
@@ -241,7 +241,7 @@ class _ImportedWorkoutCard extends ConsumerWidget {
                       style: Theme.of(context)
                           .textTheme
                           .titleMedium
-                          ?.copyWith(fontWeight: FontWeight.w800),
+                          ?.copyWith(fontWeight: FontWeight.w600),
                     ),
                   ),
                   ToneBadge(
@@ -256,7 +256,7 @@ class _ImportedWorkoutCard extends ConsumerWidget {
               Text(
                 '${workout.summary} · 爬升 ${workout.elevationGainMeters} m · 平均心率 ${workout.averageHeartRate} bpm',
                 style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                      color: AppColors.textSecondary,
+                      color: TrainFlowTokens.darkTrainingMuted,
                     ),
               ),
             ],

@@ -7,7 +7,9 @@ import 'package:go_router/go_router.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 import '../../../app/router/app_routes.dart';
+import '../../../core/constants/app_brand.dart';
 import '../../../core/constants/app_colors.dart';
+import '../../../core/design_system/trainmate_primitives.dart';
 import '../../../core/widgets/trainmate_branding.dart';
 import '../../../core/widgets/trainmate_showcase_widgets.dart';
 import '../../../core/widgets/trainflow_widgets.dart';
@@ -89,7 +91,7 @@ class _PersonalProfileWelcomePageState
             children: <Widget>[
               const Text(
                 '文字或本地语音输入',
-                style: TextStyle(fontWeight: FontWeight.w900, fontSize: 18),
+                style: TextStyle(fontWeight: FontWeight.w700, fontSize: 18),
               ),
               const SizedBox(height: 10),
               TextField(
@@ -112,9 +114,10 @@ class _PersonalProfileWelcomePageState
                   ),
                   const SizedBox(width: 10),
                   Expanded(
-                    child: FilledButton(
+                    child: TrainMateButton(
+                      label: '识别为待确认字段',
                       onPressed: _parse,
-                      child: const Text('识别为待确认字段'),
+                      expand: true,
                     ),
                   ),
                 ],
@@ -122,7 +125,7 @@ class _PersonalProfileWelcomePageState
               const SizedBox(height: 8),
               const Text(
                 '音频不会上传；识别后立即清除原始文字，只保留你确认的结构化字段。',
-                style: TextStyle(color: AppColors.textSecondary, fontSize: 12),
+                style: TextStyle(color: TrainFlowTokens.darkTrainingMuted, fontSize: 12),
               ),
             ],
           ),
@@ -153,7 +156,7 @@ class _PersonalProfileWelcomePageState
             style: Theme.of(context)
                 .textTheme
                 .titleLarge
-                ?.copyWith(fontWeight: FontWeight.w900),
+                ?.copyWith(fontWeight: FontWeight.w700),
           ),
           const SizedBox(height: 12),
           _field(_nickname, '昵称'),
@@ -189,7 +192,7 @@ class _PersonalProfileWelcomePageState
           if (parsed.injuries.isNotEmpty) ...<Widget>[
             const SizedBox(height: 12),
             const Text('伤病限制（不作疾病诊断）',
-                style: TextStyle(fontWeight: FontWeight.w800)),
+                style: TextStyle(fontWeight: FontWeight.w600)),
             const SizedBox(height: 6),
             for (final StructuredInjuryProfile injury in parsed.injuries)
               Text(
@@ -294,7 +297,7 @@ class _PersonalProfileWelcomePageState
         .confirmPersonal(confirmed);
     if (!mounted) return;
     if (!accepted) {
-      setState(() => _message = '智练 TrainMate 目前仅向18岁以上用户开放');
+      setState(() => _message = '${AppBrand.displayName} 目前仅向18岁以上用户开放');
       return;
     }
     context.go(AppRoutes.welcomeTraining);
@@ -424,7 +427,7 @@ class _TrainingBaselineWelcomePageState
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: <Widget>[
-          Text(title, style: const TextStyle(fontWeight: FontWeight.w900)),
+          Text(title, style: const TextStyle(fontWeight: FontWeight.w700)),
           const SizedBox(height: 8),
           Wrap(
             spacing: 8,
@@ -607,7 +610,7 @@ class MembershipWelcomePage extends ConsumerWidget {
       title: '解锁个性化计划',
       layout: TrainFlowPageLayout.form,
       subtitle: '4/4 · 订阅可随时在 Apple 账号中管理',
-      eyebrow: '智练 TrainMate 月度会员',
+      eyebrow: '${AppBrand.displayName} 月度会员',
       artwork: const TrainMateIllustration(
         assetPath: 'assets/images/trainmate_growth_scene.png',
         semanticLabel: '循序渐进的训练成长插画',
@@ -621,7 +624,7 @@ class MembershipWelcomePage extends ConsumerWidget {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: <Widget>[
               Text('会员权益',
-                  style: TextStyle(fontWeight: FontWeight.w900, fontSize: 20)),
+                  style: TextStyle(fontWeight: FontWeight.w700, fontSize: 20)),
               SizedBox(height: 10),
               Text('• AI个性化计划\n• 月度更新\n• 动态重排\n• 训练依据说明'),
             ],
@@ -635,7 +638,7 @@ class MembershipWelcomePage extends ConsumerWidget {
                 style: Theme.of(context)
                     .textTheme
                     .headlineSmall
-                    ?.copyWith(fontWeight: FontWeight.w900),
+                    ?.copyWith(fontWeight: FontWeight.w700),
               ),
               const SizedBox(height: 8),
               const Text('订阅会自动续费；不订阅仍可浏览动作库、已有计划和历史数据。'),

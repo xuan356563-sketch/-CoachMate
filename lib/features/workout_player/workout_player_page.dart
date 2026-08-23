@@ -438,13 +438,13 @@ class _WorkoutReviewSheetState extends ConsumerState<_WorkoutReviewSheet> {
                 style: Theme.of(context)
                     .textTheme
                     .titleLarge
-                    ?.copyWith(fontWeight: FontWeight.w800),
+                    ?.copyWith(fontWeight: FontWeight.w600),
               ),
               const SizedBox(height: 6),
               Text(
                 widget.workout.title,
                 style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                      color: AppColors.textSecondary,
+                      color: TrainFlowTokens.darkTrainingMuted,
                     ),
               ),
               const SizedBox(height: 16),
@@ -483,7 +483,7 @@ class _WorkoutReviewSheetState extends ConsumerState<_WorkoutReviewSheet> {
                 style: Theme.of(context)
                     .textTheme
                     .titleMedium
-                    ?.copyWith(fontWeight: FontWeight.w800),
+                    ?.copyWith(fontWeight: FontWeight.w600),
               ),
               const SizedBox(height: 8),
               Wrap(
@@ -509,7 +509,7 @@ class _WorkoutReviewSheetState extends ConsumerState<_WorkoutReviewSheet> {
                 style: Theme.of(context)
                     .textTheme
                     .titleMedium
-                    ?.copyWith(fontWeight: FontWeight.w800),
+                    ?.copyWith(fontWeight: FontWeight.w600),
               ),
               const SizedBox(height: 8),
               Wrap(
@@ -594,7 +594,7 @@ class _WorkoutReviewSheetState extends ConsumerState<_WorkoutReviewSheet> {
                   style: Theme.of(context)
                       .textTheme
                       .titleMedium
-                      ?.copyWith(fontWeight: FontWeight.w800),
+                      ?.copyWith(fontWeight: FontWeight.w600),
                 ),
                 const SizedBox(height: 10),
                 for (int index = 0;
@@ -690,7 +690,7 @@ class _ExerciseExecutionFields extends StatelessWidget {
         : '未从计划文本识别组数，可按实际填写。';
     return DecoratedBox(
       decoration: BoxDecoration(
-        color: AppColors.primaryLightest,
+        color: TrainFlowTokens.darkTrainingRaised,
         borderRadius: BorderRadius.circular(8),
       ),
       child: Padding(
@@ -703,13 +703,13 @@ class _ExerciseExecutionFields extends StatelessWidget {
               style: Theme.of(context)
                   .textTheme
                   .bodyMedium
-                  ?.copyWith(fontWeight: FontWeight.w800),
+                  ?.copyWith(fontWeight: FontWeight.w600),
             ),
             const SizedBox(height: 4),
             Text(
               plannedLabel,
               style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                    color: AppColors.textSecondary,
+                    color: TrainFlowTokens.darkTrainingMuted,
                   ),
             ),
             if (draft.requestsLandingQuality) ...[
@@ -774,13 +774,13 @@ class _ExerciseExecutionFields extends StatelessWidget {
               style: Theme.of(context)
                   .textTheme
                   .bodyMedium
-                  ?.copyWith(fontWeight: FontWeight.w800),
+                  ?.copyWith(fontWeight: FontWeight.w600),
             ),
             const SizedBox(height: 6),
             Text(
               '只有勾选完成的组会写入 strength_sets；每组可记录不同重量、次数、RPE 和用时。',
               style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                    color: AppColors.textSecondary,
+                    color: TrainFlowTokens.darkTrainingMuted,
                   ),
             ),
             const SizedBox(height: 8),
@@ -920,7 +920,7 @@ class _PlayerStatusCard extends StatelessWidget {
         children: [
           Row(
             children: [
-              const Icon(Icons.play_circle_fill, color: AppColors.primary),
+              const Icon(Icons.play_circle_fill, color: TrainFlowTokens.accent),
               const SizedBox(width: 8),
               Expanded(
                 child: Text(
@@ -928,7 +928,7 @@ class _PlayerStatusCard extends StatelessWidget {
                   style: Theme.of(context)
                       .textTheme
                       .titleLarge
-                      ?.copyWith(fontWeight: FontWeight.w800),
+                      ?.copyWith(fontWeight: FontWeight.w600),
                 ),
               ),
               ToneBadge(label: state.workoutPlayerProgressLabel),
@@ -959,7 +959,7 @@ class _PlayerStatusCard extends StatelessWidget {
           Text(
             state.workoutPlayerStatusMessage,
             style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                  color: AppColors.textSecondary,
+                  color: TrainFlowTokens.darkTrainingMuted,
                 ),
           ),
         ],
@@ -993,7 +993,7 @@ class _CurrentStepCard extends StatelessWidget {
         children: [
           Row(
             children: [
-              const Icon(Icons.fitness_center, color: AppColors.primary),
+              const Icon(Icons.fitness_center, color: TrainFlowTokens.accent),
               const SizedBox(width: 8),
               Expanded(
                 child: Text(
@@ -1001,7 +1001,7 @@ class _CurrentStepCard extends StatelessWidget {
                   style: Theme.of(context)
                       .textTheme
                       .headlineSmall
-                      ?.copyWith(fontWeight: FontWeight.w900),
+                      ?.copyWith(fontWeight: FontWeight.w700),
                 ),
               ),
               if (state.workoutPlayerDeloaded)
@@ -1014,13 +1014,13 @@ class _CurrentStepCard extends StatelessWidget {
             style: Theme.of(context)
                 .textTheme
                 .bodyMedium
-                ?.copyWith(fontWeight: FontWeight.w800),
+                ?.copyWith(fontWeight: FontWeight.w600),
           ),
           const SizedBox(height: 8),
           LinearProgressIndicator(
             value: state.workoutPlayerCountdownProgress,
             minHeight: 8,
-            color: AppColors.primary,
+            color: TrainFlowTokens.accent,
             backgroundColor: AppColors.primary.withValues(alpha: 0.12),
             borderRadius: BorderRadius.circular(999),
           ),
@@ -1028,7 +1028,7 @@ class _CurrentStepCard extends StatelessWidget {
           Text(
             '剩余 ${state.workoutPlayerRemainingLabel} · 预计 ${step.durationLabel}',
             style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                  color: AppColors.textSecondary,
+                  color: TrainFlowTokens.darkTrainingMuted,
                 ),
           ),
           const SizedBox(height: 14),
@@ -1041,7 +1041,7 @@ class _CurrentStepCard extends StatelessWidget {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   const Icon(Icons.check_circle_outline,
-                      color: AppColors.primary, size: 18),
+                      color: TrainFlowTokens.accent, size: 18),
                   const SizedBox(width: 8),
                   Expanded(child: Text(cue)),
                 ],
@@ -1070,7 +1070,7 @@ class _ActionMediaPreview extends StatelessWidget {
       width: double.infinity,
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
-        color: AppColors.primaryLightest,
+        color: TrainFlowTokens.darkTrainingRaised,
         borderRadius: BorderRadius.circular(8),
       ),
       child: Column(
@@ -1081,7 +1081,7 @@ class _ActionMediaPreview extends StatelessWidget {
             style: Theme.of(context)
                 .textTheme
                 .titleSmall
-                ?.copyWith(fontWeight: FontWeight.w800),
+                ?.copyWith(fontWeight: FontWeight.w600),
           ),
           const SizedBox(height: 8),
           ExerciseMedia(exercise: exercises.first, compact: true),
@@ -1090,7 +1090,7 @@ class _ActionMediaPreview extends StatelessWidget {
             Text(
               '本步骤另有关联动作 ${exercises.length - 1} 个，详情页可逐个查看。',
               style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                    color: AppColors.textSecondary,
+                    color: TrainFlowTokens.darkTrainingMuted,
                   ),
             ),
           ],
@@ -1109,14 +1109,14 @@ class _PlayerMediaFallback extends StatelessWidget {
       width: double.infinity,
       padding: const EdgeInsets.all(18),
       decoration: BoxDecoration(
-        color: AppColors.primaryLightest,
+        color: TrainFlowTokens.darkTrainingRaised,
         borderRadius: BorderRadius.circular(8),
       ),
       child: const Column(
         children: [
           Icon(
             Icons.animation_outlined,
-            color: AppColors.primary,
+            color: TrainFlowTokens.accent,
             size: 42,
           ),
           SizedBox(height: 8),
@@ -1146,7 +1146,7 @@ class _PlayerAssistCard extends ConsumerWidget {
         children: [
           Row(
             children: [
-              const Icon(Icons.record_voice_over, color: AppColors.secondary),
+              const Icon(Icons.record_voice_over, color: TrainFlowTokens.accent),
               const SizedBox(width: 8),
               Expanded(
                 child: Text(
@@ -1154,7 +1154,7 @@ class _PlayerAssistCard extends ConsumerWidget {
                   style: Theme.of(context)
                       .textTheme
                       .titleMedium
-                      ?.copyWith(fontWeight: FontWeight.w800),
+                      ?.copyWith(fontWeight: FontWeight.w600),
                 ),
               ),
               ToneBadge(label: state.workoutPlayerVoiceSummaryLabel),
@@ -1164,7 +1164,7 @@ class _PlayerAssistCard extends ConsumerWidget {
           Text(
             state.workoutPlayerVoiceStatusMessage,
             style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                  color: AppColors.textSecondary,
+                  color: TrainFlowTokens.darkTrainingMuted,
                 ),
           ),
           const SizedBox(height: 8),
@@ -1184,7 +1184,7 @@ class _PlayerAssistCard extends ConsumerWidget {
                 child: MetricPill(
                   label: '提示条数',
                   value: '${state.workoutPlayerVoiceQueue.length} 条',
-                  color: AppColors.secondary,
+                  color: TrainFlowTokens.accent,
                 ),
               ),
             ],
@@ -1193,7 +1193,7 @@ class _PlayerAssistCard extends ConsumerWidget {
           Text(
             state.workoutPlayerScreenAwakeStatusMessage,
             style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                  color: AppColors.textSecondary,
+                  color: TrainFlowTokens.darkTrainingMuted,
                 ),
           ),
           const SizedBox(height: 12),
@@ -1265,7 +1265,7 @@ class _PlayerActionCard extends ConsumerWidget {
               style: Theme.of(context)
                   .textTheme
                   .titleLarge
-                  ?.copyWith(fontWeight: FontWeight.w800),
+                  ?.copyWith(fontWeight: FontWeight.w600),
             ),
             const SizedBox(height: 8),
             const Text('执行记录已写入 workout_logs，可作为后续画像和训练调整信号。'),
@@ -1280,7 +1280,7 @@ class _PlayerActionCard extends ConsumerWidget {
                     style: Theme.of(context)
                         .textTheme
                         .bodyMedium
-                        ?.copyWith(fontWeight: FontWeight.w800),
+                        ?.copyWith(fontWeight: FontWeight.w600),
                   ),
                 ],
               ),
@@ -1288,7 +1288,7 @@ class _PlayerActionCard extends ConsumerWidget {
               Text(
                 review.sessionReviewSummary,
                 style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                      color: AppColors.textSecondary,
+                      color: TrainFlowTokens.darkTrainingMuted,
                     ),
               ),
               if (review.interruptionReason != null) ...[
@@ -1296,7 +1296,7 @@ class _PlayerActionCard extends ConsumerWidget {
                 Text(
                   '中断原因：${review.interruptionReason}',
                   style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                        color: AppColors.textSecondary,
+                        color: TrainFlowTokens.darkTrainingMuted,
                       ),
                 ),
               ],
@@ -1352,7 +1352,7 @@ class _PlayerActionCard extends ConsumerWidget {
             style: Theme.of(context)
                 .textTheme
                 .titleMedium
-                ?.copyWith(fontWeight: FontWeight.w800),
+                ?.copyWith(fontWeight: FontWeight.w600),
           ),
           const SizedBox(height: 12),
           Row(
@@ -1451,7 +1451,7 @@ class _PlayerEventCard extends StatelessWidget {
             style: Theme.of(context)
                 .textTheme
                 .titleMedium
-                ?.copyWith(fontWeight: FontWeight.w800),
+                ?.copyWith(fontWeight: FontWeight.w600),
           ),
           const SizedBox(height: 10),
           if (events.isEmpty)

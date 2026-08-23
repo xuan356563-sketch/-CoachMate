@@ -46,7 +46,7 @@ class _RouteReplayCardState extends State<RouteReplayCard>
         children: [
           Row(
             children: [
-              const Icon(Icons.route_outlined, color: AppColors.primary),
+              const Icon(Icons.route_outlined, color: TrainFlowTokens.accent),
               const SizedBox(width: 8),
               Expanded(
                 child: Text(
@@ -54,7 +54,7 @@ class _RouteReplayCardState extends State<RouteReplayCard>
                   style: Theme.of(context)
                       .textTheme
                       .titleSmall
-                      ?.copyWith(fontWeight: FontWeight.w900),
+                      ?.copyWith(fontWeight: FontWeight.w700),
                 ),
               ),
               const ToneBadge(label: '本地 · 去地理化'),
@@ -64,7 +64,7 @@ class _RouteReplayCardState extends State<RouteReplayCard>
           Text(
             '仅保存路线形状，不保存原始经纬度，也不请求地图服务。',
             style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                  color: AppColors.textSecondary,
+                  color: TrainFlowTokens.darkTrainingMuted,
                 ),
           ),
           const SizedBox(height: 12),
@@ -170,7 +170,7 @@ class _RouteShapePainter extends CustomPainter {
         );
 
     final Paint basePaint = Paint()
-      ..color = AppColors.textSecondary.withValues(alpha: 0.25)
+      ..color = TrainFlowTokens.darkTrainingMuted.withValues(alpha: 0.25)
       ..style = PaintingStyle.stroke
       ..strokeWidth = 3
       ..strokeCap = StrokeCap.round

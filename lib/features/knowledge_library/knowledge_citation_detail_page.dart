@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../app/router/app_routes.dart';
-import '../../core/constants/app_colors.dart';
 import '../../core/widgets/trainflow_widgets.dart';
 import '../../data/models/ai_knowledge_citation.dart';
 import '../dashboard/training_mvp_controller.dart';
@@ -40,7 +39,7 @@ class KnowledgeCitationDetailPage extends ConsumerWidget {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              const Icon(Icons.verified_outlined, color: AppColors.primary),
+              const Icon(Icons.verified_outlined, color: TrainFlowTokens.accent),
               const SizedBox(height: 12),
               InfoRow(label: '来源', value: citation.sourceLabel),
               InfoRow(label: '章节', value: citation.sourceSection),
@@ -50,7 +49,7 @@ class KnowledgeCitationDetailPage extends ConsumerWidget {
               Text(
                 '该条目来自当前处方使用的审核知识快照。它只说明处方依据，不替代动作详情中的本地证据来源。',
                 style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                      color: AppColors.textSecondary,
+                      color: TrainFlowTokens.darkTrainingMuted,
                     ),
               ),
             ],

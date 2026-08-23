@@ -41,7 +41,7 @@ class RhythmDetailPage extends ConsumerWidget {
               contentPadding: EdgeInsets.zero,
               leading: const Icon(
                 Icons.fact_check_outlined,
-                color: AppColors.primary,
+                color: TrainFlowTokens.accent,
               ),
               title: const Text('15 天复盘'),
               subtitle: Text(
@@ -58,7 +58,7 @@ class RhythmDetailPage extends ConsumerWidget {
             child: Row(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Icon(Icons.info_outline, color: AppColors.textSecondary),
+                Icon(Icons.info_outline, color: TrainFlowTokens.darkTrainingMuted),
                 SizedBox(width: 10),
                 Expanded(
                   child: Text(
@@ -110,7 +110,7 @@ class _RhythmHeroCard extends StatelessWidget {
                     child: CircularProgressIndicator(
                       value: ((snapshot.speed - 0.6) / 0.8).clamp(0, 1),
                       strokeWidth: 14,
-                      color: AppColors.primary,
+                      color: TrainFlowTokens.accent,
                       backgroundColor:
                           AppColors.primary.withValues(alpha: 0.12),
                       strokeCap: StrokeCap.round,
@@ -124,13 +124,13 @@ class _RhythmHeroCard extends StatelessWidget {
                         style: Theme.of(context)
                             .textTheme
                             .displaySmall
-                            ?.copyWith(fontWeight: FontWeight.w900),
+                            ?.copyWith(fontWeight: FontWeight.w700),
                       ),
                       Text(
                         secondaryText,
                         textAlign: TextAlign.center,
                         style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                              color: AppColors.textSecondary,
+                              color: TrainFlowTokens.darkTrainingMuted,
                             ),
                       ),
                     ],
@@ -144,13 +144,13 @@ class _RhythmHeroCard extends StatelessWidget {
               style: Theme.of(context)
                   .textTheme
                   .titleLarge
-                  ?.copyWith(fontWeight: FontWeight.w900),
+                  ?.copyWith(fontWeight: FontWeight.w700),
             ),
             const SizedBox(height: 6),
             Text(
               '算法 ${snapshot.configVersion} · 每周更新一次',
               style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                    color: AppColors.textSecondary,
+                    color: TrainFlowTokens.darkTrainingMuted,
                   ),
             ),
           ],
@@ -181,7 +181,7 @@ class _RhythmSpeedCard extends StatelessWidget {
                     Text(
                       '近期节奏速度',
                       style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                            color: AppColors.textSecondary,
+                            color: TrainFlowTokens.darkTrainingMuted,
                           ),
                     ),
                     Text(
@@ -189,7 +189,7 @@ class _RhythmSpeedCard extends StatelessWidget {
                       style: Theme.of(context)
                           .textTheme
                           .titleLarge
-                          ?.copyWith(fontWeight: FontWeight.w900),
+                          ?.copyWith(fontWeight: FontWeight.w700),
                     ),
                   ],
                 ),
@@ -197,8 +197,8 @@ class _RhythmSpeedCard extends StatelessWidget {
               Text(
                 '${snapshot.speed.toStringAsFixed(1)}×',
                 style: Theme.of(context).textTheme.headlineMedium?.copyWith(
-                      color: AppColors.primary,
-                      fontWeight: FontWeight.w900,
+                      color: TrainFlowTokens.accent,
+                      fontWeight: FontWeight.w700,
                     ),
               ),
             ],
@@ -236,7 +236,7 @@ class _RhythmSpeedCard extends StatelessWidget {
                             color: Colors.white,
                             shape: BoxShape.circle,
                             border: Border.all(
-                              color: AppColors.textPrimary,
+                              color: TrainFlowTokens.darkTrainingOnSurface,
                               width: 2,
                             ),
                           ),
@@ -283,7 +283,7 @@ class _FactorCard extends StatelessWidget {
             style: Theme.of(context)
                 .textTheme
                 .titleLarge
-                ?.copyWith(fontWeight: FontWeight.w900),
+                ?.copyWith(fontWeight: FontWeight.w700),
           ),
           const SizedBox(height: 8),
           for (final RhythmFactor factor in RhythmFactor.values) ...[
@@ -315,7 +315,7 @@ class _FactorRow extends StatelessWidget {
         children: [
           CircleAvatar(
             backgroundColor: AppColors.primary.withValues(alpha: 0.10),
-            child: Icon(icon, color: AppColors.primary),
+            child: Icon(icon, color: TrainFlowTokens.accent),
           ),
           const SizedBox(width: 12),
           Expanded(
@@ -324,12 +324,12 @@ class _FactorRow extends StatelessWidget {
               children: [
                 Text(
                   result.factor.label,
-                  style: const TextStyle(fontWeight: FontWeight.w800),
+                  style: const TextStyle(fontWeight: FontWeight.w600),
                 ),
                 Text(
                   result.summary,
                   style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                        color: AppColors.textSecondary,
+                        color: TrainFlowTokens.darkTrainingMuted,
                       ),
                 ),
               ],
@@ -342,8 +342,8 @@ class _FactorRow extends StatelessWidget {
             style: TextStyle(
               color: result.isSufficient
                   ? AppColors.primary
-                  : AppColors.textSecondary,
-              fontWeight: FontWeight.w800,
+                  : TrainFlowTokens.darkTrainingMuted,
+              fontWeight: FontWeight.w600,
             ),
           ),
         ],

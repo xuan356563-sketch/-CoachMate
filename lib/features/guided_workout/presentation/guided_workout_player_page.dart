@@ -5,7 +5,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../app/router/app_routes.dart';
-import '../../../core/constants/app_colors.dart';
 import '../../../core/widgets/exercise_media.dart';
 import '../../../core/widgets/trainmate_showcase_widgets.dart';
 import '../../../core/widgets/trainflow_widgets.dart';
@@ -209,7 +208,7 @@ class _GuidedWorkoutPlayerPageState
                   style: Theme.of(context)
                       .textTheme
                       .titleLarge
-                      ?.copyWith(fontWeight: FontWeight.w800),
+                      ?.copyWith(fontWeight: FontWeight.w600),
                 ),
                 const SizedBox(height: 12),
                 InfoRow(
@@ -274,7 +273,7 @@ class _GuidedWorkoutPlayerPageState
                 style: Theme.of(context)
                     .textTheme
                     .headlineSmall
-                    ?.copyWith(fontWeight: FontWeight.w900),
+                    ?.copyWith(fontWeight: FontWeight.w700),
               ),
               const SizedBox(height: 12),
               Semantics(
@@ -292,8 +291,8 @@ class _GuidedWorkoutPlayerPageState
                   key: const ValueKey<String>('guided-workout-countdown'),
                   textAlign: TextAlign.center,
                   style: Theme.of(context).textTheme.displayLarge?.copyWith(
-                        color: AppColors.primary,
-                        fontWeight: FontWeight.w900,
+                        color: TrainFlowTokens.accent,
+                        fontWeight: FontWeight.w700,
                       ),
                 ),
               ),
@@ -323,7 +322,7 @@ class _GuidedWorkoutPlayerPageState
                 style: Theme.of(context)
                     .textTheme
                     .titleMedium
-                    ?.copyWith(fontWeight: FontWeight.w800),
+                    ?.copyWith(fontWeight: FontWeight.w600),
               ),
               const SizedBox(height: 8),
               if (segment.kind == GuidedWorkoutSegmentKind.exercise)
@@ -368,7 +367,7 @@ class _GuidedWorkoutPlayerPageState
         Text(
           assist.screenAwakeStatusMessage,
           style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                color: AppColors.textSecondary,
+                color: TrainFlowTokens.darkTrainingMuted,
               ),
         ),
       ],

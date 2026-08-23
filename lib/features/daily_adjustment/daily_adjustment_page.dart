@@ -74,7 +74,7 @@ class _DecisionSummaryCard extends StatelessWidget {
         children: [
           Row(
             children: [
-              const Icon(Icons.tune, color: AppColors.primary),
+              const Icon(Icons.tune, color: TrainFlowTokens.accent),
               const SizedBox(width: 8),
               Expanded(
                 child: Text(
@@ -82,7 +82,7 @@ class _DecisionSummaryCard extends StatelessWidget {
                   style: Theme.of(context)
                       .textTheme
                       .titleLarge
-                      ?.copyWith(fontWeight: FontWeight.w800),
+                      ?.copyWith(fontWeight: FontWeight.w600),
                 ),
               ),
               ToneBadge(
@@ -106,7 +106,7 @@ class _DecisionSummaryCard extends StatelessWidget {
                 child: MetricPill(
                   label: '调整后时长',
                   value: '${decision.adjustedMinutes} 分钟',
-                  color: AppColors.secondary,
+                  color: TrainFlowTokens.accent,
                 ),
               ),
             ],
@@ -140,7 +140,7 @@ class _RealityConstraintCard extends ConsumerWidget {
             style: Theme.of(context)
                 .textTheme
                 .titleMedium
-                ?.copyWith(fontWeight: FontWeight.w800),
+                ?.copyWith(fontWeight: FontWeight.w600),
           ),
           const SizedBox(height: 12),
           _ConstraintGroup(
@@ -276,7 +276,7 @@ class _ConstraintGroup extends StatelessWidget {
             style: Theme.of(context)
                 .textTheme
                 .bodyMedium
-                ?.copyWith(fontWeight: FontWeight.w800),
+                ?.copyWith(fontWeight: FontWeight.w600),
           ),
           const SizedBox(height: 8),
           Wrap(
@@ -332,7 +332,7 @@ class _AdjustmentStepsCard extends StatelessWidget {
             style: Theme.of(context)
                 .textTheme
                 .titleMedium
-                ?.copyWith(fontWeight: FontWeight.w800),
+                ?.copyWith(fontWeight: FontWeight.w600),
           ),
           const SizedBox(height: 10),
           Wrap(
@@ -340,7 +340,7 @@ class _AdjustmentStepsCard extends StatelessWidget {
             runSpacing: 8,
             children: [
               for (final String badge in decision.constraintBadges)
-                ToneBadge(label: badge, color: AppColors.secondary),
+                ToneBadge(label: badge, color: TrainFlowTokens.accent),
             ],
           ),
           const SizedBox(height: 12),
@@ -352,7 +352,7 @@ class _AdjustmentStepsCard extends StatelessWidget {
                 children: [
                   const Icon(
                     Icons.check_circle_outline,
-                    color: AppColors.primary,
+                    color: TrainFlowTokens.accent,
                     size: 18,
                   ),
                   const SizedBox(width: 8),
@@ -384,13 +384,13 @@ class _ApplyAdjustmentCard extends ConsumerWidget {
             style: Theme.of(context)
                 .textTheme
                 .titleMedium
-                ?.copyWith(fontWeight: FontWeight.w800),
+                ?.copyWith(fontWeight: FontWeight.w600),
           ),
           const SizedBox(height: 8),
           Text(
             state.dailyAdjustmentStatusMessage,
             style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                  color: AppColors.textSecondary,
+                  color: TrainFlowTokens.darkTrainingMuted,
                 ),
           ),
           const SizedBox(height: 12),
@@ -427,6 +427,6 @@ Color _decisionColor(TrainingDecisionType decisionType) {
     case TrainingDecisionType.technique:
       return AppColors.secondary;
     case TrainingDecisionType.rest:
-      return AppColors.textSecondary;
+      return TrainFlowTokens.darkTrainingMuted;
   }
 }
