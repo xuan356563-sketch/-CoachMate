@@ -165,7 +165,7 @@ void main() {
     await tester.pumpWidget(harness.buildApp(const TrainFlowApp()));
     await tester.pumpAndSettle();
 
-    await tester.tap(find.byKey(const Key('bottom-nav-item-2')));
+    await tester.tap(find.byKey(const Key('bottom-nav-item-1')));
     await tester.pumpAndSettle();
 
     final Finder prompt = find.text('首次进入请填写基础资料');
