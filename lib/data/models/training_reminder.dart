@@ -47,8 +47,10 @@ class TrainingReminder {
     required this.enabled,
   });
 
+  /// 这些提醒只在 App 内展示，不会进入系统通知调度；系统推送按已确认的
+  /// 训练日程单独发送。状态文案不使用「已启用」，避免让用户以为到点会收到推送。
   String get statusLabel {
-    return enabled ? '已启用' : '已暂停';
+    return enabled ? 'App 内提示' : '已暂停';
   }
 }
 

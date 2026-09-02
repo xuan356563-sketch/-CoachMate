@@ -41,6 +41,10 @@ class ReminderSettingsState {
 
 /// 负责读取、保存和恢复提醒设置。
 class ReminderSettingsController extends Notifier<ReminderSettingsState> {
+  /// 同步请求序号：只有最新一次同步有权写回状态，避免先发后到的旧结果
+  /// 把用户刚保存的设置覆盖回去。
+  int _syncGeneration = 0;
+
   @override
   ReminderSettingsState build() {
     final TrainingReminderSettings settings =
@@ -122,7 +126,7 @@ class ReminderSettingsController extends Notifier<ReminderSettingsState> {
         followSchedule: state.settings.followSchedule,
         leadMinutes: value,
       ),
-      '将在训练开始前 $value 分钟提醒。',
+      '将在训练开始前约 $value 分钟提醒；系统省电策略可能让通知略微延后。',
     );
   }
 
@@ -137,34 +141,38 @@ class ReminderSettingsController extends Notifier<ReminderSettingsState> {
     TrainingReminderSettings settings, {
     bool requestPermission = false,
   }) async {
+    final int generation = ++_syncGeneration;
     final TrainingNotificationSyncResult result =
         await ref.read(trainingNotificationSchedulerProvider).synchronize(
               settings: settings,
               workouts: ref.read(trainingScheduleControllerProvider).workouts,
               requestPermission: requestPermission,
             );
-    if (!ref.mounted || state.settings.enabled != settings.enabled) return;
+    if (!ref.mounted || generation != _syncGeneration) return;
+    // 统一以仓库里的当前设置为准，不使用发起同步时捕获的旧值。
+    final ReminderSettingsRepository repository =
+        ref.read(reminderSettingsRepositoryProvider);
+    final TrainingReminderSettings current = repository.getSettings();
     switch (result.status) {
       case TrainingNotificationSyncStatus.disabled:
         return;
       case TrainingNotificationSyncStatus.permissionDenied:
-        final TrainingReminderSettings disabled =
-            ref.read(reminderSettingsRepositoryProvider).saveSettings(
-                  TrainingReminderSettings(
-                    enabled: false,
-                    preferredTimeLabel: settings.preferredTimeLabel,
-                    followSchedule: settings.followSchedule,
-                    leadMinutes: settings.leadMinutes,
-                  ),
-                );
+        final TrainingReminderSettings disabled = repository.saveSettings(
+          TrainingReminderSettings(
+            enabled: false,
+            preferredTimeLabel: current.preferredTimeLabel,
+            followSchedule: current.followSchedule,
+            leadMinutes: current.leadMinutes,
+          ),
+        );
         state = ReminderSettingsState(
           settings: disabled,
-          statusMessage: '系统通知权限未开启，已保留设置并回退为应用内提醒。',
+          statusMessage: '系统通知权限未开启，已关闭提醒开关；在系统设置中允许通知后可重新开启。',
         );
         return;
       case TrainingNotificationSyncStatus.scheduled:
         state = ReminderSettingsState(
-          settings: settings,
+          settings: current,
           statusMessage: result.scheduledCount == 0
               ? '系统提醒已开启；当前没有需要调度的未来训练。'
               : '已按本地时区安排 ${result.scheduledCount} 条系统训练提醒。',
@@ -172,8 +180,8 @@ class ReminderSettingsController extends Notifier<ReminderSettingsState> {
         return;
       case TrainingNotificationSyncStatus.unavailable:
         state = ReminderSettingsState(
-          settings: settings,
-          statusMessage: '系统提醒暂不可用，已回退为应用内提醒，不影响训练计划。',
+          settings: current,
+          statusMessage: '当前设备无法安排系统提醒，已排期的提醒可能已被清除；训练计划本身不受影响。',
         );
         return;
     }

@@ -18,7 +18,7 @@ class TrainingReminderPage extends ConsumerWidget {
 
     return TrainFlowPage(
       title: '提醒编排',
-      subtitle: '本地提醒 Mock：固定时间当天安排、睡眠差轻松版确认、恢复检查和周报提醒。',
+      subtitle: '下方卡片只在 App 内展示，不会发送系统推送；系统推送按已确认的训练日程单独发送。',
       children: [
         _ReminderSettingsCard(state: state),
         for (final TrainingReminder reminder in state.trainingReminders)
@@ -155,7 +155,7 @@ class _ReminderCard extends StatelessWidget {
             ],
           ),
           const SizedBox(height: 10),
-          InfoRow(label: '时间', value: reminder.timeLabel),
+          InfoRow(label: '建议时间', value: reminder.timeLabel),
           InfoRow(label: '状态', value: reminder.statusLabel),
           const SizedBox(height: 4),
           Text(reminder.reason),

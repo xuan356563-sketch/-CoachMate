@@ -101,6 +101,60 @@ void main() {
       isNot(gateway.requests.last.scheduledAt.timeZoneOffset),
     );
   });
+
+  test('夏令时切换当天仍按本地墙上时间调度固定提醒', () async {
+    final _FakeTrainingNotificationGateway gateway =
+        _FakeTrainingNotificationGateway(location: location);
+    await TrainingNotificationScheduler(gateway).synchronize(
+      settings: _settings(
+        enabled: true,
+        followSchedule: false,
+        preferredTimeLabel: '07:30',
+      ),
+      // 2026-03-08 是 America/Los_Angeles 的春季切换日，02:00 直接跳到 03:00。
+      workouts: <ScheduledWorkout>[_workout(DateTime(2026, 3, 8))],
+      now: DateTime(2026, 3, 1),
+    );
+
+    expect(gateway.requests.single.scheduledAt.hour, 7);
+    expect(gateway.requests.single.scheduledAt.minute, 30);
+  });
+
+  test('提前量跨过零点时提醒落在前一天而不是当天凌晨', () async {
+    final _FakeTrainingNotificationGateway gateway =
+        _FakeTrainingNotificationGateway(location: location);
+    await TrainingNotificationScheduler(gateway).synchronize(
+      settings: _settings(enabled: true, leadMinutes: 30),
+      workouts: <ScheduledWorkout>[
+        _workout(DateTime(2026, 8, 1), startMinute: 20),
+      ],
+      now: DateTime(2026, 7, 1),
+    );
+
+    final TrainingNotificationRequest request = gateway.requests.single;
+    expect(request.scheduledAt.day, 31);
+    expect(request.scheduledAt.month, 7);
+    expect(request.scheduledAt.hour, 23);
+    expect(request.scheduledAt.minute, 50);
+  });
+
+  test('同一批提醒使用互不相同的通知 ID', () async {
+    final _FakeTrainingNotificationGateway gateway =
+        _FakeTrainingNotificationGateway(location: location);
+    await TrainingNotificationScheduler(gateway).synchronize(
+      settings: _settings(enabled: true),
+      workouts: <ScheduledWorkout>[
+        for (int day = 1; day <= 20; day += 1)
+          _workout(DateTime(2026, 8, day), startMinute: 8 * 60),
+      ],
+      now: DateTime(2026, 7, 30, 12),
+    );
+
+    final Set<int> ids = gateway.requests
+        .map((TrainingNotificationRequest item) => item.id)
+        .toSet();
+    expect(ids.length, gateway.requests.length);
+  });
 }
 
 TrainingReminderSettings _settings({

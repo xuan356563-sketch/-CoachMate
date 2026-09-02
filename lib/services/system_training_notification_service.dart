@@ -68,7 +68,11 @@ class TrainingNotificationScheduler {
   }) async {
     try {
       if (!settings.enabled) {
-        await _gateway.cancelTrainingNotifications();
+        try {
+          await _gateway.cancelTrainingNotifications();
+        } catch (_) {
+          // 平台不支持系统通知时没有待取消的提醒，关闭状态本身仍然成立。
+        }
         return const TrainingNotificationSyncResult(
           status: TrainingNotificationSyncStatus.disabled,
         );
@@ -111,33 +115,41 @@ class TrainingNotificationScheduler {
     required timezone.Location location,
     required timezone.TZDateTime now,
   }) {
-    final List<TrainingNotificationRequest> requests =
-        <TrainingNotificationRequest>[];
+    final List<timezone.TZDateTime> moments = <timezone.TZDateTime>[];
     for (final ScheduledWorkout workout in workouts) {
       final int minute = settings.followSchedule
           ? workout.startMinute - settings.leadMinutes
           : _parseMinute(settings.preferredTimeLabel);
-      final timezone.TZDateTime dayStart = timezone.TZDateTime(
+      // 直接按本地墙上时间构造：TZDateTime 会处理夏令时切换，也会把超出
+      // 0-1439 的分钟数（提前量跨到前一天）规范化到正确日期。用 add 加绝对
+      // 时长会在切换当天偏移一小时。
+      final timezone.TZDateTime scheduledAt = timezone.TZDateTime(
         location,
         workout.scheduledDate.year,
         workout.scheduledDate.month,
         workout.scheduledDate.day,
+        0,
+        minute,
       );
-      final timezone.TZDateTime scheduledAt =
-          dayStart.add(Duration(minutes: minute));
       if (!scheduledAt.isAfter(now)) continue;
-      requests.add(
-        TrainingNotificationRequest(
-          id: _notificationId('${workout.id}|${scheduledAt.toIso8601String()}'),
-          scheduledAt: scheduledAt,
-        ),
-      );
+      moments.add(scheduledAt);
     }
-    requests.sort(
-      (TrainingNotificationRequest first, TrainingNotificationRequest second) =>
-          first.scheduledAt.compareTo(second.scheduledAt),
+    moments.sort(
+      (timezone.TZDateTime first, timezone.TZDateTime second) =>
+          first.compareTo(second),
     );
-    return requests.take(_maximumScheduledNotifications).toList();
+    // 每次同步都会先取消整个训练 ID 段再重排，因此按顺序分配 ID 即可，
+    // 既保持在专属区间内，也不会像哈希那样发生碰撞导致静默丢提醒。
+    final int count = moments.length < _maximumScheduledNotifications
+        ? moments.length
+        : _maximumScheduledNotifications;
+    return <TrainingNotificationRequest>[
+      for (int index = 0; index < count; index += 1)
+        TrainingNotificationRequest(
+          id: _trainingNotificationIdStart + index,
+          scheduledAt: moments[index],
+        ),
+    ];
   }
 
   int _parseMinute(String value) {
@@ -154,16 +166,6 @@ class TrainingNotificationScheduler {
       return 20 * 60 + 30;
     }
     return hour * 60 + minute;
-  }
-
-  int _notificationId(String value) {
-    int hash = 2166136261;
-    for (final int codeUnit in value.codeUnits) {
-      hash ^= codeUnit;
-      hash = (hash * 16777619) & 0x7fffffff;
-    }
-    return _trainingNotificationIdStart +
-        hash % (_trainingNotificationIdEnd - _trainingNotificationIdStart + 1);
   }
 }
 
@@ -301,7 +303,9 @@ class SystemTrainingNotificationGateway
             .resolvePlatformSpecificImplementation<
                 AndroidFlutterLocalNotificationsPlugin>()
             ?.requestNotificationsPermission();
-        return granted ?? true;
+        // 拿不到结果时按未授权处理：宁可提示用户去开权限，也不要在收不到
+        // 通知的情况下报告调度成功。与 iOS / macOS 分支保持一致。
+        return granted ?? false;
       case TargetPlatform.iOS:
         return await _plugin
                 .resolvePlatformSpecificImplementation<
@@ -383,7 +387,9 @@ class SystemTrainingNotificationGateway
         iOS: DarwinNotificationDetails(),
       ),
       androidScheduleMode: AndroidScheduleMode.inexactAllowWhileIdle,
-      payload: '/daily-check-in',
+      // 与通知正文「查看今日安排」指向同一个页面。当前还没有注册
+      // onDidReceiveNotificationResponse，点击通知只会打开 App。
+      payload: '/dashboard',
     );
   }
 
