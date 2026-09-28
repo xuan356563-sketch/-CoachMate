@@ -1,3 +1,6 @@
+import '../../../plugins/application/sport_skill_binding.dart';
+import '../../../plugins/application/feature_controller_binding.dart';
+import '../../../plugins/application/plugin_runtime_provider.dart';
 import 'dart:convert';
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -64,11 +67,30 @@ class TrainingPlanGenerationController
     extends AsyncNotifier<TrainingPlanGenerationUiState> {
   @override
   Future<TrainingPlanGenerationUiState> build() async {
+    bindFeatureController(ref, 'feature.training_plan', 'generation', this);
+    if (!ref.read(featureAccessProvider).isWritable('feature.training_plan')) {
+      return const TrainingPlanGenerationUiState(
+          capabilities: TrainingPrescriptionCapabilities.unavailable(),
+          knowledgeCatalog: null,
+          artifact: null,
+          isGenerating: false,
+          confirmedButNotActivated: false,
+          statusMessage: '计划功能已停用，已有版本可从历史记录查看。');
+    }
+    final operation = ref.read(featureAccessProvider).beginOperation(
+        'feature.training_plan',
+        dependencies: ['feature.ai_center']);
     try {
-      await ref.read(aiArtifactControllerProvider.notifier).sync();
+      await readFeatureController<AiArtifactController>(
+          ref,
+          'feature.ai_center',
+          'controller',
+          () => ref.read(aiArtifactControllerProvider.notifier)).sync();
+      operation.checkActive();
     } on Object {
       // 同步失败时继续使用本机 Artifact，不能让恢复入口整体失效。
     }
+    operation.checkActive();
     final AiArtifact? recoveredArtifact = _recoverUnactivatedArtifact();
     String? recoveryError;
     if (recoveredArtifact != null &&
@@ -77,6 +99,7 @@ class TrainingPlanGenerationController
         final PreExerciseClearance clearance =
             (await ref.read(preExerciseClearanceControllerProvider.future))
                 .clearance;
+        operation.checkActive();
         final DateTime clearanceNow =
             ref.read(preExerciseClearanceRealtimeClockProvider)();
         if (!clearance.isValidAt(clearanceNow)) {
@@ -93,20 +116,28 @@ class TrainingPlanGenerationController
             prescription.generationMeta.clientContextDigest != currentDigest) {
           recoveryError = '已确认处方对应的档案或赛事已变化，请重新生成。';
         } else if (recoveryError == null) {
-          ref.read(fourWeekPlanControllerProvider.notifier).createDraft(
-                prescription: prescription,
-                artifact: recoveredArtifact,
-              );
+          await readFeatureController<FourWeekPlanController>(
+                  ref,
+                  'feature.training_plan',
+                  'fourWeek',
+                  () => ref.read(fourWeekPlanControllerProvider.notifier))
+              .createDraft(
+            prescription: prescription,
+            artifact: recoveredArtifact,
+          );
         }
       } on Object {
         recoveryError = '已找到待恢复产物，但处方格式无效，不能激活。';
       }
     }
+    operation.checkActive();
     try {
       final TrainingPrescriptionCapabilities capabilities =
           await ref.read(aiApiProvider).trainingPrescriptionCapabilities();
+      operation.checkActive();
       final KnowledgeCatalogSummary knowledgeCatalog =
           await ref.read(aiApiProvider).knowledgeCatalog();
+      operation.checkActive();
       if (capabilities.skills.isNotEmpty) {
         final TrainingPrescriptionSkillCapability skill = capabilities.skills
                 .where(
@@ -115,13 +146,18 @@ class TrainingPlanGenerationController
                 )
                 .firstOrNull ??
             capabilities.skills.first;
-        ref.read(fourWeekPlanControllerProvider.notifier).discoverSkillVersion(
-              id: skill.id,
-              version: skill.version,
-              runtimeHash: skill.runtimeSha256,
-              sourceHash: skill.sourceSha256,
-              fragmentHashes: skill.fragmentSha256,
-            );
+        readFeatureController<FourWeekPlanController>(
+                ref,
+                'feature.training_plan',
+                'fourWeek',
+                () => ref.read(fourWeekPlanControllerProvider.notifier))
+            .discoverSkillVersion(
+          id: skill.id,
+          version: skill.version,
+          runtimeHash: skill.runtimeSha256,
+          sourceHash: skill.sourceSha256,
+          fragmentHashes: skill.fragmentSha256,
+        );
       }
       return TrainingPlanGenerationUiState(
         capabilities: capabilities,
@@ -157,11 +193,22 @@ class TrainingPlanGenerationController
     required String populationTemplateId,
     bool force = false,
   }) async {
+    final operation = ref
+        .read(featureAccessProvider)
+        .beginOperation('feature.training_plan', dependencies: [
+      'feature.ai_center',
+      ...ref
+          .read(fourWeekPlanControllerProvider)
+          .generation
+          .pluginRefs
+          .map((source) => source.id)
+    ]);
     final TrainingPlanGenerationUiState? current = state.value;
     if (current == null || current.isGenerating) return false;
     if (paidPlanGenerationGateEnabled) {
       final MembershipUiState membership =
           await ref.read(membershipControllerProvider.future);
+      operation.checkActive();
       if (!membership.entitlement.canGeneratePlan) {
         state = AsyncData<TrainingPlanGenerationUiState>(
           current.copyWith(statusMessage: '生成新计划需要有效会员；已有计划仍可查看和执行。'),
@@ -186,6 +233,7 @@ class TrainingPlanGenerationController
       return false;
     }
     final String? localBlocker = await _localEligibilityBlocker();
+    operation.checkActive();
     if (localBlocker != null) {
       state = AsyncData<TrainingPlanGenerationUiState>(
         current.copyWith(statusMessage: localBlocker),
@@ -207,6 +255,16 @@ class TrainingPlanGenerationController
       );
       return false;
     }
+    final runtime = ref.read(pluginRuntimeProvider);
+    final definition =
+        runtime.sportDirectory.require(profile.mainSports.first).definition;
+    final skillBlocker = cloudSportSkillBlocker(
+        runtime.registry.descriptors[definition.pluginRef.id]!,
+        current.capabilities);
+    if (skillBlocker != null) {
+      state = AsyncData(current.copyWith(statusMessage: skillBlocker));
+      return false;
+    }
     final String digest = const PlanContextDigestService()
         .buildRequestContextDigest(requestContext.toJson());
     state = AsyncData<TrainingPlanGenerationUiState>(
@@ -216,17 +274,35 @@ class TrainingPlanGenerationController
         statusMessage: '正在生成结构化处方…',
       ),
     );
-    final AiArtifact? artifact = await ref
-        .read(aiArtifactControllerProvider.notifier)
-        .generateTrainingPrescriptionV2(
-          TrainingPrescriptionV2Request(
-            clientContextDigest: digest,
-            populationTemplateId: populationTemplateId,
-            knowledgeSnapshotVersion: knowledgeCatalog.version,
-            context: requestContext,
-            force: force,
+    AiArtifact? artifact;
+    try {
+      artifact = await readFeatureController<AiArtifactController>(
+              ref,
+              'feature.ai_center',
+              'controller',
+              () => ref.read(aiArtifactControllerProvider.notifier))
+          .generateTrainingPrescriptionV2(
+        TrainingPrescriptionV2Request(
+          clientContextDigest: digest,
+          populationTemplateId: populationTemplateId,
+          knowledgeSnapshotVersion: knowledgeCatalog.version,
+          context: requestContext,
+          force: force,
+        ),
+        sourceOperation: operation,
+      );
+      operation.checkActive();
+    } on Object catch (error) {
+      if (ref.mounted) {
+        state = AsyncData<TrainingPlanGenerationUiState>(
+          current.copyWith(
+            isGenerating: false,
+            statusMessage: _operationFailureMessage(error, action: '生成'),
           ),
         );
+      }
+      return false;
+    }
     if (artifact == null) {
       state = AsyncData<TrainingPlanGenerationUiState>(
         current.copyWith(
@@ -250,11 +326,16 @@ class TrainingPlanGenerationController
       if (citationBlocker != null) {
         throw FormatException(citationBlocker);
       }
-      ref.read(fourWeekPlanControllerProvider.notifier).createDraft(
-            prescription: prescription,
-            artifact: artifact,
-            populationTemplateId: populationTemplateId,
-          );
+      await readFeatureController<FourWeekPlanController>(
+          ref,
+          'feature.training_plan',
+          'fourWeek',
+          () => ref.read(fourWeekPlanControllerProvider.notifier)).createDraft(
+        prescription: prescription,
+        artifact: artifact,
+        populationTemplateId: populationTemplateId,
+        sourceOperation: operation,
+      );
       final FourWeekPlanState compiled =
           ref.read(fourWeekPlanControllerProvider);
       state = AsyncData<TrainingPlanGenerationUiState>(
@@ -276,10 +357,31 @@ class TrainingPlanGenerationController
         ),
       );
       return false;
+    } on Object catch (error) {
+      if (ref.mounted) {
+        state = AsyncData<TrainingPlanGenerationUiState>(
+          current.copyWith(
+            artifact: artifact,
+            isGenerating: false,
+            statusMessage: _operationFailureMessage(error, action: '保存草稿'),
+          ),
+        );
+      }
+      return false;
     }
   }
 
   Future<bool> confirmAndActivate() async {
+    final operation = ref
+        .read(featureAccessProvider)
+        .beginOperation('feature.training_plan', dependencies: [
+      'feature.ai_center',
+      ...ref
+          .read(fourWeekPlanControllerProvider)
+          .generation
+          .pluginRefs
+          .map((source) => source.id)
+    ]);
     final TrainingPlanGenerationUiState? current = state.value;
     final AiArtifact? artifact = current?.artifact;
     if (current == null || artifact == null || current.isGenerating) {
@@ -292,6 +394,7 @@ class TrainingPlanGenerationController
       return false;
     }
     final String? blocker = await _localEligibilityBlocker();
+    operation.checkActive();
     if (blocker != null) {
       state = AsyncData<TrainingPlanGenerationUiState>(
         current.copyWith(statusMessage: blocker),
@@ -328,10 +431,15 @@ class TrainingPlanGenerationController
     }
     FourWeekPlanState planState = ref.read(fourWeekPlanControllerProvider);
     if (planState.draft == null) {
-      ref.read(fourWeekPlanControllerProvider.notifier).createDraft(
-            prescription: prescription,
-            artifact: artifact,
-          );
+      await readFeatureController<FourWeekPlanController>(
+          ref,
+          'feature.training_plan',
+          'fourWeek',
+          () => ref.read(fourWeekPlanControllerProvider.notifier)).createDraft(
+        prescription: prescription,
+        artifact: artifact,
+        sourceOperation: operation,
+      );
       planState = ref.read(fourWeekPlanControllerProvider);
     }
     if (planState.draft?.artifactId != artifact.id) {
@@ -351,11 +459,32 @@ class TrainingPlanGenerationController
     );
     // pending 与 accepted 均调用服务端。accepted→accepted 用于重新校验
     // Kill Switch、Skill 撤销与哈希状态，成功后才允许本地激活。
-    final AiArtifact? accepted =
-        await ref.read(aiArtifactControllerProvider.notifier).decide(
-              artifact: artifact,
-              decision: AiArtifactDecision.accepted,
-            );
+    AiArtifact? accepted;
+    try {
+      accepted = await operation.commit(() =>
+          readFeatureController<AiArtifactController>(
+              ref,
+              'feature.ai_center',
+              'controller',
+              () => ref.read(aiArtifactControllerProvider.notifier)).decide(
+            artifact: artifact,
+            decision: AiArtifactDecision.accepted,
+          ));
+      operation.checkActive();
+    } on Object catch (error) {
+      if (ref.mounted) {
+        state = AsyncData<TrainingPlanGenerationUiState>(
+          current.copyWith(
+            artifact: artifact,
+            isGenerating: false,
+            confirmedButNotActivated:
+                artifact.decision == AiArtifactDecision.accepted,
+            statusMessage: _operationFailureMessage(error, action: '确认'),
+          ),
+        );
+      }
+      return false;
+    }
     if (accepted == null) {
       state = AsyncData<TrainingPlanGenerationUiState>(
         current.copyWith(
@@ -389,6 +518,7 @@ class TrainingPlanGenerationController
       final bool activated = await ref
           .read(fourWeekPlanControllerProvider.notifier)
           .activateDraft(artifactId: accepted.id);
+      operation.checkActive();
       final FourWeekPlanState activatedState =
           ref.read(fourWeekPlanControllerProvider);
       state = AsyncData<TrainingPlanGenerationUiState>(
@@ -416,6 +546,16 @@ class TrainingPlanGenerationController
   }
 
   Future<void> reject() async {
+    final operation = ref
+        .read(featureAccessProvider)
+        .beginOperation('feature.training_plan', dependencies: [
+      'feature.ai_center',
+      ...ref
+          .read(fourWeekPlanControllerProvider)
+          .generation
+          .pluginRefs
+          .map((source) => source.id)
+    ]);
     final TrainingPlanGenerationUiState? current = state.value;
     final AiArtifact? artifact = current?.artifact;
     if (current == null || artifact == null || current.isGenerating) return;
@@ -425,24 +565,89 @@ class TrainingPlanGenerationController
       );
       return;
     }
-    await ref.read(aiArtifactControllerProvider.notifier).decide(
-          artifact: artifact,
-          decision: AiArtifactDecision.rejected,
-        );
-    ref.read(fourWeekPlanControllerProvider.notifier).rejectDraft();
     state = AsyncData<TrainingPlanGenerationUiState>(
-      current.copyWith(
-        clearArtifact: true,
-        confirmedButNotActivated: false,
-        statusMessage: '已拒绝该草稿，现有计划未改变。',
-      ),
+      current.copyWith(isGenerating: true, statusMessage: '正在拒绝计划草稿…'),
     );
+    try {
+      final AiArtifact? rejected = await operation.commit(() =>
+          readFeatureController<AiArtifactController>(
+              ref,
+              'feature.ai_center',
+              'controller',
+              () => ref.read(aiArtifactControllerProvider.notifier)).decide(
+            artifact: artifact,
+            decision: AiArtifactDecision.rejected,
+          ));
+      operation.checkActive();
+      if (rejected == null) {
+        state = AsyncData<TrainingPlanGenerationUiState>(
+          current.copyWith(
+            artifact: artifact,
+            isGenerating: false,
+            statusMessage: ref.read(aiArtifactControllerProvider).statusMessage,
+          ),
+        );
+        return;
+      }
+      final bool matches = rejected.id == artifact.id &&
+          rejected.artifactType == artifact.artifactType &&
+          rejected.schemaVersion == artifact.schemaVersion &&
+          rejected.contextDigest == artifact.contextDigest &&
+          rejected.decision == AiArtifactDecision.rejected &&
+          jsonEncode(rejected.payload) == jsonEncode(artifact.payload);
+      if (!matches) {
+        state = AsyncData<TrainingPlanGenerationUiState>(
+          current.copyWith(
+            artifact: artifact,
+            isGenerating: false,
+            statusMessage: '服务端拒绝结果与当前草稿不一致，草稿已保留，请重试。',
+          ),
+        );
+        return;
+      }
+      await readFeatureController<FourWeekPlanController>(
+          ref,
+          'feature.training_plan',
+          'fourWeek',
+          () => ref.read(fourWeekPlanControllerProvider.notifier)).rejectDraft(
+        artifactId: artifact.id,
+        sourceOperation: operation,
+      );
+      state = AsyncData<TrainingPlanGenerationUiState>(
+        current.copyWith(
+          clearArtifact: true,
+          isGenerating: false,
+          confirmedButNotActivated: false,
+          statusMessage: '已拒绝该草稿，现有计划未改变。',
+        ),
+      );
+    } on Object catch (error) {
+      if (!ref.mounted) return;
+      state = AsyncData<TrainingPlanGenerationUiState>(
+        current.copyWith(
+          artifact: artifact,
+          isGenerating: false,
+          statusMessage: _operationFailureMessage(error, action: '拒绝'),
+        ),
+      );
+    }
   }
 
   Future<bool> rollback(String versionId) async {
+    final operation = ref
+        .read(featureAccessProvider)
+        .beginOperation('feature.training_plan', dependencies: [
+      'feature.ai_center',
+      ...ref
+          .read(fourWeekPlanControllerProvider)
+          .generation
+          .pluginRefs
+          .map((source) => source.id)
+    ]);
     final bool rolledBack = await ref
         .read(fourWeekPlanControllerProvider.notifier)
         .rollbackToVersion(versionId);
+    operation.checkActive();
     final TrainingPlanGenerationUiState? current = state.value;
     if (current != null) {
       state = AsyncData<TrainingPlanGenerationUiState>(
@@ -608,6 +813,13 @@ String? _knowledgeCitationBlocker({
     return '处方引用已失效，请刷新知识目录后重新生成';
   }
   return null;
+}
+
+String _operationFailureMessage(Object error, {required String action}) {
+  if (error is StateError) {
+    return '${error.message}；$action未完成，请重新操作。';
+  }
+  return '$action失败，草稿与当前计划均已保留，请重试。';
 }
 
 TrainingPrescriptionRequestContext? buildTrainingPrescriptionRequestContext({

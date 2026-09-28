@@ -2,6 +2,7 @@ import 'dart:async';
 import 'dart:math';
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:trainflow_ai/core/constants/app_brand.dart';
 import 'package:trainflow_ai/data/models/body_data_quality.dart';
 import 'package:trainflow_ai/data/models/ai_chat.dart';
 import 'package:trainflow_ai/data/models/pain_log.dart';
@@ -31,6 +32,9 @@ import 'package:trainflow_ai/features/training_log/application/training_log_cont
 import 'package:trainflow_ai/services/local_storage_service.dart';
 import 'package:trainflow_ai/services/body_data_quality_service.dart';
 import 'package:trainflow_ai/services/system_training_notification_service.dart';
+import 'package:trainflow_ai/plugins/application/feature_access.dart';
+import 'package:trainflow_ai/plugins/application/feature_controller_binding.dart';
+import 'package:trainflow_ai/plugins/application/plugin_runtime_provider.dart';
 
 final companionClockProvider =
     Provider<DateTime Function()>((Ref ref) => DateTime.now);
@@ -86,15 +90,17 @@ class CompanionFeedState {
 
   String get displayName {
     final String? localName = relationship?.companionName?.trim();
-    if (localName?.isNotEmpty == true) return localName!;
-    final String petName = pet?.nickname.trim() ?? '';
-    return petName.isEmpty ? '衡衡狸' : petName;
+    if (localName?.isNotEmpty == true) {
+      return normalizeBalanceRaccoonDisplayName(localName!);
+    }
+    return pet?.displayName ?? balanceRaccoonDisplayName;
   }
 }
 
 /// 把既有训练、活动、疼痛和宠物账本以只读方式组装为搭子上下文。
 /// 没有可靠事实时宁可不生成普通消息，也不会补造健康指标或训练阈值。
 class CompanionController extends AsyncNotifier<CompanionFeedState> {
+  static const String _featureId = 'feature.companion';
   late CompanionRepository _repository;
   late DateTime Function() _clock;
   late TrainingScheduleState _schedule;
@@ -106,9 +112,15 @@ class CompanionController extends AsyncNotifier<CompanionFeedState> {
   late String _accountId;
   CoachLocalRepository? _coachRepository;
   CoachRemoteCoordinator? _remoteCoordinator;
+  ProviderSubscription<List<TrainingLog>>? _trainingLogSubscription;
+  int _notificationEpoch = 0;
+  bool _resumeWithoutBuildWrites = false;
 
   @override
   Future<CompanionFeedState> build() async {
+    _trainingLogSubscription = null;
+    final bool resumeWithoutBuildWrites = _resumeWithoutBuildWrites;
+    _resumeWithoutBuildWrites = false;
     final companionDatabase = ref.watch(companionDatabaseGatewayProvider);
     if (companionDatabase == null) {
       return const CompanionFeedState(
@@ -123,7 +135,7 @@ class CompanionController extends AsyncNotifier<CompanionFeedState> {
     if (_petState.status == PetStateStatus.needsFirstEgg) {
       return const CompanionFeedState(
         status: CompanionFeedStatus.needsFirstEgg,
-        statusMessage: '先选择衡衡狸，它会在已有训练和活动事实里陪你。',
+        statusMessage: '先选择袋小满，它会在已有训练和活动事实里陪你。',
       );
     }
     if (_petState.status != PetStateStatus.ready ||
@@ -165,56 +177,87 @@ class CompanionController extends AsyncNotifier<CompanionFeedState> {
     _athleteProfileId = _petState.activeCompanion!.athleteProfileId;
     _accountId = ref.watch(authControllerProvider).value?.user?.userId ??
         'local-preview-user';
-    await _repository.purgeExpiredConversationMessages(_athleteProfileId);
-    await _importLegacyAiChat(ref.watch(localStorageServiceProvider));
-
-    ref.listen<List<TrainingLog>>(trainingLogControllerProvider, (
-      List<TrainingLog>? previous,
-      List<TrainingLog> next,
-    ) {
-      if (previous == next) return;
-      unawaited(refresh());
+    bindFeatureController(
+      ref,
+      _featureId,
+      'controller',
+      this,
+      cleanup: _pauseResources,
+      onRestore: _restoreResourcesAfterRollback,
+    );
+    ref.listen<bool>(featureEnabledProvider(_featureId), (_, bool enabled) {
+      if (!enabled) return;
+      _resumeWithoutBuildWrites = true;
+      ref.invalidateSelf();
     });
-    return _load(createTodayMessage: true);
+    if (ref.read(featureAccessProvider).isWritable(_featureId)) {
+      _startTrainingLogSubscription();
+    }
+    if (resumeWithoutBuildWrites ||
+        !ref.read(featureAccessProvider).isWritable(_featureId)) {
+      final CompanionFeedState readOnly = await _loadReadOnly();
+      if (resumeWithoutBuildWrites) {
+        unawaited(Future<void>.delayed(Duration.zero, _restoreResources));
+      }
+      return readOnly;
+    }
+    final FeatureOperation operation =
+        ref.read(featureAccessProvider).beginOperation(_featureId);
+    await operation.commit(() async {
+      await _repository.purgeExpiredConversationMessages(_athleteProfileId);
+      await _importLegacyAiChat(ref.read(localStorageServiceProvider));
+    });
+    return _load(createTodayMessage: true, operation: operation);
   }
 
   Future<void> refresh() async {
     if (!ref.mounted) return;
     state = const AsyncLoading<CompanionFeedState>();
-    state = await AsyncValue.guard(() => _load(createTodayMessage: true));
+    if (!ref.read(featureAccessProvider).isWritable(_featureId)) {
+      state = await AsyncValue.guard(_loadReadOnly);
+      return;
+    }
+    final FeatureOperation operation =
+        ref.read(featureAccessProvider).beginOperation(_featureId);
+    state = await AsyncValue.guard(
+      () => _load(createTodayMessage: true, operation: operation),
+    );
   }
 
   Future<void> markAllRead() async {
+    final FeatureOperation operation =
+        ref.read(featureAccessProvider).beginOperation(_featureId);
     final CompanionFeedState? current = state.value;
     if (current?.status != CompanionFeedStatus.ready) return;
-    for (final CompanionMessage message in current!.messages.where(
-      (CompanionMessage item) => item.isUnread,
-    )) {
-      await _repository.markOpened(message.messageId);
-    }
-    final CompanionRelationship relationship = current.relationship!;
-    if (relationship.consecutiveUnopened != 0) {
-      await _repository.saveRelationship(_copyRelationship(
-        relationship,
-        consecutiveUnopened: 0,
-      ));
-    }
+    await operation.commit(() async {
+      for (final CompanionMessage message in current!.messages.where(
+        (CompanionMessage item) => item.isUnread,
+      )) {
+        await _repository.markOpened(message.messageId);
+      }
+      final CompanionRelationship? relationship = current.relationship;
+      if (relationship != null && relationship.consecutiveUnopened != 0) {
+        await _repository.saveRelationship(_copyRelationship(
+          relationship,
+          consecutiveUnopened: 0,
+        ));
+      }
+    });
     if (ref.mounted) await refresh();
   }
 
   Future<void> dismissToday({required CompanionMessage message}) async {
+    final FeatureOperation operation =
+        ref.read(featureAccessProvider).beginOperation(_featureId);
     if (message.actions.every(
       (CompanionAction action) => action.kind != CompanionActionKind.dismiss,
     )) {
       return;
     }
     final DateTime now = _clock();
-    await _repository.recordAction(
-      messageId: message.messageId,
-      actionId: 'dismiss-today',
-    );
     final List<CompanionMessage> history =
         await _repository.listMessages(_athleteProfileId, limit: 200);
+    operation.checkActive();
     final CompanionCopyVariant? copy = pickCompanionCopyVariant(
       intent: CompanionIntent.missedWorkout,
       kind: CompanionCopyVariantKind.dismissAck,
@@ -229,7 +272,12 @@ class CompanionController extends AsyncNotifier<CompanionFeedState> {
       now: now,
       random: Random(now.microsecondsSinceEpoch),
     );
-    if (copy != null) {
+    await operation.commit(() async {
+      await _repository.recordAction(
+        messageId: message.messageId,
+        actionId: 'dismiss-today',
+      );
+      if (copy == null) return;
       await _repository.saveMessage(CompanionMessage(
         messageId: _messageId('dismiss', now),
         athleteProfileId: _athleteProfileId,
@@ -244,12 +292,14 @@ class CompanionController extends AsyncNotifier<CompanionFeedState> {
         createdAt: now,
         deliveredAt: now,
       ));
-    }
+    });
     if (ref.mounted) await refresh();
   }
 
   /// 页面只提交用户文本；训练快照必须在这里从结构化仓储强制读取。
   Future<void> sendUserMessage(String input) async {
+    final FeatureOperation operation =
+        ref.read(featureAccessProvider).beginOperation(_featureId);
     final String text = input.trim();
     final CompanionFeedState? current = state.value;
     final CoachLocalRepository? coachRepository = _coachRepository;
@@ -264,24 +314,24 @@ class CompanionController extends AsyncNotifier<CompanionFeedState> {
     final CoachParsedTurn parsed = const CoachTurnParser().parse(text);
     final RelationshipState relationshipState =
         current!.relationshipState ?? RelationshipState.steady;
-    await _repository.saveMessage(CompanionMessage(
-      messageId: '$turnId-user',
-      athleteProfileId: _athleteProfileId,
-      localDate: _localDate(now),
-      intent: CompanionIntent.checkinAck,
-      copyVariantId: 'coach-user-v1',
-      relationshipState: relationshipState,
-      deliveryKind: CompanionDeliveryKind.reactive,
-      privacyLevel: PrivacyLevel.l0,
-      body: text,
-      messageRole: CompanionMessageRole.user,
-      threadId: threadId,
-      turnId: turnId,
-      retention: CompanionMessageRetention.conversation30Days,
-      createdAt: now,
-      deliveredAt: now,
-      openedAt: now,
-    ));
+    await operation.commit(() => _repository.saveMessage(CompanionMessage(
+          messageId: '$turnId-user',
+          athleteProfileId: _athleteProfileId,
+          localDate: _localDate(now),
+          intent: CompanionIntent.checkinAck,
+          copyVariantId: 'coach-user-v1',
+          relationshipState: relationshipState,
+          deliveryKind: CompanionDeliveryKind.reactive,
+          privacyLevel: PrivacyLevel.l0,
+          body: text,
+          messageRole: CompanionMessageRole.user,
+          threadId: threadId,
+          turnId: turnId,
+          retention: CompanionMessageRetention.conversation30Days,
+          createdAt: now,
+          deliveredAt: now,
+          openedAt: now,
+        )));
 
     final CoachMemoryDraft? memoryDraft = parsed.memoryDraft;
     CoachMemoryV1? writtenMemory;
@@ -292,7 +342,7 @@ class CompanionController extends AsyncNotifier<CompanionFeedState> {
         sourceText: text,
         now: now,
       );
-      await coachRepository.saveMemory(writtenMemory);
+      await operation.commit(() => coachRepository.saveMemory(writtenMemory!));
     }
 
     TrainingStateSnapshotV1? snapshot;
@@ -309,7 +359,7 @@ class CompanionController extends AsyncNotifier<CompanionFeedState> {
         painLogs: _painLogs,
         bodyDataQuality: _bodyDataQuality,
       ).readCurrent(athleteProfileId: _athleteProfileId, now: now);
-      await coachRepository.saveSnapshot(snapshot);
+      await operation.commit(() => coachRepository.saveSnapshot(snapshot!));
       final List<CoachMemoryV1> allMemories =
           await coachRepository.listMemories(_athleteProfileId);
       final CoachMemoryRetrieval retrieval = const CoachMemoryRetriever()
@@ -344,6 +394,7 @@ class CompanionController extends AsyncNotifier<CompanionFeedState> {
           intent: parsed.intent,
           emotion: parsed.emotion,
         );
+        operation.checkActive();
         envelope = remoteResult.envelope;
         verificationState = remoteResult.verificationState;
         remoteDecisionDigest = remoteResult.remoteDigest;
@@ -380,62 +431,68 @@ class CompanionController extends AsyncNotifier<CompanionFeedState> {
               .map((CoachRenderedAction action) => action.actionId)
               .toList(growable: false),
         };
-    await coachRepository.saveTrace(CoachTurnTraceV1(
-      traceId: traceId,
-      athleteProfileId: _athleteProfileId,
-      turnId: turnId,
-      intent: parsed.intent,
-      emotion: parsed.emotion,
-      snapshotId: snapshot?.snapshotId,
-      inputDigest: CoachDigest.sha256(<String, Object?>{
-        'turn_id': turnId,
-        'intent': parsed.intent.storageValue,
-        'emotion': parsed.emotion.name,
-      }),
-      localDecisionDigest:
-          localDecisionDigest ?? CoachDigest.sha256(decisionPayload),
-      remoteDecisionDigest: remoteDecisionDigest,
-      finalDecisionDigest: CoachDigest.sha256(decisionPayload),
-      verificationState: verificationState,
-      reasonCodes: envelope?.reasonCodes ??
-          <String>[writtenMemory == null ? 'companion_ack' : 'memory_recorded'],
-      createdAt: now,
-      expiresAt: now.add(const Duration(days: 90)),
-    ));
-    await _repository.saveMessage(CompanionMessage(
-      messageId: '$turnId-companion',
-      athleteProfileId: _athleteProfileId,
-      localDate: _localDate(now),
-      intent: CompanionIntent.checkinAck,
-      copyVariantId: 'coach-static-v1',
-      relationshipState: relationshipState,
-      deliveryKind: CompanionDeliveryKind.reactive,
-      privacyLevel: PrivacyLevel.l0,
-      body: rendered.text,
-      facts: facts,
-      actions: rendered.actions
-          .map((CoachRenderedAction action) => CompanionAction(
-                actionId: action.actionId,
-                label: action.label,
-                kind: CompanionActionKind.primary,
-                route: action.route,
-                effect: action.requiresConfirmation
-                    ? CompanionActionEffect.requestExistingAdjustment
-                    : CompanionActionEffect.openExistingRoute,
-              ))
-          .toList(growable: false),
-      messageRole: CompanionMessageRole.companion,
-      threadId: threadId,
-      turnId: turnId,
-      sourceSnapshotId: snapshot?.snapshotId,
-      traceId: traceId,
-      retention: CompanionMessageRetention.conversation30Days,
-      verificationState: rendered.verificationState,
-      createdAt: now.add(const Duration(microseconds: 1)),
-      deliveredAt: now,
-    ));
+    await operation.commit(() async {
+      await coachRepository.saveTrace(CoachTurnTraceV1(
+        traceId: traceId,
+        athleteProfileId: _athleteProfileId,
+        turnId: turnId,
+        intent: parsed.intent,
+        emotion: parsed.emotion,
+        snapshotId: snapshot?.snapshotId,
+        inputDigest: CoachDigest.sha256(<String, Object?>{
+          'turn_id': turnId,
+          'intent': parsed.intent.storageValue,
+          'emotion': parsed.emotion.name,
+        }),
+        localDecisionDigest:
+            localDecisionDigest ?? CoachDigest.sha256(decisionPayload),
+        remoteDecisionDigest: remoteDecisionDigest,
+        finalDecisionDigest: CoachDigest.sha256(decisionPayload),
+        verificationState: verificationState,
+        reasonCodes: envelope?.reasonCodes ??
+            <String>[
+              writtenMemory == null ? 'companion_ack' : 'memory_recorded'
+            ],
+        createdAt: now,
+        expiresAt: now.add(const Duration(days: 90)),
+      ));
+      await _repository.saveMessage(CompanionMessage(
+        messageId: '$turnId-companion',
+        athleteProfileId: _athleteProfileId,
+        localDate: _localDate(now),
+        intent: CompanionIntent.checkinAck,
+        copyVariantId: 'coach-static-v1',
+        relationshipState: relationshipState,
+        deliveryKind: CompanionDeliveryKind.reactive,
+        privacyLevel: PrivacyLevel.l0,
+        body: rendered.text,
+        facts: facts,
+        actions: rendered.actions
+            .map((CoachRenderedAction action) => CompanionAction(
+                  actionId: action.actionId,
+                  label: action.label,
+                  kind: CompanionActionKind.primary,
+                  route: action.route,
+                  effect: action.requiresConfirmation
+                      ? CompanionActionEffect.requestExistingAdjustment
+                      : CompanionActionEffect.openExistingRoute,
+                ))
+            .toList(growable: false),
+        messageRole: CompanionMessageRole.companion,
+        threadId: threadId,
+        turnId: turnId,
+        sourceSnapshotId: snapshot?.snapshotId,
+        traceId: traceId,
+        retention: CompanionMessageRetention.conversation30Days,
+        verificationState: rendered.verificationState,
+        createdAt: now.add(const Duration(microseconds: 1)),
+        deliveredAt: now,
+      ));
+    });
     if (!ref.mounted) return;
-    state = await AsyncValue.guard(() => _load(createTodayMessage: false));
+    state = await AsyncValue.guard(
+      () => _load(createTodayMessage: false, operation: operation),
+    );
   }
 
   Future<void> updatePreferences({
@@ -445,6 +502,8 @@ class CompanionController extends AsyncNotifier<CompanionFeedState> {
     bool? notificationDetailEnabled,
     Set<CompanionBoundaryTopic>? boundaries,
   }) async {
+    final FeatureOperation operation =
+        ref.read(featureAccessProvider).beginOperation(_featureId);
     final CompanionFeedState? current = state.value;
     final CompanionRelationship? relationship = current?.relationship;
     if (current == null || relationship == null) return;
@@ -461,11 +520,14 @@ class CompanionController extends AsyncNotifier<CompanionFeedState> {
           notificationDetailEnabled ?? relationship.notificationDetailEnabled,
       boundaries: nextBoundaries,
     );
-    await _repository.saveRelationship(nextRelationship);
+    await operation.commit(
+      () => _repository.saveRelationship(nextRelationship),
+    );
     final bool shouldRequestPermission = !relationship.notificationsEnabled &&
         nextRelationship.notificationsEnabled;
     final CompanionNotificationSyncResult notificationResult =
-        await rescheduleCompanionNotifications(
+        await _synchronizeNotifications(
+      operation: operation,
       scheduler: ref.read(companionNotificationSchedulerProvider),
       relationship: nextRelationship,
       messages: current.messages,
@@ -478,19 +540,27 @@ class CompanionController extends AsyncNotifier<CompanionFeedState> {
         nextRelationship,
         notificationsEnabled: false,
       );
-      await _repository.saveRelationship(nextRelationship);
+      await operation.commit(
+        () => _repository.saveRelationship(nextRelationship),
+      );
     }
     if (ref.mounted) await refresh();
   }
 
-  Future<CompanionFeedState> _load({required bool createTodayMessage}) async {
+  Future<CompanionFeedState> _load({
+    required bool createTodayMessage,
+    required FeatureOperation operation,
+  }) async {
     final PetCompanion pet = _petState.activeCompanion!;
     final DateTime now = _clock();
-    CompanionRelationship relationship = await _repository.ensureRelationship(
-      athleteProfileId: _athleteProfileId,
-      fallbackCompanionName: pet.nickname,
-      startedOn: pet.unlockedAt,
-    );
+    late CompanionRelationship relationship;
+    await operation.commit(() async {
+      relationship = await _repository.ensureRelationship(
+        athleteProfileId: _athleteProfileId,
+        fallbackCompanionName: pet.nickname,
+        startedOn: pet.unlockedAt,
+      );
+    });
     List<CompanionMessage> messages =
         await _repository.listMessages(_athleteProfileId, limit: 200);
     final CompanionContext context = _assembleContext(
@@ -504,7 +574,9 @@ class CompanionController extends AsyncNotifier<CompanionFeedState> {
         lastResolvedState: resolved,
         stateEnteredOn: now,
       );
-      await _repository.saveRelationship(relationship);
+      await operation.commit(
+        () => _repository.saveRelationship(relationship),
+      );
     }
     if (createTodayMessage &&
         !messages.any((CompanionMessage item) =>
@@ -527,30 +599,31 @@ class CompanionController extends AsyncNotifier<CompanionFeedState> {
         final CompanionCandidate candidate = selected.candidate;
         if (candidate.deliveryKind != CompanionDeliveryKind.proactive) continue;
         final String messageId = _messageId(candidate.intent.storageValue, now);
-        await _repository.saveMessage(CompanionMessage(
-          messageId: messageId,
-          athleteProfileId: _athleteProfileId,
-          localDate: _localDate(selected.scheduledAt),
-          intent: candidate.intent,
-          copyVariantId: candidate.copyVariantId,
-          relationshipState: resolved,
-          deliveryKind: candidate.deliveryKind,
-          privacyLevel: selected.privacyLevel,
-          notificationTitle: 'TrainMate',
-          notificationBody: '你的搭子有话说',
-          body: candidate.body,
-          facts: candidate.facts,
-          actions: candidate.actions,
-          scheduledAt: selected.scheduledAt,
-          deliveredAt: selected.scheduledAt.isAfter(now) ? null : now,
-          notificationId: companionNotificationId(messageId),
-          createdAt: now,
-        ));
+        await operation.commit(() => _repository.saveMessage(CompanionMessage(
+              messageId: messageId,
+              athleteProfileId: _athleteProfileId,
+              localDate: _localDate(selected.scheduledAt),
+              intent: candidate.intent,
+              copyVariantId: candidate.copyVariantId,
+              relationshipState: resolved,
+              deliveryKind: candidate.deliveryKind,
+              privacyLevel: selected.privacyLevel,
+              notificationTitle: AppBrand.shortName,
+              notificationBody: '你的搭子有话说',
+              body: candidate.body,
+              facts: candidate.facts,
+              actions: candidate.actions,
+              scheduledAt: selected.scheduledAt,
+              deliveredAt: selected.scheduledAt.isAfter(now) ? null : now,
+              notificationId: companionNotificationId(messageId),
+              createdAt: now,
+            )));
       }
       messages = await _repository.listMessages(_athleteProfileId, limit: 200);
     }
     if (relationship.notificationsEnabled) {
-      await rescheduleCompanionNotifications(
+      await _synchronizeNotifications(
+        operation: operation,
         scheduler: ref.read(companionNotificationSchedulerProvider),
         relationship: relationship,
         messages: messages,
@@ -566,6 +639,108 @@ class CompanionController extends AsyncNotifier<CompanionFeedState> {
       context: context,
       messages: messages,
       coachAvailable: _coachRepository != null,
+    );
+  }
+
+  Future<CompanionFeedState> _loadReadOnly() async {
+    final PetCompanion pet = _petState.activeCompanion!;
+    final DateTime now = _clock();
+    final CompanionRelationship? relationship =
+        await _repository.loadRelationship(_athleteProfileId);
+    final List<CompanionMessage> messages =
+        await _repository.listMessages(_athleteProfileId, limit: 200);
+    final CompanionContext? context = relationship == null
+        ? null
+        : _assembleContext(now: now, relationship: relationship);
+    final RelationshipState? resolved =
+        context == null ? null : resolveState(context);
+    return CompanionFeedState(
+      status: CompanionFeedStatus.ready,
+      statusMessage: '伙伴功能已暂停，现有陪伴记录仍可阅读。',
+      relationship: relationship,
+      pet: pet,
+      relationshipState: resolved,
+      context: context,
+      messages: messages,
+      coachAvailable: _coachRepository != null,
+    );
+  }
+
+  void _startTrainingLogSubscription() {
+    if (_trainingLogSubscription != null) return;
+    _trainingLogSubscription = ref.listen<List<TrainingLog>>(
+      trainingLogControllerProvider,
+      (List<TrainingLog>? previous, List<TrainingLog> next) {
+        if (previous == next ||
+            !ref.read(featureAccessProvider).isWritable(_featureId)) {
+          return;
+        }
+        unawaited(refresh());
+      },
+    );
+  }
+
+  Future<void> _pauseResources() async {
+    _notificationEpoch++;
+    _trainingLogSubscription?.close();
+    _trainingLogSubscription = null;
+    await ref.read(companionNotificationSchedulerProvider).cancel();
+  }
+
+  Future<void> _restoreResources() async {
+    if (!ref.mounted ||
+        !ref.read(featureAccessProvider).isWritable(_featureId)) {
+      return;
+    }
+    final CompanionFeedState? current = state.value;
+    final CompanionRelationship? relationship = current?.relationship;
+    if (relationship?.notificationsEnabled != true) return;
+    final FeatureOperation operation =
+        ref.read(featureAccessProvider).beginOperation(_featureId);
+    await _synchronizeNotifications(
+      operation: operation,
+      scheduler: ref.read(companionNotificationSchedulerProvider),
+      relationship: relationship!,
+      messages: current!.messages,
+      now: _clock(),
+    );
+  }
+
+  Future<void> _restoreResourcesAfterRollback() async {
+    if (!ref.mounted ||
+        !ref.read(featureAccessProvider).isEnabled(_featureId)) {
+      return;
+    }
+    _resumeWithoutBuildWrites = true;
+    ref.invalidateSelf();
+  }
+
+  Future<CompanionNotificationSyncResult> _synchronizeNotifications({
+    required FeatureOperation operation,
+    required CompanionNotificationScheduler scheduler,
+    required CompanionRelationship relationship,
+    required Iterable<CompanionMessage> messages,
+    required DateTime now,
+    bool requestPermission = false,
+  }) {
+    final int epoch = ++_notificationEpoch;
+    bool isActive() {
+      if (epoch != _notificationEpoch) return false;
+      try {
+        operation.checkActive();
+        return true;
+      } on StateError {
+        return false;
+      }
+    }
+
+    return rescheduleCompanionNotifications(
+      scheduler: scheduler,
+      relationship: relationship,
+      messages: messages,
+      now: now,
+      requestPermission: requestPermission,
+      isActive: isActive,
     );
   }
 
@@ -1045,7 +1220,7 @@ class CompanionController extends AsyncNotifier<CompanionFeedState> {
     }
     if (_petState.todayEnergy != null) {
       facts.add(CompanionFact(
-        label: '衡衡能量',
+        label: '袋小满能量',
         value: '${_petState.todayEnergy!.awardedTotal} 点',
         source: CompanionFactSource.derived,
         deepLink: '/companion/archive',

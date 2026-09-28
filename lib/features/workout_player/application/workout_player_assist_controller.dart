@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../../core/constants/app_brand.dart';
 import '../../../services/workout_platform_service.dart';
 
 final workoutPlatformServiceProvider = Provider<WorkoutPlatformService>(
@@ -48,15 +49,19 @@ class WorkoutPlayerAssistState {
 
 class WorkoutPlayerAssistController extends Notifier<WorkoutPlayerAssistState> {
   int _screenAwakeRequestRevision = 0;
+  bool _released = false;
+  int _speechRevision = 0;
 
-  WorkoutPlatformService get _platform =>
-      ref.read(workoutPlatformServiceProvider);
+  late WorkoutPlatformService _platform;
 
   @override
   WorkoutPlayerAssistState build() {
     final WorkoutPlatformService platform =
         ref.read(workoutPlatformServiceProvider);
+    _platform = platform;
     ref.onDispose(() {
+      _released = true;
+      _screenAwakeRequestRevision++;
       unawaited(platform.stopSpeech());
       unawaited(platform.setScreenAwake(false));
     });
@@ -67,6 +72,22 @@ class WorkoutPlayerAssistController extends Notifier<WorkoutPlayerAssistState> {
       screenAwakeRequested: false,
       screenAwakeStatusMessage: '尚未请求屏幕常亮；进入跟练后会启用本地常亮意图。',
     );
+  }
+
+  /// 两套执行器共用的原始释放操作，不保存训练记录、不更改语音偏好。
+  Future<void> releaseResources({bool updateState = true}) async {
+    _released = true;
+    _speechRevision++;
+    _screenAwakeRequestRevision++;
+    final platform = _platform;
+    if (updateState && ref.mounted) {
+      state = state.copyWith(
+          voiceQueue: [],
+          screenAwakeRequested: false,
+          screenAwakeStatusMessage: '已释放屏幕常亮。');
+    }
+    await platform.stopSpeech();
+    await platform.setScreenAwake(false);
   }
 
   void toggleVoice() {
@@ -94,6 +115,7 @@ class WorkoutPlayerAssistController extends Notifier<WorkoutPlayerAssistState> {
     required String enabledMessage,
     required String disabledMessage,
   }) {
+    if (requested) _released = false;
     final int revision = ++_screenAwakeRequestRevision;
     state = state.copyWith(
       screenAwakeRequested: requested,
@@ -112,12 +134,23 @@ class WorkoutPlayerAssistController extends Notifier<WorkoutPlayerAssistState> {
     required int revision,
   }) async {
     final bool supported = await _platform.setScreenAwake(requested);
-    if (revision != _screenAwakeRequestRevision || !requested || supported) {
+    if (_released || !ref.mounted) {
+      if (requested) await _platform.setScreenAwake(false);
+      return;
+    }
+    if (revision != _screenAwakeRequestRevision) {
+      if (requested && !state.screenAwakeRequested) {
+        await _platform.setScreenAwake(false);
+      }
+      return;
+    }
+    if (!requested || supported) {
       return;
     }
     state = state.copyWith(
       screenAwakeRequested: false,
-      screenAwakeStatusMessage: '当前环境不支持屏幕常亮，请升级 iOS/Safari 或使用 TrainMate App。',
+      screenAwakeStatusMessage:
+          '当前环境不支持屏幕常亮，请升级 iOS/Safari 或使用${AppBrand.displayName} App。',
     );
   }
 
@@ -171,8 +204,12 @@ class WorkoutPlayerAssistController extends Notifier<WorkoutPlayerAssistState> {
     if (!state.voiceEnabled || cue.isEmpty) {
       return;
     }
+    _released = false;
+    final revision = ++_speechRevision;
+    final platform = _platform;
     unawaited(
-      _platform.speak(cue, rate: rate, voiceName: voiceName),
-    );
+        platform.speak(cue, rate: rate, voiceName: voiceName).then((_) async {
+      if (_released && revision != _speechRevision) await platform.stopSpeech();
+    }));
   }
 }

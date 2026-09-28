@@ -3,7 +3,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:trainflow_ai/data/models/pet.dart';
 
 void main() {
-  test('六种宠物使用稳定 ID，衡衡狸固定为 balance_raccoon', () {
+  test('六种伙伴使用稳定 ID，袋小满保留 balance_raccoon', () {
     expect(
       PetSpecies.values.map((PetSpecies species) => species.id).toList(),
       <String>[
@@ -16,6 +16,29 @@ void main() {
       ],
     );
     expect(PetSpecies.balanceRaccoon.id, 'balance_raccoon');
+  });
+
+  test('旧默认名仅在展示层升级为袋小满', () {
+    final DateTime now = DateTime.utc(2026, 8, 15);
+    final PetCompanion companion = PetCompanion(
+      id: 'pet-legacy',
+      athleteProfileId: 'athlete-1',
+      species: PetSpecies.balanceRaccoon,
+      nickname: legacyBalanceRaccoonDisplayName,
+      unlockedAt: now,
+      bornAt: now,
+      selectedAccessoryId: null,
+      selectedBadgeId: null,
+      createdAt: now,
+      updatedAt: now,
+      totalEnergy: 0,
+      stage: PetStage.patternEgg,
+      partnerStars: 0,
+      mood: PetMood.calm,
+    );
+
+    expect(companion.nickname, legacyBalanceRaccoonDisplayName);
+    expect(companion.displayName, balanceRaccoonDisplayName);
   });
 
   test('未知旧枚举值采用保守降级且不误认成其他物种', () {

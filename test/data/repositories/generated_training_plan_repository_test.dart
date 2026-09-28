@@ -74,6 +74,8 @@ void main() {
     expect(repository.getPlan()?.id, draft.plan.id);
     expect(repository.getHistory().activeVersionId, activated.id);
     expect(activated.compilerVersion, 'skill-compiler-v2');
+    expect(activated.pluginRefs, draft.pluginRefs);
+    expect(repository.getHistory().activeVersion!.pluginRefs, draft.pluginRefs);
     expect(repository.getHistory().versions, hasLength(2));
     expect(repository.getHistory().versions.first.source,
         GeneratedPlanSource.legacy);
@@ -148,23 +150,22 @@ PlanGenerationDraft _draft(String artifactId) {
     ),
     selectionReasonCode: 'generic_periodization_fallback',
   );
-  final plan = FourWeekPlanGenerator()
-      .generate(
-        profile: InMemoryUserProfileRepository.defaultProfile.copyWith(
-          weeklyTrainingDays: 1,
-          trainingExperienceLevel: TrainingExperienceLevel.intermediate,
-        ),
-        startsOn: DateTime(2026, 7, 13),
-        preferences: PlanGenerationPreferences.fromPrescription(
-          prescription: prescription,
-          generationId: artifactId,
-        ),
-      )
-      .plan;
+  final generation = FourWeekPlanGenerator().generate(
+    profile: InMemoryUserProfileRepository.defaultProfile.copyWith(
+      weeklyTrainingDays: 1,
+      trainingExperienceLevel: TrainingExperienceLevel.intermediate,
+    ),
+    startsOn: DateTime(2026, 7, 13),
+    preferences: PlanGenerationPreferences.fromPrescription(
+      prescription: prescription,
+      generationId: artifactId,
+    ),
+  );
   return PlanGenerationDraft(
     id: 'draft-$artifactId',
     artifactId: artifactId,
-    plan: plan,
+    plan: generation.plan,
+    pluginRefs: generation.pluginRefs,
     weekPhases: const <String>['baseline', 'build', 'specific', 'deload'],
     prescription: prescription,
     createdAt: DateTime(2026, 7, 13),

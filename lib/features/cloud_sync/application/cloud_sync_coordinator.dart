@@ -1,4 +1,7 @@
+import 'dart:async';
+
 import '../../../data/models/cloud_sync.dart';
+import '../../../plugins/application/feature_access.dart';
 import '../data/cloud_sync_api.dart';
 import '../data/cloud_sync_local_store.dart';
 
@@ -36,11 +39,13 @@ class CloudSyncCoordinator {
   Future<void> enable({
     required String accountId,
     required bool confirmed,
+    FeatureOperation? operation,
   }) async {
     if (!confirmed) {
       throw const CloudSyncConfirmationRequiredException();
     }
-    await _localStore.setEnabled(accountId, true);
+    final FeatureOperation activeOperation = operation ?? _unguardedOperation();
+    await activeOperation.commit(() => _localStore.setEnabled(accountId, true));
   }
 
   Future<void> disable({required String accountId}) {
@@ -52,21 +57,26 @@ class CloudSyncCoordinator {
     required String conflictId,
     required CloudSyncConflictResolution resolution,
     required bool confirmed,
+    FeatureOperation? operation,
   }) async {
     if (!confirmed) {
       throw const CloudSyncConfirmationRequiredException();
     }
-    await _localStore.resolveConflict(
-      accountId: accountId,
-      conflictId: conflictId,
-      resolution: resolution,
-    );
+    final FeatureOperation activeOperation = operation ?? _unguardedOperation();
+    await activeOperation.commit(() => _localStore.resolveConflict(
+          accountId: accountId,
+          conflictId: conflictId,
+          resolution: resolution,
+        ));
   }
 
   Future<CloudSyncRunResult> synchronize({
     required String accountId,
+    FeatureOperation? operation,
   }) async {
+    final FeatureOperation activeOperation = operation ?? _unguardedOperation();
     CloudSyncAccountState state = await _localStore.readAccountState(accountId);
+    activeOperation.checkActive();
     if (!state.enabled) {
       return const CloudSyncRunResult(status: CloudSyncRunStatus.disabled);
     }
@@ -75,8 +85,10 @@ class CloudSyncCoordinator {
     try {
       if (state.snapshotRequired) {
         final CloudSyncSnapshot snapshot = await _remoteGateway.fetchSnapshot();
-        final int conflicts =
-            await _localStore.applySnapshot(accountId, snapshot);
+        activeOperation.checkActive();
+        final int conflicts = await activeOperation.commit(
+          () => _localStore.applySnapshot(accountId, snapshot),
+        );
         if (conflicts > 0) {
           return CloudSyncRunResult(
             status: CloudSyncRunStatus.conflicts,
@@ -84,13 +96,18 @@ class CloudSyncCoordinator {
           );
         }
         state = await _localStore.readAccountState(accountId);
+        activeOperation.checkActive();
       }
 
       pending = await _localStore.readPendingMutations(accountId);
+      activeOperation.checkActive();
       if (pending.isNotEmpty) {
         final List<CloudSyncMutationResult> results =
             await _remoteGateway.sendMutations(pending);
-        await _localStore.applyMutationResults(accountId, results);
+        activeOperation.checkActive();
+        await activeOperation.commit(
+          () => _localStore.applyMutationResults(accountId, results),
+        );
         final int conflicts = results
             .where(
               (CloudSyncMutationResult result) =>
@@ -110,17 +127,20 @@ class CloudSyncCoordinator {
       while (hasMore) {
         final CloudSyncChangePage page =
             await _remoteGateway.fetchChanges(after: cursor);
-        await _localStore.applyChanges(accountId, page);
+        activeOperation.checkActive();
+        await activeOperation
+            .commit(() => _localStore.applyChanges(accountId, page));
         cursor = page.nextCursor;
         hasMore = page.hasMore;
       }
       return const CloudSyncRunResult(status: CloudSyncRunStatus.synced);
     } on CloudSyncTransportException {
-      await _localStore.markMutationsForRetry(
-        accountId: accountId,
-        mutations: pending,
-        errorCode: 'transport_unavailable',
-      );
+      activeOperation.checkActive();
+      await activeOperation.commit(() => _localStore.markMutationsForRetry(
+            accountId: accountId,
+            mutations: pending,
+            errorCode: 'transport_unavailable',
+          ));
       return const CloudSyncRunResult(
         status: CloudSyncRunStatus.offline,
         localTrainingAvailable: true,
@@ -128,3 +148,10 @@ class CloudSyncCoordinator {
     }
   }
 }
+
+FeatureOperation _unguardedOperation() => FeatureOperation(
+      check: () {},
+      containsSource: (_) => true,
+      includeDependencies: (_) {},
+      commit: <T>(FutureOr<T> Function() write) async => write(),
+    );

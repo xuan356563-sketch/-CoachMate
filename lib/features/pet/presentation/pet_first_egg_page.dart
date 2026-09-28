@@ -1,9 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import '../../../core/constants/app_colors.dart';
 import '../../../core/theme/trainmate_visual_mode.dart';
-import '../../../core/theme/trainflow_tokens.dart';
 import '../../../core/widgets/trainmate_branding.dart';
 import '../../../core/widgets/trainmate_showcase_widgets.dart';
 import '../../../core/widgets/trainflow_widgets.dart';
@@ -20,7 +18,7 @@ class PetFirstEggPage extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final Widget content = TrainFlowPage(
       title: '选择第一颗伙伴蛋',
-      subtitle: 'M1 先完成衡衡狸的完整养成闭环',
+      subtitle: 'M1 先完成袋小满的完整养成闭环',
       eyebrow: '训练伙伴',
       includeDisclaimer: false,
       children: <Widget>[
@@ -31,16 +29,16 @@ class PetFirstEggPage extends ConsumerWidget {
               const IllustratedPetRenderer(
                 species: PetSpecies.balanceRaccoon,
                 stage: PetStage.patternEgg,
-                mood: PetMood.calm,
-                semanticLabel: '衡衡狸伙伴蛋，等待选择',
+                mood: PetMood.waiting,
+                semanticLabel: '袋小满伙伴蛋，等待选择',
                 size: 196,
               ),
               const SizedBox(height: 12),
               Text(
-                '衡衡狸',
+                '袋小满',
                 style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                      color: AppColors.primary,
-                      fontWeight: FontWeight.w900,
+                      color: TrainFlowTokens.accent,
+                      fontWeight: FontWeight.w700,
                     ),
               ),
               const SizedBox(height: 6),
@@ -52,7 +50,7 @@ class PetFirstEggPage extends ConsumerWidget {
                   onPressed: () => ref
                       .read(petControllerProvider.notifier)
                       .chooseFirstEgg(PetSpecies.balanceRaccoon),
-                  child: const Text('选择衡衡狸'),
+                  child: const Text('选择袋小满'),
                 ),
               ),
             ],
@@ -66,17 +64,25 @@ class PetFirstEggPage extends ConsumerWidget {
     if (!asMainTab) return content;
     return TrainMateImmersiveHubPage(
       includeDisclaimer: false,
-      mode: TrainMateVisualMode.darkTraining,
+      mode: TrainMateVisualMode.referenceShowcase,
+      showcaseOverviewChildCount: 1,
       hero: TrainMateSceneHero(
+        style: TrainMateSceneHeroStyle.referenceShowcase,
+        referenceBackgroundColor: TrainFlowTokens.coral,
         sceneAsset:
             'assets/images/immersive_scenes/trainmate_companion_room.png',
         greeting: '你好，训练者',
         dateLabel: '运动搭子',
-        character: const TrainMateBrandmark(size: 128),
+        character: const TrainMateBrandCharacter(size: 128),
         taskTitle: '选择第一颗伙伴蛋',
-        taskSubtitle: '选择后，衡衡狸会在已有训练与活动事实里陪你。',
+        taskSubtitle: '选择后，袋小满会在已有训练与活动事实里陪你。',
         taskIcon: Icons.egg_alt_outlined,
       ),
+      storyChildren: const <Widget>[
+        TrainFlowCard(
+          child: Text('其余五种伙伴将在下一里程碑开放，届时可首蛋自选并建立完整图鉴。'),
+        ),
+      ],
       children: <Widget>[
         TrainFlowCard(
           tone: TrainFlowCardTone.peach,
@@ -85,16 +91,16 @@ class PetFirstEggPage extends ConsumerWidget {
               const IllustratedPetRenderer(
                 species: PetSpecies.balanceRaccoon,
                 stage: PetStage.patternEgg,
-                mood: PetMood.calm,
-                semanticLabel: '衡衡狸伙伴蛋，等待选择',
+                mood: PetMood.waiting,
+                semanticLabel: '袋小满伙伴蛋，等待选择',
                 size: 168,
               ),
               const SizedBox(height: 10),
               Text(
-                '衡衡狸',
+                '袋小满',
                 style: Theme.of(context).textTheme.titleLarge?.copyWith(
                       color: TrainFlowTokens.darkTrainingOnSurface,
-                      fontWeight: FontWeight.w900,
+                      fontWeight: FontWeight.w700,
                     ),
               ),
               const SizedBox(height: 6),
@@ -106,14 +112,11 @@ class PetFirstEggPage extends ConsumerWidget {
                   onPressed: () => ref
                       .read(petControllerProvider.notifier)
                       .chooseFirstEgg(PetSpecies.balanceRaccoon),
-                  child: const Text('选择衡衡狸'),
+                  child: const Text('选择袋小满'),
                 ),
               ),
             ],
           ),
-        ),
-        const TrainFlowCard(
-          child: Text('其余五种伙伴将在下一里程碑开放，届时可首蛋自选并建立完整图鉴。'),
         ),
       ],
     );

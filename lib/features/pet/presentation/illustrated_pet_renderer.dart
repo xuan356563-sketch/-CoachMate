@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../../../core/constants/app_colors.dart';
 import '../../../data/models/pet.dart';
+import 'mate_companion_assets.dart';
 
 /// 与养成数据解耦的 2D 插画宠物。
 ///
@@ -54,11 +55,31 @@ class IllustratedPetRenderer extends StatelessWidget {
                 child: child,
               );
             },
-            child: IllustratedPetCanvas(
-              species: species,
-              stage: stage,
-              mood: mood,
-              visual: visual,
+            child: Stack(
+              fit: StackFit.expand,
+              children: <Widget>[
+                IllustratedPetCanvas(
+                  species: species,
+                  stage: stage,
+                  mood: mood,
+                  visual: visual,
+                ),
+                Image.asset(
+                  MateCompanionAssets.path(stage, mood),
+                  key: ValueKey<String>(
+                    'mate-companion-${stage.id}-${mood.id}',
+                  ),
+                  fit: BoxFit.contain,
+                  filterQuality: FilterQuality.high,
+                  excludeFromSemantics: true,
+                  errorBuilder: (
+                    BuildContext context,
+                    Object error,
+                    StackTrace? stackTrace,
+                  ) =>
+                      const SizedBox.shrink(),
+                ),
+              ],
             ),
           ),
         ),

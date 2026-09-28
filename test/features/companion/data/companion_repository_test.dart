@@ -6,7 +6,7 @@ import 'package:trainflow_ai/features/companion/domain/companion_models.dart';
 void main() {
   final DateTime now = DateTime.utc(2026, 8, 11, 12);
 
-  test('关系名称只存陪伴表，空名称时回退既有衡衡狸名称', () async {
+  test('关系名称只存陪伴表，旧默认名在展示时升级为袋小满', () async {
     final _MemoryGateway gateway = _MemoryGateway();
     final CompanionRepository repository = CompanionRepository(
       gateway,
@@ -20,7 +20,7 @@ void main() {
     );
 
     expect(relation.companionName, isNull);
-    expect(repository.displayNameFor(relation, '衡衡狸'), '衡衡狸');
+    expect(repository.displayNameFor(relation, '衡衡狸'), '袋小满');
     expect(gateway.relationship?['companion_name'], isNull);
     expect(gateway.relationship?['species_id'], 'balance_raccoon');
   });

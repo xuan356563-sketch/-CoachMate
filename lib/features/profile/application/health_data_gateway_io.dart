@@ -160,6 +160,14 @@ class AppleHealthDataGateway extends HealthDataGateway {
       );
 
   @override
+  Future<void> pauseBackgroundSync({required String athleteId}) =>
+      _nativeBridge.pauseBackgroundSync(athleteId: athleteId);
+
+  @override
+  Future<void> resumeBackgroundSync({required String athleteId}) =>
+      _nativeBridge.resumeBackgroundSync(athleteId: athleteId);
+
+  @override
   Future<List<HealthSyncBatch>> drainPendingBatches({int limit = 20}) =>
       _nativeBridge.drainPendingBatches(limit: limit);
 

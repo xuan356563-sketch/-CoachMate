@@ -4,12 +4,14 @@ class BodyMetricImportResult {
   final List<BodyMetric> metrics;
   final int skippedRows;
   final String sourceLabel;
+  final List<String> rowErrors;
   final Map<String, List<String>> inheritedFieldLabelsByMetricId;
 
   const BodyMetricImportResult({
     required this.metrics,
     required this.skippedRows,
     required this.sourceLabel,
+    this.rowErrors = const [],
     this.inheritedFieldLabelsByMetricId = const <String, List<String>>{},
   });
 
@@ -40,7 +42,8 @@ class BodyMetricImportResult {
         ? ''
         : '；其中 $inheritedRecordCount 条沿用已保存历史值 '
             '$inheritedFieldCount 项：${inheritedFieldLabels.join('、')}';
-    return '已解析 $importedCount 条身体数据，跳过 $skippedRows 行，范围 $dateRangeLabel$inheritedSummary。';
+    final errors = rowErrors.isEmpty ? '' : ' 跳过原因：${rowErrors.join('；')}';
+    return '已解析 $importedCount 条身体数据，跳过 $skippedRows 行，范围 $dateRangeLabel$inheritedSummary。$errors';
   }
 
   String _dateLabel(DateTime value) {

@@ -6,6 +6,9 @@ import '../../../data/local/pet_database_gateway.dart';
 import '../../../data/models/daily_activity_summary.dart';
 import '../../../data/repositories/daily_activity_summary_repository.dart';
 import '../../../services/pet_goal_suggestion_service.dart';
+import '../../../plugins/application/feature_access.dart';
+import '../../../plugins/application/feature_controller_binding.dart';
+import '../../../plugins/application/plugin_runtime_provider.dart';
 import '../../profile/application/health_data_gateway_contract.dart';
 import '../../profile/application/health_sync_controller.dart';
 
@@ -68,26 +71,36 @@ class DailyActivitySyncState {
 
 class DailyActivitySyncController
     extends AsyncNotifier<DailyActivitySyncState> {
+  static const String _featureId = 'feature.pet';
   late HealthDataGateway _healthGateway;
   late DailyActivitySummaryRepository? _repository;
   late PetGoalSuggestionService _suggestionService;
   late DateTime Function() _clock;
   late String _athleteProfileId;
+  ProviderSubscription<int>? _healthRefreshSubscription;
 
   @override
   Future<DailyActivitySyncState> build() async {
+    _healthRefreshSubscription = null;
     _healthGateway = ref.watch(healthDataGatewayProvider);
     _repository = ref.watch(dailyActivitySummaryRepositoryProvider);
     _suggestionService = ref.watch(petGoalSuggestionServiceProvider);
     _clock = ref.watch(dailyActivitySyncClockProvider);
     _athleteProfileId = ref.watch(healthSyncAthleteIdProvider);
-    ref.listen<int>(healthDailyActivityRefreshSignalProvider, (
-      int? previous,
-      int next,
-    ) {
-      if (previous == next) return;
-      unawaited(refresh());
+    bindFeatureController(
+      ref,
+      _featureId,
+      'dailyActivity',
+      this,
+      cleanup: _pauseResources,
+      onRestore: _restoreResourcesAfterRollback,
+    );
+    ref.listen<bool>(featureEnabledProvider(_featureId), (_, bool enabled) {
+      if (enabled) ref.invalidateSelf();
     });
+    if (ref.read(featureAccessProvider).isWritable(_featureId)) {
+      _startHealthRefreshSubscription();
+    }
 
     final DailyActivitySummaryRepository? repository = _repository;
     final List<DailyActivitySummary> summaries = repository == null
@@ -101,6 +114,8 @@ class DailyActivitySyncController
   }
 
   Future<void> refresh({DateTime? start, DateTime? end}) async {
+    final FeatureOperation operation =
+        ref.read(featureAccessProvider).beginOperation(_featureId);
     final DailyActivitySyncState? current = state.value;
     if (current == null || current.syncing) return;
     final DailyActivitySummaryRepository? repository = _repository;
@@ -140,6 +155,7 @@ class DailyActivitySyncController
                   ),
                 )
               : <HealthDailyActivitySummaryPayload>[];
+      operation.checkActive();
       payloads.sort(
         (
           HealthDailyActivitySummaryPayload left,
@@ -150,16 +166,18 @@ class DailyActivitySyncController
       for (final HealthDailyActivitySummaryPayload payload in payloads) {
         final List<DailyActivitySummary> history =
             await repository.list(_athleteProfileId);
-        await repository.mergeHealthKitSummary(
-          _summaryFromPayload(
-            payload,
-            athleteProfileId: _athleteProfileId,
-            goalSeed: _goalSeedForDate(history, payload.localDate),
-          ),
-        );
+        operation.checkActive();
+        await operation.commit(() => repository.mergeHealthKitSummary(
+              _summaryFromPayload(
+                payload,
+                athleteProfileId: _athleteProfileId,
+                goalSeed: _goalSeedForDate(history, payload.localDate),
+              ),
+            ));
       }
       final List<DailyActivitySummary> summaries =
           await repository.list(_athleteProfileId);
+      operation.checkActive();
       if (!ref.mounted) return;
       state = AsyncData(_buildState(
         summaries: summaries,
@@ -171,6 +189,8 @@ class DailyActivitySyncController
                 : '已合并 ${payloads.length} 个自然日的活动摘要。',
       ));
       _requestEnergyRefresh();
+    } on StateError {
+      rethrow;
     } catch (_) {
       if (!ref.mounted) return;
       final List<DailyActivitySummary> summaries =
@@ -200,16 +220,20 @@ class DailyActivitySyncController
   }
 
   Future<void> restoreAutomatic(DailyActivityField field) async {
+    final FeatureOperation operation =
+        ref.read(featureAccessProvider).beginOperation(_featureId);
     final DailyActivitySummaryRepository repository = _requiredRepository();
     final DateTime now = _clock();
-    final DailyActivitySummary summary = await _ensureTodaySummary(now);
-    await repository.restoreAutomaticField(
-      athleteProfileId: _athleteProfileId,
-      localDate: summary.localDate,
-      field: field,
-      updatedAt: now,
-    );
+    final DailyActivitySummary summary =
+        await _ensureTodaySummary(now, operation);
+    await operation.commit(() => repository.restoreAutomaticField(
+          athleteProfileId: _athleteProfileId,
+          localDate: summary.localDate,
+          field: field,
+          updatedAt: now,
+        ));
     if (!ref.mounted) return;
+    operation.checkActive();
     await refresh(
       start: now.subtract(const Duration(days: 1)),
       end: now.add(const Duration(days: 1)),
@@ -221,19 +245,23 @@ class DailyActivitySyncController
     num value,
     String statusMessage,
   ) async {
+    final FeatureOperation operation =
+        ref.read(featureAccessProvider).beginOperation(_featureId);
     final DailyActivitySummaryRepository repository = _requiredRepository();
     final DateTime now = _clock();
-    final DailyActivitySummary summary = await _ensureTodaySummary(now);
-    await repository.saveManualOverride(
-      athleteProfileId: _athleteProfileId,
-      localDate: summary.localDate,
-      field: field,
-      value: value,
-      updatedAt: now,
-    );
+    final DailyActivitySummary summary =
+        await _ensureTodaySummary(now, operation);
+    await operation.commit(() => repository.saveManualOverride(
+          athleteProfileId: _athleteProfileId,
+          localDate: summary.localDate,
+          field: field,
+          value: value,
+          updatedAt: now,
+        ));
     if (!ref.mounted) return;
     final List<DailyActivitySummary> summaries =
         await repository.list(_athleteProfileId);
+    operation.checkActive();
     state = AsyncData(_buildState(
       summaries: summaries,
       syncing: false,
@@ -248,7 +276,10 @@ class DailyActivitySyncController
         .requestRefresh();
   }
 
-  Future<DailyActivitySummary> _ensureTodaySummary(DateTime now) async {
+  Future<DailyActivitySummary> _ensureTodaySummary(
+    DateTime now,
+    FeatureOperation operation,
+  ) async {
     final DailyActivitySummaryRepository repository = _requiredRepository();
     final String localDate = _localDateKey(now);
     final DailyActivitySummary? existing = await repository.read(
@@ -260,25 +291,53 @@ class DailyActivitySyncController
     final List<DailyActivitySummary> history =
         await repository.list(_athleteProfileId);
     final _GoalSeed seed = _goalSeedForDate(history, localDate);
-    return repository.mergeHealthKitSummary(
-      DailyActivitySummary(
-        athleteProfileId: _athleteProfileId,
-        localDate: localDate,
-        timeZoneName: now.timeZoneName,
-        timeZoneOffsetMinutes: now.timeZoneOffset.inMinutes,
-        stepGoal: seed.goals.stepGoal,
-        activeEnergyGoalKcal: seed.goals.activeEnergyGoalKcal,
-        exerciseGoalMinutes: seed.goals.exerciseGoalMinutes,
-        standGoalHours: seed.goals.standGoalHours,
-        fieldSources: <DailyActivityField, ActivityFieldSource>{
-          for (final DailyActivityField field in _valueFields)
-            field: ActivityFieldSource.unavailable,
-          for (final DailyActivityField field in _goalFields)
-            field: seed.sourceFor(field),
-        },
-        syncedAt: now,
-      ),
-    );
+    return operation.commit(() => repository.mergeHealthKitSummary(
+          DailyActivitySummary(
+            athleteProfileId: _athleteProfileId,
+            localDate: localDate,
+            timeZoneName: now.timeZoneName,
+            timeZoneOffsetMinutes: now.timeZoneOffset.inMinutes,
+            stepGoal: seed.goals.stepGoal,
+            activeEnergyGoalKcal: seed.goals.activeEnergyGoalKcal,
+            exerciseGoalMinutes: seed.goals.exerciseGoalMinutes,
+            standGoalHours: seed.goals.standGoalHours,
+            fieldSources: <DailyActivityField, ActivityFieldSource>{
+              for (final DailyActivityField field in _valueFields)
+                field: ActivityFieldSource.unavailable,
+              for (final DailyActivityField field in _goalFields)
+                field: seed.sourceFor(field),
+            },
+            syncedAt: now,
+          ),
+        ));
+  }
+
+  void _startHealthRefreshSubscription() {
+    if (_healthRefreshSubscription != null) return;
+    _healthRefreshSubscription =
+        ref.listen<int>(healthDailyActivityRefreshSignalProvider, (
+      int? previous,
+      int next,
+    ) {
+      if (previous == next ||
+          !ref.read(featureAccessProvider).isWritable(_featureId)) {
+        return;
+      }
+      unawaited(refresh());
+    });
+  }
+
+  Future<void> _pauseResources() async {
+    _healthRefreshSubscription?.close();
+    _healthRefreshSubscription = null;
+  }
+
+  void _restoreResourcesAfterRollback() {
+    if (!ref.mounted ||
+        !ref.read(featureAccessProvider).isEnabled(_featureId)) {
+      return;
+    }
+    ref.invalidateSelf();
   }
 
   DailyActivitySummaryRepository _requiredRepository() {

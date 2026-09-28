@@ -1,3 +1,5 @@
+import 'resource_ref.dart';
+import '../../plugins/core/plugin_ref.dart';
 import 'ai_training_prescription.dart';
 import 'training_plan.dart';
 import 'plan_generation_context_snapshot.dart';
@@ -60,8 +62,12 @@ class PlanGenerationDraft {
   final String? baseVersionId;
   final String contextDigest;
   final String localContextFingerprint;
+
+  /// 激活版本继续使用旧业务摘要，插件变化仅影响待确认草稿。
+  final String? businessContextFingerprint;
   final PlanAuditSummary auditSummary;
   final PlanGenerationContextSnapshot? generationContextSnapshot;
+  final List<PluginRef>? pluginRefs;
 
   const PlanGenerationDraft({
     required this.id,
@@ -73,11 +79,14 @@ class PlanGenerationDraft {
     required this.baseVersionId,
     required this.contextDigest,
     required this.localContextFingerprint,
+    this.businessContextFingerprint,
     required this.auditSummary,
     this.generationContextSnapshot,
+    this.pluginRefs,
   });
 
-  bool get canActivate => auditSummary.canActivate;
+  bool get canActivate =>
+      auditSummary.canActivate && pluginRefs != null && pluginRefs!.isNotEmpty;
   AiSkillRef get skillRef => prescription.skill;
   AiGenerationMeta get generationMeta => prescription.generationMeta;
 
@@ -100,11 +109,13 @@ class PlanGenerationDraft {
       baseVersionId: json['baseVersionId'] as String?,
       contextDigest: json['contextDigest'] as String? ?? '',
       localContextFingerprint: json['localContextFingerprint'] as String? ?? '',
+      businessContextFingerprint: json['businessContextFingerprint'] as String?,
       auditSummary: PlanAuditSummary.fromJson(
         Map<String, dynamic>.from(
           json['auditSummary'] as Map? ?? const <String, dynamic>{},
         ),
       ),
+      pluginRefs: PluginRef.parseOptionalList(json['pluginRefs']),
       generationContextSnapshot: json['generationContextSnapshot'] is Map
           ? PlanGenerationContextSnapshot.fromJson(
               Map<String, dynamic>.from(
@@ -125,13 +136,19 @@ class PlanGenerationDraft {
         'baseVersionId': baseVersionId,
         'contextDigest': contextDigest,
         'localContextFingerprint': localContextFingerprint,
+        if (businessContextFingerprint != null)
+          'businessContextFingerprint': businessContextFingerprint,
         'auditSummary': auditSummary.toJson(),
+        if (pluginRefs != null)
+          'pluginRefs':
+              pluginRefs!.map((ref) => ref.toJson()).toList(growable: false),
         if (generationContextSnapshot != null)
           'generationContextSnapshot': generationContextSnapshot!.toJson(),
       };
 }
 
 class GeneratedPlanVersion {
+  final ResourceRef? resourceRef;
   final String id;
   final TrainingPlan plan;
   final List<String> weekPhases;
@@ -146,8 +163,10 @@ class GeneratedPlanVersion {
   final String compilerVersion;
   final PlanAuditSummary auditSummary;
   final PlanGenerationContextSnapshot? generationContextSnapshot;
+  final List<PluginRef>? pluginRefs;
 
   const GeneratedPlanVersion({
+    this.resourceRef,
     required this.id,
     required this.plan,
     required this.weekPhases,
@@ -162,13 +181,17 @@ class GeneratedPlanVersion {
     required this.compilerVersion,
     required this.auditSummary,
     this.generationContextSnapshot,
+    this.pluginRefs,
   });
+
+  bool get requiresClearance => isSkillGenerated || resourceRef != null || const ['resource-local-v1', 'resource-local-v2', 'resource-local-v3'].contains(compilerVersion);
 
   bool get isSkillGenerated => source == GeneratedPlanSource.skillAi;
 
   factory GeneratedPlanVersion.fromJson(Map<String, dynamic> json) {
     final Object? skillJson = json['skillRef'];
     return GeneratedPlanVersion(
+      resourceRef: _readHistoricalResourceRef(json['resourceRef']),
       id: json['id'] as String? ?? '',
       plan: TrainingPlan.fromJson(
         Map<String, dynamic>.from(
@@ -197,6 +220,7 @@ class GeneratedPlanVersion {
           json['auditSummary'] as Map? ?? const <String, dynamic>{},
         ),
       ),
+      pluginRefs: _readHistoricalPluginRefs(json['pluginRefs']),
       generationContextSnapshot: json['generationContextSnapshot'] is Map
           ? PlanGenerationContextSnapshot.fromJson(
               Map<String, dynamic>.from(
@@ -208,6 +232,7 @@ class GeneratedPlanVersion {
   }
 
   Map<String, dynamic> toJson() => <String, dynamic>{
+        if (resourceRef != null) 'resourceRef': resourceRef!.toJson(),
         'id': id,
         'plan': plan.toJson(),
         'weekPhases': weekPhases,
@@ -221,6 +246,9 @@ class GeneratedPlanVersion {
         'prescription': prescription?.toJson(),
         'compilerVersion': compilerVersion,
         'auditSummary': auditSummary.toJson(),
+        if (pluginRefs != null)
+          'pluginRefs':
+              pluginRefs!.map((ref) => ref.toJson()).toList(growable: false),
         if (generationContextSnapshot != null)
           'generationContextSnapshot': generationContextSnapshot!.toJson(),
       };
@@ -310,3 +338,24 @@ List<Map<String, dynamic>> _maps(Object? value) => value is List
         .map((Map<dynamic, dynamic> item) => Map<String, dynamic>.from(item))
         .toList()
     : const <Map<String, dynamic>>[];
+
+/// 来源损坏不能阻断已保存计划的只读历史；此结果不能用于信任新草稿。
+List<PluginRef>? _readHistoricalPluginRefs(Object? value) {
+  try {
+    return PluginRef.parseOptionalList(value);
+  } on FormatException {
+    return null;
+  }
+}
+
+/// 历史内容来源损坏不隐藏已保存计划；本地编译版本仍保留筛查要求。
+ResourceRef? _readHistoricalResourceRef(Object? value) {
+  if (value is! Map) return null;
+  try {
+    return ResourceRef.fromJson(Map<String, dynamic>.from(value));
+  } on FormatException {
+    return null;
+  } on TypeError {
+    return null;
+  }
+}

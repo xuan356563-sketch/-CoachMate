@@ -1,0 +1,467 @@
+{
+  "catalog_version": "2026.09.12-v1",
+  "content_hash": "e4729dc2c9040b72a096f7e0c20ecfffd58e742b5b8acd6fb032985accefbacb",
+  "contract_version": 1,
+  "resource_count": 9,
+  "resources": [
+    {
+      "catalog_status": "registered",
+      "id": "body-metric-2026-07-03",
+      "license_status": "not_applicable",
+      "online_distribution_status": "ineligible",
+      "payload": {
+        "bodyFatPercentage": 19.1,
+        "fatigueLevel": 5,
+        "fixture_group": "body_metrics",
+        "hrvMs": 49,
+        "id": "body-metric-2026-07-03",
+        "measuredAt": "2026-07-03T07:16:00.000",
+        "moodLabel": "稳定",
+        "note": "晨起快录",
+        "restingHeartRate": 60,
+        "sleepHours": 6.9,
+        "sorenessLevel": 4,
+        "source": "manual",
+        "weightKg": 74.5
+      },
+      "resource_key": "demo_fixture:body-metric-2026-07-03",
+      "resource_type": "demo_fixture",
+      "review_receipt": null,
+      "runtime_status": "blocked",
+      "schema_version": 1,
+      "source_receipts": [
+        "flutter_demo_seed"
+      ]
+    },
+    {
+      "catalog_status": "registered",
+      "id": "body-metric-2026-07-04",
+      "license_status": "not_applicable",
+      "online_distribution_status": "ineligible",
+      "payload": {
+        "bodyFatPercentage": 19.0,
+        "fatigueLevel": 4,
+        "fixture_group": "body_metrics",
+        "hrvMs": 51,
+        "id": "body-metric-2026-07-04",
+        "measuredAt": "2026-07-04T07:15:00.000",
+        "moodLabel": "稳定",
+        "note": "正常训练日",
+        "restingHeartRate": 59,
+        "sleepHours": 7.0,
+        "sorenessLevel": 3,
+        "source": "manual",
+        "weightKg": 74.4
+      },
+      "resource_key": "demo_fixture:body-metric-2026-07-04",
+      "resource_type": "demo_fixture",
+      "review_receipt": null,
+      "runtime_status": "blocked",
+      "schema_version": 1,
+      "source_receipts": [
+        "flutter_demo_seed"
+      ]
+    },
+    {
+      "catalog_status": "registered",
+      "id": "body-metric-2026-07-05",
+      "license_status": "not_applicable",
+      "online_distribution_status": "ineligible",
+      "payload": {
+        "bodyFatPercentage": 18.9,
+        "fatigueLevel": 6,
+        "fixture_group": "body_metrics",
+        "hrvMs": 47,
+        "id": "body-metric-2026-07-05",
+        "measuredAt": "2026-07-05T07:10:00.000",
+        "moodLabel": "疲劳",
+        "note": "比赛日后恢复",
+        "restingHeartRate": 61,
+        "sleepHours": 6.2,
+        "sorenessLevel": 4,
+        "source": "manual",
+        "weightKg": 74.2
+      },
+      "resource_key": "demo_fixture:body-metric-2026-07-05",
+      "resource_type": "demo_fixture",
+      "review_receipt": null,
+      "runtime_status": "blocked",
+      "schema_version": 1,
+      "source_receipts": [
+        "flutter_demo_seed"
+      ]
+    },
+    {
+      "catalog_status": "registered",
+      "id": "body-metric-2026-07-06",
+      "license_status": "not_applicable",
+      "online_distribution_status": "ineligible",
+      "payload": {
+        "bodyFatPercentage": 18.8,
+        "fatigueLevel": 3,
+        "fixture_group": "body_metrics",
+        "hrvMs": 53,
+        "id": "body-metric-2026-07-06",
+        "measuredAt": "2026-07-06T07:25:00.000",
+        "moodLabel": "良好",
+        "note": "恢复日",
+        "restingHeartRate": 58,
+        "sleepHours": 7.4,
+        "sorenessLevel": 3,
+        "source": "manual",
+        "weightKg": 74.0
+      },
+      "resource_key": "demo_fixture:body-metric-2026-07-06",
+      "resource_type": "demo_fixture",
+      "review_receipt": null,
+      "runtime_status": "blocked",
+      "schema_version": 1,
+      "source_receipts": [
+        "flutter_demo_seed"
+      ]
+    },
+    {
+      "catalog_status": "registered",
+      "id": "body-metric-2026-07-07",
+      "license_status": "not_applicable",
+      "online_distribution_status": "ineligible",
+      "payload": {
+        "bodyFatPercentage": 18.8,
+        "fatigueLevel": 6,
+        "fixture_group": "body_metrics",
+        "hrvMs": 48,
+        "id": "body-metric-2026-07-07",
+        "measuredAt": "2026-07-07T07:12:00.000",
+        "moodLabel": "偏疲劳",
+        "note": "加班后睡眠偏短",
+        "restingHeartRate": 60,
+        "sleepHours": 6.4,
+        "sorenessLevel": 5,
+        "source": "manual",
+        "weightKg": 74.1
+      },
+      "resource_key": "demo_fixture:body-metric-2026-07-07",
+      "resource_type": "demo_fixture",
+      "review_receipt": null,
+      "runtime_status": "blocked",
+      "schema_version": 1,
+      "source_receipts": [
+        "flutter_demo_seed"
+      ]
+    },
+    {
+      "catalog_status": "registered",
+      "id": "body-metric-2026-07-08",
+      "license_status": "not_applicable",
+      "online_distribution_status": "ineligible",
+      "payload": {
+        "bodyFatPercentage": 18.7,
+        "fatigueLevel": 5,
+        "fixture_group": "body_metrics",
+        "hrvMs": 50,
+        "id": "body-metric-2026-07-08",
+        "measuredAt": "2026-07-08T07:18:00.000",
+        "moodLabel": "略累",
+        "note": "训练后恢复一般",
+        "restingHeartRate": 59,
+        "sleepHours": 6.8,
+        "sorenessLevel": 4,
+        "source": "manual",
+        "weightKg": 74.0
+      },
+      "resource_key": "demo_fixture:body-metric-2026-07-08",
+      "resource_type": "demo_fixture",
+      "review_receipt": null,
+      "runtime_status": "blocked",
+      "schema_version": 1,
+      "source_receipts": [
+        "flutter_demo_seed"
+      ]
+    },
+    {
+      "catalog_status": "registered",
+      "id": "body-metric-2026-07-09",
+      "license_status": "not_applicable",
+      "online_distribution_status": "ineligible",
+      "payload": {
+        "bodyFatPercentage": 18.6,
+        "fatigueLevel": 4,
+        "fixture_group": "body_metrics",
+        "hrvMs": 52,
+        "id": "body-metric-2026-07-09",
+        "measuredAt": "2026-07-09T07:20:00.000",
+        "moodLabel": "稳定",
+        "note": "晨起快录",
+        "restingHeartRate": 58,
+        "sleepHours": 7.1,
+        "sorenessLevel": 3,
+        "source": "manual",
+        "weightKg": 73.8
+      },
+      "resource_key": "demo_fixture:body-metric-2026-07-09",
+      "resource_type": "demo_fixture",
+      "review_receipt": null,
+      "runtime_status": "blocked",
+      "schema_version": 1,
+      "source_receipts": [
+        "flutter_demo_seed"
+      ]
+    },
+    {
+      "catalog_status": "registered",
+      "id": "race-hyrox-open-2026",
+      "license_status": "not_applicable",
+      "online_distribution_status": "ineligible",
+      "payload": {
+        "actualResult": null,
+        "courseInfo": "8 个跑段 + 8 个功能训练站，重点是跑后动作质量。",
+        "currentPhase": "专项期第 1 周",
+        "evidenceSources": [
+          {
+            "author": "Jack Daniels",
+            "chapter": "周期化训练安排",
+            "doi": null,
+            "id": "evidence-race-periodization",
+            "note": "用于 base→build→specific→taper 的周期反推。",
+            "pageRange": "p. 112-126",
+            "quote": "训练应按阶段推进，并在比赛前安排减量以保留状态。",
+            "sourceType": "book",
+            "title": "Daniels' Running Formula"
+          },
+          {
+            "author": "TrainFlow AI",
+            "chapter": "比赛周安全策略",
+            "doi": null,
+            "id": "evidence-race-taper",
+            "note": "用于赛前减量、装备检查和比赛日策略。",
+            "pageRange": "v0.1",
+            "quote": "比赛前 7-10 天降低总量，保留少量唤醒强度。",
+            "sourceType": "internal_rule",
+            "title": "TrainFlow 备赛减量规则"
+          }
+        ],
+        "fixture_group": "races",
+        "gearAdvice": [
+          "抓地稳定的训练鞋",
+          "护腕或镁粉替代方案",
+          "轻量短裤",
+          "补给盐丸",
+          "号码带"
+        ],
+        "id": "race-hyrox-open-2026",
+        "name": "HYROX Open 备赛",
+        "officialRaceResult": null,
+        "phases": [
+          {
+            "focus": "恢复跑量和基础力量，修正动作质量。",
+            "keyWorkouts": [
+              "Zone 2 跑",
+              "深蹲/髋铰链纠错",
+              "核心抗疲劳"
+            ],
+            "phaseType": "base",
+            "weekRange": "第 1-3 周"
+          },
+          {
+            "focus": "建立跑后力量动作耐受。",
+            "keyWorkouts": [
+              "跑 + 雪橇推组合",
+              "农夫走",
+              "墙球技术"
+            ],
+            "phaseType": "build",
+            "weekRange": "第 4-6 周"
+          },
+          {
+            "focus": "模拟比赛节奏，练动作站转换。",
+            "keyWorkouts": [
+              "迷你 HYROX 模拟",
+              "跑后弓步蹲",
+              "站点转换计时"
+            ],
+            "phaseType": "specific",
+            "weekRange": "第 7-9 周"
+          },
+          {
+            "focus": "降低总量，保留动作熟悉度。",
+            "keyWorkouts": [
+              "轻量站点串联",
+              "短跑唤醒",
+              "活动度维护"
+            ],
+            "phaseType": "taper",
+            "weekRange": "第 10 周"
+          }
+        ],
+        "postRaceRecovery": [
+          "赛后当天补水和碳水",
+          "第二天记录肩、膝、跟腱疼痛",
+          "72 小时内只做低强度恢复"
+        ],
+        "predictedResult": "当前预测 1:35-1:45，瓶颈在跑后力量动作衔接",
+        "raceDate": "2026-10-18T00:00:00.000",
+        "strategySections": [
+          {
+            "items": [
+              "前 3 个跑段保持可说短句强度",
+              "动作站后前 200 米先找回呼吸",
+              "最后两段再推进"
+            ],
+            "title": "跑段策略"
+          },
+          {
+            "items": [
+              "雪橇动作优先稳定路径",
+              "墙球每组预留 1-2 次余量",
+              "波比不抢速度，减少停顿"
+            ],
+            "title": "站点策略"
+          }
+        ],
+        "taperPlan": [
+          "赛前一周减少站点总量 40%",
+          "赛前 3 天不做高乳酸训练",
+          "比赛前一天只走流程和装备检查"
+        ],
+        "targetResult": "稳定完赛，跑段不崩",
+        "type": "hyrox"
+      },
+      "resource_key": "demo_fixture:race-hyrox-open-2026",
+      "resource_type": "demo_fixture",
+      "review_receipt": null,
+      "runtime_status": "blocked",
+      "schema_version": 1,
+      "source_receipts": [
+        "flutter_demo_seed"
+      ]
+    },
+    {
+      "catalog_status": "registered",
+      "id": "race-shanghai-marathon-2026",
+      "license_status": "not_applicable",
+      "online_distribution_status": "ineligible",
+      "payload": {
+        "actualResult": null,
+        "courseInfo": "城市路跑，补给稳定，后半程需要控制配速漂移。",
+        "currentPhase": "基础期第 2 周",
+        "evidenceSources": [
+          {
+            "author": "Jack Daniels",
+            "chapter": "周期化训练安排",
+            "doi": null,
+            "id": "evidence-race-periodization",
+            "note": "用于 base→build→specific→taper 的周期反推。",
+            "pageRange": "p. 112-126",
+            "quote": "训练应按阶段推进，并在比赛前安排减量以保留状态。",
+            "sourceType": "book",
+            "title": "Daniels' Running Formula"
+          },
+          {
+            "author": "TrainFlow AI",
+            "chapter": "比赛周安全策略",
+            "doi": null,
+            "id": "evidence-race-taper",
+            "note": "用于赛前减量、装备检查和比赛日策略。",
+            "pageRange": "v0.1",
+            "quote": "比赛前 7-10 天降低总量，保留少量唤醒强度。",
+            "sourceType": "internal_rule",
+            "title": "TrainFlow 备赛减量规则"
+          }
+        ],
+        "fixture_group": "races",
+        "gearAdvice": [
+          "已磨合的比赛鞋",
+          "腰包或号码布扣",
+          "能量胶 4-5 支",
+          "防磨膏",
+          "一次性雨衣"
+        ],
+        "id": "race-shanghai-marathon-2026",
+        "name": "上海马拉松备赛",
+        "officialRaceResult": null,
+        "phases": [
+          {
+            "focus": "建立 Zone 2 有氧基础，补齐提胯和小腿耐受。",
+            "keyWorkouts": [
+              "轻松跑 40-60 分钟",
+              "A Skip + 提踵",
+              "下肢力量基础课"
+            ],
+            "phaseType": "base",
+            "weekRange": "第 1-4 周"
+          },
+          {
+            "focus": "逐步拉长长距离，加入节奏跑但保留恢复日。",
+            "keyWorkouts": [
+              "长距离 90-120 分钟",
+              "节奏跑 20 分钟",
+              "恢复跑"
+            ],
+            "phaseType": "build",
+            "weekRange": "第 5-8 周"
+          },
+          {
+            "focus": "贴近目标配速，练补给和后半程控制。",
+            "keyWorkouts": [
+              "目标配速分段跑",
+              "长距离补给演练",
+              "比赛鞋适应"
+            ],
+            "phaseType": "specific",
+            "weekRange": "第 9-12 周"
+          },
+          {
+            "focus": "减少总量，保留短促唤醒强度。",
+            "keyWorkouts": [
+              "短节奏唤醒",
+              "轻松跑",
+              "活动度维护"
+            ],
+            "phaseType": "taper",
+            "weekRange": "第 13-14 周"
+          }
+        ],
+        "postRaceRecovery": [
+          "赛后 24 小时内只做步行和补水",
+          "48 小时后记录疼痛与疲劳",
+          "一周内不安排强度课"
+        ],
+        "predictedResult": "当前预测 4:38-4:50，需提升长距离稳定性",
+        "raceDate": "2026-11-29T00:00:00.000",
+        "strategySections": [
+          {
+            "items": [
+              "前 5 公里慢于目标配速 5-10 秒",
+              "半程前不追人",
+              "30 公里后按体感守住步频"
+            ],
+            "title": "配速策略"
+          },
+          {
+            "items": [
+              "每 35-40 分钟一支能量胶",
+              "每个水站少量多次",
+              "不要比赛日尝试新补给"
+            ],
+            "title": "补给策略"
+          }
+        ],
+        "taperPlan": [
+          "赛前 10 天总量下降 30%",
+          "赛前 4 天只保留 20 分钟轻松跑",
+          "比赛前一天只做动态拉伸和装备检查"
+        ],
+        "targetResult": "完赛 4:30 内",
+        "type": "marathon"
+      },
+      "resource_key": "demo_fixture:race-shanghai-marathon-2026",
+      "resource_type": "demo_fixture",
+      "review_receipt": null,
+      "runtime_status": "blocked",
+      "schema_version": 1,
+      "source_receipts": [
+        "flutter_demo_seed"
+      ]
+    }
+  ]
+}

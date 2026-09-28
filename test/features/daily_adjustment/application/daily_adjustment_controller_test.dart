@@ -55,7 +55,7 @@ void main() {
     );
   });
 
-  test('本地上下文优先于资料默认值，并在更新后规范化和恢复', () {
+  test('本地上下文优先于资料默认值，并在更新后规范化和恢复', () async {
     final InMemoryLocalStorageService storage = InMemoryLocalStorageService();
     final ProviderContainer firstContainer = createContainer(storage);
     final DailyContextRepository repository =
@@ -83,7 +83,7 @@ void main() {
       20,
     );
 
-    firstContainer
+    await firstContainer
         .read(dailyAdjustmentControllerProvider.notifier)
         .setDailyAvailableMinutes(300);
     expect(
@@ -108,7 +108,7 @@ void main() {
     expect(restoredState.statusMessage, '已更新今日可训练时间为 300 分钟。');
   });
 
-  test('应用每日调整决策会持久化原控制器状态文案', () {
+  test('应用每日调整决策会持久化原控制器状态文案', () async {
     final InMemoryLocalStorageService storage = InMemoryLocalStorageService();
     final ProviderContainer container = createContainer(storage);
     addTearDown(container.dispose);
@@ -126,21 +126,21 @@ void main() {
       adjustments: <String>[],
     );
 
-    container
+    await container
         .read(dailyAdjustmentControllerProvider.notifier)
         .setDailyWorkStress(WorkStressLevel.high);
     expect(
       container.read(dailyAdjustmentControllerProvider).statusMessage,
       '已更新今日工作压力为高压。',
     );
-    container
+    await container
         .read(dailyAdjustmentControllerProvider.notifier)
         .setDailyTrainingEnvironment(TrainingEnvironment.home);
     expect(
       container.read(dailyAdjustmentControllerProvider).statusMessage,
       '已更新今日训练场地为家里。',
     );
-    container
+    await container
         .read(dailyAdjustmentControllerProvider.notifier)
         .setDailyWeather(WeatherCondition.rain);
     expect(
@@ -148,13 +148,13 @@ void main() {
       '已更新今日天气状态为下雨。',
     );
 
-    container
+    await container
         .read(dailyAdjustmentControllerProvider.notifier)
         .applyDailyAdjustmentDecision(decision);
 
     expect(
       container.read(dailyAdjustmentControllerProvider).statusMessage,
-      '已应用今日调整：轻松版，减少训练量',
+      '建议已记录，计划未改变：轻松版，减少训练量',
     );
     expect(
       container.read(dailyAdjustmentControllerProvider).context.workStress,
@@ -177,7 +177,7 @@ void main() {
     expect(firstFact.confirmedAt.isUtc, isTrue);
     expect(firstFact.localDate, _localDateKey(firstFact.confirmedAt.toLocal()));
 
-    container
+    await container
         .read(dailyAdjustmentControllerProvider.notifier)
         .setDailyWeather(WeatherCondition.good);
     expect(
@@ -201,7 +201,7 @@ void main() {
       constraintBadges: <String>[],
       adjustments: <String>[],
     );
-    container
+    await container
         .read(dailyAdjustmentControllerProvider.notifier)
         .applyDailyAdjustmentDecision(replacement);
 
@@ -230,12 +230,12 @@ void main() {
     );
   });
 
-  test('未点击应用今日调整的恢复文案不会生成决策事实', () {
+  test('未点击记录今日建议的恢复文案不会生成决策事实', () async {
     final InMemoryLocalStorageService storage = InMemoryLocalStorageService();
     final ProviderContainer container = createContainer(storage);
     addTearDown(container.dispose);
 
-    container
+    await container
         .read(dailyAdjustmentControllerProvider.notifier)
         .applyAiRecoveryRecommendation('今天优先恢复');
 

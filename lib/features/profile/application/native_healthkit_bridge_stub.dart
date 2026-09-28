@@ -50,6 +50,12 @@ class UnsupportedNativeHealthKitBridge implements NativeHealthKitBridge {
   }) async {}
 
   @override
+  Future<void> pauseBackgroundSync({required String athleteId}) async {}
+
+  @override
+  Future<void> resumeBackgroundSync({required String athleteId}) async {}
+
+  @override
   Future<List<HealthSyncBatch>> drainPendingBatches({int limit = 20}) async =>
       const <HealthSyncBatch>[];
 

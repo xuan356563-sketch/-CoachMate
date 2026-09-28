@@ -1,3 +1,4 @@
+import '../../plugins/application/sport_contribution_label.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -35,14 +36,19 @@ class WorkoutPlayerPage extends ConsumerWidget {
     return TrainMateImmersivePage(
       title: '跟练执行',
       subtitle: '逐步引导、真实倒计时、TTS 提示队列和练中一键降级。',
-      leading: const TrainMateBackButton(
+      leading: TrainMateBackButton(
         fallbackRoute: AppRoutes.dashboard,
+        onPressed: () async {
+          await ref.read(trainingMvpProvider.notifier).stopWorkoutPlayer();
+          if (context.mounted) context.go(AppRoutes.dashboard);
+        },
       ),
       artwork: TrainMateActionCharacter(
         action: characterAction,
         backgroundColor: AppColors.primary,
       ),
       children: [
+        SportContributionLabel(sport: state.activePlan.sportType),
         _PlayerStatusCard(
           state: state,
           step: step,
@@ -64,6 +70,7 @@ Future<void> _showWorkoutReviewSheet({
   return showTrainingRecordEditor(
     context: context,
     workout: workout,
+    requireActualValues: true,
   );
 }
 
@@ -249,7 +256,7 @@ class _WorkoutReviewSheetState extends ConsumerState<_WorkoutReviewSheet> {
     );
   }
 
-  void _save() {
+  Future<void> _save() async {
     final int? actualDuration = int.tryParse(_durationController.text.trim());
     final int averageHeartRate =
         int.tryParse(_heartRateController.text.trim()) ?? 0;
@@ -393,25 +400,32 @@ class _WorkoutReviewSheetState extends ConsumerState<_WorkoutReviewSheet> {
       );
     }
 
-    ref.read(trainingMvpProvider.notifier).saveWorkoutSessionReview(
-          actualDurationMinutes: actualDuration,
-          completionPercentage: _selectedCompletionPercentage,
-          rpe: _selectedRpe,
-          averageHeartRate: averageHeartRate,
-          averagePaceSecondsPerKm: averagePaceSeconds,
-          plannedSetCount: plannedSets,
-          completedSetCount: completedSets,
-          exerciseRecords: exerciseRecords,
-          interruptionReason: _interruptionReasonController.text,
-          userNote: _noteController.text,
-          abortedByUser: _abortedByUser,
-          sessionFeel: _selectedSessionFeel,
-        );
+    try {
+      await ref.read(trainingMvpProvider.notifier).saveWorkoutSessionReview(
+            actualDurationMinutes: actualDuration,
+            completionPercentage: _selectedCompletionPercentage,
+            rpe: _selectedRpe,
+            averageHeartRate: averageHeartRate,
+            averagePaceSecondsPerKm: averagePaceSeconds,
+            plannedSetCount: plannedSets,
+            completedSetCount: completedSets,
+            exerciseRecords: exerciseRecords,
+            interruptionReason: _interruptionReasonController.text,
+            userNote: _noteController.text,
+            abortedByUser: _abortedByUser,
+            sessionFeel: _selectedSessionFeel,
+          );
+    } on Object catch (error) {
+      if (!mounted) return;
+      setState(() => _errorMessage = '训练反馈保存失败：$error，请重试。');
+      return;
+    }
+    if (!mounted) return;
     if (exerciseRecords.any(
       (ExerciseExecutionRecord record) =>
           record.landingQuality == LandingQuality.pain,
     )) {
-      ref.read(trainingMvpProvider.notifier).savePainLog(
+      ref.read(trainingMvpProvider.notifier).recordSafetyPain(
             bodyPart: '落地动作相关部位',
             painLevel: 4,
             timing: PainTiming.duringTraining,
@@ -1146,7 +1160,8 @@ class _PlayerAssistCard extends ConsumerWidget {
         children: [
           Row(
             children: [
-              const Icon(Icons.record_voice_over, color: TrainFlowTokens.accent),
+              const Icon(Icons.record_voice_over,
+                  color: TrainFlowTokens.accent),
               const SizedBox(width: 8),
               Expanded(
                 child: Text(
@@ -1261,14 +1276,14 @@ class _PlayerActionCard extends ConsumerWidget {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text(
-              '本次跟练已完成',
+              '本次跟练已结束',
               style: Theme.of(context)
                   .textTheme
                   .titleLarge
                   ?.copyWith(fontWeight: FontWeight.w600),
             ),
             const SizedBox(height: 8),
-            const Text('执行记录已写入 workout_logs，可作为后续画像和训练调整信号。'),
+            const Text('步骤完成与跳过记录已保存。实际训练时长和完成度需由你核对后保存。'),
             const SizedBox(height: 12),
             if (review != null) ...[
               Row(
@@ -1395,13 +1410,18 @@ class _PlayerActionCard extends ConsumerWidget {
             children: [
               Expanded(
                 child: FilledButton.icon(
-                  onPressed: () {
-                    ref
-                        .read(trainingMvpProvider.notifier)
-                        .completeWorkoutPlayerStep();
-                  },
+                  key: const ValueKey<String>('workout-player-complete-step'),
+                  onPressed: state.workoutPlayerStepSaving
+                      ? null
+                      : () async {
+                          await ref
+                              .read(trainingMvpProvider.notifier)
+                              .completeWorkoutPlayerStep();
+                        },
                   icon: const Icon(Icons.check),
-                  label: const Text('完成'),
+                  label: Text(
+                    state.workoutPlayerStepSaving ? '保存中…' : '完成',
+                  ),
                 ),
               ),
               const SizedBox(width: 8),

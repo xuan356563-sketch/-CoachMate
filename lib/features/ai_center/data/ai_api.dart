@@ -21,22 +21,15 @@ class AiApi {
 
   Future<AiChatResponse> chat({
     required String requestId,
-    required List<AiChatMessage> messages,
+    required AiChatCloudIntent intent,
     required AiChatContext context,
   }) async {
     final Map<String, dynamic> response = await _client.postJson(
-      '/v1/ai/chat',
+      '/v2/ai/chat',
       <String, dynamic>{
-        'contract_version': 1,
+        'contract_version': 2,
         'request_id': requestId,
-        'messages': messages
-            .map(
-              (AiChatMessage item) => <String, dynamic>{
-                'role': item.role.jsonValue,
-                'content': item.content,
-              },
-            )
-            .toList(growable: false),
+        'intent': intent.jsonValue,
         'context': context.toJson(),
       },
       authenticated: true,

@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../app/router/app_routes.dart';
@@ -12,6 +13,7 @@ import '../../data/models/workout_day.dart';
 import '../dashboard/training_mvp_controller.dart';
 import '../pet/application/pet_controller.dart';
 import 'application/daily_adjustment_controller.dart';
+import 'application/daily_course_adjustment.dart';
 
 class DailyAdjustmentPage extends ConsumerWidget {
   const DailyAdjustmentPage({super.key});
@@ -41,6 +43,25 @@ class DailyAdjustmentPage extends ConsumerWidget {
         backgroundColor: AppColors.primary,
       ),
       children: [
+        TrainFlowCard(
+          child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+            Text('准备度 ${state.readinessValueLabel} · 工程估算'),
+            const SizedBox(height: 8),
+            Text(state.readinessEvidence.explanation),
+            TextButton(onPressed: () => context.push(AppRoutes.dataCenter),
+                child: const Text('查看和补充身体记录')),
+            FilledButton(onPressed: () async {
+              try {
+                await ref.read(dailyAdjustmentControllerProvider.notifier).confirmTodayStatus();
+                if (context.mounted) { ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(content: Text('已确认今日状态；计划未改变。'))); }
+              } catch (_) {
+                if (context.mounted) { ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(content: Text('状态确认未保存，请重试。'))); }
+              }
+            }, child: const Text('确认已核对今日状态记录')),
+          ]),
+        ),
         _DecisionSummaryCard(
           decision: decision,
           state: state,
@@ -104,7 +125,7 @@ class _DecisionSummaryCard extends StatelessWidget {
               const SizedBox(width: 10),
               Expanded(
                 child: MetricPill(
-                  label: '调整后时长',
+                  label: '建议时长',
                   value: '${decision.adjustedMinutes} 分钟',
                   color: TrainFlowTokens.accent,
                 ),
@@ -150,6 +171,11 @@ class _RealityConstraintCard extends ConsumerWidget {
                 label: '20 分钟',
                 selected: state.dailyAvailableMinutesOverride == 20,
                 onPressed: () => controller.setDailyAvailableMinutes(20),
+              ),
+              _ChoiceButton(
+                label: '30 分钟',
+                selected: state.dailyAvailableMinutesOverride == 30,
+                onPressed: () => controller.setDailyAvailableMinutes(30),
               ),
               _ChoiceButton(
                 label: '40 分钟',
@@ -293,7 +319,7 @@ class _ConstraintGroup extends StatelessWidget {
 class _ChoiceButton extends StatelessWidget {
   final String label;
   final bool selected;
-  final VoidCallback onPressed;
+  final Future<void> Function() onPressed;
 
   const _ChoiceButton({
     required this.label,
@@ -303,14 +329,18 @@ class _ChoiceButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    void run() {
+      unawaited(_runDailyAdjustmentAction(context, onPressed));
+    }
+
     if (selected) {
       return FilledButton(
-        onPressed: onPressed,
+        onPressed: run,
         child: Text(label),
       );
     }
     return OutlinedButton(
-      onPressed: onPressed,
+      onPressed: run,
       child: Text(label),
     );
   }
@@ -375,6 +405,7 @@ class _ApplyAdjustmentCard extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final applied = appliedDailyCourseFor(state, state.todayWorkout.id);
     return TrainFlowCard(
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -388,30 +419,96 @@ class _ApplyAdjustmentCard extends ConsumerWidget {
           ),
           const SizedBox(height: 8),
           Text(
-            state.dailyAdjustmentStatusMessage,
+            applied == null
+                ? state.dailyAdjustmentStatusMessage
+                : '当前课程已应用确认调整：${applied.originalEstimatedMinutes} → ${applied.adjustedEstimatedMinutes} 分钟。',
             style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                   color: TrainFlowTokens.darkTrainingMuted,
                 ),
           ),
           const SizedBox(height: 12),
+          TextButton(onPressed: () => context.push(AppRoutes.plans), child: const Text('进入计划调整')),
+          if (dailyCourseApplyEnabled)
+            OutlinedButton.icon(
+              onPressed: () => _previewCourseAdjustment(context, ref),
+              icon: const Icon(Icons.preview_outlined),
+              label: const Text('查看可执行课程差异'),
+            ),
           SizedBox(
             width: double.infinity,
             child: FilledButton.icon(
-              onPressed: () {
-                ref
-                    .read(dailyAdjustmentControllerProvider.notifier)
-                    .applyDailyAdjustmentDecision(
-                        state.dailyAdjustmentDecision);
-                unawaited(
-                  ref.read(petControllerProvider.notifier).refreshToday(),
-                );
+              onPressed: () async {
+                try {
+                  await ref
+                      .read(dailyAdjustmentControllerProvider.notifier)
+                      .applyDailyAdjustmentDecision(
+                        state.dailyAdjustmentDecision,
+                      );
+                  await ref.read(petControllerProvider.notifier).refreshToday();
+                } catch (error) {
+                  if (!context.mounted) return;
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(content: Text('记录今日建议失败：$error')),
+                  );
+                }
               },
               icon: const Icon(Icons.task_alt),
-              label: const Text('应用今日调整'),
+              label: const Text('记录今日建议'),
             ),
           ),
         ],
       ),
+    );
+  }
+}
+
+Future<void> _previewCourseAdjustment(BuildContext context, WidgetRef ref) async {
+  try {
+    final service = ref.read(dailyCourseAdjustmentProvider);
+    final preview = service.preview();
+    final candidate = preview.candidate;
+    final confirmed = await showDialog<bool>(context: context, builder: (dialogContext) => AlertDialog(
+      title: Text(candidate == null ? '当前仅有建议' : '确认课程调整'),
+      content: SingleChildScrollView(child: Column(mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.start, children: [
+          Text(preview.reason),
+          const SizedBox(height: 12),
+          Text('原课程：${preview.original.estimatedMinutes} 分钟 · ${preview.original.intensity}'),
+          if (candidate != null) ...[
+            Text('原主训练：${preview.original.mainSets.join('；')}'),
+            Text('原辅助训练：${preview.original.accessoryWork.isEmpty ? '无' : preview.original.accessoryWork.join('；')}'),
+            const SizedBox(height: 12),
+            Text('调整后：${candidate.estimatedMinutes} 分钟 · ${candidate.intensity}'),
+            Text('调整后主训练：${candidate.mainSets.join('；')}'),
+            Text('调整后辅助训练：${candidate.accessoryWork.isEmpty ? '无' : candidate.accessoryWork.join('；')}'),
+            const Text('准备与冷身保留；确认后才保存。'),
+          ] else const Text('可记录当前建议，或进入计划页面使用已有调整流程。'),
+        ])),
+      actions: [
+        TextButton(onPressed: () => Navigator.pop(dialogContext, false), child: const Text('取消')),
+        if (candidate != null) FilledButton(onPressed: () => Navigator.pop(dialogContext, true), child: const Text('确认应用')),
+      ],
+    ));
+    if (confirmed != true || !context.mounted) return;
+    await service.confirm(preview);
+    if (!context.mounted) return;
+    ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('课程调整已保存并应用到跟练，可在核心历史查看。')));
+  } catch (error) {
+    if (!context.mounted) return;
+    ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('课程调整未完成：$error')));
+  }
+}
+
+Future<void> _runDailyAdjustmentAction(
+  BuildContext context,
+  Future<void> Function() action,
+) async {
+  try {
+    await action();
+  } catch (error) {
+    if (!context.mounted) return;
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text('保存每日调整失败：$error')),
     );
   }
 }

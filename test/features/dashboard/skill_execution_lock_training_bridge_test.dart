@@ -57,7 +57,7 @@ void main() {
     final AiArtifact artifact = _artifact(prescription);
     final FourWeekPlanController plans =
         container.read(fourWeekPlanControllerProvider.notifier);
-    plans.createDraft(prescription: prescription, artifact: artifact);
+    await plans.createDraft(prescription: prescription, artifact: artifact);
     expect(await plans.activateDraft(artifactId: artifact.id), isTrue);
     await Future<void>.delayed(Duration.zero);
     final String skillPlanId =

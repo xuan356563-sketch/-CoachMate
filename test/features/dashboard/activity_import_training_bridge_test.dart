@@ -23,11 +23,11 @@ void main() {
     addTearDown(container.dispose);
     final int initialLogCount = container.read(trainingMvpProvider).logs.length;
 
-    container.read(trainingMvpProvider.notifier).importGpxDocument(
+    await container.read(trainingMvpProvider.notifier).importGpxDocument(
           gpx,
           fileName: 'duplicate.gpx',
         );
-    container.read(trainingMvpProvider.notifier).importGpxDocument(
+    await container.read(trainingMvpProvider.notifier).importGpxDocument(
           gpx,
           fileName: 'renamed.gpx',
         );

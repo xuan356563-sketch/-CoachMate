@@ -9,6 +9,8 @@ from typing import Protocol
 from app.core.config import Settings
 from app.core.errors import ApiError
 
+_PRODUCT_DISPLAY_NAME = "练搭 CoachMate"
+
 
 class EmailProvider(Protocol):
     """邮箱验证码下发能力的最小接口。"""
@@ -59,12 +61,12 @@ class SmtpEmailProvider:
         )
 
         message = EmailMessage()
-        message["Subject"] = "智练 TrainMate 登录验证码"
+        message["Subject"] = f"{_PRODUCT_DISPLAY_NAME} 登录验证码"
         message["From"] = from_email
         message["To"] = email
         valid_minutes = math.ceil(expires_in_seconds / 60)
         message.set_content(
-            "你正在登录智练 TrainMate。\n\n"
+            f"你正在登录{_PRODUCT_DISPLAY_NAME}。\n\n"
             f"验证码：{code}\n"
             f"验证码将在 {valid_minutes} 分钟后失效。\n\n"
             "若非本人操作，请忽略此邮件。"

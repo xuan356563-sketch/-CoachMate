@@ -5,7 +5,38 @@ import 'trainflow_tokens.dart';
 /// 主标签按功能分层使用的页面主题，不影响详情、表单与播放器页面。
 ///
 /// 当前五个主标签统一采用暖黑训练体系；浅色模式仅为非主标签复用场景保留。
-enum TrainMateVisualMode { lightCompanion, darkTraining }
+enum TrainMateVisualMode { lightCompanion, darkTraining, referenceShowcase }
+
+/// 由路由壳层提供的参考图页面样式，只影响明确纳入范围的核心闭环页面。
+class TrainMatePageStyleScope extends InheritedWidget {
+  const TrainMatePageStyleScope({
+    super.key,
+    required this.accent,
+    this.immersive = false,
+    required super.child,
+  });
+
+  final TrainMatePageAccent? accent;
+  final bool immersive;
+
+  static TrainMatePageStyleScope? maybeOf(BuildContext context) {
+    return context
+        .dependOnInheritedWidgetOfExactType<TrainMatePageStyleScope>();
+  }
+
+  static TrainMatePageAccent? accentOf(BuildContext context) {
+    return maybeOf(context)?.accent;
+  }
+
+  static bool isImmersive(BuildContext context) {
+    return maybeOf(context)?.immersive ?? false;
+  }
+
+  @override
+  bool updateShouldNotify(TrainMatePageStyleScope oldWidget) {
+    return oldWidget.accent != accent || oldWidget.immersive != immersive;
+  }
+}
 
 /// 让共享卡片和状态组件在主标签内读取统一的前景与层级颜色。
 class TrainMateVisualScope extends InheritedWidget {
@@ -29,10 +60,18 @@ class TrainMateVisualScope extends InheritedWidget {
     return modeOf(context) == TrainMateVisualMode.darkTraining;
   }
 
+  /// 仅五个主标签使用的纸白数据区与深紫行动区视觉模式。
+  static bool isReferenceShowcase(BuildContext context) {
+    return modeOf(context) == TrainMateVisualMode.referenceShowcase;
+  }
+
   static Color surface(BuildContext context) {
-    return isDark(context)
-        ? TrainFlowTokens.darkTrainingSurface
-        : TrainFlowTokens.lightCompanionSurface;
+    return switch (modeOf(context)) {
+      TrainMateVisualMode.darkTraining => TrainFlowTokens.darkTrainingSurface,
+      TrainMateVisualMode.referenceShowcase => TrainFlowTokens.showcasePaper,
+      TrainMateVisualMode.lightCompanion =>
+        TrainFlowTokens.lightCompanionSurface,
+    };
   }
 
   static Color card(BuildContext context) {
@@ -195,4 +234,24 @@ class TrainMateVisualScope extends InheritedWidget {
   bool updateShouldNotify(TrainMateVisualScope oldWidget) {
     return oldWidget.mode != mode;
   }
+}
+
+/// 标记主标签中已经进入深紫行动区的子树。
+///
+/// 业务组件仍沿用当前主标签主题与白色卡片；只有直接落在行动区上的标题、
+/// 图标和说明文字切换为高对比颜色，避免为了视觉分区改动业务组件接口。
+class TrainMateActionSurfaceScope extends InheritedWidget {
+  const TrainMateActionSurfaceScope({
+    super.key,
+    required super.child,
+  });
+
+  static bool isActive(BuildContext context) {
+    return context.dependOnInheritedWidgetOfExactType<
+            TrainMateActionSurfaceScope>() !=
+        null;
+  }
+
+  @override
+  bool updateShouldNotify(TrainMateActionSurfaceScope oldWidget) => false;
 }

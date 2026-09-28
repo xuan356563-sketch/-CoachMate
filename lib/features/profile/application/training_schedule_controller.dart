@@ -1,3 +1,6 @@
+import '../../../plugins/application/feature_controller_binding.dart';
+import '../../../plugins/application/feature_access.dart';
+import '../../../plugins/application/plugin_runtime_provider.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../data/models/training_schedule.dart';
@@ -49,30 +52,14 @@ class TrainingScheduleController extends Notifier<TrainingScheduleState> {
 
   @override
   TrainingScheduleState build() {
-    final UserProfileState profileState =
-        ref.watch(userProfileControllerProvider);
-    final FourWeekPlanState generatedPlanState =
-        ref.watch(fourWeekPlanControllerProvider);
+    bindFeatureController(ref, 'feature.training_plan', 'schedule', this);
+    ref.watch(userProfileControllerProvider);
+    ref.watch(fourWeekPlanControllerProvider);
     final TrainingScheduleRepository repository =
         ref.watch(trainingScheduleRepositoryProvider);
     final List<TrainingAvailabilitySlot> availability =
         repository.listAvailability();
-    List<ScheduledWorkout> workouts = repository.listSchedule();
-    if (availability.isNotEmpty) {
-      final plan = profileState.isCompleted
-          ? generatedPlanState.activePlan
-          : InMemoryTrainingPlanRepository().listPlans().first;
-      final List<ScheduledWorkout> rebuilt = _service.build(
-        plan: plan,
-        availability: availability,
-        weeklyTrainingDays: profileState.profile.weeklyTrainingDays,
-        now: ref.watch(trainingScheduleNowProvider),
-      );
-      if (!_sameSchedule(workouts, rebuilt)) {
-        repository.saveSchedule(rebuilt);
-        workouts = rebuilt;
-      }
-    }
+    final List<ScheduledWorkout> workouts = repository.listSchedule();
     return TrainingScheduleState(
       availability: availability,
       workouts: workouts,
@@ -80,12 +67,27 @@ class TrainingScheduleController extends Notifier<TrainingScheduleState> {
     );
   }
 
-  void addSlot({
+  Future<void> initializeSchedule() async {
+    final FeatureOperation operation =
+        ref.read(featureAccessProvider).beginOperation('feature.training_plan');
+    final List<TrainingAvailabilitySlot> availability =
+        ref.read(trainingScheduleRepositoryProvider).listAvailability();
+    if (availability.isEmpty) return;
+    await _saveAndRebuild(
+      availability,
+      '已读取训练日程。',
+      operation: operation,
+    );
+  }
+
+  Future<void> addSlot({
     required DateTime date,
     required int startMinute,
     required int endMinute,
     bool repeatWeekly = false,
-  }) {
+  }) async {
+    final FeatureOperation operation =
+        ref.read(featureAccessProvider).beginOperation('feature.training_plan');
     if (startMinute < 0 ||
         endMinute > 24 * 60 ||
         endMinute - startMinute < 15) {
@@ -111,24 +113,31 @@ class TrainingScheduleController extends Notifier<TrainingScheduleState> {
         updatedAt: now,
       ));
     }
-    _saveAndRebuild(_normalize(next), '已保存可训练时间并重新安排训练。');
+    await _saveAndRebuild(
+      _normalize(next),
+      '已保存可训练时间并重新安排训练。',
+      operation: operation,
+    );
   }
 
-  void removeSlot(String id) {
-    _saveAndRebuild(
+  Future<void> removeSlot(String id) async {
+    final FeatureOperation operation =
+        ref.read(featureAccessProvider).beginOperation('feature.training_plan');
+    await _saveAndRebuild(
       state.availability
           .where((TrainingAvailabilitySlot item) => item.id != id)
           .toList(),
       '已删除时间段并重新安排训练。',
+      operation: operation,
     );
   }
 
-  void _saveAndRebuild(
+  Future<void> _saveAndRebuild(
     List<TrainingAvailabilitySlot> availability,
-    String message,
-  ) {
+    String message, {
+    required FeatureOperation operation,
+  }) async {
     final repository = ref.read(trainingScheduleRepositoryProvider);
-    repository.saveAvailability(availability);
     final UserProfileState profileState =
         ref.read(userProfileControllerProvider);
     final profile = profileState.profile;
@@ -141,12 +150,16 @@ class TrainingScheduleController extends Notifier<TrainingScheduleState> {
       weeklyTrainingDays: profile.weeklyTrainingDays,
       now: ref.read(trainingScheduleNowProvider),
     );
-    repository.saveSchedule(workouts);
-    state = TrainingScheduleState(
-      availability: availability,
-      workouts: workouts,
-      statusMessage: message,
-    );
+    await operation.commit(() async {
+      repository.saveAvailability(availability);
+      repository.saveSchedule(workouts);
+      await ref.read(localStorageServiceProvider).flush();
+      state = TrainingScheduleState(
+        availability: availability,
+        workouts: workouts,
+        statusMessage: message,
+      );
+    });
   }
 
   List<TrainingAvailabilitySlot> _normalize(
@@ -187,38 +200,6 @@ class TrainingScheduleController extends Notifier<TrainingScheduleState> {
     }
     return normalized;
   }
-}
-
-bool _sameSchedule(
-  List<ScheduledWorkout> first,
-  List<ScheduledWorkout> second,
-) {
-  if (first.length != second.length) {
-    return false;
-  }
-  for (int index = 0; index < first.length; index += 1) {
-    final ScheduledWorkout left = first[index];
-    final ScheduledWorkout right = second[index];
-    final bool isLegacyL1Item = left.discipline == null ||
-        left.primaryTargetKind == null ||
-        left.targetMinutes == null;
-    // 旧 JSON 的 L1 字段保持为空，避免静默补猜；新排期仍比较完整字段。
-    // 用户真正修改可训练时间后会走 _saveAndRebuild，并保存新的完整排期。
-    if (left.id != right.id ||
-        left.workoutDayId != right.workoutDayId ||
-        left.scheduledDate != right.scheduledDate ||
-        left.startMinute != right.startMinute ||
-        left.allocatedMinutes != right.allocatedMinutes ||
-        left.period != right.period ||
-        left.version != right.version ||
-        (!isLegacyL1Item &&
-            (left.discipline != right.discipline ||
-                left.primaryTargetKind != right.primaryTargetKind ||
-                left.targetMinutes != right.targetMinutes))) {
-      return false;
-    }
-  }
-  return true;
 }
 
 bool _isSameDate(DateTime left, DateTime right) =>

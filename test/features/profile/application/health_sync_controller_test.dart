@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 
@@ -7,6 +9,11 @@ import 'package:trainflow_ai/data/repositories/health_snapshot_repository.dart';
 import 'package:trainflow_ai/data/repositories/training_metrics_repository.dart';
 import 'package:trainflow_ai/features/profile/application/health_data_gateway_contract.dart';
 import 'package:trainflow_ai/features/profile/application/health_sync_controller.dart';
+import 'package:trainflow_ai/plugins/application/plugin_runtime.dart';
+import 'package:trainflow_ai/plugins/application/feature_access.dart';
+import 'package:trainflow_ai/plugins/application/plugin_runtime_provider.dart';
+import 'package:trainflow_ai/plugins/assembly/built_in_distribution.dart';
+import 'package:trainflow_ai/plugins/core/plugin_core.dart';
 import 'package:trainflow_ai/services/local_storage_service.dart';
 import 'package:trainflow_ai/services/training_metrics_pipeline.dart';
 
@@ -17,6 +24,7 @@ class _FakeHealthGateway extends HealthDataGateway {
     this.backgroundPages,
     this.events,
     this.clearError,
+    this.foregroundCompleter,
   });
 
   final HealthForegroundSyncResult foregroundResult;
@@ -24,9 +32,13 @@ class _FakeHealthGateway extends HealthDataGateway {
   final List<List<HealthSyncBatch>>? backgroundPages;
   final List<String>? events;
   final Object? clearError;
+  final Completer<HealthForegroundSyncResult>? foregroundCompleter;
   final List<String> acknowledged = <String>[];
   final List<String> clearedAthletes = <String>[];
   int drainCalls = 0;
+  int authorizationRequests = 0;
+  int pauseCalls = 0;
+  int resumeCalls = 0;
 
   @override
   bool get isSupported => true;
@@ -35,12 +47,14 @@ class _FakeHealthGateway extends HealthDataGateway {
   Future<HealthAuthorizationResult> requestAuthorization({
     required HealthPermissionStage stage,
     required String athleteId,
-  }) async =>
-      HealthAuthorizationResult(
-        stage: stage,
-        state: HealthAuthorizationState.undetermined,
-        requestCompleted: true,
-      );
+  }) async {
+    authorizationRequests += 1;
+    return HealthAuthorizationResult(
+      stage: stage,
+      state: HealthAuthorizationState.undetermined,
+      requestCompleted: true,
+    );
+  }
 
   @override
   Future<HealthForegroundSyncResult> fetchForeground({
@@ -48,8 +62,19 @@ class _FakeHealthGateway extends HealthDataGateway {
     required String athleteId,
     required DateTime start,
     required DateTime end,
-  }) async =>
-      foregroundResult;
+  }) =>
+      foregroundCompleter?.future ??
+      Future<HealthForegroundSyncResult>.value(foregroundResult);
+
+  @override
+  Future<void> pauseBackgroundSync({required String athleteId}) async {
+    pauseCalls += 1;
+  }
+
+  @override
+  Future<void> resumeBackgroundSync({required String athleteId}) async {
+    resumeCalls += 1;
+  }
 
   @override
   Future<List<HealthSyncBatch>> drainPendingBatches({int limit = 20}) async {
@@ -393,7 +418,7 @@ void main() {
     );
   });
 
-  test('build 自动处理后台批次且仅在结构化事务成功后确认', () async {
+  test('build 只读，显式启动后台处理且仅在结构化事务成功后确认', () async {
     final HealthSyncBatch batch = _batch(
       batchId: 'background-success',
       athleteId: 'athlete-a',
@@ -416,6 +441,13 @@ void main() {
     addTearDown(container.dispose);
 
     await container.read(healthSyncControllerProvider.future);
+
+    expect(structured.appliedBatches, isEmpty);
+    expect(gateway.acknowledged, isEmpty);
+    expect(gateway.drainCalls, 0);
+    await container
+        .read(healthSyncControllerProvider.notifier)
+        .initializeBackgroundDrain();
 
     expect(structured.appliedBatches, <HealthSyncBatch>[batch]);
     expect(structured.syncModes, <String>['background']);
@@ -456,6 +488,13 @@ void main() {
     addTearDown(container.dispose);
 
     await container.read(healthSyncControllerProvider.future);
+
+    expect(structured.appliedBatches, isEmpty);
+    expect(gateway.acknowledged, isEmpty);
+    expect(gateway.drainCalls, 0);
+    await container
+        .read(healthSyncControllerProvider.notifier)
+        .initializeBackgroundDrain();
 
     expect(structured.appliedBatches, <HealthSyncBatch>[first, second]);
     expect(
@@ -501,6 +540,13 @@ void main() {
 
     await container.read(healthSyncControllerProvider.future);
 
+    expect(structured.appliedBatches, isEmpty);
+    expect(gateway.acknowledged, isEmpty);
+    expect(gateway.drainCalls, 0);
+    await container
+        .read(healthSyncControllerProvider.notifier)
+        .initializeBackgroundDrain();
+
     expect(structured.appliedBatches, <HealthSyncBatch>[workout, route]);
     expect(
       gateway.acknowledged,
@@ -508,7 +554,7 @@ void main() {
     );
   });
 
-  test('指标处理中的瞬时明细读取异常会保留 Swift 批次且不确认锚点', () async {
+  test('成长指标失败不阻塞原始健康事实落库和确认', () async {
     final HealthSyncBatch batch = _batch(
       batchId: 'background-details-failed',
       athleteId: 'athlete-a',
@@ -536,16 +582,18 @@ void main() {
     ]);
     addTearDown(container.dispose);
 
-    final HealthSyncState state =
-        await container.read(healthSyncControllerProvider.future);
+    await container.read(healthSyncControllerProvider.future);
 
-    expect(structured.appliedBatches, <HealthSyncBatch>[batch]);
+    expect(structured.appliedBatches, isEmpty);
     expect(gateway.acknowledged, isEmpty);
-    expect(gateway.backgroundBatches, <HealthSyncBatch>[batch]);
-    expect(state.statusMessage, contains('后台健康数据写入失败'));
+    await container
+        .read(healthSyncControllerProvider.notifier)
+        .initializeBackgroundDrain();
+    expect(structured.appliedBatches, <HealthSyncBatch>[batch]);
+    expect(gateway.acknowledged, <String>['background-details-failed']);
   });
 
-  test('后台删除后即使指标重算失败，也先撤销旧健康摘要且保留批次重投', () async {
+  test('后台删除后成长重算失败仍撤销旧摘要并确认原始批次', () async {
     final InMemoryLocalStorageService storage = InMemoryLocalStorageService();
     final HealthSnapshotRepository repository =
         HealthSnapshotRepository(storage);
@@ -599,16 +647,22 @@ void main() {
     ]);
     addTearDown(container.dispose);
 
-    final HealthSyncState state =
+    final HealthSyncState initial =
         await container.read(healthSyncControllerProvider.future);
 
-    expect(state.snapshots, isEmpty);
+    expect(initial.snapshots, hasLength(1));
+    expect(structured.appliedBatches, isEmpty);
+    await container
+        .read(healthSyncControllerProvider.notifier)
+        .initializeBackgroundDrain();
+    expect(container.read(healthSyncControllerProvider).requireValue.snapshots,
+        isEmpty);
     expect(repository.listSnapshots(athleteId: 'athlete-a'), isEmpty);
-    expect(gateway.acknowledged, isEmpty);
-    expect(state.statusMessage, contains('后台健康数据写入失败'));
+    expect(structured.appliedBatches, <HealthSyncBatch>[batch]);
+    expect(gateway.acknowledged, <String>['background-observation-delete']);
   });
 
-  test('build 后台事务失败时保留批次和 Swift 锚点并暴露中文错误', () async {
+  test('显式后台事务失败时保留批次和 Swift 锚点并暴露中文错误', () async {
     final HealthSyncBatch batch = _batch(
       batchId: 'background-failed',
       athleteId: 'athlete-a',
@@ -632,9 +686,19 @@ void main() {
     ]);
     addTearDown(container.dispose);
 
-    final HealthSyncState state =
+    final HealthSyncState initial =
         await container.read(healthSyncControllerProvider.future);
 
+    expect(initial.statusMessage, isNot(contains('后台健康数据写入失败')));
+    expect(gateway.drainCalls, 0);
+    await expectLater(
+      container
+          .read(healthSyncControllerProvider.notifier)
+          .initializeBackgroundDrain(),
+      throwsStateError,
+    );
+    final HealthSyncState state =
+        container.read(healthSyncControllerProvider).requireValue;
     expect(gateway.acknowledged, isEmpty);
     expect(gateway.backgroundBatches, <HealthSyncBatch>[batch]);
     expect(state.statusMessage, contains('后台健康数据写入失败'));
@@ -664,10 +728,233 @@ void main() {
 
     await container.read(healthSyncControllerProvider.future);
 
+    expect(gateway.drainCalls, 0);
+    await container
+        .read(healthSyncControllerProvider.notifier)
+        .initializeBackgroundDrain();
+
     expect(structured.appliedBatches, isEmpty);
     expect(gateway.acknowledged, isEmpty);
     expect(gateway.backgroundBatches, <HealthSyncBatch>[batch]);
   });
+
+  test('持久化停用时 build 只读历史且不恢复、排空或请求授权', () async {
+    final PluginRuntime runtime = await _runtime();
+    await runtime.disable('feature.activity_import');
+    final InMemoryLocalStorageService storage = InMemoryLocalStorageService();
+    HealthSnapshotRepository(storage).save(
+      athleteId: 'athlete-a',
+      stage: HealthPermissionStage.analysis,
+      snapshots: <HealthSnapshot>[
+        HealthSnapshot(
+          id: 'history',
+          date: DateTime(2026, 7, 14),
+          sleepHours: 7,
+          restingHeartRate: 58,
+          hrvMs: 55,
+          weightKg: null,
+          bodyFatPercentage: null,
+          syncedAt: DateTime.utc(2026, 7, 14),
+        ),
+      ],
+      syncedAt: DateTime.utc(2026, 7, 14),
+    );
+    final _FakeHealthGateway gateway = _FakeHealthGateway(
+      backgroundBatches: <HealthSyncBatch>[
+        _batch(
+          batchId: 'disabled-pending',
+          athleteId: 'athlete-a',
+          requiresAcknowledgement: true,
+        ),
+      ],
+    );
+    final ProviderContainer container = ProviderContainer(overrides: [
+      pluginRuntimeProvider.overrideWith((Ref ref) => runtime),
+      localStorageServiceProvider.overrideWithValue(storage),
+      healthDataGatewayProvider.overrideWithValue(gateway),
+      healthSyncAthleteIdProvider.overrideWithValue('athlete-a'),
+      healthSyncStructuredDatabaseGatewayProvider.overrideWithValue(
+        _FakeStructuredGateway(),
+      ),
+    ]);
+    addTearDown(container.dispose);
+
+    final HealthSyncState disabled =
+        await container.read(healthSyncControllerProvider.future);
+    expect(disabled.snapshots.single.id, 'history');
+    expect(disabled.statusMessage, contains('已停用'));
+    expect(gateway.resumeCalls, 0);
+    expect(gateway.drainCalls, 0);
+    expect(gateway.authorizationRequests, 0);
+    await expectLater(
+      container.read(healthSyncControllerProvider.notifier).sync(),
+      throwsStateError,
+    );
+    await container
+        .read(healthSyncControllerProvider.notifier)
+        .clearAthleteData();
+    expect(gateway.clearedAthletes, <String>['athlete-a']);
+    expect(
+      HealthSnapshotRepository(storage).listSnapshots(athleteId: 'athlete-a'),
+      isEmpty,
+    );
+
+    await runtime.enable('feature.activity_import');
+    await container.pump();
+    await container.read(healthSyncControllerProvider.future);
+    expect(gateway.resumeCalls, 1);
+    expect(gateway.drainCalls, 0);
+    expect(gateway.authorizationRequests, 0);
+  });
+
+  test('前台返回前停用活动导入时迟到结果不落库也不确认', () async {
+    final PluginRuntime runtime = await _runtime();
+    final Completer<HealthForegroundSyncResult> incoming =
+        Completer<HealthForegroundSyncResult>();
+    final _FakeHealthGateway gateway = _FakeHealthGateway(
+      foregroundCompleter: incoming,
+    );
+    final _FakeStructuredGateway structured = _FakeStructuredGateway();
+    final ProviderContainer container = ProviderContainer(overrides: [
+      pluginRuntimeProvider.overrideWith((Ref ref) => runtime),
+      localStorageServiceProvider.overrideWithValue(
+        InMemoryLocalStorageService(),
+      ),
+      healthDataGatewayProvider.overrideWithValue(gateway),
+      healthSyncAthleteIdProvider.overrideWithValue('athlete-a'),
+      healthSyncStructuredDatabaseGatewayProvider.overrideWithValue(
+        structured,
+      ),
+    ]);
+    addTearDown(container.dispose);
+    await container.read(healthSyncControllerProvider.future);
+
+    final Future<void> pending = container
+        .read(healthSyncControllerProvider.notifier)
+        .sync(stage: HealthPermissionStage.workout);
+    await Future<void>.delayed(Duration.zero);
+    await runtime.disable('feature.activity_import');
+    expect(gateway.pauseCalls, 1);
+    incoming.complete(HealthForegroundSyncResult(
+      batches: <HealthSyncBatch>[
+        _batch(
+          batchId: 'late-foreground',
+          athleteId: 'athlete-a',
+          requiresAcknowledgement: true,
+        ),
+      ],
+    ));
+
+    await expectLater(pending, throwsStateError);
+    expect(structured.appliedBatches, isEmpty);
+    expect(gateway.acknowledged, isEmpty);
+  });
+
+  test('成长功能停用不阻塞原始健康批次落库和确认', () async {
+    final PluginRuntime runtime = await _runtime();
+    await runtime.disable('feature.growth');
+    final HealthSyncBatch batch = _batch(
+      batchId: 'growth-disabled',
+      athleteId: 'athlete-a',
+      requiresAcknowledgement: true,
+    );
+    final _FakeHealthGateway gateway = _FakeHealthGateway(
+      backgroundBatches: <HealthSyncBatch>[batch],
+    );
+    final _FakeStructuredGateway structured = _FakeStructuredGateway();
+    final ProviderContainer container = ProviderContainer(overrides: [
+      pluginRuntimeProvider.overrideWith((Ref ref) => runtime),
+      localStorageServiceProvider.overrideWithValue(
+        InMemoryLocalStorageService(),
+      ),
+      healthDataGatewayProvider.overrideWithValue(gateway),
+      healthSyncAthleteIdProvider.overrideWithValue('athlete-a'),
+      healthSyncStructuredDatabaseGatewayProvider.overrideWithValue(
+        structured,
+      ),
+    ]);
+    addTearDown(container.dispose);
+    await container.read(healthSyncControllerProvider.future);
+
+    await container
+        .read(healthSyncControllerProvider.notifier)
+        .initializeBackgroundDrain();
+
+    expect(structured.appliedBatches, <HealthSyncBatch>[batch]);
+    expect(gateway.acknowledged, <String>['growth-disabled']);
+  });
+
+  for (final bool foreground in [true, false]) {
+    for (final String transition in ['停用', '停用重开', '切换账户', '关闭成长', '保持启用']) {
+      test('${foreground ? '前台' : '后台'} ACK 等待时$transition保留提交确认事实并限制旧派生', () async {
+        final runtime = await _runtime();
+        final batch = _batch(
+          batchId: 'ack-lifecycle',
+          athleteId: 'athlete-a',
+          requiresAcknowledgement: true,
+        );
+        final gateway = _GatedAckGateway(
+          foregroundResult: HealthForegroundSyncResult(batches: [batch]),
+          backgroundBatches: [batch],
+        );
+        final structured = _FakeStructuredGateway();
+        bool sourceLocksVerified = false;
+        final pipeline = _RecordingMetricsPipeline(
+          database: structured,
+          healthDataGateway: gateway,
+          onProcess: () async {
+            await expectLater(runtime.disable('feature.activity_import'), throwsStateError);
+            await expectLater(runtime.disable('feature.growth'), throwsStateError);
+            await expectLater(runtime.changeAccountScope(), throwsStateError);
+            sourceLocksVerified = true;
+          },
+        );
+        runtime.service('feature.growth')!.bind('metricsPipeline', pipeline);
+        final container = ProviderContainer(overrides: [
+          pluginRuntimeProvider.overrideWith((Ref ref) => runtime),
+          localStorageServiceProvider.overrideWithValue(InMemoryLocalStorageService()),
+          healthDataGatewayProvider.overrideWithValue(gateway),
+          healthSyncAthleteIdProvider.overrideWithValue('athlete-a'),
+          healthSyncStructuredDatabaseGatewayProvider.overrideWithValue(structured),
+          healthSyncMetricsPipelineProvider.overrideWithValue(pipeline),
+        ]);
+        addTearDown(container.dispose);
+        await container.read(healthSyncControllerProvider.future);
+        final controller = container.read(healthSyncControllerProvider.notifier);
+        final pending = foreground
+            ? controller.sync(stage: HealthPermissionStage.workout)
+            : controller.initializeBackgroundDrain();
+        final outcome = pending.then<Object?>((_) => null,
+            onError: (Object error) => error);
+        await gateway.entered.future;
+        expect(structured.appliedBatches, [batch]);
+        expect(gateway.acknowledged, isEmpty);
+        switch (transition) {
+          case '停用':
+            await runtime.disable('feature.activity_import');
+          case '停用重开':
+            await runtime.disable('feature.activity_import');
+            await runtime.enable('feature.activity_import');
+          case '切换账户':
+            await runtime.changeAccountScope();
+          case '关闭成长':
+            await runtime.disable('feature.growth');
+        }
+        gateway.released.complete();
+        final error = await outcome;
+        expect(pipeline.calls, transition == '保持启用' ? 1 : 0);
+        expect(sourceLocksVerified, transition == '保持启用',
+            reason: '成长异步派生提交必须同时锁定原导入来源和账户域。');
+        expect(structured.appliedBatches, [batch], reason: '已提交事实不能回滚或重复写入。');
+        expect(gateway.acknowledged, [batch.batchId], reason: '已返回的原生确认不能被抹除。');
+        if (transition == '关闭成长' || transition == '保持启用') {
+          expect(error, isNull);
+        } else {
+          expect(error, isA<FeatureOperationInvalidation>());
+        }
+      });
+    }
+  }
 
   test('清理严格按 Swift、结构化事务、旧文档、flush 顺序执行', () async {
     final List<String> events = <String>[];
@@ -816,6 +1103,13 @@ void main() {
   });
 }
 
+Future<PluginRuntime> _runtime() async {
+  final PluginRuntime runtime =
+      PluginRuntime(PluginRegistry(plugins: builtInDistribution()));
+  await runtime.initialize();
+  return runtime;
+}
+
 HealthSyncBatch _batch({
   required String batchId,
   required String athleteId,
@@ -840,3 +1134,32 @@ HealthSyncBatch _batch({
       createdAt: createdAt ?? DateTime.utc(2026, 7, 15),
       requiresAcknowledgement: requiresAcknowledgement,
     );
+
+class _GatedAckGateway extends _FakeHealthGateway {
+  _GatedAckGateway({required super.foregroundResult, required super.backgroundBatches});
+  final entered = Completer<void>();
+  final released = Completer<void>();
+
+  @override
+  Future<void> acknowledgeBatch(String batchId) async {
+    entered.complete();
+    await released.future;
+    await super.acknowledgeBatch(batchId);
+  }
+}
+
+class _RecordingMetricsPipeline extends _FailingMetricsPipeline {
+  _RecordingMetricsPipeline({required super.database, required super.healthDataGateway, this.onProcess});
+  final Future<void> Function()? onProcess;
+  int calls = 0;
+
+  @override
+  Future<HealthBatchMetricsResult> processCommittedHealthBatch(
+    HealthSyncBatch batch,
+    HealthSyncApplyResult applyResult,
+  ) async {
+    calls += 1;
+    await onProcess?.call();
+    return super.processCommittedHealthBatch(batch, applyResult);
+  }
+}

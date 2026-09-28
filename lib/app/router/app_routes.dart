@@ -1,4 +1,6 @@
 class AppRoutes {
+  static const String capabilities = '/capabilities';
+  static const String history = '/history';
   static const String authLoading = '/auth-loading';
   static const String login = '/login';
   static const String terms = '/terms';
@@ -47,6 +49,10 @@ class AppRoutes {
 
   static String planDetail(String planId) {
     return '$plans/$planId';
+  }
+
+  static String historyPlan(String versionId) {
+    return '$history/plans/$versionId';
   }
 
   static String workoutDetail(String planId, String workoutDayId) {

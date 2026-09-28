@@ -1,4 +1,6 @@
 import asyncio
+import struct
+import zlib
 from collections.abc import Generator
 from dataclasses import dataclass
 from io import BytesIO
@@ -311,6 +313,39 @@ def test_motion_image_is_sanitized_in_memory_before_client_call(
     stored = service_session.execute(select(AiArtifact)).scalar_one()
     assert "private motion photo" not in str(stored.payload)
     assert "image" not in stored.payload
+
+
+def test_motion_image_rejects_oversized_dimensions_before_pixel_decode(
+    ai_client: tuple[TestClient, FakeTextClient, FakeMotionClient, Session],
+) -> None:
+    client, _, motion_client, service_session = ai_client
+
+    def png_chunk(kind: bytes, data: bytes) -> bytes:
+        chunk = kind + data
+        return (
+            struct.pack(">I", len(data))
+            + chunk
+            + struct.pack(">I", zlib.crc32(chunk) & 0xFFFFFFFF)
+        )
+
+    header = struct.pack(">IIBBBBB", 6000, 5000, 8, 2, 0, 0, 0)
+    oversized_png = (
+        b"\x89PNG\r\n\x1a\n"
+        + png_chunk(b"IHDR", header)
+        + png_chunk(b"IDAT", b"")
+        + png_chunk(b"IEND", b"")
+    )
+
+    response = client.post(
+        "/v1/ai/motion-analysis",
+        files={"image": ("oversized.png", oversized_png, "image/png")},
+        data={"rule_id": "squat", "local_pose_summary": "本地评分 70"},
+    )
+
+    assert response.status_code == 413
+    assert response.json()["code"] == "image_dimensions_invalid"
+    assert motion_client.calls == 0
+    assert service_session.execute(select(AiArtifact)).scalars().all() == []
 
 
 def test_invalid_deepseek_json_is_converted_to_stable_error() -> None:

@@ -37,6 +37,7 @@ from app.services.training_skills import (
     TrainingSkillRegistry,
     TrainingSportCode,
 )
+from app.services.training_sport_providers import ProviderRegistry, TrainingTypeCode
 
 logger = logging.getLogger(__name__)
 _REQUEST_ID_PATTERN = re.compile(r"^[A-Za-z0-9._-]{1,64}$")
@@ -82,16 +83,6 @@ RaceTypeCode = Literal[
     "marathon",
     "trail",
     "hyrox",
-]
-TrainingTypeCode = Literal[
-    "easy_run",
-    "tempo_run",
-    "interval_run",
-    "long_run",
-    "strength",
-    "hyrox",
-    "mobility",
-    "cross_training",
 ]
 IntensityBandCode = Literal[
     "recovery",
@@ -481,7 +472,11 @@ class TrainingPrescriptionService:
         self._session.flush()
         try:
             result = await self._client.generate(request, selection)
-            _validate_for_context(result.prescription, request.context)
+            _validate_for_context(
+                result.prescription,
+                request.context,
+                self._registry.sport_providers,
+            )
             generated = _to_generated_artifact(
                 request,
                 selection,
@@ -606,10 +601,14 @@ class TrainingPrescriptionService:
 def _validate_for_context(
     prescription: ValidatedTrainingPrescription,
     context: TrainingPrescriptionContext,
+    provider_registry: ProviderRegistry | None = None,
 ) -> None:
     expected_sessions = min(context.weekly_training_days, 6)
     sessions = prescription.weekly_sessions
-    allowed_types = _allowed_training_types(context.primary_sport)
+    allowed_types = _allowed_training_types(
+        context.primary_sport,
+        provider_registry,
+    )
     invalid = (
         len(sessions) != expected_sessions
         or any(item.duration_minutes > context.available_minutes for item in sessions)
@@ -643,31 +642,12 @@ def _validate_for_context(
         )
 
 
-def _allowed_training_types(primary_sport: TrainingSportCode) -> set[str]:
-    general = {"strength", "mobility", "cross_training", "easy_run"}
-    if primary_sport in {"general_fitness", "fat_loss"}:
-        return general
-    if primary_sport == "strength":
-        return {"strength", "mobility", "cross_training"}
-    if primary_sport in {"marathon", "trail_running"}:
-        return {
-            "easy_run",
-            "tempo_run",
-            "interval_run",
-            "long_run",
-            "strength",
-            "mobility",
-            "cross_training",
-        }
-    return {
-        "easy_run",
-        "tempo_run",
-        "interval_run",
-        "long_run",
-        "strength",
-        "hyrox",
-        "mobility",
-    }
+def _allowed_training_types(
+    primary_sport: TrainingSportCode,
+    provider_registry: ProviderRegistry | None = None,
+) -> set[str]:
+    providers = provider_registry or ProviderRegistry.default()
+    return set(providers.resolve(primary_sport).allowed_training_types)
 
 
 def _to_generated_artifact(

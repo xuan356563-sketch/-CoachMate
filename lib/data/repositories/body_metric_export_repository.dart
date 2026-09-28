@@ -1,5 +1,6 @@
 import '../models/body_metric_export.dart';
 import '../../services/local_storage_service.dart';
+import '../../services/confirmed_local_document_write.dart';
 
 abstract class BodyMetricExportRepository {
   List<BodyMetricExportRecord> listRecords();
@@ -7,6 +8,10 @@ abstract class BodyMetricExportRepository {
   BodyMetricExportRecord saveRecord(BodyMetricExportRecord record);
 
   void clearRecords();
+
+  Future<void> saveConfirmedRecord(BodyMetricExportRecord record);
+
+  Future<void> clearConfirmedRecords();
 }
 
 class PersistedBodyMetricExportRepository
@@ -16,6 +21,8 @@ class PersistedBodyMetricExportRepository
 
   final LocalStorageService _storageService;
   final List<BodyMetricExportRecord> _records = [];
+  bool _saving = false;
+  bool _recoveryRequired = false;
 
   PersistedBodyMetricExportRepository(this._storageService) {
     _hydrate();
@@ -29,6 +36,7 @@ class PersistedBodyMetricExportRepository
 
   @override
   BodyMetricExportRecord saveRecord(BodyMetricExportRecord record) {
+    _checkWritable();
     _records.removeWhere((BodyMetricExportRecord item) => item.id == record.id);
     _records.insert(0, record);
     _sortRecords();
@@ -41,8 +49,55 @@ class PersistedBodyMetricExportRepository
 
   @override
   void clearRecords() {
+    _checkWritable();
     _records.clear();
     _persist();
+  }
+
+  @override
+  Future<void> saveConfirmedRecord(BodyMetricExportRecord record) async {
+    _checkWritable();
+    final candidate = [
+      record,
+      ..._records.where((item) => item.id != record.id),
+    ]..sort((a, b) => b.exportedAt.compareTo(a.exportedAt));
+    await _commit(candidate.take(_maxSavedRecords).toList());
+  }
+
+  @override
+  Future<void> clearConfirmedRecords() async {
+    _checkWritable();
+    await _commit([]);
+  }
+
+  Future<void> _commit(List<BodyMetricExportRecord> candidate) async {
+    _saving = true;
+    await commitLocalDocumentWrites(
+        _storageService,
+        [
+          PreparedLocalDocumentWrite(
+            key: storageKey,
+            document: {
+              'schemaVersion': 1,
+              'records': candidate.map((record) => record.toJson()).toList(),
+            },
+            publish: () {
+              _records
+                ..clear()
+                ..addAll(candidate);
+            },
+            blockRecovery: () => _recoveryRequired = true,
+            release: () => _saving = false,
+          ),
+        ],
+        label: '身体数据导出登记');
+  }
+
+  void _checkWritable() {
+    if (_recoveryRequired) {
+      throw StateError('导出登记恢复尚未确认，请重启检查后再操作。');
+    }
+    if (_saving) throw StateError('导出登记正在保存，请等待完成后再操作。');
   }
 
   void _hydrate() {

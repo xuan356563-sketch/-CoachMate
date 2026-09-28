@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../../../../core/constants/app_colors.dart';
+import '../../../../core/theme/trainflow_tokens.dart';
 import '../../../../data/models/pet.dart';
 import '../illustrated_pet_renderer.dart';
 import '../pet_labels.dart';
@@ -25,15 +26,15 @@ class PetIllustrationCard extends StatelessWidget {
         nextStageDistance == null ? semanticDistance : '$semanticDistance 能量';
     return Semantics(
       container: true,
-      label: '伙伴形象卡，${companion.nickname}，${petMoodLabel(companion.mood)}',
+      label: '伙伴形象卡，${companion.displayName}，${petMoodLabel(companion.mood)}',
       child: DecoratedBox(
         decoration: BoxDecoration(
           color: AppColors.petPaper,
-          border: Border.all(color: AppColors.primary.withValues(alpha: 0.12)),
+          border: Border.all(color: TrainFlowTokens.accent.withValues(alpha: 0.12)),
           borderRadius: BorderRadius.circular(30),
           boxShadow: <BoxShadow>[
             BoxShadow(
-              color: AppColors.primary.withValues(alpha: 0.10),
+              color: TrainFlowTokens.accent.withValues(alpha: 0.10),
               blurRadius: 24,
               offset: const Offset(0, 10),
             ),
@@ -67,16 +68,16 @@ class PetIllustrationCard extends StatelessWidget {
                       stage: companion.stage,
                       mood: companion.mood,
                       semanticLabel:
-                          '${companion.nickname}，${petStageLabel(companion.stage)}，'
+                          '${companion.displayName}，${petStageLabel(companion.stage)}，'
                           '心情${petMoodLabel(companion.mood)}，今日获得 $todayEnergy 能量，$semanticDistance',
                       size: 220,
                     ),
                     Text(
-                      companion.nickname,
+                      companion.displayName,
                       style:
                           Theme.of(context).textTheme.headlineSmall?.copyWith(
-                                color: AppColors.primary,
-                                fontWeight: FontWeight.w900,
+                                color: TrainFlowTokens.accent,
+                                fontWeight: FontWeight.w700,
                               ),
                     ),
                     const SizedBox(height: 4),
@@ -84,7 +85,7 @@ class PetIllustrationCard extends StatelessWidget {
                       '${petMoodLabel(companion.mood)} · $displayDistance',
                       textAlign: TextAlign.center,
                       style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                            color: AppColors.textSecondary,
+                            color: TrainFlowTokens.darkTrainingMuted,
                             fontWeight: FontWeight.w700,
                           ),
                     ),
@@ -166,13 +167,13 @@ class _PetPill extends StatelessWidget {
         child: Row(
           mainAxisSize: MainAxisSize.min,
           children: <Widget>[
-            Icon(icon, size: 17, color: AppColors.primary),
+            Icon(icon, size: 17, color: TrainFlowTokens.accent),
             const SizedBox(width: 6),
             Text(
               label,
               style: Theme.of(context).textTheme.labelMedium?.copyWith(
-                    color: AppColors.primary,
-                    fontWeight: FontWeight.w800,
+                    color: TrainFlowTokens.accent,
+                    fontWeight: FontWeight.w600,
                   ),
             ),
           ],

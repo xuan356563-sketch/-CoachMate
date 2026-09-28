@@ -16,6 +16,7 @@ Future<void> showTrainingRecordEditor({
   required BuildContext context,
   required WorkoutDay workout,
   TrainingRecordSource initialSource = TrainingRecordSource.planned,
+  bool requireActualValues = false,
 }) {
   return showModalBottomSheet<void>(
     context: context,
@@ -27,6 +28,7 @@ Future<void> showTrainingRecordEditor({
       child: TrainingRecordEditor(
         workout: workout,
         initialSource: initialSource,
+        requireActualValues: requireActualValues,
       ),
     ),
   );
@@ -37,10 +39,13 @@ class TrainingRecordEditor extends ConsumerStatefulWidget {
     super.key,
     required this.workout,
     this.initialSource = TrainingRecordSource.planned,
+    this.requireActualValues = false,
   });
 
   final WorkoutDay workout;
   final TrainingRecordSource initialSource;
+  // 跟练结束只证明步骤流已结束，不能把计划值当作实际完成值。
+  final bool requireActualValues;
 
   @override
   ConsumerState<TrainingRecordEditor> createState() =>
@@ -60,8 +65,8 @@ class _TrainingRecordEditorState extends ConsumerState<TrainingRecordEditor> {
   late final TextEditingController _interruptionReasonController;
   late final TextEditingController _noteController;
   late List<_ExerciseRecordDraft> _exerciseDrafts;
-  int _completionPercentage = 100;
-  int _rpe = 6;
+  int? _completionPercentage;
+  int? _rpe;
   String? _errorMessage;
   TrainingEnergySuggestion? _energySuggestion;
   TrainingEnergySource? _energySource;
@@ -73,8 +78,12 @@ class _TrainingRecordEditorState extends ConsumerState<TrainingRecordEditor> {
     super.initState();
     _source = widget.initialSource;
     _activityType = _activityForWorkout(widget.workout);
+    _completionPercentage = widget.requireActualValues ? null : 100;
+    _rpe = widget.requireActualValues ? null : 6;
     _durationController = TextEditingController(
-      text: widget.workout.estimatedMinutes.toString(),
+      text: widget.requireActualValues
+          ? ''
+          : widget.workout.estimatedMinutes.toString(),
     );
     _energyController = TextEditingController();
     _customActivityController = TextEditingController(
@@ -89,8 +98,16 @@ class _TrainingRecordEditorState extends ConsumerState<TrainingRecordEditor> {
     _interruptionReasonController = TextEditingController();
     _noteController = TextEditingController();
     _exerciseDrafts = _buildWorkoutExerciseDrafts(widget.workout);
+    _clearUnconfirmedExerciseValues();
     WidgetsBinding.instance
         .addPostFrameCallback((_) => _loadEnergySuggestion());
+  }
+
+  void _clearUnconfirmedExerciseValues() {
+    if (!widget.requireActualValues) return;
+    for (final draft in _exerciseDrafts) {
+      draft.completedSetController.clear();
+    }
   }
 
   @override
@@ -208,8 +225,11 @@ class _TrainingRecordEditorState extends ConsumerState<TrainingRecordEditor> {
       _source = source;
       if (source == TrainingRecordSource.planned) {
         _activityType = _activityForWorkout(widget.workout);
-        _durationController.text = widget.workout.estimatedMinutes.toString();
+        _durationController.text = widget.requireActualValues
+            ? ''
+            : widget.workout.estimatedMinutes.toString();
         _exerciseDrafts = _buildWorkoutExerciseDrafts(widget.workout);
+        _clearUnconfirmedExerciseValues();
       } else {
         _activityType = TrainingActivityType.running;
         _exerciseDrafts = <_ExerciseRecordDraft>[];
@@ -259,19 +279,21 @@ class _TrainingRecordEditorState extends ConsumerState<TrainingRecordEditor> {
       ),
     );
     if (selected == null || !mounted) return;
+    final draft = _ExerciseRecordDraft(
+      exerciseId: selected.id,
+      exerciseName: selected.name,
+      plannedSetCount: 1,
+      repetitionsPerSet: 0,
+    );
+    if (widget.requireActualValues) {
+      draft.completedSetController.clear();
+    }
     setState(() {
-      _exerciseDrafts.add(
-        _ExerciseRecordDraft(
-          exerciseId: selected.id,
-          exerciseName: selected.name,
-          plannedSetCount: 1,
-          repetitionsPerSet: 0,
-        ),
-      );
+      _exerciseDrafts.add(draft);
     });
   }
 
-  void _save() {
+  Future<void> _save() async {
     final int? duration = int.tryParse(_durationController.text.trim());
     final double? energy = _energyController.text.trim().isEmpty
         ? null
@@ -285,6 +307,33 @@ class _TrainingRecordEditorState extends ConsumerState<TrainingRecordEditor> {
     if (duration == null) {
       setState(() => _errorMessage = '请输入有效的实际时长。');
       return;
+    }
+    final int? completion = _completionPercentage;
+    if (completion == null) {
+      setState(() => _errorMessage = '请根据实际执行情况选择完成度。');
+      return;
+    }
+    final int? rpe = _rpe;
+    if (rpe == null) {
+      setState(() => _errorMessage = '请选择本次训练的实际强度 RPE。');
+      return;
+    }
+    if (widget.requireActualValues) {
+      for (final draft in _exerciseDrafts) {
+        // 已明确勾选逐组详情时，由实际明细计数，不要求重复填写汇总。
+        if (draft.setDrafts.any((set) => set.completed)) continue;
+        final text = draft.completedSetController.text.trim();
+        if (text.isEmpty && completion > 0) {
+          setState(() => _errorMessage =
+              '请填写${draft.exerciseName}的实际完成组数，未执行请填 0，或勾选已完成的逐组详情。');
+          return;
+        }
+        if (text.isNotEmpty && int.tryParse(text) == null) {
+          setState(() => _errorMessage =
+              '${draft.exerciseName}的实际完成组数请输入整数，未执行请填 0。');
+          return;
+        }
+      }
     }
     final List<ExerciseExecutionRecord> exerciseRecords =
         _exerciseDrafts.map((_ExerciseRecordDraft draft) {
@@ -341,8 +390,8 @@ class _TrainingRecordEditorState extends ConsumerState<TrainingRecordEditor> {
       activityType: _activityType,
       customActivityName: _customActivityController.text,
       actualDurationMinutes: duration,
-      completionPercentage: _completionPercentage,
-      rpe: _rpe,
+      completionPercentage: completion,
+      rpe: rpe,
       energyKcal: energy,
       energySource:
           energy == null ? null : _energySource ?? TrainingEnergySource.manual,
@@ -359,10 +408,15 @@ class _TrainingRecordEditorState extends ConsumerState<TrainingRecordEditor> {
               : _noteController.text,
     );
     try {
-      ref.read(trainingMvpProvider.notifier).saveTrainingRecord(request);
+      await ref.read(trainingMvpProvider.notifier).saveTrainingRecord(request);
+      if (!mounted) return;
       Navigator.of(context).pop();
     } on FormatException catch (error) {
+      if (!mounted) return;
       setState(() => _errorMessage = error.message.toString());
+    } on Object catch (error) {
+      if (!mounted) return;
+      setState(() => _errorMessage = '训练记录保存失败：$error，请重试。');
     }
   }
 
@@ -561,11 +615,13 @@ class _TrainingRecordEditorState extends ConsumerState<TrainingRecordEditor> {
                         ),
                       ),
                     const SizedBox(height: 14),
+                    if (widget.requireActualValues)
+                      const Text('跟练结束不代表完成训练。请填写实际时长、完成度和实际组数；跳过步骤不会自动算作完成。'),
                     Text('完成度', style: Theme.of(context).textTheme.titleSmall),
                     const SizedBox(height: 8),
                     Wrap(
                       spacing: 8,
-                      children: <int>[25, 50, 75, 100]
+                      children: <int>[0, 25, 50, 75, 100]
                           .map(
                             (int value) => ChoiceChip(
                               label: Text('$value% 完成'),
@@ -661,7 +717,8 @@ class _TrainingRecordEditorState extends ConsumerState<TrainingRecordEditor> {
                     const SizedBox(height: 4),
                     const Text(
                       '实际动作记录',
-                      style: TextStyle(color: TrainFlowTokens.darkTrainingMuted),
+                      style:
+                          TextStyle(color: TrainFlowTokens.darkTrainingMuted),
                     ),
                     const SizedBox(height: 10),
                     for (int index = 0;
@@ -812,7 +869,8 @@ class _MetricEditorCard extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: <Widget>[
-          Text(label, style: const TextStyle(color: TrainFlowTokens.darkTrainingMuted)),
+          Text(label,
+              style: const TextStyle(color: TrainFlowTokens.darkTrainingMuted)),
           const SizedBox(height: 6),
           Row(
             crossAxisAlignment: CrossAxisAlignment.end,

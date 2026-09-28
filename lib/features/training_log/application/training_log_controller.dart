@@ -1,3 +1,6 @@
+import '../../../plugins/application/feature_controller_binding.dart';
+import '../../../plugins/application/feature_access.dart';
+import '../../../plugins/application/plugin_runtime_provider.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../data/models/training_log.dart';
@@ -18,21 +21,33 @@ final trainingLogControllerProvider =
 class TrainingLogController extends Notifier<List<TrainingLog>> {
   @override
   List<TrainingLog> build() {
+    bindFeatureController(ref, 'feature.training_log', 'controller', this);
     return ref.read(trainingLogRepositoryProvider).listLogs();
   }
 
-  List<TrainingLog> save(TrainingLog log) {
+  Future<List<TrainingLog>> save(
+    TrainingLog log, {
+    FeatureOperation? sourceOperation,
+  }) async {
+    final FeatureOperation operation = sourceOperation ??
+        ref.read(featureAccessProvider).beginOperation('feature.training_log');
     final TrainingLogRepository repository =
         ref.read(trainingLogRepositoryProvider);
-    repository.saveLog(log);
-    state = repository.listLogs();
-    return state;
+    final LocalStorageService storage = ref.read(localStorageServiceProvider);
+    return operation.commit(() async {
+      repository.saveLog(log);
+      await storage.flush();
+      state = repository.listLogs();
+      return state;
+    });
   }
 
-  void clear() {
+  Future<void> clear() async {
     final TrainingLogRepository repository =
         ref.read(trainingLogRepositoryProvider);
+    final LocalStorageService storage = ref.read(localStorageServiceProvider);
     repository.clearLogs();
+    await storage.flush();
     state = repository.listLogs();
   }
 }

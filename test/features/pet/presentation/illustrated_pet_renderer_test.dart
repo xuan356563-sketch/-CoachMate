@@ -21,7 +21,7 @@ void main() {
                 species: PetSpecies.balanceRaccoon,
                 stage: stage,
                 mood: mood,
-                semanticLabel: '衡衡狸，${stage.id}，${mood.id}',
+                semanticLabel: '袋小满，${stage.id}，${mood.id}',
               ),
             ),
           ),
@@ -65,7 +65,7 @@ void main() {
         );
         signatures.add(canvas.visual.expressionSignature);
         expect(
-          find.bySemanticsLabel('衡衡狸，sprout，${mood.id}'),
+          find.bySemanticsLabel('袋小满，sprout，${mood.id}'),
           findsOne,
         );
       }

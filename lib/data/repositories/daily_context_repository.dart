@@ -41,6 +41,7 @@ class InMemoryDailyContextRepository implements DailyContextRepository {
           ? '尚未应用今日现实约束调整。'
           : context.statusMessage,
       appliedDecisions: _normalizeAppliedDecisions(context.appliedDecisions),
+      statusConfirmedAt: context.statusConfirmedAt,
     );
   }
 }
@@ -107,6 +108,7 @@ class PersistedDailyContextRepository implements DailyContextRepository {
           ? '尚未应用今日现实约束调整。'
           : context.statusMessage,
       appliedDecisions: _normalizeAppliedDecisions(context.appliedDecisions),
+      statusConfirmedAt: context.statusConfirmedAt,
     );
   }
 }

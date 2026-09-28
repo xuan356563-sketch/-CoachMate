@@ -14,8 +14,12 @@ class DailyAdjustmentService {
     required BodyMetric? latestBodyMetric,
     required PainLog? latestPainLog,
     required MotionAnalysisResult? latestMotionAnalysisResult,
-    required int readinessScore,
+    required int? readinessScore,
   }) {
+    // 历史、演示和不完整分析仍可阅读，但不得成为训练调整证据。
+    if (!(latestMotionAnalysisResult?.usableForDecision ?? false)) {
+      latestMotionAnalysisResult = null;
+    }
     final List<String> badges = [
       '$availableMinutes 分钟',
       workStress.label,
@@ -23,7 +27,7 @@ class DailyAdjustmentService {
       weather.label,
     ];
     final int baseMinutes = baseWorkout.estimatedMinutes;
-    final int fatigueLevel = latestBodyMetric?.fatigueLevel ?? 0;
+    final int fatigueLevel = latestBodyMetric?.hasValue('fatigueLevel') == true ? latestBodyMetric!.fatigueLevel : 0;
 
     if (latestPainLog?.requiresMedicalAttention ?? false) {
       return DailyAdjustmentDecision(
@@ -46,7 +50,7 @@ class DailyAdjustmentService {
     }
 
     if ((latestPainLog?.painLevel ?? 0) >= 4 ||
-        readinessScore < 55 ||
+        (readinessScore != null && readinessScore < 55) ||
         fatigueLevel >= 7) {
       return DailyAdjustmentDecision(
         decisionType: TrainingDecisionType.recovery,
@@ -218,7 +222,7 @@ class DailyAdjustmentService {
       );
     }
 
-    if (readinessScore >= 82 && workStress == WorkStressLevel.normal) {
+    if ((readinessScore != null && readinessScore >= 82) && workStress == WorkStressLevel.normal) {
       return DailyAdjustmentDecision(
         decisionType: TrainingDecisionType.normal,
         availableMinutes: availableMinutes,
@@ -244,8 +248,8 @@ class DailyAdjustmentService {
       workStress: workStress,
       environment: environment,
       weather: weather,
-      decisionLabel: '按计划',
-      reason: '当前身体状态和现实约束没有触发降级规则。',
+      decisionLabel: readinessScore == null ? '待确认状态' : '按计划',
+      reason: readinessScore == null ? '缺少当日确认或有效身体记录，无法评估准备度；计划未改变。' : '当前身体状态和现实约束没有触发降级规则。',
       adjustedMinutes: baseMinutes.clamp(0, availableMinutes).toInt(),
       planChangeSummary: '保持今日训练内容，按反馈决定是否记录降级。',
       constraintBadges: badges,

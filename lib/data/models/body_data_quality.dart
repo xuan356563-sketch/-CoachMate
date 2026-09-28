@@ -55,6 +55,7 @@ class BodyDataQualityReport {
   }
 
   String get statusLabel {
+    if (coveredDays == 0) return '无法评估';
     if (issues.any(
       (BodyDataQualityIssue issue) =>
           issue.severity == BodyDataQualitySeverity.risk,
@@ -67,6 +68,7 @@ class BodyDataQualityReport {
     )) {
       return '可用但需确认';
     }
-    return '可用';
+    if (coveredDays < 7) return '记录不足';
+    return '已检查记录';
   }
 }

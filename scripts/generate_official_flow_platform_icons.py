@@ -113,25 +113,6 @@ def _write(path: Path, data: bytes) -> None:
     temporary_path.replace(path)
 
 
-def _validate_config() -> None:
-    project = (ROOT / "ios/Runner.xcodeproj/project.pbxproj").read_text()
-    if project.count("ASSETCATALOG_COMPILER_APPICON_NAME = OfficialFlowIcon;") != 3:
-        raise ValueError("iOS 三个构建配置必须共同指向 OfficialFlowIcon")
-    android = (ROOT / "android/app/src/main/AndroidManifest.xml").read_text()
-    if 'android:icon="@mipmap/ic_trainmate_official_flow"' not in android:
-        raise ValueError("AndroidManifest.xml 尚未指向 Ninja Flow 官方图标")
-    manifest = json.loads((ROOT / "web/manifest.json").read_text())
-    expected = [
-        "icons/official-flow/Icon-192.png", "icons/official-flow/Icon-512.png",
-        "icons/official-flow/Icon-maskable-192.png", "icons/official-flow/Icon-maskable-512.png",
-    ]
-    if [item["src"] for item in manifest["icons"]] != expected:
-        raise ValueError("Web manifest 尚未精确指向 Ninja Flow 官方图标")
-    index = (ROOT / "web/index.html").read_text()
-    if 'href="icons/official-flow/Icon-192.png"' not in index or 'href="official-flow-favicon.png"' not in index:
-        raise ValueError("Web index 尚未指向 Ninja Flow 官方图标")
-
-
 def _check() -> dict[str, object]:
     expected = _expected()
     for path, data in expected.items():
@@ -141,13 +122,12 @@ def _check() -> dict[str, object]:
             with Image.open(path) as image:
                 if image.mode != "RGB":
                     raise ValueError(f"官方图标必须完全不透明：{path.relative_to(ROOT)}")
-    _validate_config()
     return {"status": "ok", "ios": len(IOS_SLOTS), "android": len(ANDROID_SIZES), "web": len(WEB_SIZES)}
 
 
 def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("--check", action="store_true", help="只读复算图标、尺寸与三端配置")
+    parser.add_argument("--check", action="store_true", help="只读复算归档图标与尺寸")
     args = parser.parse_args()
     try:
         if args.check:

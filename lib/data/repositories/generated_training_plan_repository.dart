@@ -96,6 +96,9 @@ class GeneratedTrainingPlanRepository {
     PlanGenerationDraft draft, {
     required DateTime activatedAt,
   }) {
+    if (!draft.canActivate) {
+      throw StateError('草稿来源缺失或未通过安全审计，请重新生成。');
+    }
     GeneratedTrainingPlanHistory history = getHistory();
     final List<GeneratedPlanVersion> versions =
         List<GeneratedPlanVersion>.from(history.versions);
@@ -122,7 +125,9 @@ class GeneratedTrainingPlanRepository {
           source: GeneratedPlanSource.skillAi,
           createdAt: draft.createdAt,
           activatedAt: activatedAt,
-          inputDigest: draft.localContextFingerprint,
+          inputDigest:
+              draft.businessContextFingerprint ?? draft.localContextFingerprint,
+          pluginRefs: draft.pluginRefs,
           clientContextDigest: draft.contextDigest,
           artifactId: draft.artifactId,
           skillRef: draft.skillRef,
@@ -151,6 +156,28 @@ class GeneratedTrainingPlanRepository {
     );
     _saveHistory(history);
     return version;
+  }
+
+  /// 准备本地版本单键提交；调用方等待持久化后才报告成功。
+  GeneratedTrainingPlanHistory prepareLocalVersion(GeneratedPlanVersion version,
+      {required String? expectedBaseVersionId}) {
+    final history = getHistory();
+    if (version.source != GeneratedPlanSource.localRules || version.resourceRef == null ||
+        version.artifactId != null || version.skillRef != null || version.prescription != null ||
+        !version.auditSummary.canActivate || (version.pluginRefs?.isEmpty ?? true)) {
+      throw StateError('本地计划缺少真实来源或未通过审核');
+    }
+    if (history.activeVersionId == version.id) return history;
+    if (history.activeVersionId != expectedBaseVersionId || history.versions.any((v) => v.id == version.id)) {
+      throw StateError('有效计划已变化，请重新生成本地草稿');
+    }
+    final versions = [...history.versions];
+    final legacy = getPlan();
+    if (versions.isEmpty && legacy != null && !isAutoFallbackPlan()) versions.add(_legacyVersion(legacy, version.activatedAt));
+    versions.add(version);
+    while (versions.length > 5) { versions.removeAt(0); }
+    return GeneratedTrainingPlanHistory(activeVersionId: version.id, versions: List.unmodifiable(versions),
+      activationEvents: _appendEvent(history.activationEvents, GeneratedPlanActivationEvent(versionId: version.id, activatedAt: version.activatedAt, action: 'activate')));
   }
 
   GeneratedPlanVersion? activateVersion(

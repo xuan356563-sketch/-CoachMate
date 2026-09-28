@@ -1,0 +1,17 @@
+{
+  "availability": "external_optional",
+  "description": "男女模特 4K 动作图、身份锚点、审核记录与生成任务清单的仓库外来源目录。",
+  "expected_file_count": 3082,
+  "expected_total_bytes": 13654522789,
+  "id": "exercise-media-source",
+  "inventory_fingerprint": "537786fb375f3d603c273c303a780aefb743b148f705481379dd6847a072147f",
+  "inventory_fingerprint_algorithm": "sha256(relative_path_and_size_v1)",
+  "legacy_manifest_relative_path": "输出/全量_男女_4K_标准版/任务清单.json",
+  "license_status": "unverified",
+  "locator_type": "repository_sibling",
+  "root_relative_to_repository": "../动作库生成",
+  "variants": [
+    "female",
+    "male"
+  ]
+}

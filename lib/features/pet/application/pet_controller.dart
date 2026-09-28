@@ -13,6 +13,9 @@ import '../../../data/repositories/pet_repository.dart';
 import '../../../data/repositories/training_log_repository.dart';
 import '../../../services/local_storage_service.dart';
 import '../../../services/pet_energy_calculator.dart';
+import '../../../plugins/application/feature_access.dart';
+import '../../../plugins/application/feature_controller_binding.dart';
+import '../../../plugins/application/plugin_runtime_provider.dart';
 import '../../daily_adjustment/application/daily_adjustment_controller.dart';
 import '../../profile/application/health_sync_controller.dart';
 import '../../training_log/application/training_log_controller.dart';
@@ -168,6 +171,7 @@ class PetState {
 const Object _petStateUnchanged = Object();
 
 class PetController extends AsyncNotifier<PetState> {
+  static const String _featureId = 'feature.pet';
   static const int _energyModelVersion = 1;
   static const int _maximumTrainingLogs = 200;
   static const int _maximumAppliedDecisionDays = 90;
@@ -182,9 +186,14 @@ class PetController extends AsyncNotifier<PetState> {
   late PetLocalDayContext Function() _localDayContext;
   late String _athleteProfileId;
   bool _hasDatabase = false;
+  ProviderSubscription<int>? _energyRefreshSubscription;
+  bool _resumeWithoutReconcile = false;
 
   @override
   Future<PetState> build() async {
+    _energyRefreshSubscription = null;
+    final bool resumeWithoutReconcile = _resumeWithoutReconcile;
+    _resumeWithoutReconcile = false;
     final LocalStorageService storage = ref.watch(localStorageServiceProvider);
     final PetDatabaseGateway? database = ref.watch(petDatabaseGatewayProvider);
     if (database == null) {
@@ -200,20 +209,38 @@ class PetController extends AsyncNotifier<PetState> {
     _localDayContext = ref.watch(petLocalDayContextProvider);
     _athleteProfileId = ref.watch(healthSyncAthleteIdProvider);
     _hasDatabase = true;
-    ref.listen<int>(dailyActivityEnergyRefreshSignalProvider, (
-      int? previous,
-      int next,
-    ) {
-      if (previous == next) return;
-      unawaited(refreshToday());
+    bindFeatureController(
+      ref,
+      _featureId,
+      'controller',
+      this,
+      cleanup: _pauseResources,
+      onRestore: _restoreResourcesAfterRollback,
+    );
+    ref.listen<bool>(featureEnabledProvider(_featureId), (_, bool enabled) {
+      if (!enabled) return;
+      _resumeWithoutReconcile = true;
+      ref.invalidateSelf();
     });
+    if (ref.read(featureAccessProvider).isWritable(_featureId)) {
+      _startEnergyRefreshSubscription();
+    }
 
     try {
       final PetProfile? profile =
           await _petRepository.loadProfile(_athleteProfileId);
       if (profile?.activePetId == null) return PetState.needsFirstEgg();
+      if (resumeWithoutReconcile ||
+          !ref.read(featureAccessProvider).isWritable(_featureId)) {
+        return _loadReadyState(
+          pendingSettlement: null,
+          statusMessage: '宠物功能已暂停，现有伙伴与能量记录仍可阅读。',
+        );
+      }
+      final FeatureOperation operation =
+          ref.read(featureAccessProvider).beginOperation(_featureId);
       final PetPendingSettlement? pending =
-          await _reconcileKnownDatesFor(profile!);
+          await _reconcileKnownDatesFor(profile!, operation);
       return _loadReadyState(
         pendingSettlement: pending,
         statusMessage:
@@ -227,30 +254,33 @@ class PetController extends AsyncNotifier<PetState> {
   }
 
   Future<void> chooseFirstEgg(PetSpecies species) async {
+    final FeatureOperation operation =
+        ref.read(featureAccessProvider).beginOperation(_featureId);
     if (!_hasDatabase) return;
     final PetLocalDayContext context = _localDayContext();
     final DateTime now = context.now;
     final String petId =
         'pet-$_athleteProfileId-${species.id}-${now.toUtc().microsecondsSinceEpoch}';
     try {
-      await _petRepository.chooseFirstEgg(
-        PetFirstEggWrite(
-          companion: PetCollectionWrite(
-            petId: petId,
-            athleteProfileId: _athleteProfileId,
-            species: species,
-            nickname: _defaultNickname(species),
-            unlockedAt: now,
-            bornAt: now,
-            createdAt: now,
-            updatedAt: now,
-          ),
-        ),
-      );
+      await operation.commit(() => _petRepository.chooseFirstEgg(
+            PetFirstEggWrite(
+              companion: PetCollectionWrite(
+                petId: petId,
+                athleteProfileId: _athleteProfileId,
+                species: species,
+                nickname: _defaultNickname(species),
+                unlockedAt: now,
+                bornAt: now,
+                createdAt: now,
+                updatedAt: now,
+              ),
+            ),
+          ));
       final PetProfile profile =
           (await _petRepository.loadProfile(_athleteProfileId))!;
       final PetPendingSettlement? pending =
-          await _reconcileKnownDatesFor(profile);
+          await _reconcileKnownDatesFor(profile, operation);
+      operation.checkActive();
       if (!ref.mounted) return;
       state = AsyncData(
         await _loadReadyState(
@@ -266,6 +296,8 @@ class PetController extends AsyncNotifier<PetState> {
 
   /// 核对当前自然日；异常只落到宠物状态，不向训练业务抛出。
   Future<void> refreshToday() async {
+    final FeatureOperation operation =
+        ref.read(featureAccessProvider).beginOperation(_featureId);
     if (!_hasDatabase) return;
     try {
       final PetProfile? profile =
@@ -296,7 +328,9 @@ class PetController extends AsyncNotifier<PetState> {
         logs: logs,
         decisions: decisions,
         currentContext: context,
+        operation: operation,
       );
+      operation.checkActive();
       if (!ref.mounted) return;
       final PetPendingSettlement? pending = result.awardedDelta > 0
           ? PetPendingSettlement(
@@ -313,12 +347,15 @@ class PetController extends AsyncNotifier<PetState> {
         ),
       );
     } catch (_) {
+      operation.checkActive();
       _setOperationFailure('宠物能量刷新失败，训练记录和每日调整仍已保留。');
     }
   }
 
   /// 对摘要、训练事实和恢复事实的日期并集执行幂等补算。
   Future<void> reconcileKnownDates() async {
+    final FeatureOperation operation =
+        ref.read(featureAccessProvider).beginOperation(_featureId);
     if (!_hasDatabase) return;
     try {
       final PetProfile? profile =
@@ -328,7 +365,8 @@ class PetController extends AsyncNotifier<PetState> {
         return;
       }
       final PetPendingSettlement? newPending =
-          await _reconcileKnownDatesFor(profile!);
+          await _reconcileKnownDatesFor(profile!, operation);
+      operation.checkActive();
       if (!ref.mounted) return;
       state = AsyncData(
         await _loadReadyState(
@@ -339,20 +377,23 @@ class PetController extends AsyncNotifier<PetState> {
         ),
       );
     } catch (_) {
+      operation.checkActive();
       _setOperationFailure('宠物历史能量补算失败，将在下次刷新时重试。');
     }
   }
 
   Future<void> switchActivePet(String petId) async {
+    final FeatureOperation operation =
+        ref.read(featureAccessProvider).beginOperation(_featureId);
     if (!_hasDatabase) return;
     final String normalized = petId.trim();
     if (normalized.isEmpty) throw ArgumentError('宠物编号不能为空');
     try {
-      await _petRepository.switchActivePet(
-        athleteProfileId: _athleteProfileId,
-        petId: normalized,
-        updatedAt: _localDayContext().now,
-      );
+      await operation.commit(() => _petRepository.switchActivePet(
+            athleteProfileId: _athleteProfileId,
+            petId: normalized,
+            updatedAt: _localDayContext().now,
+          ));
       await refreshToday();
     } catch (error) {
       _setOperationFailure('伙伴切换失败，请稍后重试。');
@@ -361,6 +402,7 @@ class PetController extends AsyncNotifier<PetState> {
   }
 
   void acknowledgeSettlement() {
+    ref.read(featureAccessProvider).requireEnabled(_featureId);
     final PetState? current = state.value;
     if (current == null || current.pendingSettlement == null) return;
     state = AsyncData(current.copyWith(pendingSettlement: null));
@@ -368,6 +410,7 @@ class PetController extends AsyncNotifier<PetState> {
 
   Future<PetPendingSettlement?> _reconcileKnownDatesFor(
     PetProfile profile,
+    FeatureOperation operation,
   ) async {
     final PetLocalDayContext context = _localDayContext();
     final List<DailyActivitySummary> summaries =
@@ -401,6 +444,7 @@ class PetController extends AsyncNotifier<PetState> {
         logs: logs,
         decisions: decisions,
         currentContext: context,
+        operation: operation,
       );
       if (result.awardedDelta > 0) {
         pending = PetPendingSettlement(localDate: localDate, result: result);
@@ -417,6 +461,7 @@ class PetController extends AsyncNotifier<PetState> {
     required List<TrainingLog> logs,
     required List<AppliedDailyDecisionFact> decisions,
     required PetLocalDayContext currentContext,
+    required FeatureOperation operation,
   }) {
     final PetTrainingDayFacts facts = _trainingBridge.factsForDate(
       localDate: localDate,
@@ -442,36 +487,66 @@ class PetController extends AsyncNotifier<PetState> {
       summary: summary,
       currentContext: currentContext,
     );
-    return _petRepository.settleDay(
-      PetSettlementWrite(
-        summary: summary,
-        athleteProfileId: summary == null ? _athleteProfileId : null,
-        localDate: summary == null ? localDate : null,
-        activePetId: profile.activePetId!,
-        breakdown: breakdown,
-        sourceSnapshot: <String, Object?>{
-          'localDate': localDate,
-          'timeZoneName': timeZone.name,
-          'timeZoneOffsetMinutes': timeZone.offsetMinutes,
-          'activity': <String, Object?>{
-            'steps': summary?.steps,
-            'stepGoal': summary?.stepGoal,
-            'standHours': summary?.standHours,
-            'standGoalHours': summary?.standGoalHours,
-            'exerciseMinutes': summary?.exerciseMinutes,
-            'exerciseGoalMinutes': summary?.exerciseGoalMinutes,
-            'activeEnergyKcal': summary?.activeEnergyKcal,
-            'activeEnergyGoalKcal': summary?.activeEnergyGoalKcal,
-          },
-          'training': <String, Object?>{
-            'hasValidTraining': facts.hasValidTraining,
-            'hasAcceptedRecoveryDecision': facts.hasAcceptedRecoveryDecision,
-          },
-        },
-        modelVersion: _energyModelVersion,
-        settledAt: currentContext.now,
-      ),
-    );
+    return operation.commit(() => _petRepository.settleDay(
+          PetSettlementWrite(
+            summary: summary,
+            athleteProfileId: summary == null ? _athleteProfileId : null,
+            localDate: summary == null ? localDate : null,
+            activePetId: profile.activePetId!,
+            breakdown: breakdown,
+            sourceSnapshot: <String, Object?>{
+              'localDate': localDate,
+              'timeZoneName': timeZone.name,
+              'timeZoneOffsetMinutes': timeZone.offsetMinutes,
+              'activity': <String, Object?>{
+                'steps': summary?.steps,
+                'stepGoal': summary?.stepGoal,
+                'standHours': summary?.standHours,
+                'standGoalHours': summary?.standGoalHours,
+                'exerciseMinutes': summary?.exerciseMinutes,
+                'exerciseGoalMinutes': summary?.exerciseGoalMinutes,
+                'activeEnergyKcal': summary?.activeEnergyKcal,
+                'activeEnergyGoalKcal': summary?.activeEnergyGoalKcal,
+              },
+              'training': <String, Object?>{
+                'hasValidTraining': facts.hasValidTraining,
+                'hasAcceptedRecoveryDecision':
+                    facts.hasAcceptedRecoveryDecision,
+              },
+            },
+            modelVersion: _energyModelVersion,
+            settledAt: currentContext.now,
+          ),
+        ));
+  }
+
+  void _startEnergyRefreshSubscription() {
+    if (_energyRefreshSubscription != null) return;
+    _energyRefreshSubscription =
+        ref.listen<int>(dailyActivityEnergyRefreshSignalProvider, (
+      int? previous,
+      int next,
+    ) {
+      if (previous == next ||
+          !ref.read(featureAccessProvider).isWritable(_featureId)) {
+        return;
+      }
+      unawaited(refreshToday());
+    });
+  }
+
+  Future<void> _pauseResources() async {
+    _energyRefreshSubscription?.close();
+    _energyRefreshSubscription = null;
+  }
+
+  void _restoreResourcesAfterRollback() {
+    if (!ref.mounted ||
+        !ref.read(featureAccessProvider).isEnabled(_featureId)) {
+      return;
+    }
+    _resumeWithoutReconcile = true;
+    ref.invalidateSelf();
   }
 
   Future<PetState> _loadReadyState({
@@ -579,7 +654,7 @@ String _defaultNickname(PetSpecies species) {
     PetSpecies.steadyTurtle => '立稳龟',
     PetSpecies.energyDragon => '燃能龙',
     PetSpecies.strengthBear => '力练熊',
-    PetSpecies.balanceRaccoon => '衡衡狸',
+    PetSpecies.balanceRaccoon => balanceRaccoonDisplayName,
   };
 }
 

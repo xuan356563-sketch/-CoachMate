@@ -23,7 +23,7 @@ void main() {
     training.setKnowledgeSearchQuery('跑步');
     final TrainingMvpState before = container.read(trainingMvpProvider);
 
-    container
+    await container
         .read(bodyMetricExportControllerProvider.notifier)
         .recordJsonExport(before.bodyMetricJsonExport);
     await Future<void>.delayed(Duration.zero);

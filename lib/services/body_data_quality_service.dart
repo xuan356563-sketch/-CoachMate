@@ -2,161 +2,179 @@ import '../data/models/body_data_quality.dart';
 import '../data/models/body_metric.dart';
 
 class BodyDataQualityService {
-  BodyDataQualityReport buildReport(List<BodyMetric> metrics) {
-    if (metrics.isEmpty) {
-      return const BodyDataQualityReport(
-        recordCount: 0,
-        coveredDays: 0,
-        sourceCount: 0,
-        qualityScore: 0.0,
-        coverageLabel: '暂无记录',
-        sourceLabel: '暂无来源',
-        revisionPolicyLabel: '暂无可修订数据',
-        issues: [
-          BodyDataQualityIssue(
-            title: '缺少身体数据',
-            description: '计划、恢复和画像只能使用保守默认值；先完成一次 10 秒快录。',
-            severity: BodyDataQualitySeverity.warning,
-          ),
-        ],
-      );
+  BodyDataQualityReport buildReport(List<BodyMetric> metrics, {DateTime? now}) {
+    final current = (now ?? DateTime.now()).toLocal();
+    final today = DateTime(current.year, current.month, current.day);
+    final start = DateTime(today.year, today.month, today.day - 6);
+    const fields = [
+      'weightKg',
+      'bodyFatPercentage',
+      'restingHeartRate',
+      'hrvMs',
+      'sleepHours',
+      'fatigueLevel',
+      'sorenessLevel'
+    ];
+    final valid = metrics
+        .where((m) =>
+            m.sourceVerified &&
+            !m.measuredAt.isAfter(current) &&
+            fields.any(m.hasValue))
+        .toList()
+      ..sort((a, b) => b.measuredAt.compareTo(a.measuredAt));
+    final recent =
+        valid.where((m) => !m.measuredAt.toLocal().isBefore(start)).toList();
+    String dayKey(BodyMetric m) {
+      final date = m.measuredAt.toLocal();
+      return '${date.year}-${date.month}-${date.day}';
     }
 
-    final List<BodyMetric> sortedMetrics = [...metrics]
-      ..sort((BodyMetric a, BodyMetric b) {
-        return b.measuredAt.compareTo(a.measuredAt);
-      });
-    final BodyMetric latest = sortedMetrics.first;
-    final BodyMetric oldest = sortedMetrics.last;
-    final int coveredDays =
-        latest.measuredAt.difference(oldest.measuredAt).inDays + 1;
-    final int sourceCount =
-        sortedMetrics.map((BodyMetric metric) => metric.source).toSet().length;
-    final List<BodyDataQualityIssue> issues = [
-      ..._missingIssues(latest),
-      ..._outlierIssues(sortedMetrics),
-      ..._sourceIssues(sourceCount),
+    final days = recent.map(dayKey).toSet().length;
+    final sources = recent.map((m) => m.source).toSet().length;
+    final issues = <BodyDataQualityIssue>[
+      BodyDataQualityIssue(
+        title: days == 7 ? '七日记录覆盖完整' : '本窗口记录不足',
+        description: '观察窗口 ${_dateLabel(start)} 至 ${_dateLabel(today)}；'
+            '${recent.length} 条有效记录、$days/7 个自然日。'
+            '${days == 7 ? '七个自然日均有记录，日期覆盖连续；不代表每项指标完整或健康状态正常。' : '日期覆盖尚不完整；未记录的日期不补零。'}',
+        severity: BodyDataQualitySeverity.info,
+      ),
+      if (metrics.length != recent.length)
+        BodyDataQualityIssue(
+          title: '历史与不可用记录仍保留',
+          description: '共保存 ${metrics.length} 条；窗口外、未来、来源未确认或无有效字段的 '
+              '${metrics.length - recent.length} 条记录不纳入本窗口计算。',
+          severity: BodyDataQualitySeverity.info,
+        ),
+      if (valid.isNotEmpty) ..._missingIssues(valid.first, current),
+      ..._outlierIssues(recent),
+      ..._sourceIssues(sources),
     ];
-    final double coverageScore =
-        (sortedMetrics.length / 7).clamp(0.0, 1.0).toDouble();
-    final double issuePenalty = issues.fold<double>(
-      0,
-      (double total, BodyDataQualityIssue issue) {
-        return total +
+    // 保留原评分系数和异常阈值，覆盖率改用七日内实际记录的不同日期。
+    // 窗口与缺失依据是说明，不另加扣分规则。
+    final scoredIssues = [
+      if (valid.isNotEmpty) ..._missingIssues(valid.first, current),
+      ..._outlierIssues(recent)
+          .where((e) => e.severity != BodyDataQualitySeverity.info),
+      ..._sourceIssues(sources),
+    ];
+    final penalty = scoredIssues.fold<double>(
+        0,
+        (total, issue) =>
+            total +
             switch (issue.severity) {
               BodyDataQualitySeverity.info => 0.04,
               BodyDataQualitySeverity.warning => 0.12,
               BodyDataQualitySeverity.risk => 0.25,
-            };
-      },
-    );
-
+            });
     return BodyDataQualityReport(
-      recordCount: sortedMetrics.length,
-      coveredDays: coveredDays,
-      sourceCount: sourceCount,
-      qualityScore: (0.35 + coverageScore * 0.65 - issuePenalty)
-          .clamp(0.0, 1.0)
-          .toDouble(),
-      coverageLabel: _coverageLabel(sortedMetrics.length, coveredDays),
-      sourceLabel:
-          sourceCount == 1 ? '单一来源，口径一致' : '$sourceCount 类来源，需看 source',
-      revisionPolicyLabel: '同日覆盖会写入本地修订留痕并持久化；正式数据库阶段仍需迁移修订表。',
-      issues: issues.isEmpty
-          ? const [
-              BodyDataQualityIssue(
-                title: '数据可用于趋势判断',
-                description: '近 7 日记录连续，未发现明显体重或静息心率异常。',
-                severity: BodyDataQualitySeverity.info,
-              ),
-            ]
-          : issues,
+      recordCount: metrics.length,
+      coveredDays: days,
+      sourceCount: sources,
+      qualityScore: days == 0
+          ? 0
+          : (0.35 + days / 7 * 0.65 - penalty).clamp(0.0, 1.0).toDouble(),
+      coverageLabel: '近 7 个自然日：$days/7 日有有效记录',
+      sourceLabel: sources == 0
+          ? '本窗口无可用来源'
+          : sources == 1
+              ? '单一来源，不代表已验证准确性'
+              : '$sources 类来源，需核对记录口径',
+      revisionPolicyLabel: '同日覆盖会保留旧值、新值、来源和原因；历史记录继续可读。',
+      issues: issues,
     );
   }
 
-  List<BodyDataQualityIssue> _missingIssues(BodyMetric latest) {
-    final int daysSinceLatest =
-        DateTime.now().difference(latest.measuredAt).inDays;
+  String _dateLabel(DateTime date) =>
+      '${date.year}-${date.month.toString().padLeft(2, '0')}-${date.day.toString().padLeft(2, '0')}';
+
+  List<BodyDataQualityIssue> _missingIssues(BodyMetric latest, DateTime now) {
+    final int daysSinceLatest = now.difference(latest.measuredAt).inDays;
     if (daysSinceLatest >= 14) {
-      return [
+      return const [
         BodyDataQualityIssue(
           title: '连续缺失超过 2 周',
-          description: '趋势统计会自动跳过缺失日；这里只温和提示一次，不惩罚用户。',
+          description: '趋势统计会跳过缺失日；旧记录不代表今日状态。',
           severity: BodyDataQualitySeverity.warning,
-        ),
+        )
       ];
     }
     if (daysSinceLatest >= 3) {
-      return [
+      return const [
         BodyDataQualityIssue(
           title: '最近几天未记录',
-          description: '短期缺失不影响使用，但准备度会更保守。',
+          description: '未记录不代表状态正常；旧记录不作为今日身体输入。',
           severity: BodyDataQualitySeverity.info,
-        ),
+        )
       ];
     }
     return const [];
   }
 
   List<BodyDataQualityIssue> _outlierIssues(List<BodyMetric> metrics) {
-    if (metrics.length < 2) {
-      return const [];
+    // 每项指标独立选择当天最近的有效值，重复记录不能增加比较样本天数。
+    List<BodyMetric> forField(String field) {
+      final days = <String>{};
+      return metrics
+          .where((m) =>
+              m.hasValue(field) && days.add(_dateLabel(m.measuredAt.toLocal())))
+          .toList();
     }
 
-    final BodyMetric latest = metrics.first;
-    final BodyMetric previous = metrics[1];
-    final List<BodyDataQualityIssue> issues = [];
-    final double weightChange = latest.weightKg - previous.weightKg;
-    if (weightChange.abs() > 2.0) {
-      issues.add(
-        BodyDataQualityIssue(
-          title: '体重日变化偏大',
+    final weights = forField('weightKg');
+    final heartRates = forField('restingHeartRate');
+    final issues = <BodyDataQualityIssue>[];
+    if (weights.length < 2) {
+      issues.add(BodyDataQualityIssue(
+        title: '体重变化无法比较',
+        description: '本窗口有 ${weights.length} 个自然日的有效体重记录；不足两日，无法比较变化，缺值不按零处理。',
+        severity: BodyDataQualitySeverity.info,
+      ));
+    } else {
+      final change = weights[0].weightKg - weights[1].weightKg;
+      if (change.abs() > 2.0) {
+        issues.add(BodyDataQualityIssue(
+          title: '最近两次体重变化偏大',
           description:
-              '最近两次体重变化 ${weightChange.toStringAsFixed(1)} kg，超过 2 kg 时建议确认单位或录入错误。',
+              '${weights[1].measuredDateLabel} 至 ${weights[0].measuredDateLabel} '
+              '体重变化 ${change.toStringAsFixed(1)} kg，超过 2 kg 时建议确认单位或录入错误。',
           severity: BodyDataQualitySeverity.warning,
-        ),
-      );
+        ));
+      }
     }
-
-    final double averageRestingHr = metrics
-            .map((BodyMetric metric) => metric.restingHeartRate)
-            .reduce((int a, int b) => a + b) /
-        metrics.length;
-    final double restingHrDelta = latest.restingHeartRate - averageRestingHr;
-    if (restingHrDelta.abs() > 20) {
-      issues.add(
-        BodyDataQualityIssue(
+    if (heartRates.length < 2) {
+      issues.add(BodyDataQualityIssue(
+        title: '静息心率变化无法比较',
+        description:
+            '本窗口有 ${heartRates.length} 个自然日的有效静息心率记录；不足两日，无法比较变化，缺值不按零处理。',
+        severity: BodyDataQualitySeverity.info,
+      ));
+    } else {
+      final average =
+          heartRates.fold<int>(0, (sum, m) => sum + m.restingHeartRate) /
+              heartRates.length;
+      final delta = heartRates.first.restingHeartRate - average;
+      if (delta.abs() > 20) {
+        issues.add(BodyDataQualityIssue(
           title: '静息心率偏离均值',
           description:
-              '最新静息心率较均值偏离 ${restingHrDelta.toStringAsFixed(0)} bpm，建议确认是否手误或生病。',
+              '本窗口 ${heartRates.length} 日有效记录均值 ${average.toStringAsFixed(1)} bpm；'
+              '最新静息心率偏离 ${delta.toStringAsFixed(0)} bpm，建议核对录入。',
           severity: BodyDataQualitySeverity.risk,
-        ),
-      );
+        ));
+      }
     }
-
     return issues;
   }
 
   List<BodyDataQualityIssue> _sourceIssues(int sourceCount) {
-    if (sourceCount <= 1) {
-      return const [];
-    }
-    return [
+    if (sourceCount <= 1) return const [];
+    return const [
       BodyDataQualityIssue(
         title: '存在多种数据来源',
-        description: '手动、文件或设备来源的口径可能不同，趋势判断会优先看 source 标签。',
+        description: '手动、文件或设备来源的口径可能不同；请核对来源标签。',
         severity: BodyDataQualitySeverity.info,
-      ),
+      )
     ];
-  }
-
-  String _coverageLabel(int recordCount, int coveredDays) {
-    if (recordCount >= 7 && coveredDays <= 9) {
-      return '近 7 日覆盖充分';
-    }
-    if (recordCount >= 3) {
-      return '可看短期趋势';
-    }
-    return '记录偏少，先保守使用';
   }
 }

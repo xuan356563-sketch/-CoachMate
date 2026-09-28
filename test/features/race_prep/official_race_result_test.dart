@@ -84,21 +84,21 @@ void main() {
     });
   });
 
-  test('控制器只接受完整训练事实，并持久化确认与撤销审计', () {
+  test('控制器只接受完整训练事实，并持久化确认与撤销审计', () async {
     final InMemoryLocalStorageService storage = InMemoryLocalStorageService();
     final ProviderContainer container = _container(storage);
     addTearDown(container.dispose);
     final TrainingLogController logController =
         container.read(trainingLogControllerProvider.notifier);
-    logController.save(_trainingLog(id: 'empty-log', actualMinutes: 0));
-    logController.save(
+    await logController.save(_trainingLog(id: 'empty-log', actualMinutes: 0));
+    await logController.save(
       _trainingLog(
         id: 'other-day-log',
         actualMinutes: 251,
         date: DateTime(2026, 11, 28, 8),
       ),
     );
-    logController.save(_trainingLog(id: 'race-log', actualMinutes: 251));
+    await logController.save(_trainingLog(id: 'race-log', actualMinutes: 251));
 
     final RacePlan race = container.read(trainingMvpProvider).races.first;
     final TrainingMvpController controller =
@@ -167,7 +167,7 @@ void main() {
     final InMemoryLocalStorageService storage = InMemoryLocalStorageService();
     final ProviderContainer container = _container(storage);
     addTearDown(container.dispose);
-    container
+    await container
         .read(trainingLogControllerProvider.notifier)
         .save(_trainingLog(id: 'race-log', actualMinutes: 251));
     final String raceId = container.read(trainingMvpProvider).races.first.id;

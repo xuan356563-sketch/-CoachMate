@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter/services.dart';
@@ -12,6 +13,10 @@ import 'package:trainflow_ai/features/dashboard/training_mvp_controller.dart';
 import 'package:trainflow_ai/features/race_prep/application/race_image_recognition_controller.dart';
 import 'package:trainflow_ai/features/race_prep/race_prep_page.dart';
 import 'package:trainflow_ai/services/local_storage_service.dart';
+import 'package:trainflow_ai/plugins/application/plugin_runtime.dart';
+import 'package:trainflow_ai/plugins/application/plugin_runtime_provider.dart';
+import 'package:trainflow_ai/plugins/assembly/built_in_distribution.dart';
+import 'package:trainflow_ai/plugins/core/plugin_core.dart';
 
 final Uint8List _png = base64Decode(
   'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNk+A8AAQUBAScY42YAAAAASUVORK5CYII=',
@@ -213,6 +218,49 @@ void main() {
     expect(state.errorMessage, contains('十分钟后再试'));
   });
 
+  test('赛事识别 Future 迟到时停用会清理结果且不关闭共享客户端', () async {
+    final PluginRuntime runtime = PluginRuntime(
+      PluginRegistry(plugins: builtInDistribution()),
+    );
+    await runtime.initialize();
+    final _DeferredHttpClient client = _DeferredHttpClient();
+    final ProviderContainer container = ProviderContainer(overrides: [
+      pluginRuntimeProvider.overrideWith((ref) => runtime),
+      localStorageServiceProvider.overrideWithValue(
+        InMemoryLocalStorageService(),
+      ),
+      raceImagePickerProvider.overrideWithValue(FakeRaceImagePicker(
+        image: RaceImageFile(bytes: _png, name: 'late.png'),
+      )),
+      sessionTokenStoreProvider.overrideWithValue(MemoryTokenStore()),
+      httpClientProvider.overrideWithValue(client),
+    ]);
+    addTearDown(container.dispose);
+    await container.read(raceImageRecognitionControllerProvider.future);
+    final Future<void> pending = container
+        .read(raceImageRecognitionControllerProvider.notifier)
+        .pickAndRecognize(RaceImageSource.gallery);
+    await client.called.future;
+
+    await runtime.disable('feature.race_prep');
+    client.response.complete(_jsonResponse(<String, dynamic>{
+      'provider': 'test',
+      'model': 'test',
+      'fields': <String, dynamic>{'name': '迟到赛事'},
+      'normalized_text': '迟到赛事',
+      'matched_field_count': 1,
+      'warnings': <String>[],
+    }));
+
+    await expectLater(pending, throwsStateError);
+    final RaceImageRecognitionState value =
+        container.read(raceImageRecognitionControllerProvider).requireValue;
+    expect(value.status, RaceImageRecognitionStatus.idle);
+    expect(value.image, isNull);
+    expect(value.result, isNull);
+    expect(client.closed, isFalse);
+  });
+
   testWidgets('点击填入并编辑后才更新文本，并沿用原导入比赛流程', (WidgetTester tester) async {
     tester.view.physicalSize = const Size(393, 852);
     tester.view.devicePixelRatio = 1;
@@ -270,6 +318,30 @@ void main() {
     expect(storage.readJson('trainflow.races.v1'), isNotNull);
     expect(tester.takeException(), isNull);
   });
+}
+
+class _DeferredHttpClient extends http.BaseClient {
+  final Completer<void> called = Completer<void>();
+  final Completer<http.Response> response = Completer<http.Response>();
+  bool closed = false;
+
+  @override
+  Future<http.StreamedResponse> send(http.BaseRequest request) async {
+    if (!called.isCompleted) called.complete();
+    final http.Response value = await response.future;
+    return http.StreamedResponse(
+      Stream<List<int>>.value(value.bodyBytes),
+      value.statusCode,
+      headers: value.headers,
+      request: request,
+    );
+  }
+
+  @override
+  void close() {
+    closed = true;
+    super.close();
+  }
 }
 
 Future<void> _bringIntoViewport(WidgetTester tester, Finder target) async {

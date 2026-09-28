@@ -141,7 +141,7 @@ class _AbilityAssessmentCard extends StatelessWidget {
           const SizedBox(height: 12),
           InfoRow(
               label: '准备度',
-              value: '${report.readinessScore} · ${report.readinessLabel}'),
+              value: '${report.readinessScore ?? '无法评估'} · ${report.readinessLabel}'),
         ],
       ),
     );

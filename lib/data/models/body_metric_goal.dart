@@ -13,9 +13,9 @@ extension BodyMetricGoalTypeLabel on BodyMetricGoalType {
       case BodyMetricGoalType.restingHeartRate:
         return '静息心率';
       case BodyMetricGoalType.hrv:
-        return 'HRV 恢复';
+        return 'HRV';
       case BodyMetricGoalType.consistency:
-        return '记录连续性';
+        return '累计记录';
     }
   }
 }
@@ -30,6 +30,8 @@ class BodyMetricGoal {
   final String guidance;
   final bool achieved;
   final bool needsProtection;
+  // 内置参考不是用户确认的个人目标，不展示达成进度。
+  final bool isReference;
 
   const BodyMetricGoal({
     required this.type,
@@ -41,6 +43,7 @@ class BodyMetricGoal {
     required this.guidance,
     required this.achieved,
     required this.needsProtection,
+    this.isReference = false,
   });
 }
 

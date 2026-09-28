@@ -8,7 +8,10 @@ import '../theme/trainflow_tokens.dart';
 import 'trainmate_action_character.dart';
 
 export '../theme/trainflow_tokens.dart'
-    show TrainFlowTokens, TrainFlowCardTone, TrainFlowHeaderVariant,
+    show
+        TrainFlowTokens,
+        TrainFlowCardTone,
+        TrainFlowHeaderVariant,
         TrainFlowPageLayout;
 export 'trainmate_back_button.dart';
 
@@ -44,6 +47,10 @@ class TrainFlowPage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final TrainMatePageAccent? pageAccent =
+        TrainMatePageStyleScope.accentOf(context);
+    final bool referenceStyle = pageAccent != null;
+    final bool immersive = TrainMatePageStyleScope.isImmersive(context);
     final TrainFlowHeaderVariant resolvedHeaderVariant = headerVariant ??
         switch (layout) {
           TrainFlowPageLayout.detail ||
@@ -53,13 +60,18 @@ class TrainFlowPage extends StatelessWidget {
           TrainFlowPageLayout.legal =>
             TrainFlowHeaderVariant.compact,
         };
-    final Color pageBackground = switch (layout) {
+    final Color legacyPageBackground = switch (layout) {
       TrainFlowPageLayout.report => TrainFlowTokens.darkTrainingRaised,
       TrainFlowPageLayout.legal => TrainFlowTokens.darkTrainingCard,
       TrainFlowPageLayout.detail ||
       TrainFlowPageLayout.form =>
         TrainFlowTokens.darkTrainingSurface,
     };
+    final Color pageBackground = referenceStyle
+        ? (immersive
+            ? TrainFlowTokens.showcaseActionSurface
+            : TrainFlowTokens.showcasePaper)
+        : legacyPageBackground;
     final Widget header = switch (resolvedHeaderVariant) {
       TrainFlowHeaderVariant.organic => OrganicPageHeader(
           title: title,
@@ -68,6 +80,8 @@ class TrainFlowPage extends StatelessWidget {
           action: action,
           artwork: artwork,
           eyebrow: eyebrow,
+          accent: pageAccent,
+          immersive: immersive,
         ),
       TrainFlowHeaderVariant.compact => _CompactPageHeader(
           title: title,
@@ -76,6 +90,7 @@ class TrainFlowPage extends StatelessWidget {
           action: action,
           artwork: artwork,
           eyebrow: eyebrow,
+          accent: pageAccent,
         ),
       TrainFlowHeaderVariant.none => const SizedBox.shrink(),
     };
@@ -86,7 +101,11 @@ class TrainFlowPage extends StatelessWidget {
         data: TrainMateVisualScope.darkHubTheme(context),
         child: ColoredBox(
           key: ValueKey<String>('trainflow-page-layout-${layout.name}'),
-          color: TrainFlowTokens.darkTrainingSurface,
+          color: referenceStyle
+              ? (immersive
+                  ? TrainFlowTokens.showcaseActionSurface
+                  : TrainFlowTokens.showcasePaper)
+              : TrainFlowTokens.darkTrainingSurface,
           child: Center(
             child: ConstrainedBox(
               key: const ValueKey<String>('trainflow-mobile-canvas'),
@@ -109,25 +128,34 @@ class TrainFlowPage extends StatelessWidget {
                               ),
                               decoration: BoxDecoration(
                                 color: pageBackground,
-                                borderRadius: const BorderRadius.vertical(
+                                borderRadius: BorderRadius.vertical(
                                   top: Radius.circular(
-                                    TrainFlowTokens.sectionRadius,
+                                    referenceStyle
+                                        ? TrainFlowTokens.mainTabShowcaseRadius
+                                        : TrainFlowTokens.sectionRadius,
                                   ),
                                 ),
                               ),
                               child: Padding(
                                 padding: const EdgeInsets.only(top: 12),
                                 child: Column(
-                                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                                  crossAxisAlignment:
+                                      CrossAxisAlignment.stretch,
                                   children: <Widget>[
                                     for (int index = 0;
                                         index < children.length;
                                         index++)
                                       Padding(
                                         padding: EdgeInsets.fromLTRB(
-                                          TrainFlowTokens.pageGutter,
+                                          referenceStyle
+                                              ? TrainFlowTokens
+                                                  .mainTabPageGutter
+                                              : TrainFlowTokens.pageGutter,
                                           index == 0 ? 8 : 0,
-                                          TrainFlowTokens.pageGutter,
+                                          referenceStyle
+                                              ? TrainFlowTokens
+                                                  .mainTabPageGutter
+                                              : TrainFlowTokens.pageGutter,
                                           0,
                                         ),
                                         child: animateChildren
@@ -138,15 +166,24 @@ class TrainFlowPage extends StatelessWidget {
                                             : children[index],
                                       ),
                                     if (includeDisclaimer)
-                                      const Padding(
+                                      Padding(
                                         padding: EdgeInsets.fromLTRB(
-                                          TrainFlowTokens.pageGutter,
+                                          referenceStyle
+                                              ? TrainFlowTokens
+                                                  .mainTabPageGutter
+                                              : TrainFlowTokens.pageGutter,
                                           4,
-                                          TrainFlowTokens.pageGutter,
+                                          referenceStyle
+                                              ? TrainFlowTokens
+                                                  .mainTabPageGutter
+                                              : TrainFlowTokens.pageGutter,
                                           24,
                                         ),
-                                        child: TrainFlowMedicalDisclaimer(),
+                                        child:
+                                            const TrainFlowMedicalDisclaimer(),
                                       ),
+                                    if (referenceStyle && !immersive)
+                                      const SizedBox(height: 104),
                                   ],
                                 ),
                               ),
@@ -174,6 +211,8 @@ class OrganicPageHeader extends StatelessWidget {
   final Widget? action;
   final Widget? artwork;
   final String? eyebrow;
+  final TrainMatePageAccent? accent;
+  final bool immersive;
 
   const OrganicPageHeader({
     super.key,
@@ -183,14 +222,29 @@ class OrganicPageHeader extends StatelessWidget {
     this.action,
     this.artwork,
     this.eyebrow,
+    this.accent,
+    this.immersive = false,
   });
 
   @override
   Widget build(BuildContext context) {
+    final Color headerColor = immersive
+        ? TrainFlowTokens.showcaseActionSurface
+        : switch (accent) {
+            TrainMatePageAccent.profile =>
+              TrainFlowTokens.showcaseActionSurface,
+            final TrainMatePageAccent pageAccent => pageAccent.color,
+            null => TrainFlowTokens.darkTrainingRaised,
+          };
+    final Color headerForeground = headerColor.computeLuminance() > 0.56
+        ? TrainFlowTokens.ink
+        : AppColors.white;
+    final Color headerMuted = headerForeground.withValues(alpha: 0.74);
+    final Color headerAccent = accent?.foreground ?? TrainFlowTokens.accent;
     final Widget effectiveArtwork = artwork ??
-        const TrainMateActionCharacter(
+        TrainMateActionCharacter(
           action: TrainMateAction.running,
-          backgroundColor: TrainFlowTokens.darkTrainingRaised,
+          backgroundColor: headerColor,
         );
     return SizedBox(
       key: const ValueKey<String>('trainflow-organic-header'),
@@ -200,7 +254,7 @@ class OrganicPageHeader extends StatelessWidget {
           Positioned.fill(
             child: ClipPath(
               clipper: const _OrganicHeaderClipper(),
-              child: const ColoredBox(color: TrainFlowTokens.darkTrainingRaised),
+              child: ColoredBox(color: headerColor),
             ),
           ),
           if (leading != null)
@@ -208,7 +262,7 @@ class OrganicPageHeader extends StatelessWidget {
               left: 8,
               top: 8,
               child: IconTheme(
-                data: const IconThemeData(color: AppColors.white),
+                data: IconThemeData(color: headerForeground),
                 child: leading!,
               ),
             ),
@@ -234,7 +288,7 @@ class OrganicPageHeader extends StatelessWidget {
                                 .textTheme
                                 .labelMedium
                                 ?.copyWith(
-                                  color: TrainFlowTokens.accent,
+                                  color: headerAccent,
                                   fontWeight: FontWeight.w600,
                                   letterSpacing: 0,
                                 ),
@@ -249,7 +303,7 @@ class OrganicPageHeader extends StatelessWidget {
                               .textTheme
                               .headlineSmall
                               ?.copyWith(
-                                color: AppColors.white,
+                                color: headerForeground,
                                 fontSize: 24,
                                 height: 1.15,
                                 fontWeight: FontWeight.w700,
@@ -268,9 +322,7 @@ class OrganicPageHeader extends StatelessWidget {
                                   .textTheme
                                   .bodyMedium
                                   ?.copyWith(
-                                    color: AppColors.white.withValues(
-                                      alpha: 0.76,
-                                    ),
+                                    color: headerMuted,
                                     height: 1.35,
                                     letterSpacing: 0,
                                   ),
@@ -283,7 +335,7 @@ class OrganicPageHeader extends StatelessWidget {
                 ),
                 if (action != null)
                   IconTheme(
-                    data: const IconThemeData(color: AppColors.white),
+                    data: IconThemeData(color: headerForeground),
                     child: action!,
                   ),
               ],
@@ -586,9 +638,8 @@ class _TrainFlowExpandableState extends State<TrainFlowExpandable> {
       TrainFlowMotion.selection,
     );
     final bool scoped = TrainMateVisualScope.maybeOf(context) != null;
-    final Color summaryColor = scoped
-        ? TrainMateVisualScope.muted(context)
-        : AppColors.textSecondary;
+    final Color summaryColor =
+        scoped ? TrainMateVisualScope.muted(context) : AppColors.textSecondary;
     final Widget detail = _expanded
         ? Padding(
             padding: const EdgeInsets.only(top: 8),
@@ -692,9 +743,12 @@ class SectionTitle extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final bool scoped = TrainMateVisualScope.maybeOf(context) != null;
-    final Color foreground = scoped
-        ? TrainMateVisualScope.foreground(context)
-        : AppColors.textPrimary;
+    final bool onActionSurface = TrainMateActionSurfaceScope.isActive(context);
+    final Color foreground = onActionSurface
+        ? TrainFlowTokens.paper
+        : scoped
+            ? TrainMateVisualScope.foreground(context)
+            : AppColors.textPrimary;
     return Padding(
       padding: const EdgeInsets.fromLTRB(2, 12, 2, 10),
       child: Row(
@@ -703,7 +757,11 @@ class SectionTitle extends StatelessWidget {
             width: 20,
             height: 6,
             decoration: BoxDecoration(
-              color: scoped ? TrainFlowTokens.accent : AppColors.secondary,
+              color: onActionSurface
+                  ? TrainFlowTokens.yellow
+                  : scoped
+                      ? TrainFlowTokens.accent
+                      : AppColors.secondary,
               borderRadius: BorderRadius.circular(999),
             ),
           ),
@@ -713,6 +771,8 @@ class SectionTitle extends StatelessWidget {
               title,
               style: Theme.of(context).textTheme.titleMedium?.copyWith(
                     color: foreground,
+                    fontSize:
+                        scoped ? TrainFlowTokens.mainTabSectionTitleSize : null,
                     fontWeight: FontWeight.w700,
                     letterSpacing: 0,
                   ),
@@ -897,9 +957,8 @@ class InfoRow extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final bool scoped = TrainMateVisualScope.maybeOf(context) != null;
-    final Color labelColor = scoped
-        ? TrainMateVisualScope.muted(context)
-        : AppColors.textSecondary;
+    final Color labelColor =
+        scoped ? TrainMateVisualScope.muted(context) : AppColors.textSecondary;
     final Color valueColor = scoped
         ? TrainMateVisualScope.foreground(context)
         : AppColors.textPrimary;
@@ -941,6 +1000,7 @@ class _CompactPageHeader extends StatelessWidget {
   final Widget? action;
   final Widget? artwork;
   final String? eyebrow;
+  final TrainMatePageAccent? accent;
 
   const _CompactPageHeader({
     required this.title,
@@ -949,20 +1009,23 @@ class _CompactPageHeader extends StatelessWidget {
     this.action,
     this.artwork,
     this.eyebrow,
+    this.accent,
   });
 
   @override
   Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.fromLTRB(20, 18, 20, 14),
+    final Color background = accent?.softColor ?? Colors.transparent;
+    final Color foreground = accent == null
+        ? TrainFlowTokens.darkTrainingOnSurface
+        : TrainFlowTokens.ink;
+    final Widget content = Padding(
+      padding: const EdgeInsets.fromLTRB(20, 18, 20, 18),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           if (leading != null) ...[
             IconTheme(
-              data: const IconThemeData(
-                color: TrainFlowTokens.darkTrainingOnSurface,
-              ),
+              data: IconThemeData(color: foreground),
               child: leading!,
             ),
             const SizedBox(width: 4),
@@ -975,7 +1038,7 @@ class _CompactPageHeader extends StatelessWidget {
                   Text(
                     eyebrow!,
                     style: Theme.of(context).textTheme.labelMedium?.copyWith(
-                          color: TrainFlowTokens.accent,
+                          color: accent?.color ?? TrainFlowTokens.accent,
                           fontWeight: FontWeight.w600,
                         ),
                   ),
@@ -984,7 +1047,7 @@ class _CompactPageHeader extends StatelessWidget {
                 Text(
                   title,
                   style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-                        color: TrainFlowTokens.darkTrainingOnSurface,
+                        color: foreground,
                         fontSize: 22,
                         fontWeight: FontWeight.w700,
                         letterSpacing: 0,
@@ -995,7 +1058,7 @@ class _CompactPageHeader extends StatelessWidget {
                   Text(
                     subtitle!,
                     style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                          color: TrainFlowTokens.darkTrainingMuted,
+                          color: foreground.withValues(alpha: 0.68),
                           letterSpacing: 0,
                         ),
                   ),
@@ -1020,6 +1083,10 @@ class _CompactPageHeader extends StatelessWidget {
         ],
       ),
     );
+    if (accent == null) {
+      return content;
+    }
+    return ColoredBox(color: background, child: content);
   }
 }
 
@@ -1063,9 +1130,8 @@ class TrainFlowMedicalDisclaimer extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final bool scoped = TrainMateVisualScope.maybeOf(context) != null;
-    final Color color = scoped
-        ? TrainMateVisualScope.muted(context)
-        : AppColors.textSecondary;
+    final Color color =
+        scoped ? TrainMateVisualScope.muted(context) : AppColors.textSecondary;
     return Padding(
       padding: const EdgeInsets.only(top: 8),
       child: Text(

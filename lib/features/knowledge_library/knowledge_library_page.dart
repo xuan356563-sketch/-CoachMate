@@ -8,6 +8,16 @@ import '../../core/widgets/trainflow_widgets.dart';
 import '../../data/models/knowledge_entry.dart';
 import '../dashboard/training_mvp_controller.dart';
 
+String knowledgeReviewBadgeLabel(List<BookQuote> quotes) {
+  if (quotes.isEmpty) {
+    return '暂无可核引文';
+  }
+  if (quotes.any((BookQuote quote) => !quote.isVerified)) {
+    return '含待核内容';
+  }
+  return '内部已审核';
+}
+
 class KnowledgeLibraryPage extends ConsumerWidget {
   const KnowledgeLibraryPage({super.key});
 
@@ -45,7 +55,9 @@ class KnowledgeLibraryPage extends ConsumerWidget {
                           ?.copyWith(fontWeight: FontWeight.w600),
                     ),
                   ),
-                  const ToneBadge(label: '内部已审核'),
+                  ToneBadge(
+                    label: knowledgeReviewBadgeLabel(state.bookQuotes),
+                  ),
                 ],
               ),
               const SizedBox(height: 12),

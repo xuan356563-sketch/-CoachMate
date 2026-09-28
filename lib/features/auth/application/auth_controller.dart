@@ -3,6 +3,8 @@ import 'dart:async';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:trainflow_ai/services/local_storage_service.dart';
+import 'package:trainflow_ai/plugins/application/plugin_runtime_provider.dart';
+import 'package:trainflow_ai/plugins/settings/plugin_settings_controller.dart';
 
 import '../../../data/repositories/pre_exercise_clearance_repository.dart';
 import '../data/account_binding_service.dart';
@@ -24,6 +26,7 @@ class AuthState {
   final AuthUser? user;
   final bool isBusy;
   final bool isLocalPreview;
+  final bool accountScopeReplaced;
   final String? message;
 
   const AuthState({
@@ -32,6 +35,7 @@ class AuthState {
     this.user,
     this.isBusy = false,
     this.isLocalPreview = false,
+    this.accountScopeReplaced = false,
     this.message,
   });
 
@@ -49,6 +53,7 @@ class AuthState {
     AuthUser? user,
     bool? isBusy,
     bool? isLocalPreview,
+    bool? accountScopeReplaced,
     String? message,
     bool clearMessage = false,
   }) {
@@ -58,6 +63,7 @@ class AuthState {
       user: user ?? this.user,
       isBusy: isBusy ?? this.isBusy,
       isLocalPreview: isLocalPreview ?? this.isLocalPreview,
+      accountScopeReplaced: accountScopeReplaced ?? this.accountScopeReplaced,
       message: clearMessage ? null : (message ?? this.message),
     );
   }
@@ -300,26 +306,45 @@ class AuthController extends AsyncNotifier<AuthState> {
     }
     _setState(current.copyWith(isBusy: true, clearMessage: true));
     try {
-      await _clearPreExerciseClearance();
-      await _accountBinding.clearBusinessDataAndBind(user.userId);
+      final bool scopeAlreadyReplaced =
+          _accountBinding.boundUserId == user.userId;
+      await ref.read(pluginSettingsControllerProvider).changeAccountScope(
+            scopeAlreadyReplaced: scopeAlreadyReplaced,
+            replaceScope: () async {
+              await _clearPreExerciseClearance();
+              await _accountBinding.clearBusinessDataAndBind(user.userId);
+            },
+          );
+      ref.invalidate(pluginSettingsControllerProvider);
       ref.invalidate(localStorageServiceProvider);
       _setState(current.copyWith(
         status: AuthStatus.authenticated,
         isBusy: false,
+        accountScopeReplaced: false,
         clearMessage: true,
       ));
       return true;
     } catch (_) {
+      final bool scopeReplaced = _accountBinding.boundUserId == user.userId;
       _setState(current.copyWith(
         status: AuthStatus.accountConflict,
         isBusy: false,
-        message: '本地训练数据未能安全清理，账号尚未切换，请重试。',
+        accountScopeReplaced: scopeReplaced,
+        message: scopeReplaced
+            ? '本地账号数据已切换，新账号功能装配待恢复。重试不会再次清理数据。'
+            : '本地训练数据未能安全清理，账号尚未切换，请重试。',
       ));
       return false;
     }
   }
 
   Future<void> cancelAccountSwitch() async {
+    if (_currentState.accountScopeReplaced) {
+      _setState(_currentState.copyWith(
+        message: '本地账号数据已切换，请先重试恢复新账号功能，或重启应用后再次登录。',
+      ));
+      return;
+    }
     try {
       await _authApi.logout();
     } catch (_) {
@@ -369,6 +394,19 @@ class AuthController extends AsyncNotifier<AuthState> {
   }
 
   AuthState _stateForUser(AuthUser user, PublicAuthConfig config) {
+    if (_accountBinding.boundUserId == user.userId &&
+        ref
+            .read(pluginRuntimeProvider)
+            .recoveryFailures
+            .containsKey('core.identity')) {
+      return AuthState(
+        status: AuthStatus.accountConflict,
+        publicConfig: config,
+        user: user,
+        accountScopeReplaced: true,
+        message: '本地账号数据已切换，新账号功能装配待恢复。重试不会再次清理数据。',
+      );
+    }
     if (_accountBinding.requiresConfirmation(user.userId)) {
       return AuthState(
         status: AuthStatus.accountConflict,

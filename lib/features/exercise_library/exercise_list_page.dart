@@ -66,6 +66,15 @@ class ExerciseListPage extends ConsumerStatefulWidget {
 /// 「全部」视图下每个部位预览的动作数量。
 const int _previewPerRegion = 4;
 
+const List<Color> _exerciseShowcaseColors = <Color>[
+  TrainFlowTokens.yellow,
+  TrainFlowTokens.coral,
+  TrainFlowTokens.blue,
+  TrainFlowTokens.mint,
+  TrainFlowTokens.pink,
+  TrainFlowTokens.purple,
+];
+
 class _ExerciseListPageState extends ConsumerState<ExerciseListPage> {
   /// null 表示「全部」：按部位分组预览；选中某个部位时展示该部位全部动作。
   BodyRegion? _selectedRegion;
@@ -77,7 +86,9 @@ class _ExerciseListPageState extends ConsumerState<ExerciseListPage> {
     final TrainingMvpState state = ref.watch(trainingMvpProvider);
     final FlowMascotSpec mascotSpec = selectExerciseMascotSpec(
       hasExercises: state.exercises.isNotEmpty,
-      riskLevel: state.latestMotionAnalysisResult?.riskLevel,
+      riskLevel: state.latestMotionAnalysisResult?.usableForDecision == true
+          ? state.latestMotionAnalysisResult?.riskLevel
+          : null,
     );
     final List<Exercise> taggedExercises = filterExercisesByFocus(
       exercises: state.exercises,
@@ -98,23 +109,24 @@ class _ExerciseListPageState extends ConsumerState<ExerciseListPage> {
 
     return TrainMateImmersiveHubPage(
       includeDisclaimer: false,
-      mode: TrainMateVisualMode.darkTraining,
+      mode: TrainMateVisualMode.referenceShowcase,
+      showcaseOverviewChildCount: 4,
       hero: KeyedSubtree(
         key: const ValueKey<String>('exercises-showcase-header'),
         child: TrainMateSceneHero(
+          style: TrainMateSceneHeroStyle.referenceShowcase,
+          referenceBackgroundColor: TrainFlowTokens.blue,
           sceneAsset:
               'assets/images/immersive_scenes/trainmate_exercise_lab.png',
           greeting:
               '动作库 · ${state.profile.name.trim().isEmpty ? '训练者' : state.profile.name}',
           dateLabel: '${state.exercises.length} 个真实动作可用',
-          character: TrainMateIllustration(
-            assetPath: 'assets/images/trainmate_exercises_showcase.png',
-            semanticLabel: '多动作训练人物插画',
-            fallback: const TrainMateActionCharacter(
-              action: TrainMateAction.sideLungeStretch,
-              size: 164,
-              backgroundColor: AppColors.transparent,
-            ),
+          character: const TrainMateActionCharacter(
+            action: TrainMateAction.sideLungeStretch,
+            size: 164,
+            backgroundColor: AppColors.transparent,
+            style: TrainMateCharacterStyle.flatShowcase,
+            semanticLabel: 'CoachMate 正在示范侧弓步拉伸',
           ),
           taskTitle:
               state.latestMotionAnalysisResult == null ? '开始动作检测' : '查看最近动作检测',
@@ -127,6 +139,22 @@ class _ExerciseListPageState extends ConsumerState<ExerciseListPage> {
           onTaskTap: () => context.push(AppRoutes.motionCheck),
         ),
       ),
+      storyChildren: <Widget>[
+        TrainMateShowcaseActionCard(
+          title: '开始动作检测',
+          subtitle: '先做动作提示，不会自动写入训练计划。',
+          icon: Icons.center_focus_strong_rounded,
+          color: TrainFlowTokens.blue,
+          artwork: const TrainMateActionCharacter(
+            action: TrainMateAction.sideLungeStretch,
+            size: 88,
+            backgroundColor: AppColors.transparent,
+            style: TrainMateCharacterStyle.flatShowcase,
+            semanticLabel: 'CoachMate 正在示范动作检测',
+          ),
+          onTap: () => context.push(AppRoutes.motionCheck),
+        ),
+      ],
       children: [
         TrainMateStatusStrip(
           semanticLabel: '动作筛选状态',
@@ -339,7 +367,8 @@ class _KneeAnkleCircuitCard extends StatelessWidget {
       onTap: onStart,
       child: Row(
         children: <Widget>[
-          const Icon(Icons.directions_walk, color: TrainFlowTokens.accent, size: 34),
+          const Icon(Icons.directions_walk,
+              color: TrainFlowTokens.accent, size: 34),
           const SizedBox(width: 12),
           Expanded(
             child: Column(
@@ -438,6 +467,10 @@ class _RegionChip extends StatelessWidget {
                 : (dark
                     ? TrainFlowTokens.darkTrainingRaised
                     : TrainFlowTokens.lightCompanionCard),
+            border: Border.all(
+              color: TrainFlowTokens.brandDark,
+              width: TrainFlowTokens.borderWidth,
+            ),
             borderRadius:
                 BorderRadius.circular(TrainFlowTokens.mainTabControlRadius),
           ),
@@ -477,18 +510,36 @@ class _ExerciseGrid extends StatelessWidget {
         child: const Text('暂无可用动作，完成基础资料后再查看推荐。'),
       );
     }
-    return GridView.builder(
-      shrinkWrap: true,
-      physics: const NeverScrollableScrollPhysics(),
-      itemCount: exercises.length,
-      gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-        crossAxisCount: 2,
-        crossAxisSpacing: 10,
-        mainAxisSpacing: 10,
-        mainAxisExtent: 264,
-      ),
-      itemBuilder: (context, index) {
-        return _ExerciseTile(exercise: exercises[index]);
+    return LayoutBuilder(
+      builder: (BuildContext context, BoxConstraints constraints) {
+        final bool singleColumn = constraints.maxWidth < 320 ||
+            MediaQuery.textScalerOf(context).scale(1) > 1.35;
+        if (singleColumn) {
+          return Column(
+            children: <Widget>[
+              for (int index = 0; index < exercises.length; index += 1)
+                _ExerciseTile(
+                  exercise: exercises[index],
+                  visualIndex: index,
+                ),
+            ],
+          );
+        }
+        return GridView.builder(
+          shrinkWrap: true,
+          physics: const NeverScrollableScrollPhysics(),
+          itemCount: exercises.length,
+          gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+            crossAxisCount: 2,
+            crossAxisSpacing: 12,
+            mainAxisSpacing: 12,
+            mainAxisExtent: 318,
+          ),
+          itemBuilder: (BuildContext context, int index) => _ExerciseTile(
+            exercise: exercises[index],
+            visualIndex: index,
+          ),
+        );
       },
     );
   }
@@ -496,105 +547,137 @@ class _ExerciseGrid extends StatelessWidget {
 
 class _ExerciseTile extends StatelessWidget {
   final Exercise exercise;
+  final int visualIndex;
 
-  const _ExerciseTile({required this.exercise});
+  const _ExerciseTile({required this.exercise, required this.visualIndex});
 
   @override
   Widget build(BuildContext context) {
     final bool hasPreciseMedia =
         exercise.mediaStatus == ExerciseMediaStatus.precise;
+    final Color showcaseColor =
+        _exerciseShowcaseColors[visualIndex % _exerciseShowcaseColors.length];
     return TrainFlowCard(
-      padding: const EdgeInsets.all(12),
+      padding: EdgeInsets.zero,
       onTap: () => context.push(AppRoutes.exerciseDetail(exercise.id)),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Row(
-            children: [
-              Container(
-                width: 34,
-                height: 34,
-                decoration: BoxDecoration(
-                  color: TrainFlowTokens.darkTrainingRaised,
-                  shape: BoxShape.circle,
-                  border: Border.all(
-                    color: TrainFlowTokens.darkTrainingHighest,
-                    width: 1.5,
-                  ),
-                ),
-                child: const Icon(
-                  Icons.directions_run,
-                  size: 18,
-                  color: TrainFlowTokens.accent,
-                ),
-              ),
-              const Spacer(),
-              if (exercise.mediaUrl != null)
-                Tooltip(
-                  message: exercise.mediaStatus.label,
+          SizedBox(
+            height: 84,
+            child: Stack(
+              children: <Widget>[
+                Positioned.fill(child: ColoredBox(color: showcaseColor)),
+                Positioned(
+                  right: -8,
+                  bottom: -18,
                   child: Icon(
-                    hasPreciseMedia ? Icons.gif_box_outlined : Icons.image,
-                    size: 20,
-                    color: hasPreciseMedia
-                        ? TrainFlowTokens.accent
-                        : TrainFlowTokens.darkTrainingMuted,
+                    Icons.fitness_center_rounded,
+                    size: 86,
+                    color: TrainFlowTokens.brandDark.withValues(alpha: 0.1),
                   ),
                 ),
-            ],
-          ),
-          const SizedBox(height: 8),
-          Text(
-            exercise.name,
-            maxLines: 2,
-            overflow: TextOverflow.ellipsis,
-            style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                  fontWeight: FontWeight.w700,
-                ),
-          ),
-          const SizedBox(height: 5),
-          Align(
-            alignment: Alignment.centerLeft,
-            child: ToneBadge(
-              label: exercise.category.label,
-              color: TrainFlowTokens.accent,
-            ),
-          ),
-          if (!exerciseFocusProfile(exercise).isEmpty) ...[
-            const SizedBox(height: 6),
-            Wrap(
-              spacing: 4,
-              runSpacing: 4,
-              children: exerciseFocusProfile(exercise)
-                  .tags
-                  .map(
-                    (ExerciseFocusTag tag) => ToneBadge(
-                      label: tag.label,
-                      color: TrainFlowTokens.accent,
+                const Positioned(
+                  left: 14,
+                  top: 14,
+                  child: DecoratedBox(
+                    decoration: BoxDecoration(
+                      color: TrainFlowTokens.brandDark,
+                      borderRadius: BorderRadius.all(Radius.circular(14)),
                     ),
-                  )
-                  .toList(growable: false),
+                    child: SizedBox.square(
+                      dimension: 44,
+                      child: Icon(
+                        Icons.directions_run_rounded,
+                        color: TrainFlowTokens.paper,
+                      ),
+                    ),
+                  ),
+                ),
+                if (exercise.mediaUrl != null)
+                  Positioned(
+                    right: 12,
+                    top: 12,
+                    child: Tooltip(
+                      message: exercise.mediaStatus.label,
+                      child: DecoratedBox(
+                        decoration: const BoxDecoration(
+                          color: TrainFlowTokens.paper,
+                          shape: BoxShape.circle,
+                        ),
+                        child: SizedBox.square(
+                          dimension: 34,
+                          child: Icon(
+                            hasPreciseMedia
+                                ? Icons.gif_box_outlined
+                                : Icons.image_outlined,
+                            size: 19,
+                            color: TrainFlowTokens.brandDark,
+                          ),
+                        ),
+                      ),
+                    ),
+                  ),
+              ],
             ),
-          ],
-          const SizedBox(height: 6),
-          Text(
-            exercise.description,
-            maxLines: 2,
-            overflow: TextOverflow.ellipsis,
-            style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                  color: TrainFlowTokens.darkTrainingMuted,
-                ),
           ),
-          const Spacer(),
-          const Divider(),
-          const SizedBox(height: 7),
-          Text(
-            '建议：${exercise.setsAndReps}',
-            maxLines: 2,
-            overflow: TextOverflow.ellipsis,
-            style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                  color: TrainMateVisualScope.foreground(context),
-                  fontWeight: FontWeight.w700,
+          Padding(
+            padding: const EdgeInsets.all(12),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: <Widget>[
+                Text(
+                  exercise.name,
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
+                  style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                        fontWeight: FontWeight.w700,
+                      ),
                 ),
+                const SizedBox(height: 6),
+                ToneBadge(
+                  label: exercise.category.label,
+                  color: showcaseColor,
+                ),
+                if (!exerciseFocusProfile(exercise).isEmpty) ...<Widget>[
+                  const SizedBox(height: 6),
+                  Wrap(
+                    spacing: 4,
+                    runSpacing: 4,
+                    children: exerciseFocusProfile(exercise)
+                        .tags
+                        .map(
+                          (ExerciseFocusTag tag) => ToneBadge(
+                            label: tag.label,
+                            color: showcaseColor,
+                          ),
+                        )
+                        .toList(growable: false),
+                  ),
+                ],
+                const SizedBox(height: 7),
+                Text(
+                  exercise.description,
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
+                  style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                        color: TrainFlowTokens.darkTrainingMuted,
+                      ),
+                ),
+                const SizedBox(height: 8),
+                const Divider(height: 1),
+                const SizedBox(height: 8),
+                Text(
+                  '建议：${exercise.setsAndReps}',
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
+                  style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                        color: TrainMateVisualScope.foreground(context),
+                        fontWeight: FontWeight.w700,
+                      ),
+                ),
+              ],
+            ),
           ),
         ],
       ),

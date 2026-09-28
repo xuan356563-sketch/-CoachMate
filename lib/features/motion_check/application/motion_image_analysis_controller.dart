@@ -5,6 +5,9 @@ import 'package:image_picker/image_picker.dart';
 import '../../../data/models/motion_check.dart';
 import '../../../data/models/motion_pose.dart';
 import '../../../services/motion_pose_analysis_service.dart';
+import '../../../plugins/application/feature_access.dart';
+import '../../../plugins/application/feature_controller_binding.dart';
+import '../../../plugins/application/plugin_runtime_provider.dart';
 import 'pose_detector_gateway.dart';
 
 class MotionImageFile {
@@ -76,15 +79,26 @@ class MotionImageAnalysisState {
 }
 
 class MotionImageAnalysisController extends Notifier<MotionImageAnalysisState> {
+  static const String _featureId = 'feature.motion_check';
   final MotionPoseAnalysisService _analysisService =
       MotionPoseAnalysisService();
 
   @override
-  MotionImageAnalysisState build() => const MotionImageAnalysisState();
+  MotionImageAnalysisState build() {
+    bindFeatureController(
+      ref,
+      _featureId,
+      'controller',
+      this,
+      cleanup: clear,
+    );
+    return const MotionImageAnalysisState();
+  }
 
   bool get isSupported => ref.read(poseDetectorGatewayProvider).isSupported;
 
   void selectRule(MotionCheckRule rule) {
+    ref.read(featureAccessProvider).requireEnabled(_featureId);
     state = MotionImageAnalysisState(
       ruleId: rule.id,
       type: rule.type,
@@ -93,6 +107,8 @@ class MotionImageAnalysisController extends Notifier<MotionImageAnalysisState> {
   }
 
   Future<void> pickAndAnalyze(ImageSource source) async {
+    final FeatureOperation operation =
+        ref.read(featureAccessProvider).beginOperation(_featureId);
     final MotionCheckType? type = state.type;
     final String? ruleId = state.ruleId;
     if (type == null || ruleId == null) {
@@ -120,6 +136,7 @@ class MotionImageAnalysisController extends Notifier<MotionImageAnalysisState> {
     try {
       final MotionImageFile? file =
           await ref.read(motionImagePickerProvider).pick(source);
+      operation.checkActive();
       if (file == null) {
         state = MotionImageAnalysisState(ruleId: ruleId, type: type);
         return;
@@ -137,6 +154,7 @@ class MotionImageAnalysisController extends Notifier<MotionImageAnalysisState> {
                 path: file.path,
                 bytes: bytes,
               );
+      operation.checkActive();
       final MotionPoseAnalysis analysis =
           _analysisService.analyze(type: type, frame: frame);
       state = MotionImageAnalysisState(
@@ -149,6 +167,7 @@ class MotionImageAnalysisController extends Notifier<MotionImageAnalysisState> {
         statusMessage: '识别完成，请确认结果后再应用到今日训练。',
       );
     } on PlatformException catch (error) {
+      operation.checkActive();
       state = MotionImageAnalysisState(
         status: MotionImageAnalysisStatus.failure,
         ruleId: ruleId,
@@ -161,6 +180,7 @@ class MotionImageAnalysisController extends Notifier<MotionImageAnalysisState> {
                     : '无法访问相册，请在系统设置中允许照片权限。',
       );
     } on FormatException catch (error) {
+      operation.checkActive();
       state = MotionImageAnalysisState(
         status: MotionImageAnalysisStatus.failure,
         ruleId: ruleId,
@@ -168,6 +188,7 @@ class MotionImageAnalysisController extends Notifier<MotionImageAnalysisState> {
         statusMessage: error.message,
       );
     } catch (_) {
+      operation.checkActive();
       state = MotionImageAnalysisState(
         status: MotionImageAnalysisStatus.failure,
         ruleId: ruleId,

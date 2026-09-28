@@ -309,7 +309,7 @@ class _AiCenterPageState extends ConsumerState<AiCenterPage> {
             );
     final AiRecoveryDashboard? dashboard = accepted?.recoveryDashboard;
     if (dashboard != null && mounted) {
-      ref
+      await ref
           .read(dailyAdjustmentControllerProvider.notifier)
           .applyAiRecoveryRecommendation(dashboard.recommendedAction);
     }
@@ -407,12 +407,14 @@ class _TrainerArtifactCard extends StatelessWidget {
             Text(
                 '${card.durationMinutes} 分钟 · ${card.intensity} · ${card.focus.join(' / ')}'),
             Text(card.safetyNote,
-                style: const TextStyle(color: TrainFlowTokens.darkTrainingMuted)),
+                style:
+                    const TextStyle(color: TrainFlowTokens.darkTrainingMuted)),
             const SizedBox(height: 10),
           ],
           if (plan.safetyNotes.isNotEmpty)
             Text('安全提示：${plan.safetyNotes.join('；')}',
-                style: const TextStyle(color: TrainFlowTokens.darkTrainingMuted)),
+                style:
+                    const TextStyle(color: TrainFlowTokens.darkTrainingMuted)),
           _Warnings(warnings: artifact.warnings),
           const SizedBox(height: 12),
           Wrap(

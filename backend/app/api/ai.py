@@ -21,7 +21,6 @@ from app.services.ai_chat import (
     AiChatResponse,
     AiChatService,
     HttpDeepSeekChatClient,
-    contains_health_content,
 )
 from app.services.ai_generation import (
     AiArtifactService,
@@ -267,10 +266,25 @@ def get_training_prescription_capabilities(
 
 @router.post(
     "/chat",
-    response_model=AiChatResponse,
-    summary="进行无状态训练对话",
+    summary="拒绝已停用的自由文本训练对话协议",
 )
-async def chat(
+async def retired_chat(
+    _claims: Annotated[AccessTokenClaims, Depends(get_current_access_claims)],
+) -> None:
+    """旧协议可能携带健康正文，统一失败关闭且不解析请求体。"""
+    raise ApiError(
+        410,
+        "ai_chat_contract_retired",
+        "当前版本不再接收自由文本云端对话，请升级应用后使用固定训练问题。",
+    )
+
+
+@v2_router.post(
+    "/chat",
+    response_model=AiChatResponse,
+    summary="进行结构化无状态训练对话",
+)
+async def structured_chat(
     request: AiChatRequest,
     claims: Annotated[AccessTokenClaims, Depends(get_current_access_claims)],
     limiter: Annotated[AiGenerationRateLimiter, Depends(get_ai_rate_limiter)],
@@ -278,14 +292,8 @@ async def chat(
     recorder: Annotated[AiUsageRecorder, Depends(get_ai_usage_recorder)],
     settings: Annotated[Settings, Depends(get_settings)],
 ) -> AiChatResponse:
-    """只接收非健康训练文本；原始消息不写入数据库或日志。"""
+    """只接收枚举和数值训练约束；协议不包含自由文本。"""
     limiter.check(claims.user_id)
-    if contains_health_content(request):
-        raise ApiError(
-            422,
-            "ai_chat_health_data_not_allowed",
-            "身体与健康信息只在本机处理，请使用本地状态卡。",
-        )
     started_at = time.perf_counter()
     try:
         response = await service.reply(claims.user_id, request)

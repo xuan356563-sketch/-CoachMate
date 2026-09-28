@@ -52,6 +52,7 @@ void main() {
     WidgetTester tester, {
     required Size size,
     required TextScaler textScaler,
+    int selectedIndex = 0,
   }) async {
     tester.view.physicalSize = size;
     tester.view.devicePixelRatio = 1;
@@ -64,7 +65,7 @@ void main() {
           home: Scaffold(
             bottomNavigationBar: TrainMateBottomNavigationV2(
               items: bottomNavItems,
-              selectedIndex: 0,
+              selectedIndex: selectedIndex,
               animationDuration: Duration.zero,
               onDestinationSelected: (_) {},
             ),
@@ -75,12 +76,12 @@ void main() {
     await tester.pumpAndSettle();
   }
 
-  testWidgets('底部导航选中动画使用选择反馈时长', (tester) async {
+  testWidgets('底部导航选中动画使用连续移动时长', (tester) async {
     await pumpApp(tester);
 
     expect(
       bottomNavigation(tester).animationDuration,
-      TrainFlowMotion.selection,
+      TrainFlowMotion.navigation,
     );
   });
 
@@ -90,7 +91,7 @@ void main() {
     expect(bottomNavigation(tester).animationDuration, Duration.zero);
   });
 
-  testWidgets('五个主路由的导航承接面保持透明，玻璃胶囊承接页面内容', (tester) async {
+  testWidgets('五个主路由的导航承接面保持透明，深紫底栏承接页面内容', (tester) async {
     await pumpApp(tester);
 
     for (int index = 0; index < 5; index += 1) {
@@ -105,26 +106,43 @@ void main() {
     }
   });
 
-  testWidgets('导航使用悬浮 90% 白玻璃胶囊、中央球体与青柠选中态', (tester) async {
+  testWidgets('导航使用深紫底栏与移动的白黄选中胶囊', (tester) async {
     await pumpApp(tester);
 
-    final Container capsule = tester.widget<Container>(
+    final DecoratedBox capsule = tester.widget<DecoratedBox>(
       find.byKey(const Key('trainmate-bottom-navigation-v2-capsule')),
     );
-    final BoxDecoration decoration = capsule.decoration! as BoxDecoration;
-    expect(decoration.color, const Color(0xFFFFFFFF));
-    expect(find.byKey(const Key('central-hero-orb')), findsOneWidget);
+    final BoxDecoration decoration = capsule.decoration as BoxDecoration;
+    expect(decoration.color, TrainFlowTokens.showcaseActionSurface);
+    expect(find.byKey(const Key('central-hero-orb')), findsNothing);
+    expect(
+      find.byKey(const Key('trainmate-bottom-navigation-selected-pill')),
+      findsOneWidget,
+    );
+    expect(find.text('今日'), findsOneWidget);
+  });
 
-    Icon iconOf(int index) => tester.widget<Icon>(
-          find.descendant(
-            of: find.byKey(Key('bottom-nav-item-$index')),
-            matching: find.byType(Icon),
+  testWidgets('重复点击当前标签仍可返回该标签根页面', (tester) async {
+    int? selected;
+    await tester.pumpWidget(
+      MaterialApp(
+        home: Scaffold(
+          bottomNavigationBar: TrainMateBottomNavigationV2(
+            items: bottomNavItems,
+            selectedIndex: 1,
+            animationDuration: Duration.zero,
+            onDestinationSelected: (int index) => selected = index,
           ),
-        );
-    // 默认选中「今日」（index 1）：角落图标青柠，其余暖灰。
-    expect(iconOf(1).color, TrainFlowTokens.accent);
-    expect(iconOf(0).color, TrainFlowTokens.navigationInactive);
-    expect(iconOf(4).color, TrainFlowTokens.navigationInactive);
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.byKey(const Key('bottom-nav-item-1')));
+    await tester.pump();
+
+    expect(selected, 1);
+    expect(tester.takeException(), isNull);
   });
 
   testWidgets('五个暖黑主标签使用浅色状态栏图标', (
@@ -195,8 +213,8 @@ void main() {
       expect(find.byType(NavigationBar), findsNothing);
       expect(find.byKey(const Key('global-ai-center-action')), findsNothing);
 
+      expect(find.text(displayLabels[1]), findsOneWidget);
       for (int index = 0; index < 5; index += 1) {
-        expect(find.text(displayLabels[index]), findsOneWidget);
         final Tooltip tooltip = tester.widget<Tooltip>(
           find.descendant(
             of: find.byKey(Key('bottom-nav-item-$index')),
@@ -237,7 +255,7 @@ void main() {
     }
   });
 
-  testWidgets('运动搭子选中时中央球体语义为选中态', (tester) async {
+  testWidgets('运动搭子选中时移动胶囊语义保持选中态', (tester) async {
     final SemanticsHandle semantics = tester.ensureSemantics();
     try {
       await pumpApp(tester);
@@ -258,16 +276,16 @@ void main() {
     }
   });
 
-  testWidgets('底部导航在 393 宽度保持触控尺寸和胶囊比例', (tester) async {
+  testWidgets('底部导航在 393 宽度保持触控尺寸和深紫条比例', (tester) async {
     await pumpApp(tester);
 
     final Rect capsule = tester.getRect(
       find.byKey(const Key('trainmate-bottom-navigation-v2-capsule')),
     );
     expect(capsule.width, 361); // 393 - 32
-    expect(capsule.height, 76);
+    expect(capsule.height, 64);
     expect(capsule.left, 16);
-    expect(find.byKey(const Key('central-hero-orb')), findsOneWidget);
+    expect(find.byKey(const Key('central-hero-orb')), findsNothing);
 
     for (int index = 0; index < 5; index += 1) {
       final Size itemSize = tester.getSize(
@@ -301,6 +319,28 @@ void main() {
       }
       expect(tester.takeException(), isNull);
     }
+  });
+
+  testWidgets('动作库选中胶囊在 320 宽与大字体下完整显示', (tester) async {
+    await pumpNavigationOnly(
+      tester,
+      size: const Size(320, 568),
+      textScaler: const TextScaler.linear(2),
+      selectedIndex: 3,
+    );
+
+    final Finder selectedPill = find.byKey(
+      const Key('trainmate-bottom-navigation-selected-pill'),
+    );
+    final Rect selectedRect = tester.getRect(selectedPill);
+    expect(selectedRect.width, 68);
+    expect(selectedRect.left, greaterThanOrEqualTo(0));
+    expect(selectedRect.right, lessThanOrEqualTo(320));
+    expect(
+      find.descendant(of: selectedPill, matching: find.text('动作库')),
+      findsOneWidget,
+    );
+    expect(tester.takeException(), isNull);
   });
 
   testWidgets('五栏路由与训练计划、今日、运动搭子、动作库、我的归属正确', (tester) async {
@@ -363,40 +403,44 @@ void main() {
     expect(tester.takeException(), isNull);
   });
 
-  testWidgets('角落 Tab 选中切换后图标变为青柠并保持其他为暖灰', (tester) async {
+  testWidgets('标签切换后选中胶囊连续移动并显示短中文标签', (tester) async {
     await pumpApp(tester);
-
-    Icon iconOf(int index) => tester.widget<Icon>(
-          find.descendant(
-            of: find.byKey(Key('bottom-nav-item-$index')),
-            matching: find.byType(Icon),
-          ),
-        );
-    expect(iconOf(1).color, TrainFlowTokens.accent);
-    expect(iconOf(4).color, TrainFlowTokens.navigationInactive);
-
+    final Finder selectedPill = find.byKey(
+      const Key('trainmate-bottom-navigation-selected-pill'),
+    );
+    expect(
+      find.descendant(of: selectedPill, matching: find.text('今日')),
+      findsOneWidget,
+    );
     await tester.tap(find.byKey(const Key('bottom-nav-item-4')));
-    await tester.pump();
-    expect(iconOf(4).color, TrainFlowTokens.accent);
-    expect(iconOf(1).color, TrainFlowTokens.navigationInactive);
+    await tester.pump(const Duration(milliseconds: 160));
+    expect(
+      find.byKey(const Key('trainmate-bottom-navigation-selected-pill')),
+      findsOneWidget,
+    );
+    await tester.pumpAndSettle();
+    expect(
+      find.descendant(of: selectedPill, matching: find.text('我的')),
+      findsOneWidget,
+    );
     expect(tester.takeException(), isNull);
   });
 
-  testWidgets('减少动态效果时角落 Tab 直接显示最终选中态', (tester) async {
+  testWidgets('减少动态效果时标签直接显示最终选中态', (tester) async {
     await pumpApp(tester, disableAnimations: true);
-
-    Icon iconOf(int index) => tester.widget<Icon>(
-          find.descendant(
-            of: find.byKey(Key('bottom-nav-item-$index')),
-            matching: find.byType(Icon),
-          ),
-        );
-    expect(iconOf(1).color, TrainFlowTokens.accent);
-
+    final Finder selectedPill = find.byKey(
+      const Key('trainmate-bottom-navigation-selected-pill'),
+    );
+    expect(
+      find.descendant(of: selectedPill, matching: find.text('今日')),
+      findsOneWidget,
+    );
     await tester.tap(find.byKey(const Key('bottom-nav-item-0')));
     await tester.pump();
-    expect(iconOf(0).color, TrainFlowTokens.accent);
-    expect(iconOf(1).color, TrainFlowTokens.navigationInactive);
+    expect(
+      find.descendant(of: selectedPill, matching: find.text('计划')),
+      findsOneWidget,
+    );
     expect(tester.takeException(), isNull);
   });
 }

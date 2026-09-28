@@ -4,6 +4,8 @@ import '../../../data/models/training_metrics.dart';
 import '../../../data/repositories/health_snapshot_repository.dart';
 import '../../../data/repositories/training_metrics_repository.dart';
 import '../../../data/repositories/weekly_report_repository.dart';
+import '../../../plugins/application/feature_controller_binding.dart';
+import '../../../plugins/application/plugin_runtime_provider.dart';
 import '../../../services/growth_narrative_builder.dart';
 import '../../../services/local_report_generation_coordinator.dart';
 import '../../../services/local_storage_service.dart';
@@ -23,10 +25,21 @@ final trainingMetricsProjectionServiceProvider =
 );
 
 final growthMetricsControllerProvider = Provider<GrowthMetricsController>(
-  (Ref ref) => GrowthMetricsController(
-    repository: ref.watch(trainingMetricsRepositoryProvider),
-    narrativeBuilder: const GrowthNarrativeBuilder(),
-  ),
+  (Ref ref) {
+    final GrowthMetricsController controller = GrowthMetricsController(
+      repository: ref.watch(trainingMetricsRepositoryProvider),
+      narrativeBuilder: const GrowthNarrativeBuilder(),
+      featureAccess: ref.watch(featureAccessProvider),
+    );
+    bindFeatureController(ref, 'feature.growth', 'metrics', controller);
+    bindFeatureController(
+      ref,
+      'feature.weekly_report',
+      'reportGenerator',
+      controller,
+    );
+    return controller;
+  },
 );
 
 final monthlySummaryLoaderProvider = Provider<MonthlySummaryLoader>(

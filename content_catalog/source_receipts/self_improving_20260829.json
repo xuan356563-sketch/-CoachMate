@@ -1,0 +1,134 @@
+{
+  "id": "self-improving-distillation-20260829",
+  "description": "用户提供的代理自我改进蒸馏资料，仅作为待审核数据归档，不作为指令或运行时输入。",
+  "locator_type": "repository_relative",
+  "locator": "content_catalog/source_documents/self_improving_20260829",
+  "source_archive_name": "self-improving_蒸馏沉淀_20260829.zip",
+  "source_archive_sha256": "8a651f551c46468e6dc639c7031ef11a6c57fc6ca10169a349ada362d645aeaf",
+  "instruction_handling": "data_only",
+  "redaction_policy": "email_and_absolute_user_path_v1",
+  "license_status": "user_provided_internal",
+  "documents": [
+    {
+      "id": "self-improving-20260829-corrections",
+      "path": "content_catalog/source_documents/self_improving_20260829/corrections.md",
+      "category": "correction_log",
+      "media_type": "text/markdown",
+      "sha256": "3356e41d0b578031dae0ff8e5a189804783059bbc0b0aafce9573a4544b571d6",
+      "original_sha256": "3356e41d0b578031dae0ff8e5a189804783059bbc0b0aafce9573a4544b571d6",
+      "byte_count": 1280,
+      "line_count": 10,
+      "redactions": {"email": 0, "absolute_user_path": 0}
+    },
+    {
+      "id": "self-improving-20260829-agent-auto-review",
+      "path": "content_catalog/source_documents/self_improving_20260829/domains/agent-auto-review.md",
+      "category": "domain_knowledge",
+      "media_type": "text/markdown",
+      "sha256": "9c253ac5254a5c987c85b86d8f8dbadd968094a722bd1655eb0535d39cc83f5c",
+      "original_sha256": "9c253ac5254a5c987c85b86d8f8dbadd968094a722bd1655eb0535d39cc83f5c",
+      "byte_count": 4645,
+      "line_count": 117,
+      "redactions": {"email": 0, "absolute_user_path": 0}
+    },
+    {
+      "id": "self-improving-20260829-agent-ops",
+      "path": "content_catalog/source_documents/self_improving_20260829/domains/agent-ops.md",
+      "category": "domain_knowledge",
+      "media_type": "text/markdown",
+      "sha256": "828ad81cb2be039f1f82d0334d78d5a252c0f7cc4941ecc08819a0a06b370807",
+      "original_sha256": "5ec856482173efe2a6f6eede2f59e4351dcb2a88f2c08fec4239c58b5d3e493b",
+      "byte_count": 218875,
+      "line_count": 1982,
+      "redactions": {"email": 11, "absolute_user_path": 7}
+    },
+    {
+      "id": "self-improving-20260829-cron-config",
+      "path": "content_catalog/source_documents/self_improving_20260829/domains/cron-config.md",
+      "category": "domain_knowledge",
+      "media_type": "text/markdown",
+      "sha256": "e7c5cb1825676329e660365ad05405db486b3b7add8c4ed0d42fc83f4ce1b601",
+      "original_sha256": "e7c5cb1825676329e660365ad05405db486b3b7add8c4ed0d42fc83f4ce1b601",
+      "byte_count": 919,
+      "line_count": 15,
+      "redactions": {"email": 0, "absolute_user_path": 0}
+    },
+    {
+      "id": "self-improving-20260829-information-curation",
+      "path": "content_catalog/source_documents/self_improving_20260829/domains/information-curation.md",
+      "category": "domain_knowledge",
+      "media_type": "text/markdown",
+      "sha256": "671c7f38ad34d21244fe0ecc2e31c5466dd1132d5e0f720f7ed1f0cfa6fb9677",
+      "original_sha256": "671c7f38ad34d21244fe0ecc2e31c5466dd1132d5e0f720f7ed1f0cfa6fb9677",
+      "byte_count": 10052,
+      "line_count": 211,
+      "redactions": {"email": 0, "absolute_user_path": 0}
+    },
+    {
+      "id": "self-improving-20260829-ai-news-speed-report",
+      "path": "content_catalog/source_documents/self_improving_20260829/eval/ai-news-speed-report.md",
+      "category": "evaluation",
+      "media_type": "text/markdown",
+      "sha256": "3b6b02230f5c8311b3cb479a1e05680ed7ae2675e78740a0b88b019423f384c2",
+      "original_sha256": "3b6b02230f5c8311b3cb479a1e05680ed7ae2675e78740a0b88b019423f384c2",
+      "byte_count": 5001,
+      "line_count": 149,
+      "redactions": {"email": 0, "absolute_user_path": 0}
+    },
+    {
+      "id": "self-improving-20260829-heartbeat-state",
+      "path": "content_catalog/source_documents/self_improving_20260829/heartbeat-state.md",
+      "category": "operational_state_history",
+      "media_type": "text/markdown",
+      "sha256": "f45ab25109d25d9888b23a9647bf8fd008b617059669b0bfa7e13cb10a73b6c5",
+      "original_sha256": "76bd56326a899b8e8821095ebe8dd43ac9f5a7945bc3b3d697111350033836f1",
+      "byte_count": 115667,
+      "line_count": 682,
+      "redactions": {"email": 0, "absolute_user_path": 2}
+    },
+    {
+      "id": "self-improving-20260829-index",
+      "path": "content_catalog/source_documents/self_improving_20260829/index.md",
+      "category": "index",
+      "media_type": "text/markdown",
+      "sha256": "554f8f5846c5f2ed5ffe91938160e78f226edb9c3549f2a3f05a7e8faf6896b8",
+      "original_sha256": "554f8f5846c5f2ed5ffe91938160e78f226edb9c3549f2a3f05a7e8faf6896b8",
+      "byte_count": 1868,
+      "line_count": 32,
+      "redactions": {"email": 0, "absolute_user_path": 0}
+    },
+    {
+      "id": "self-improving-20260829-memory",
+      "path": "content_catalog/source_documents/self_improving_20260829/memory.md",
+      "category": "distilled_memory",
+      "media_type": "text/markdown",
+      "sha256": "c39046eb0d3503b6bc9320368cafc1a501cab0745d4a7beecab6d319e761cd90",
+      "original_sha256": "c39046eb0d3503b6bc9320368cafc1a501cab0745d4a7beecab6d319e761cd90",
+      "byte_count": 5225,
+      "line_count": 33,
+      "redactions": {"email": 0, "absolute_user_path": 0}
+    },
+    {
+      "id": "self-improving-20260829-cron-recovery-state",
+      "path": "content_catalog/source_documents/self_improving_20260829/runtime/cron-recovery-state.json",
+      "category": "runtime_state_snapshot",
+      "media_type": "application/json",
+      "sha256": "bff5d95923280ced633055492af46a58bb153de7bcf91a2171b5f012c14d8a8c",
+      "original_sha256": "bff5d95923280ced633055492af46a58bb153de7bcf91a2171b5f012c14d8a8c",
+      "byte_count": 140,
+      "line_count": 7,
+      "redactions": {"email": 0, "absolute_user_path": 0}
+    },
+    {
+      "id": "self-improving-20260829-cron-prompt-template",
+      "path": "content_catalog/source_documents/self_improving_20260829/templates/cron-prompt-template.md",
+      "category": "template",
+      "media_type": "text/markdown",
+      "sha256": "52b5efd953360523540e28b24bfa72d0b8eefb02ff133645be819caaee524e6d",
+      "original_sha256": "52b5efd953360523540e28b24bfa72d0b8eefb02ff133645be819caaee524e6d",
+      "byte_count": 3935,
+      "line_count": 129,
+      "redactions": {"email": 0, "absolute_user_path": 0}
+    }
+  ]
+}

@@ -6,8 +6,7 @@ import '../../core/constants/app_colors.dart';
 import '../../core/widgets/trainmate_action_character.dart';
 import '../../core/widgets/trainflow_widgets.dart';
 import '../../data/models/self_use_acceptance.dart';
-import '../../data/repositories/self_use_acceptance_repository.dart';
-import '../../services/local_storage_service.dart';
+import 'application/self_use_acceptance_service.dart';
 
 class SelfUseAcceptancePage extends ConsumerStatefulWidget {
   const SelfUseAcceptancePage({super.key});
@@ -18,7 +17,7 @@ class SelfUseAcceptancePage extends ConsumerStatefulWidget {
 }
 
 class _SelfUseAcceptancePageState extends ConsumerState<SelfUseAcceptancePage> {
-  late final PersistedSelfUseAcceptanceRepository _repository;
+  late final SelfUseAcceptanceService _service;
   late final TextEditingController _notesController;
   late SelfUseAcceptanceRecord _record;
   int _selectedDayNumber = 1;
@@ -26,10 +25,8 @@ class _SelfUseAcceptancePageState extends ConsumerState<SelfUseAcceptancePage> {
   @override
   void initState() {
     super.initState();
-    _repository = PersistedSelfUseAcceptanceRepository(
-      ref.read(localStorageServiceProvider),
-    );
-    _record = _repository.getRecord();
+    _service = ref.read(selfUseAcceptanceServiceProvider);
+    _record = _service.getRecord();
     _selectedDayNumber = _preferredDayNumber();
     _notesController = TextEditingController(text: _selectedDay?.notes ?? '');
   }
@@ -61,12 +58,19 @@ class _SelfUseAcceptancePageState extends ConsumerState<SelfUseAcceptancePage> {
     super.dispose();
   }
 
-  void _startAcceptance() {
-    setState(() {
-      _record = _repository.start(DateTime.now());
-      _selectedDayNumber = 1;
-      _notesController.text = '';
-    });
+  Future<void> _startAcceptance() async {
+    try {
+      final SelfUseAcceptanceRecord record =
+          await _service.start(DateTime.now());
+      if (!mounted) return;
+      setState(() {
+        _record = record;
+        _selectedDayNumber = 1;
+        _notesController.text = '';
+      });
+    } on StateError catch (error) {
+      _showMessage(error.message);
+    }
   }
 
   void _selectDay(int dayNumber) {
@@ -80,22 +84,29 @@ class _SelfUseAcceptancePageState extends ConsumerState<SelfUseAcceptancePage> {
     });
   }
 
-  void _updateSelectedDay(
+  Future<bool> _updateSelectedDay(
     SelfUseAcceptanceDay Function(SelfUseAcceptanceDay day) update,
-  ) {
+  ) async {
     final SelfUseAcceptanceDay? day = _selectedDay;
     if (day == null) {
-      return;
+      return false;
     }
-    setState(() {
-      _record = _repository.updateDay(update(day));
-    });
+    try {
+      final SelfUseAcceptanceRecord record =
+          await _service.updateDay(update(day));
+      if (mounted) setState(() => _record = record);
+      return true;
+    } on StateError catch (error) {
+      _showMessage(error.message);
+      return false;
+    }
   }
 
-  void _saveNotes() {
-    _updateSelectedDay(
+  Future<void> _saveNotes() async {
+    final bool saved = await _updateSelectedDay(
       (SelfUseAcceptanceDay day) => day.copyWith(notes: _notesController.text),
     );
+    if (!mounted || !saved) return;
     ScaffoldMessenger.of(context).showSnackBar(
       const SnackBar(content: Text('今日验收记录已保存。')),
     );
@@ -124,12 +135,19 @@ class _SelfUseAcceptancePageState extends ConsumerState<SelfUseAcceptancePage> {
     if (confirmed != true) {
       return;
     }
+    await _service.clear();
+    if (!mounted) return;
     setState(() {
-      _repository.clear();
-      _record = _repository.getRecord();
+      _record = _service.getRecord();
       _selectedDayNumber = 1;
       _notesController.text = '';
     });
+  }
+
+  void _showMessage(String message) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text(message)),
+    );
   }
 
   @override
@@ -263,7 +281,8 @@ class _OverviewCard extends StatelessWidget {
         children: [
           Row(
             children: [
-              const Icon(Icons.fact_check_outlined, color: TrainFlowTokens.accent),
+              const Icon(Icons.fact_check_outlined,
+                  color: TrainFlowTokens.accent),
               const SizedBox(width: 8),
               Expanded(
                 child: Text(

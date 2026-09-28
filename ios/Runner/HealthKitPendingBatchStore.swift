@@ -203,6 +203,28 @@ final class HealthKitPendingBatchStore {
     }
   }
 
+  func metadata(batchId: String) throws -> HealthKitPendingBatchMetadata {
+    try queue.sync {
+      let url = pendingURL(batchId: batchId)
+      guard fileManager.fileExists(atPath: url.path) else {
+        throw HealthKitPendingBatchStoreError.batchNotFound
+      }
+      let batch = try readBatch(url)
+      guard
+        let athleteId = batch["athleteId"] as? String,
+        let objectType = batch["objectType"] as? String,
+        let anchorKey = batch["anchorKey"] as? String
+      else {
+        throw HealthKitPendingBatchStoreError.invalidBatch
+      }
+      return HealthKitPendingBatchMetadata(
+        athleteId: athleteId,
+        objectType: objectType,
+        anchorKey: anchorKey
+      )
+    }
+  }
+
   @discardableResult
   func acknowledge(batchId: String) throws -> HealthKitPendingBatchMetadata {
     try queue.sync {

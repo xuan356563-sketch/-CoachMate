@@ -1,0 +1,62 @@
+{
+  "catalog_version": "2026.09.12-v1",
+  "content_hash": "0afaac08effd2eaffa04dd1ad760238f0e3c3df284acaec7ee51d7b8928a0797",
+  "contract_version": 1,
+  "known_issue_baseline": "baselines/known_issues.json",
+  "snapshot_count": 6,
+  "snapshots": [
+    {
+      "content_hash": "60b42725c717faa24fb96395082c457093c2a5b12447605d4860cdb9f87dfaa2",
+      "path": "snapshots/agent_knowledge.json",
+      "resource_count": 11
+    },
+    {
+      "content_hash": "ead6c3e8f965e971ec4c0c16a05140d42cd0403f74c0ffc253055ede3ab319f3",
+      "path": "snapshots/ai_skills.json",
+      "resource_count": 52
+    },
+    {
+      "content_hash": "0890bb995c1808b9022075471481d79ea44a9a4b93645b65b3a602d3d94fbff4",
+      "path": "snapshots/backend.json",
+      "resource_count": 32
+    },
+    {
+      "content_hash": "e4729dc2c9040b72a096f7e0c20ecfffd58e742b5b8acd6fb032985accefbacb",
+      "path": "snapshots/fixtures.json",
+      "resource_count": 9
+    },
+    {
+      "content_hash": "17ab92305d7a01e1da12a74a66c5d5dd87894d31c7539ff4ddfc64f30ab1f474",
+      "path": "snapshots/flutter.json",
+      "resource_count": 374
+    },
+    {
+      "content_hash": "f159eb57797a052eaaa3cdd92f83f45291dc80176c6efff6f2595412d12cdb61",
+      "path": "snapshots/source_receipts.json",
+      "resource_count": 8
+    }
+  ],
+  "statistics": {
+    "agent_knowledge_document_count": 11,
+    "ai_skill_count": 1,
+    "ai_skill_external_source_count": 1,
+    "ai_skill_module_count": 50,
+    "backend_catalog_version": "2026.08.02-v2",
+    "backend_population_template_count": 8,
+    "backend_principle_count": 15,
+    "backend_training_template_count": 9,
+    "demo_body_metric_count": 7,
+    "demo_race_count": 2,
+    "flutter": {
+      "active_ai_media_exercise_count": 158,
+      "active_exercise_demo_set": "female",
+      "ai_demo_slug_count": 163,
+      "exercise_count": 239,
+      "exercise_media_file_count": 368,
+      "exercise_paired_media_count": 183,
+      "exercise_placeholder_count": 54,
+      "exercise_single_media_count": 2,
+      "exercise_with_media_count": 185
+    }
+  }
+}

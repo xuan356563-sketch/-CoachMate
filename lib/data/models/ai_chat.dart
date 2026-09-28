@@ -4,6 +4,20 @@ enum AiChatMessageStatus { draft, sending, sent, failed }
 
 enum AiChatIntent { trainingQuestion, explainPlan, openPlanGenerator }
 
+enum AiChatCloudIntent {
+  explainTodayTraining,
+  explainPlanStructure,
+  explainTrainingFocus,
+}
+
+extension AiChatCloudIntentJson on AiChatCloudIntent {
+  String get jsonValue => switch (this) {
+        AiChatCloudIntent.explainTodayTraining => 'explain_today_training',
+        AiChatCloudIntent.explainPlanStructure => 'explain_plan_structure',
+        AiChatCloudIntent.explainTrainingFocus => 'explain_training_focus',
+      };
+}
+
 extension AiChatMessageRoleJson on AiChatMessageRole {
   String get jsonValue => switch (this) {
         AiChatMessageRole.user => 'user',
@@ -142,22 +156,31 @@ class AiChatSession {
 
 class AiChatContext {
   const AiChatContext({
-    required this.goal,
-    required this.sports,
+    required this.sportCodes,
     required this.availableMinutes,
     this.scheduledMinutes,
     this.scheduledPeriod,
   });
 
-  final String goal;
-  final List<String> sports;
+  static const Set<String> allowedSportCodes = <String>{
+    'marathon',
+    'trail_running',
+    'strength',
+    'hyrox',
+    'general_fitness',
+  };
+
+  final List<String> sportCodes;
   final int availableMinutes;
   final int? scheduledMinutes;
   final String? scheduledPeriod;
 
   Map<String, dynamic> toJson() => <String, dynamic>{
-        'goal': goal,
-        'sports': sports,
+        'sport_codes': sportCodes
+            .where(allowedSportCodes.contains)
+            .toSet()
+            .take(4)
+            .toList(growable: false),
         'available_minutes': availableMinutes,
         if (scheduledMinutes != null) 'scheduled_minutes': scheduledMinutes,
         if (scheduledPeriod != null) 'scheduled_period': scheduledPeriod,

@@ -144,19 +144,49 @@ class _ActivityImportEditor extends ConsumerWidget {
             },
           ),
           const SizedBox(height: 12),
-          SizedBox(
-            width: double.infinity,
-            child: FilledButton.icon(
-              onPressed: () {
-                ref
-                    .read(trainingMvpProvider.notifier)
-                    .importActivityText(ref.read(activityImportTextProvider));
-              },
-              icon: const Icon(Icons.playlist_add_check),
-              label: const Text('导入训练文件'),
-            ),
-          ),
+          _ActivityImportButton(importText: importText),
         ],
+      ),
+    );
+  }
+}
+
+class _ActivityImportButton extends ConsumerStatefulWidget {
+  const _ActivityImportButton({required this.importText});
+
+  final String importText;
+
+  @override
+  ConsumerState<_ActivityImportButton> createState() =>
+      _ActivityImportButtonState();
+}
+
+class _ActivityImportButtonState extends ConsumerState<_ActivityImportButton> {
+  var _isImporting = false;
+
+  Future<void> _import() async {
+    if (_isImporting) return;
+    setState(() => _isImporting = true);
+    final controller = ref.read(trainingMvpProvider.notifier);
+    try {
+      await controller.importActivityText(widget.importText);
+    } on StateError catch (error) {
+      controller.setActivityImportStatusMessage(error.message.toString());
+    } on Object {
+      controller.setActivityImportStatusMessage('导入失败：请稍后重试。');
+    } finally {
+      if (mounted) setState(() => _isImporting = false);
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return SizedBox(
+      width: double.infinity,
+      child: FilledButton.icon(
+        onPressed: _isImporting ? null : _import,
+        icon: const Icon(Icons.playlist_add_check),
+        label: Text(_isImporting ? '导入中…' : '导入训练文件'),
       ),
     );
   }
@@ -288,7 +318,7 @@ Future<void> _pickGpxDocument(
           .setActivityImportStatusMessage('已取消选择 GPX 文件，未写入任何训练数据。');
       return;
     }
-    ref.read(trainingMvpProvider.notifier).importGpxDocument(
+    await ref.read(trainingMvpProvider.notifier).importGpxDocument(
           document.contents,
           fileName: document.fileName,
         );

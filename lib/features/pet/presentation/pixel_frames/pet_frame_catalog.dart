@@ -2,7 +2,7 @@ import '../../../../data/models/pet.dart';
 import 'balance_raccoon_frames.dart';
 import 'pixel_frame.dart';
 
-/// M1 点阵目录，仅包含衡衡狸五阶段。
+/// M1 点阵目录，仅包含袋小满五阶段（内部物种 ID 保持不变）。
 abstract final class PetFrameCatalog {
   static final Map<(PetSpecies, PetStage), PetFormFrames> _forms =
       <(PetSpecies, PetStage), PetFormFrames>{

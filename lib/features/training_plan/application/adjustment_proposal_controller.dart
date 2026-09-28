@@ -1,3 +1,5 @@
+import '../../../plugins/application/feature_controller_binding.dart';
+import '../../../plugins/application/plugin_runtime_provider.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../data/models/training_metrics.dart';
@@ -146,6 +148,12 @@ class AcwrAdjustmentProposalController
 
   @override
   Future<AdjustmentProposalState> build() async {
+    bindFeatureController(ref, 'feature.training_plan', 'acwr', this);
+    final access = ref.read(featureAccessProvider);
+    final operation = access.isWritable('feature.training_plan')
+        ? access.beginOperation('feature.training_plan',
+            dependencies: ['feature.growth'])
+        : null;
     _repository = ref.watch(trainingMetricsRepositoryProvider);
     _athleteProfileId = ref.watch(
       userProfileControllerProvider.select(
@@ -160,10 +168,16 @@ class AcwrAdjustmentProposalController
         await _repository.listAdjustmentProposals(
       athleteProfileId: _athleteProfileId,
     );
+    if (operation == null) {
+      return AdjustmentProposalState(
+          proposals: proposals, statusMessage: '已读取历史计划调整建议。');
+    }
+    operation.checkActive();
     final List<MetricAggregate> metrics = await _repository.listAggregates(
       athleteProfileId: _athleteProfileId,
       period: MetricPeriod.week,
     );
+    operation.checkActive();
     final TrainingMvpState training = ref.read(trainingMvpProvider);
     final TrainingPlan? plan =
         training.plans.isEmpty ? null : training.plans.first;
@@ -182,7 +196,8 @@ class AcwrAdjustmentProposalController
     );
     if (generated != null &&
         !next.any((AdjustmentProposal item) => item.id == generated.id)) {
-      await _repository.saveAdjustmentProposal(generated);
+      await operation
+          .commit(() => _repository.saveAdjustmentProposal(generated));
       next.insert(0, generated);
     }
     _sortProposals(next);
@@ -197,141 +212,158 @@ class AcwrAdjustmentProposalController
   }
 
   Future<void> confirm(String proposalId, {DateTime? at}) async {
-    if (_operationInProgress) return;
-    final AdjustmentProposalState? current = state.value;
-    if (current == null) return;
-    final AdjustmentProposal proposal = _requireProposal(current, proposalId);
-    if (proposal.status != AdjustmentProposalStatus.proposed) {
-      _setStatus('只有待确认建议可以执行确认。');
-      return;
-    }
-    if (proposal.id != _currentApplicableProposalId) {
-      _setStatus('触发指标或计划已更新，请按最新数据重新查看建议；训练计划未改变。');
-      return;
-    }
-    final TrainingMvpState training = ref.read(trainingMvpProvider);
-    final WorkoutDay? workout = proposal.workoutDayId == null
-        ? null
-        : training.findWorkoutDay(proposal.workoutDayId!);
-    final List<WorkoutDay> weeklyWorkouts = proposal.workoutDayId == null
-        ? proposal.workoutChanges
-            .map(
-              (AdjustmentProposalWorkoutChange change) =>
-                  training.findWorkoutDay(change.workoutDayId),
-            )
-            .whereType<WorkoutDay>()
-            .toList(growable: false)
-        : const <WorkoutDay>[];
-    if (proposal.workoutDayId != null && workout == null) {
-      _setStatus('没有找到建议对应的训练日，计划未改变。');
-      return;
-    }
-    if (proposal.workoutDayId == null &&
-        (proposal.workoutChanges.isEmpty ||
-            weeklyWorkouts.length != proposal.workoutChanges.length)) {
-      _setStatus('周总量建议与当前训练日不完整匹配，计划未改变。');
-      return;
-    }
-
-    _operationInProgress = true;
-    final AdjustmentProposal confirmed = proposal.copyWith(
-      status: AdjustmentProposalStatus.confirmed,
-      confirmedAt: at ?? DateTime.now(),
-    );
-    try {
-      await _repository.saveAdjustmentProposal(confirmed);
-      try {
-        final PlanAdjustmentController controller =
-            ref.read(planAdjustmentControllerProvider.notifier);
-        if (confirmed.workoutDayId == null) {
-          controller.applyConfirmedWeeklyProposal(
-            proposal: confirmed,
-            currentWorkouts: weeklyWorkouts,
-          );
-        } else {
-          controller.applyConfirmedProposal(
-            proposal: confirmed,
-            currentWorkout: workout!,
-          );
-        }
-      } catch (_) {
-        await _repository.saveAdjustmentProposal(proposal);
-        rethrow;
+    final operation = ref.read(featureAccessProvider).beginOperation(
+        'feature.training_plan',
+        dependencies: ['feature.growth']);
+    return operation.commit(() async {
+      if (_operationInProgress) return;
+      final AdjustmentProposalState? current = state.value;
+      if (current == null) return;
+      final AdjustmentProposal proposal = _requireProposal(current, proposalId);
+      if (proposal.status != AdjustmentProposalStatus.proposed) {
+        _setStatus('只有待确认建议可以执行确认。');
+        return;
       }
-      _replace(
-        confirmed,
-        confirmed.workoutDayId == null
-            ? '已确认并原子应用下周总量调整，可整组撤销。'
-            : '已确认并应用单项训练调整，可随时撤销。',
+      if (proposal.id != _currentApplicableProposalId) {
+        _setStatus('触发指标或计划已更新，请按最新数据重新查看建议；训练计划未改变。');
+        return;
+      }
+      final TrainingMvpState training = ref.read(trainingMvpProvider);
+      final WorkoutDay? workout = proposal.workoutDayId == null
+          ? null
+          : training.findWorkoutDay(proposal.workoutDayId!);
+      final List<WorkoutDay> weeklyWorkouts = proposal.workoutDayId == null
+          ? proposal.workoutChanges
+              .map(
+                (AdjustmentProposalWorkoutChange change) =>
+                    training.findWorkoutDay(change.workoutDayId),
+              )
+              .whereType<WorkoutDay>()
+              .toList(growable: false)
+          : const <WorkoutDay>[];
+      if (proposal.workoutDayId != null && workout == null) {
+        _setStatus('没有找到建议对应的训练日，计划未改变。');
+        return;
+      }
+      if (proposal.workoutDayId == null &&
+          (proposal.workoutChanges.isEmpty ||
+              weeklyWorkouts.length != proposal.workoutChanges.length)) {
+        _setStatus('周总量建议与当前训练日不完整匹配，计划未改变。');
+        return;
+      }
+
+      _operationInProgress = true;
+      final AdjustmentProposal confirmed = proposal.copyWith(
+        status: AdjustmentProposalStatus.confirmed,
+        confirmedAt: at ?? DateTime.now(),
       );
-    } catch (error) {
-      _setStatus('确认失败：${_errorText(error)}');
-    } finally {
-      _operationInProgress = false;
-    }
+      try {
+        await _repository.saveAdjustmentProposal(confirmed);
+        try {
+          final PlanAdjustmentController controller =
+              ref.read(planAdjustmentControllerProvider.notifier);
+          if (confirmed.workoutDayId == null) {
+            await controller.applyConfirmedWeeklyProposal(
+              proposal: confirmed,
+              currentWorkouts: weeklyWorkouts,
+              sourceOperation: operation,
+            );
+          } else {
+            await controller.applyConfirmedProposal(
+              proposal: confirmed,
+              currentWorkout: workout!,
+              sourceOperation: operation,
+            );
+          }
+        } catch (_) {
+          await _repository.saveAdjustmentProposal(proposal);
+          rethrow;
+        }
+        _replace(
+          confirmed,
+          confirmed.workoutDayId == null
+              ? '已确认并原子应用下周总量调整，可整组撤销。'
+              : '已确认并应用单项训练调整，可随时撤销。',
+        );
+      } catch (error) {
+        _setStatus('确认失败：${_errorText(error)}');
+      } finally {
+        _operationInProgress = false;
+      }
+    });
   }
 
   Future<void> reject(String proposalId, {DateTime? at}) async {
-    if (_operationInProgress) return;
-    final AdjustmentProposalState? current = state.value;
-    if (current == null) return;
-    final AdjustmentProposal proposal = _requireProposal(current, proposalId);
-    if (proposal.status != AdjustmentProposalStatus.proposed) {
-      _setStatus('只有待确认建议可以拒绝。');
-      return;
-    }
+    final operation = ref.read(featureAccessProvider).beginOperation(
+        'feature.training_plan',
+        dependencies: ['feature.growth']);
+    return operation.commit(() async {
+      if (_operationInProgress) return;
+      final AdjustmentProposalState? current = state.value;
+      if (current == null) return;
+      final AdjustmentProposal proposal = _requireProposal(current, proposalId);
+      if (proposal.status != AdjustmentProposalStatus.proposed) {
+        _setStatus('只有待确认建议可以拒绝。');
+        return;
+      }
 
-    _operationInProgress = true;
-    final AdjustmentProposal rejected = proposal.copyWith(
-      status: AdjustmentProposalStatus.rejected,
-      rejectedAt: at ?? DateTime.now(),
-    );
-    try {
-      await _repository.saveAdjustmentProposal(rejected);
-      _replace(rejected, '已拒绝建议，训练计划未改变。');
-    } catch (error) {
-      _setStatus('拒绝失败：${_errorText(error)}');
-    } finally {
-      _operationInProgress = false;
-    }
+      _operationInProgress = true;
+      final AdjustmentProposal rejected = proposal.copyWith(
+        status: AdjustmentProposalStatus.rejected,
+        rejectedAt: at ?? DateTime.now(),
+      );
+      try {
+        await _repository.saveAdjustmentProposal(rejected);
+        _replace(rejected, '已拒绝建议，训练计划未改变。');
+      } catch (error) {
+        _setStatus('拒绝失败：${_errorText(error)}');
+      } finally {
+        _operationInProgress = false;
+      }
+    });
   }
 
   Future<void> undo(String proposalId, {DateTime? at}) async {
-    if (_operationInProgress) return;
-    final AdjustmentProposalState? current = state.value;
-    if (current == null) return;
-    final AdjustmentProposal proposal = _requireProposal(current, proposalId);
-    if (proposal.status != AdjustmentProposalStatus.confirmed) {
-      _setStatus('只有已确认建议可以撤销。');
-      return;
-    }
-
-    _operationInProgress = true;
-    final AdjustmentProposal undone = proposal.copyWith(
-      status: AdjustmentProposalStatus.undone,
-      undoneAt: at ?? DateTime.now(),
-    );
-    try {
-      await _repository.saveAdjustmentProposal(undone);
-      try {
-        ref
-            .read(planAdjustmentControllerProvider.notifier)
-            .undoConfirmedProposal(undone);
-      } catch (_) {
-        await _repository.saveAdjustmentProposal(proposal);
-        rethrow;
+    final operation = ref.read(featureAccessProvider).beginOperation(
+        'feature.training_plan',
+        dependencies: ['feature.growth']);
+    return operation.commit(() async {
+      if (_operationInProgress) return;
+      final AdjustmentProposalState? current = state.value;
+      if (current == null) return;
+      final AdjustmentProposal proposal = _requireProposal(current, proposalId);
+      if (proposal.status != AdjustmentProposalStatus.confirmed) {
+        _setStatus('只有已确认建议可以撤销。');
+        return;
       }
-      _replace(
-        undone,
-        undone.workoutChanges.isNotEmpty
-            ? '已整组撤销周总量调整并恢复确认前计划，审计记录保留。'
-            : '已撤销调整并恢复确认前计划，审计记录保留。',
+
+      _operationInProgress = true;
+      final AdjustmentProposal undone = proposal.copyWith(
+        status: AdjustmentProposalStatus.undone,
+        undoneAt: at ?? DateTime.now(),
       );
-    } catch (error) {
-      _setStatus('撤销失败：${_errorText(error)}');
-    } finally {
-      _operationInProgress = false;
-    }
+      try {
+        await _repository.saveAdjustmentProposal(undone);
+        try {
+          await ref
+              .read(planAdjustmentControllerProvider.notifier)
+              .undoConfirmedProposal(undone, sourceOperation: operation);
+        } catch (_) {
+          await _repository.saveAdjustmentProposal(proposal);
+          rethrow;
+        }
+        _replace(
+          undone,
+          undone.workoutChanges.isNotEmpty
+              ? '已整组撤销周总量调整并恢复确认前计划，审计记录保留。'
+              : '已撤销调整并恢复确认前计划，审计记录保留。',
+        );
+      } catch (error) {
+        _setStatus('撤销失败：${_errorText(error)}');
+      } finally {
+        _operationInProgress = false;
+      }
+    });
   }
 
   AdjustmentProposal _requireProposal(

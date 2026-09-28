@@ -3,6 +3,9 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../data/local/trainmate_structured_database_gateway.dart';
 import '../../../data/models/health_snapshot.dart';
 import '../../../data/repositories/health_snapshot_repository.dart';
+import '../../../plugins/application/feature_access.dart';
+import '../../../plugins/application/feature_controller_binding.dart';
+import '../../../plugins/application/plugin_runtime_provider.dart';
 import '../../../services/local_storage_service.dart';
 import '../../../services/local_report_generation_coordinator.dart';
 import '../../../services/training_metrics_pipeline.dart';
@@ -24,6 +27,23 @@ final healthSyncStructuredDatabaseGatewayProvider =
 final healthSyncMetricsPipelineProvider = Provider<TrainingMetricsPipeline?>(
   (Ref ref) => null,
 );
+final localReportGenerationCoordinatorProvider =
+    Provider<LocalReportGenerationCoordinator>((Ref ref) {
+  final LocalReportGenerationCoordinator coordinator =
+      LocalReportGenerationCoordinator(
+    repository: ref.watch(trainingMetricsRepositoryProvider),
+    metricsPipeline: ref.watch(healthSyncMetricsPipelineProvider),
+    monthlySummaryLoader: ref.watch(monthlySummaryLoaderProvider),
+    featureAccess: ref.watch(featureAccessProvider),
+  );
+  bindFeatureController(
+    ref,
+    'feature.weekly_report',
+    'coordinator',
+    coordinator,
+  );
+  return coordinator;
+});
 final healthDailyActivityRefreshSignalProvider =
     NotifierProvider<HealthDailyActivityRefreshSignal, int>(
   HealthDailyActivityRefreshSignal.new,
@@ -117,6 +137,8 @@ class HealthSyncController extends AsyncNotifier<HealthSyncState> {
 
   @override
   Future<HealthSyncState> build() async {
+    final bool featureEnabled =
+        ref.watch(featureEnabledProvider('feature.activity_import'));
     _gateway = ref.read(healthDataGatewayProvider);
     _repository = ref.read(healthSnapshotRepositoryProvider);
     _localStorage = ref.read(localStorageServiceProvider);
@@ -125,6 +147,17 @@ class HealthSyncController extends AsyncNotifier<HealthSyncState> {
     );
     _metricsPipeline = ref.watch(healthSyncMetricsPipelineProvider);
     _athleteId = ref.watch(healthSyncAthleteIdProvider);
+    if (featureEnabled) {
+      bindFeatureController(
+        ref,
+        'feature.activity_import',
+        'healthSync',
+        this,
+        cleanup: () => _gateway.pauseBackgroundSync(athleteId: _athleteId),
+        onRestore: () => _gateway.resumeBackgroundSync(athleteId: _athleteId),
+      );
+      await _gateway.resumeBackgroundSync(athleteId: _athleteId);
+    }
     final List<HealthSnapshot> snapshots =
         _repository.listSnapshots(athleteId: _athleteId);
     final Map<HealthPermissionStage, HealthAuthorizationState> authorization =
@@ -151,34 +184,34 @@ class HealthSyncController extends AsyncNotifier<HealthSyncState> {
       authorizationByStage: authorization,
       lastSyncByStage: lastSync,
       pendingBatches: const <HealthSyncBatch>[],
-      statusMessage: !_gateway.isSupported
-          ? '当前平台不支持 Apple 健康同步。'
-          : snapshots.isEmpty
-              ? '尚未请求 Apple 健康读取权限。'
-              : '已读取本机 Apple 健康数据。',
+      statusMessage: !featureEnabled
+          ? 'Apple 健康导入已停用；已有健康历史仍可读取。'
+          : !_gateway.isSupported
+              ? '当前平台不支持 Apple 健康同步。'
+              : snapshots.isEmpty
+                  ? '尚未请求 Apple 健康读取权限。'
+                  : '已读取本机 Apple 健康数据。',
     );
-    if (_gateway.isSupported && _structuredGateway != null) {
-      try {
-        final int processed = await _guardedBackgroundDrain(limit: 20);
-        if (processed > 0) {
-          initial = initial.copyWith(
-            snapshots: _repository.listSnapshots(athleteId: _athleteId),
-            statusMessage: '已安全写入 $processed 个后台健康数据批次。',
-          );
-        }
-      } catch (_) {
-        initial = initial.copyWith(
-          snapshots: _repository.listSnapshots(athleteId: _athleteId),
-          statusMessage: _backgroundFailureMessage,
-        );
-      }
-    }
     return initial;
+  }
+
+  /// 启动层显式调用；普通读取 controller 不会排空原生队列或写入报告。
+  Future<void> initializeBackgroundDrain({int limit = 20}) {
+    final FeatureOperation operation = ref
+        .read(featureAccessProvider)
+        .beginOperation('feature.activity_import');
+    return _drainPendingBackgroundBatches(
+      limit: limit,
+      operation: operation,
+    );
   }
 
   Future<void> connectAndSync({
     HealthPermissionStage stage = HealthPermissionStage.analysis,
   }) async {
+    final FeatureOperation operation = ref
+        .read(featureAccessProvider)
+        .beginOperation('feature.activity_import');
     final HealthSyncState? current = state.value;
     if (current == null || !current.supported || current.syncing) return;
     state = AsyncData(current.copyWith(
@@ -190,11 +223,15 @@ class HealthSyncController extends AsyncNotifier<HealthSyncState> {
         stage: stage,
         athleteId: _athleteId,
       );
-      _repository.saveAuthorization(
-        athleteId: _athleteId,
-        stage: stage,
-        state: result.state,
-      );
+      operation.checkActive();
+      await operation.commit(() async {
+        _repository.saveAuthorization(
+          athleteId: _athleteId,
+          stage: stage,
+          state: result.state,
+        );
+        await _localStorage.flush();
+      });
       final Map<HealthPermissionStage, HealthAuthorizationState> authorization =
           <HealthPermissionStage, HealthAuthorizationState>{
         ...current.authorizationByStage,
@@ -212,12 +249,12 @@ class HealthSyncController extends AsyncNotifier<HealthSyncState> {
         syncing: true,
         authorizationByStage: authorization,
       ));
-      await _sync(stage);
+      await _sync(stage, operation);
       try {
-        await _gateway.enableBackgroundSync(
-          stage: stage,
-          athleteId: _athleteId,
-        );
+        await operation.commit(() => _gateway.enableBackgroundSync(
+              stage: stage,
+              athleteId: _athleteId,
+            ));
       } catch (_) {
         final HealthSyncState? synced = state.value;
         if (synced != null) {
@@ -226,7 +263,12 @@ class HealthSyncController extends AsyncNotifier<HealthSyncState> {
           ));
         }
       }
-    } catch (_) {
+    } catch (error, stackTrace) {
+      try {
+        operation.checkActive();
+      } catch (_) {
+        Error.throwWithStackTrace(error, stackTrace);
+      }
       final HealthSyncState fallback = state.value ?? current;
       state = AsyncData(fallback.copyWith(
         syncing: false,
@@ -238,6 +280,9 @@ class HealthSyncController extends AsyncNotifier<HealthSyncState> {
   Future<void> sync({
     HealthPermissionStage stage = HealthPermissionStage.analysis,
   }) async {
+    final FeatureOperation operation = ref
+        .read(featureAccessProvider)
+        .beginOperation('feature.activity_import');
     final HealthSyncState? current = state.value;
     if (current == null || !current.supported || current.syncing) return;
     state = AsyncData(current.copyWith(
@@ -245,8 +290,13 @@ class HealthSyncController extends AsyncNotifier<HealthSyncState> {
       statusMessage: '正在同步健康数据…',
     ));
     try {
-      await _sync(stage);
-    } catch (_) {
+      await _sync(stage, operation);
+    } catch (error, stackTrace) {
+      try {
+        operation.checkActive();
+      } catch (_) {
+        Error.throwWithStackTrace(error, stackTrace);
+      }
       state = AsyncData(current.copyWith(
         syncing: false,
         statusMessage: '健康数据同步失败，请稍后重试。',
@@ -254,7 +304,10 @@ class HealthSyncController extends AsyncNotifier<HealthSyncState> {
     }
   }
 
-  Future<void> _sync(HealthPermissionStage stage) async {
+  Future<void> _sync(
+    HealthPermissionStage stage,
+    FeatureOperation operation,
+  ) async {
     final HealthSyncState current = state.value!;
     final DateTime end = DateTime.now();
     final DateTime start = current.lastSyncByStage[stage] == null
@@ -266,8 +319,11 @@ class HealthSyncController extends AsyncNotifier<HealthSyncState> {
       start: start,
       end: end,
     );
+    operation.checkActive();
     final TrainMateStructuredDatabaseGateway? structured = _structuredGateway;
     final List<HealthSyncBatch> unprocessedBatches = <HealthSyncBatch>[];
+    final Map<String, HealthSyncApplyResult> applyResults =
+        <String, HealthSyncApplyResult>{};
     if (structured == null) {
       unprocessedBatches.addAll(incoming.batches);
     } else {
@@ -275,15 +331,7 @@ class HealthSyncController extends AsyncNotifier<HealthSyncState> {
         if (batch.athleteId != _athleteId) {
           throw StateError('前台健康数据批次与当前运动员不一致，已停止写入。');
         }
-        final HealthSyncApplyResult applyResult =
-            await structured.applyHealthSyncBatch(
-          batch,
-          syncMode: 'foreground',
-        );
-        await _processCommittedMetrics(batch, applyResult);
-        if (batch.requiresAcknowledgement) {
-          await _gateway.acknowledgeBatch(batch.batchId);
-        }
+        // 真实写入在下方同一生命周期提交区内完成。
       }
     }
     final Set<String> deletedLegacySourceIds = _legacyDeletedSourceIds(
@@ -311,16 +359,45 @@ class HealthSyncController extends AsyncNotifier<HealthSyncState> {
         );
     final bool hasPersistedReadableData =
         incoming.snapshots.isNotEmpty || hasStructuredFacts;
+    if (hasPersistedReadableData || incoming.batches.isNotEmpty) {
+      await operation.commit(() async {
+        if (structured != null) {
+          for (final HealthSyncBatch batch in incoming.batches) {
+            final HealthSyncApplyResult applyResult =
+                await structured.applyHealthSyncBatch(
+              batch,
+              syncMode: 'foreground',
+            );
+            applyResults[batch.batchId] = applyResult;
+            await _removeDeletedLegacySnapshots(batch);
+          }
+        }
+        if (hasPersistedReadableData) {
+          _repository.save(
+            athleteId: _athleteId,
+            stage: stage,
+            snapshots: snapshots,
+            syncedAt: end,
+          );
+          await _localStorage.flush();
+        }
+      });
+    }
+    for (final HealthSyncBatch batch in incoming.batches) {
+      if (structured == null || !batch.requiresAcknowledgement) continue;
+      operation.checkActive();
+      await _gateway.acknowledgeBatch(batch.batchId);
+    }
+    for (final HealthSyncBatch batch in incoming.batches) {
+      final HealthSyncApplyResult? applyResult = applyResults[batch.batchId];
+      if (applyResult != null) {
+        await _processOptionalGrowth(batch, applyResult, operation);
+      }
+    }
     if (hasPersistedReadableData) {
-      _repository.save(
-        athleteId: _athleteId,
-        stage: stage,
-        snapshots: snapshots,
-        syncedAt: end,
-      );
-      await _localStorage.flush();
       lastSync[stage] = end;
     }
+    operation.checkActive();
     state = AsyncData(current.copyWith(
       syncing: false,
       snapshots: snapshots,
@@ -343,12 +420,16 @@ class HealthSyncController extends AsyncNotifier<HealthSyncState> {
     required HealthSyncBatchProcessor processor,
     int limit = 20,
   }) async {
+    final FeatureOperation operation = ref
+        .read(featureAccessProvider)
+        .beginOperation('feature.activity_import');
     final List<HealthSyncBatch> foregroundBatches = List<HealthSyncBatch>.from(
       state.value?.pendingBatches ?? const <HealthSyncBatch>[],
     );
     for (final HealthSyncBatch batch in foregroundBatches) {
       if (batch.athleteId != _athleteId) continue;
-      await processor(batch);
+      await operation.commit(() => processor(batch));
+      operation.checkActive();
       final HealthSyncState? latest = state.value;
       if (latest != null) {
         state = AsyncData(latest.copyWith(
@@ -360,24 +441,45 @@ class HealthSyncController extends AsyncNotifier<HealthSyncState> {
     }
 
     if (_structuredGateway != null) {
-      await drainPendingBackgroundBatches(limit: limit);
+      await _drainPendingBackgroundBatches(
+        limit: limit,
+        operation: operation,
+      );
       return;
     }
     final List<HealthSyncBatch> batches =
         await _gateway.drainPendingBackgroundBatches(limit: limit);
+    operation.checkActive();
     for (final HealthSyncBatch batch in batches) {
       if (batch.athleteId != _athleteId) continue;
-      await processor(batch);
+      await operation.commit(() => processor(batch));
       if (batch.requiresAcknowledgement) {
+        operation.checkActive();
         await _gateway.acknowledgeBatch(batch.batchId);
       }
     }
   }
 
   Future<void> drainPendingBackgroundBatches({int limit = 20}) async {
+    final FeatureOperation operation = ref
+        .read(featureAccessProvider)
+        .beginOperation('feature.activity_import');
+    await _drainPendingBackgroundBatches(
+      limit: limit,
+      operation: operation,
+    );
+  }
+
+  Future<void> _drainPendingBackgroundBatches({
+    required int limit,
+    required FeatureOperation operation,
+  }) async {
     if (_structuredGateway == null || !_gateway.isSupported) return;
     try {
-      final int processed = await _guardedBackgroundDrain(limit: limit);
+      final int processed = await _guardedBackgroundDrain(
+        limit: limit,
+        operation: operation,
+      );
       final HealthSyncState? current = state.value;
       if (current != null && processed > 0) {
         state = AsyncData(current.copyWith(
@@ -385,6 +487,11 @@ class HealthSyncController extends AsyncNotifier<HealthSyncState> {
         ));
       }
     } catch (error, stackTrace) {
+      try {
+        operation.checkActive();
+      } catch (_) {
+        Error.throwWithStackTrace(error, stackTrace);
+      }
       final HealthSyncState? current = state.value;
       if (current != null) {
         state = AsyncData(current.copyWith(
@@ -396,20 +503,29 @@ class HealthSyncController extends AsyncNotifier<HealthSyncState> {
     }
   }
 
-  Future<int> _guardedBackgroundDrain({required int limit}) {
+  Future<int> _guardedBackgroundDrain({
+    required int limit,
+    required FeatureOperation operation,
+  }) {
     final Future<int>? active = _backgroundDrainFuture;
     if (active != null) return active;
-    late final Future<int> operation;
-    operation = _drainBackgroundOnce(limit: limit).whenComplete(() {
-      if (identical(_backgroundDrainFuture, operation)) {
+    late final Future<int> operationFuture;
+    operationFuture = _drainBackgroundOnce(
+      limit: limit,
+      featureOperation: operation,
+    ).whenComplete(() {
+      if (identical(_backgroundDrainFuture, operationFuture)) {
         _backgroundDrainFuture = null;
       }
     });
-    _backgroundDrainFuture = operation;
-    return operation;
+    _backgroundDrainFuture = operationFuture;
+    return operationFuture;
   }
 
-  Future<int> _drainBackgroundOnce({required int limit}) async {
+  Future<int> _drainBackgroundOnce({
+    required int limit,
+    required FeatureOperation featureOperation,
+  }) async {
     final TrainMateStructuredDatabaseGateway? structured = _structuredGateway;
     if (structured == null) return 0;
     final String athleteId = _athleteId;
@@ -420,6 +536,7 @@ class HealthSyncController extends AsyncNotifier<HealthSyncState> {
     for (int round = 0; round < 256; round += 1) {
       final List<HealthSyncBatch> batches =
           await _gateway.drainPendingBackgroundBatches(limit: limit);
+      featureOperation.checkActive();
       final List<HealthSyncBatch> pendingForAthlete = batches
           .where(
             (HealthSyncBatch batch) =>
@@ -430,6 +547,7 @@ class HealthSyncController extends AsyncNotifier<HealthSyncState> {
         ..sort(_compareBackgroundBatchPriority);
       if (pendingForAthlete.isEmpty) {
         if (processed > 0) {
+          featureOperation.checkActive();
           ref
               .read(healthDailyActivityRefreshSignalProvider.notifier)
               .requestRefresh();
@@ -438,15 +556,20 @@ class HealthSyncController extends AsyncNotifier<HealthSyncState> {
       }
       for (final HealthSyncBatch batch in pendingForAthlete) {
         final HealthSyncApplyResult applyResult =
-            await structured.applyHealthSyncBatch(
-          batch,
-          syncMode: 'background',
-        );
-        await _removeDeletedLegacySnapshots(batch);
-        await _processCommittedMetrics(batch, applyResult);
+            await featureOperation.commit(() async {
+          final HealthSyncApplyResult committed =
+              await structured.applyHealthSyncBatch(
+            batch,
+            syncMode: 'background',
+          );
+          await _removeDeletedLegacySnapshots(batch);
+          return committed;
+        });
         if (batch.requiresAcknowledgement) {
+          featureOperation.checkActive();
           await _gateway.acknowledgeBatch(batch.batchId);
         }
+        await _processOptionalGrowth(batch, applyResult, featureOperation);
         processedBatchIds.add(batch.batchId);
         processed += 1;
       }
@@ -482,13 +605,21 @@ class HealthSyncController extends AsyncNotifier<HealthSyncState> {
   ) async {
     final TrainingMetricsPipeline? pipeline = _metricsPipeline;
     if (pipeline == null) return;
+    final TrainingMetricsPipeline growthPipeline =
+        readFeatureController<TrainingMetricsPipeline>(
+      ref,
+      'feature.growth',
+      'metricsPipeline',
+      () => pipeline,
+    );
     final HealthBatchMetricsResult metricsResult =
-        await pipeline.processCommittedHealthBatch(batch, applyResult);
+        await growthPipeline.processCommittedHealthBatch(batch, applyResult);
     final LocalReportGenerationCoordinator reportCoordinator =
-        LocalReportGenerationCoordinator(
-      repository: ref.read(trainingMetricsRepositoryProvider),
-      metricsPipeline: pipeline,
-      monthlySummaryLoader: ref.read(monthlySummaryLoaderProvider),
+        readFeatureController<LocalReportGenerationCoordinator>(
+      ref,
+      'feature.weekly_report',
+      'coordinator',
+      () => ref.read(localReportGenerationCoordinatorProvider),
     );
     for (final MetricPeriodWindow window in metricsResult.affectedPeriods) {
       await reportCoordinator.ensureClosedPeriod(
@@ -505,6 +636,32 @@ class HealthSyncController extends AsyncNotifier<HealthSyncState> {
     ref.invalidate(trainingMetricAggregatesProvider);
     ref.invalidate(trainingReportRevisionsProvider);
     ref.invalidate(growthMetricsControllerProvider);
+  }
+
+  Future<void> _processOptionalGrowth(
+    HealthSyncBatch batch,
+    HealthSyncApplyResult applyResult,
+    FeatureOperation sourceOperation,
+  ) async {
+    // ACK 已确认的事实保留；旧导入的来源与账户代际仍必须贯穿后续派生。
+    sourceOperation.checkActive();
+    final FeatureAccess access = ref.read(featureAccessProvider);
+    if (!access.isWritable('feature.growth')) return;
+    final FeatureOperation operation = access.beginOperation('feature.growth');
+    try {
+      await sourceOperation.commit(() => operation.commit(
+            () => _processCommittedMetrics(batch, applyResult),
+          ));
+    } catch (_) {
+      sourceOperation.checkActive();
+      // 原始健康批次已经安全提交并确认；成长派生可由后续显式核对补算。
+      final HealthSyncState? current = state.value;
+      if (current != null) {
+        state = AsyncData(current.copyWith(
+          statusMessage: '健康数据已保存；成长指标暂未更新，可稍后重新核对。',
+        ));
+      }
+    }
   }
 
   Future<void> _removeDeletedLegacySnapshots(HealthSyncBatch batch) async {

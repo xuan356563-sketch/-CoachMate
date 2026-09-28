@@ -37,7 +37,9 @@ void main() {
     final BodyMetricState bodyState =
         container.read(bodyMetricControllerProvider);
     final BodyMetric latestMetric = bodyState.latestMetric!;
-    container.read(bodyMetricControllerProvider.notifier).saveManualMetric(
+    await container
+        .read(bodyMetricControllerProvider.notifier)
+        .saveManualMetric(
           weightKg: latestMetric.weightKg,
           restingHeartRate: latestMetric.restingHeartRate,
           hrvMs: latestMetric.hrvMs,
@@ -81,7 +83,7 @@ void main() {
     expect(state.bodyMetricSnapshotStatusMessage, contains('请确认后写入'));
     expect(state.achievementRecords.length, initialAchievementCount);
 
-    container
+    await container
         .read(bodyMetricControllerProvider.notifier)
         .confirmPendingMetric();
     await Future<void>.delayed(Duration.zero);

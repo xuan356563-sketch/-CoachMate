@@ -169,6 +169,33 @@ void main() {
       isNot(containsPair('weightKg', 70)),
     );
   });
+
+  test('功能设置只写本地文档且不生成云同步 outbox', () async {
+    final _CloudStorageDatabaseGateway database =
+        _CloudStorageDatabaseGateway(<String, Map<String, dynamic>>{
+      'trainflow.account_binding.v1': <String, dynamic>{
+        'userId': 'account-a',
+      },
+    });
+    final DatabaseLocalStorageService storage =
+        await DatabaseLocalStorageService.create(database);
+
+    storage.saveJson('trainflow.plugin_settings.v1', <String, dynamic>{
+      'version': 1,
+      'enabledOverrides': <String, bool>{'feature.motion_check': false},
+    });
+    await storage.flush();
+
+    expect(
+      database.documents['trainflow.plugin_settings.v1'],
+      <String, dynamic>{
+        'version': 1,
+        'enabledOverrides': <String, bool>{'feature.motion_check': false},
+      },
+    );
+    expect(database.atomicCloudWriteCount, 0);
+    expect(database.lastMutations, isEmpty);
+  });
 }
 
 class _StorageDatabaseGateway implements TrainFlowDatabaseGateway {

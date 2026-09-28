@@ -17,14 +17,11 @@ from pydantic import (
     model_validator,
 )
 
-TrainingSportCode = Literal[
-    "general_fitness",
-    "strength",
-    "fat_loss",
-    "marathon",
-    "trail_running",
-    "hyrox",
-]
+from app.services.training_sport_providers import (
+    ProviderRegistry,
+    ProviderRegistryError,
+    TrainingSportCode,
+)
 
 _HASH_PATTERN = re.compile(r"^[0-9a-f]{64}$")
 _MAX_SOURCE_BYTES = 64 * 1024
@@ -338,13 +335,23 @@ class SkillSelection:
 class TrainingSkillRegistry:
     """只加载应用包内通过清单和哈希校验的训练 Skill。"""
 
-    def __init__(self, root: Path) -> None:
+    def __init__(
+        self,
+        root: Path,
+        *,
+        provider_registry: ProviderRegistry | None = None,
+    ) -> None:
         self._root = root
+        self._provider_registry = provider_registry or ProviderRegistry.default()
         self._loaded: tuple[LoadedTrainingSkill, ...] | None = None
 
     @classmethod
     def default(cls) -> "TrainingSkillRegistry":
         return cls(Path(__file__).resolve().parents[1] / "ai_skills")
+
+    @property
+    def sport_providers(self) -> ProviderRegistry:
+        return self._provider_registry
 
     def load(self) -> tuple[LoadedTrainingSkill, ...]:
         if self._loaded is not None:
@@ -382,28 +389,16 @@ class TrainingSkillRegistry:
             raise SkillBundleError("内置训练 Skill 校验失败") from error
 
     def resolve(self, primary_sport: TrainingSportCode) -> SkillSelection:
-        exact_candidates = [
-            item for item in self.load() if primary_sport in item.manifest.sports
-        ]
-        candidates = exact_candidates
-        selected_coverage: TrainingSportCode = primary_sport
-        selection_reason = "主运动与 Skill 覆盖标签精确匹配"
-        selection_reason_code = "primary_sport_exact_match"
-        if not candidates:
-            candidates = [
-                item
-                for item in self.load()
-                if "general_fitness" in item.manifest.sports
-            ]
-            selected_coverage = "general_fitness"
-            selection_reason = "当前运动使用通用训练 Skill 覆盖"
-            selection_reason_code = "generic_fallback"
-        if not candidates:
-            raise SkillBundleError("没有覆盖当前运动的内置训练 Skill")
-        selected = sorted(
-            candidates,
-            key=lambda item: (-item.manifest.priority, item.manifest.id),
-        )[0]
+        selected = self.load()[0]
+        try:
+            provider = self._provider_registry.resolve(primary_sport)
+            policy = provider.select_skill_policy(
+                covered_sports=selected.manifest.sports,
+                fragment_sports=selected.fragment_texts,
+            )
+        except ProviderRegistryError as error:
+            raise SkillBundleError("没有覆盖当前运动的内置训练 Skill") from error
+        selected_coverage = policy.fragment_coverage
         fragment = selected.fragment_texts.get(selected_coverage, "")
         fragment_hash = selected.fragment_hashes.get(selected_coverage)
         module_ids = tuple(
@@ -415,16 +410,6 @@ class TrainingSkillRegistry:
                 or selected_coverage in item.runtime_targets
             )
         )
-        if exact_candidates:
-            if fragment and selected_coverage == "hyrox":
-                selection_reason = "HYROX 主运动精确匹配已审核专项片段"
-                selection_reason_code = "hyrox_fragment_exact_match"
-            elif fragment:
-                selection_reason = "主运动使用通用周期化规则，并叠加已审核专项片段"
-                selection_reason_code = "generic_periodization_fallback"
-            else:
-                selection_reason = "主运动使用通用周期化规则和 TrainMate 本地模板"
-                selection_reason_code = "generic_periodization_fallback"
         separator = "\n\n" if fragment else ""
         if len((selected.runtime_text + separator + fragment).encode("utf-8")) > (
             _MAX_SELECTED_RUNTIME_BYTES
@@ -437,9 +422,9 @@ class TrainingSkillRegistry:
             runtime_text=selected.runtime_text,
             fragment_text=fragment,
             fragment_sha256=fragment_hash,
-            coverage=primary_sport,
-            selection_reason=selection_reason,
-            selection_reason_code=selection_reason_code,
+            coverage=provider.sport_code,
+            selection_reason=policy.selection_reason,
+            selection_reason_code=policy.selection_reason_code,
             source_catalog_sha256=selected.source_catalog_sha256,
             knowledge_module_ids=module_ids,
         )

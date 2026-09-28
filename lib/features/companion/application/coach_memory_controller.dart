@@ -6,6 +6,9 @@ import 'package:trainflow_ai/features/companion/data/coach_local_repository.dart
 import 'package:trainflow_ai/features/companion/domain/coach_contracts.dart';
 import 'package:trainflow_ai/features/pet/application/pet_controller.dart';
 import 'package:trainflow_ai/services/local_storage_service.dart';
+import 'package:trainflow_ai/plugins/application/feature_access.dart';
+import 'package:trainflow_ai/plugins/application/feature_controller_binding.dart';
+import 'package:trainflow_ai/plugins/application/plugin_runtime_provider.dart';
 
 final coachMemoryControllerProvider =
     AsyncNotifierProvider<CoachMemoryController, CoachMemoryState>(
@@ -36,6 +39,7 @@ class CoachMemoryState {
 }
 
 class CoachMemoryController extends AsyncNotifier<CoachMemoryState> {
+  static const String _featureId = 'feature.companion';
   late CoachLocalRepository _repository;
   late CoachApi _api;
   late LocalStorageService _storage;
@@ -57,7 +61,7 @@ class CoachMemoryController extends AsyncNotifier<CoachMemoryState> {
     _athleteProfileId =
         pet.requireValue.activeCompanion?.athleteProfileId ?? '';
     if (_athleteProfileId.isEmpty) {
-      return const CoachMemoryState.unavailable('尚未选择可使用的衡衡狸。');
+      return const CoachMemoryState.unavailable('尚未选择可使用的袋小满。');
     }
     _clock = ref.watch(companionClockProvider);
     _api = ref.watch(coachApiProvider);
@@ -65,19 +69,25 @@ class CoachMemoryController extends AsyncNotifier<CoachMemoryState> {
     _cloudProjectionConsented =
         _storage.readJson(coachCloudConsentStorageKey)?['granted'] == true;
     _repository = CoachLocalRepository(database, clock: _clock);
+    bindFeatureController(ref, _featureId, 'memory', this);
     return _load();
   }
 
   Future<void> confirm(String memoryId) async {
-    await _repository.confirmMemory(
-      athleteProfileId: _athleteProfileId,
-      memoryId: memoryId,
-      syncAllowed: false,
-    );
+    final FeatureOperation operation =
+        ref.read(featureAccessProvider).beginOperation(_featureId);
+    await operation.commit(() => _repository.confirmMemory(
+          athleteProfileId: _athleteProfileId,
+          memoryId: memoryId,
+          syncAllowed: false,
+        ));
     await refresh();
   }
 
   Future<void> setMayMention(String memoryId, bool value) async {
+    final FeatureOperation? operation = value
+        ? ref.read(featureAccessProvider).beginOperation(_featureId)
+        : null;
     final CoachMemoryV1? memory = await _repository.loadMemory(
       athleteProfileId: _athleteProfileId,
       memoryId: memoryId,
@@ -85,18 +95,22 @@ class CoachMemoryController extends AsyncNotifier<CoachMemoryState> {
     if (memory == null || !memory.isUsable(_clock())) {
       throw StateError('只有已确认且有效的记忆可以修改提及权限');
     }
-    await _repository.saveMemory(memory.copyWith(
-      mayMention: value,
-      updatedAt: _clock().toUtc(),
-    ));
+    Future<void> save() => _repository.saveMemory(memory.copyWith(
+          mayMention: value,
+          updatedAt: _clock().toUtc(),
+        ));
+    await (operation == null ? save() : operation.commit(save));
     await refresh();
   }
 
   Future<void> setCloudProjectionConsent(bool granted) async {
     _statusOverride = null;
     if (granted) {
+      final FeatureOperation operation =
+          ref.read(featureAccessProvider).beginOperation(_featureId);
       await _api.setCloudConsent(granted: true);
-      await _saveCloudConsent(true);
+      operation.checkActive();
+      await _saveCloudConsent(true, operation: operation);
       _statusOverride = 'Coach 云投影已授权；仅明确开启的已确认记忆可进入最小投影。';
       await refresh();
       return;
@@ -123,6 +137,9 @@ class CoachMemoryController extends AsyncNotifier<CoachMemoryState> {
   }
 
   Future<void> setSyncAllowed(String memoryId, bool value) async {
+    final FeatureOperation? operation = value
+        ? ref.read(featureAccessProvider).beginOperation(_featureId)
+        : null;
     if (value && !_cloudProjectionConsented) {
       throw StateError('请先明确开启 Coach 云投影同意');
     }
@@ -133,10 +150,11 @@ class CoachMemoryController extends AsyncNotifier<CoachMemoryState> {
     if (memory == null || !memory.isUsable(_clock())) {
       throw StateError('只有已确认且有效的记忆可以修改云同步权限');
     }
-    await _repository.saveMemory(memory.copyWith(
-      syncAllowed: value,
-      updatedAt: _clock().toUtc(),
-    ));
+    Future<void> save() => _repository.saveMemory(memory.copyWith(
+          syncAllowed: value,
+          updatedAt: _clock().toUtc(),
+        ));
+    await (operation == null ? save() : operation.commit(save));
     _statusOverride =
         value ? '这条记忆已允许进入最小云投影；不会上传原始对话或健康样本。' : '这条记忆已停止进入后续云投影。';
     await refresh();
@@ -146,27 +164,29 @@ class CoachMemoryController extends AsyncNotifier<CoachMemoryState> {
     required String memoryId,
     required String replacement,
   }) async {
+    final FeatureOperation operation =
+        ref.read(featureAccessProvider).beginOperation(_featureId);
     final String text = replacement.trim();
     if (text.isEmpty || text.length > 240) {
       throw ArgumentError.value(
           replacement, 'replacement', '纠正内容需为 1 到 240 个字');
     }
     final DateTime now = _clock();
-    await _repository.correctMemory(
-      athleteProfileId: _athleteProfileId,
-      memoryId: memoryId,
-      replacementMemoryId:
-          'memory-correction-${now.toUtc().microsecondsSinceEpoch}',
-      value: <String, Object?>{'statement': text},
-      displayText: text,
-      correctionSource: CoachSourceRef(
-        sourceKind: 'user_correction',
-        sourceLocalId: 'correction-${now.toUtc().microsecondsSinceEpoch}',
-        sourceDigest: CoachDigest.sha256(text),
-        observedAt: now,
-        summaryKey: '用户在记忆面板中的纠正',
-      ),
-    );
+    await operation.commit(() => _repository.correctMemory(
+          athleteProfileId: _athleteProfileId,
+          memoryId: memoryId,
+          replacementMemoryId:
+              'memory-correction-${now.toUtc().microsecondsSinceEpoch}',
+          value: <String, Object?>{'statement': text},
+          displayText: text,
+          correctionSource: CoachSourceRef(
+            sourceKind: 'user_correction',
+            sourceLocalId: 'correction-${now.toUtc().microsecondsSinceEpoch}',
+            sourceDigest: CoachDigest.sha256(text),
+            observedAt: now,
+            summaryKey: '用户在记忆面板中的纠正',
+          ),
+        ));
     await refresh();
   }
 
@@ -199,13 +219,20 @@ class CoachMemoryController extends AsyncNotifier<CoachMemoryState> {
     );
   }
 
-  Future<void> _saveCloudConsent(bool granted) async {
-    _cloudProjectionConsented = granted;
-    _storage.saveJson(coachCloudConsentStorageKey, <String, dynamic>{
-      'granted': granted,
-      'document_version': 'coach-cloud-projection-2026-08-12.1',
-      'updated_at': _clock().toUtc().toIso8601String(),
-    });
-    await _storage.flush();
+  Future<void> _saveCloudConsent(
+    bool granted, {
+    FeatureOperation? operation,
+  }) async {
+    Future<void> save() async {
+      _cloudProjectionConsented = granted;
+      _storage.saveJson(coachCloudConsentStorageKey, <String, dynamic>{
+        'granted': granted,
+        'document_version': 'coach-cloud-projection-2026-08-12.1',
+        'updated_at': _clock().toUtc().toIso8601String(),
+      });
+      await _storage.flush();
+    }
+
+    await (operation == null ? save() : operation.commit(save));
   }
 }

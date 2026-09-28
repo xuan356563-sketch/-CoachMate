@@ -61,11 +61,18 @@ class MealGuidePage extends ConsumerWidget {
                       child: Text(scenario.label),
                     ),
                 ],
-                onChanged: (MealScenario? value) {
+                onChanged: (MealScenario? value) async {
                   if (value != null) {
-                    ref
-                        .read(mealPreferenceControllerProvider.notifier)
-                        .saveScenario(value);
+                    try {
+                      await ref
+                          .read(mealPreferenceControllerProvider.notifier)
+                          .saveScenario(value);
+                    } catch (error) {
+                      if (!context.mounted) return;
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        SnackBar(content: Text('保存饮食场景失败：$error')),
+                      );
+                    }
                   }
                 },
               ),
@@ -104,7 +111,8 @@ class _MealRecordCard extends ConsumerWidget {
         children: [
           Row(
             children: [
-              const Icon(Icons.edit_note_outlined, color: TrainFlowTokens.accent),
+              const Icon(Icons.edit_note_outlined,
+                  color: TrainFlowTokens.accent),
               const SizedBox(width: 8),
               Expanded(
                 child: Text(
@@ -149,9 +157,16 @@ class _MealRecordCard extends ConsumerWidget {
                 trailing: IconButton(
                   tooltip: '撤销这条饮食记录',
                   onPressed: () async {
-                    await ref
-                        .read(bodyRhythmControllerProvider.notifier)
-                        .revokeMeal(record.id);
+                    try {
+                      await ref
+                          .read(bodyRhythmControllerProvider.notifier)
+                          .revokeMeal(record.id);
+                    } catch (error) {
+                      if (!context.mounted) return;
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        SnackBar(content: Text('撤销饮食记录失败：$error')),
+                      );
+                    }
                   },
                   icon: const Icon(Icons.undo),
                 ),

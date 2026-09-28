@@ -3,6 +3,9 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../data/local/trainmate_structured_database_gateway.dart';
 import '../../../data/models/training_metrics.dart';
 import '../../../data/repositories/training_metrics_repository.dart';
+import '../../../plugins/application/feature_access.dart';
+import '../../../plugins/application/feature_controller_binding.dart';
+import '../../../plugins/application/plugin_runtime_provider.dart';
 import '../../../services/training_metrics_pipeline.dart';
 import '../../profile/application/health_sync_controller.dart';
 import 'training_metrics_provider.dart';
@@ -92,11 +95,17 @@ final strengthExerciseOptionsProvider =
 
 final strengthPrimaryExerciseServiceProvider =
     Provider<StrengthPrimaryExerciseService>(
-  (Ref ref) => StrengthPrimaryExerciseService(
-    database: ref.watch(healthSyncStructuredDatabaseGatewayProvider),
-    repository: ref.watch(trainingMetricsRepositoryProvider),
-    metricsPipeline: ref.watch(healthSyncMetricsPipelineProvider),
-  ),
+  (Ref ref) {
+    final StrengthPrimaryExerciseService service =
+        StrengthPrimaryExerciseService(
+      database: ref.watch(healthSyncStructuredDatabaseGatewayProvider),
+      repository: ref.watch(trainingMetricsRepositoryProvider),
+      metricsPipeline: ref.watch(healthSyncMetricsPipelineProvider),
+      featureAccess: ref.watch(featureAccessProvider),
+    );
+    bindFeatureController(ref, 'feature.growth', 'strengthPrimary', service);
+    return service;
+  },
 );
 
 class StrengthPrimaryExerciseRecalculationException implements Exception {
@@ -114,15 +123,18 @@ class StrengthPrimaryExerciseService {
     required TrainMateStructuredDatabaseGateway? database,
     required TrainingMetricsRepository repository,
     required TrainingMetricsPipeline? metricsPipeline,
+    FeatureAccess? featureAccess,
     DateTime Function()? clock,
   })  : _database = database,
         _repository = repository,
         _metricsPipeline = metricsPipeline,
+        _featureAccess = featureAccess,
         _clock = clock ?? DateTime.now;
 
   final TrainMateStructuredDatabaseGateway? _database;
   final TrainingMetricsRepository _repository;
   final TrainingMetricsPipeline? _metricsPipeline;
+  final FeatureAccess? _featureAccess;
   final DateTime Function() _clock;
 
   Future<void> setActive({
@@ -131,6 +143,8 @@ class StrengthPrimaryExerciseService {
     required String displayName,
     required bool isActive,
   }) async {
+    final FeatureOperation? operation =
+        _featureAccess?.beginOperation('feature.growth');
     final TrainMateStructuredDatabaseGateway? database = _database;
     if (database == null) {
       throw StateError('当前平台没有可用的结构化成长存储，不能保存力量主项。');
@@ -141,28 +155,51 @@ class StrengthPrimaryExerciseService {
       throw const FormatException('力量主项缺少运动员、动作标识或动作名称。');
     }
     final DateTime now = _clock();
-    await database.setAthletePrimaryExercise(
-      athleteProfileId: athleteProfileId,
-      exerciseKey: exerciseKey,
-      displayName: displayName,
-      isActive: isActive,
-      updatedAt: now,
-    );
-    await _repository.invalidateBySource(
-      athleteProfileId: athleteProfileId,
-      sourceType: 'athlete_primary_exercises',
-      sourceId: '$athleteProfileId:$exerciseKey',
-      invalidatedAt: now.toUtc(),
-    );
+    Future<void> save() async {
+      await database.setAthletePrimaryExercise(
+        athleteProfileId: athleteProfileId,
+        exerciseKey: exerciseKey,
+        displayName: displayName,
+        isActive: isActive,
+        updatedAt: now,
+      );
+      await _repository.invalidateBySource(
+        athleteProfileId: athleteProfileId,
+        sourceType: 'athlete_primary_exercises',
+        sourceId: '$athleteProfileId:$exerciseKey',
+        invalidatedAt: now.toUtc(),
+      );
+    }
+
+    if (operation == null) {
+      await save();
+    } else {
+      await operation.commit(save);
+    }
     final TrainingMetricsPipeline? pipeline = _metricsPipeline;
     if (pipeline == null) return;
     try {
-      await pipeline.aggregatePeriod(
-        athleteProfileId: athleteProfileId,
-        period: MetricPeriod.week,
-        periodStart: _weekStart(now),
-      );
-    } catch (_) {
+      if (operation == null) {
+        await pipeline.aggregatePeriod(
+          athleteProfileId: athleteProfileId,
+          period: MetricPeriod.week,
+          periodStart: _weekStart(now),
+        );
+      } else {
+        await operation.commit(() => pipeline.aggregatePeriod(
+              athleteProfileId: athleteProfileId,
+              period: MetricPeriod.week,
+              periodStart: _weekStart(now),
+            ));
+      }
+    } catch (error, stackTrace) {
+      if (operation != null) {
+        try {
+          operation.checkActive();
+        } catch (_) {
+          Error.throwWithStackTrace(error, stackTrace);
+        }
+      }
       throw const StrengthPrimaryExerciseRecalculationException(
         '力量主项已保存；相关指标保持失效，稍后可重新同步计算。',
       );

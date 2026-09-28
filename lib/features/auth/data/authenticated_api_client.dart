@@ -6,6 +6,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:http/http.dart' as http;
 
 import '../../../core/config/api_config.dart';
+import '../../../core/constants/app_brand.dart';
 import 'session_token_store.dart';
 
 final httpClientProvider = Provider<http.Client>((Ref ref) {
@@ -232,7 +233,7 @@ class AuthenticatedApiClient {
     } catch (_) {
       throw const ApiException(
         code: 'network_unavailable',
-        message: '无法连接智练 TrainMate 服务，请检查后端是否已启动',
+        message: '无法连接 ${AppBrand.displayName} 服务，请检查后端是否已启动',
       );
     }
   }

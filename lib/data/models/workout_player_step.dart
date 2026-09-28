@@ -66,10 +66,14 @@ class WorkoutPlayerStep {
 List<WorkoutPlayerStep> buildWorkoutPlayerSteps(
   WorkoutDay workout, {
   required bool deloaded,
+  bool matchDeclaredDuration = false,
 }) {
   final int totalSeconds =
       workout.estimatedMinutes <= 0 ? 10 * 60 : workout.estimatedMinutes * 60;
-  final int mainSeconds = _atLeast(totalSeconds - 18 * 60, 8 * 60);
+  // 确认课程保留原处方的 5 分钟冷身，扣除准备与冷身共 21 分钟。
+  // 旧计划默认沿用原计时；新调整另行审核能否容纳至少 8 分钟主训练。
+  final int mainSeconds = _atLeast(
+      totalSeconds - (matchDeclaredDuration ? 21 : 18) * 60, 8 * 60);
   final List<String> mainCues = deloaded
       ? const [
           '把剩余正式训练改为低强度版，不再追求配速或重量',
@@ -128,7 +132,7 @@ List<WorkoutPlayerStep> buildWorkoutPlayerSteps(
       id: 'cooldown',
       phase: WorkoutPlayerPhase.cooldown,
       cues: workout.cooldownSteps,
-      estimatedSeconds: 4 * 60,
+      estimatedSeconds: (matchDeclaredDuration ? 5 : 4) * 60,
       restSeconds: 0,
       exerciseIds: _exerciseIdsForPhase(
         workout,

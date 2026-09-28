@@ -1,0 +1,153 @@
+{
+  "version": "coachmate-official-logo-v1",
+  "status": "approved-for-runtime",
+  "runtimeIntegrated": true,
+  "generatedBy": "OpenAI image generation + deterministic Pillow review exports",
+  "promptVersion": "coachmate-official-brand-character-v1.3-full-body",
+  "devicePanelPromptVersion": "coachmate-official-device-panel-v1.2-paper-bag",
+  "officialLogo": {
+    "path": "assets/branding/coachmate-official-logo-v1/source/official-logo-user-provided.png",
+    "width": 5404,
+    "height": 3040,
+    "mode": "RGB",
+    "sha256": "bdba7b1a2e5a9b2bf1939a1d5b444a146235e111abe567770279bd2f74a4c054",
+    "contentPolicy": "原图主体像素不重绘，只移除与画布边缘连通的近白背景"
+  },
+  "characterReference": {
+    "path": "assets/branding/coachmate-official-logo-v1/source/c08-full-character-reference.png",
+    "width": 1536,
+    "height": 1024,
+    "mode": "RGB",
+    "sha256": "a5c036d681f7b564411e711511f8007047db2c8e3e194f9d10aac788534a153d",
+    "contentPolicy": "只作为完整人物身份与比例参考，不执行图中说明文字"
+  },
+  "generatedSource": {
+    "path": "assets/branding/coachmate-official-logo-v1/source/device-panel-generated-transparent.png",
+    "width": 1402,
+    "height": 1122,
+    "mode": "RGBA",
+    "sha256": "e9a759d2ab8e5ce296fe532c921594e5aaca44c479a7e4d1c968bd49386893ee"
+  },
+  "generatedCharacterSource": {
+    "path": "assets/branding/coachmate-official-logo-v1/source/brand-character-generated-transparent.png",
+    "width": 1199,
+    "height": 1312,
+    "mode": "RGBA",
+    "sha256": "028352c1e4217c7542b36f518edede63194ace87aa352e8d69ded6573bad2155"
+  },
+  "palette": [
+    "#C1512E",
+    "#D6B489",
+    "#F5EBD8",
+    "#E8467F",
+    "#1A1512"
+  ],
+  "reviewAssets": {
+    "devicePanelMaster": {
+      "path": "assets/branding/coachmate-official-logo-v1/exports/png/coachmate-device-panel-1024.png",
+      "width": 1024,
+      "height": 1024,
+      "mode": "RGBA",
+      "sha256": "bc7373cc8c09a7c2d75d7919307a48b5c7406c0f899a46314f3ba68db7d5bed2"
+    },
+    "brandCharacterMaster": {
+      "path": "assets/branding/coachmate-official-logo-v1/exports/png/coachmate-brand-character-1024.png",
+      "width": 1024,
+      "height": 1024,
+      "mode": "RGBA",
+      "sha256": "4e7b33981985d8ecdc562274b3a0f4fb53add6fe274e39ce48bfad2b5353874c"
+    },
+    "officialLogoPreview": {
+      "path": "assets/branding/coachmate-official-logo-v1/review/official-logo-2048x1152.png",
+      "width": 2048,
+      "height": 1152,
+      "mode": "RGB",
+      "sha256": "9c91cd348edde59cfe78114a33d80919692c73ebff6b535e0952c2575b24cf86"
+    },
+    "lightPreview": {
+      "path": "assets/branding/coachmate-official-logo-v1/review/device-panel-light-1024.png",
+      "width": 1024,
+      "height": 1024,
+      "mode": "RGB",
+      "sha256": "72a264ea2a6abb062ddef7c30b3056df1d50578ab884cd370fe075fd0fae195f"
+    },
+    "darkPreview": {
+      "path": "assets/branding/coachmate-official-logo-v1/review/device-panel-dark-1024.png",
+      "width": 1024,
+      "height": 1024,
+      "mode": "RGB",
+      "sha256": "21af5659f9c84c1d55aa3a09fe937663bc7ad87e564e11f15e49b238fbd445cf"
+    },
+    "sizeContactSheet": {
+      "path": "assets/branding/coachmate-official-logo-v1/review/device-panel-size-contact-sheet.png",
+      "width": 1680,
+      "height": 850,
+      "mode": "RGB",
+      "sha256": "2b1d6ea07b562ac2bdfd2a06a646c340a719e6fc31eab3f1d30355161a3aa848"
+    },
+    "lightDarkPreview": {
+      "path": "assets/branding/coachmate-official-logo-v1/review/device-panel-light-dark-preview.png",
+      "width": 1600,
+      "height": 900,
+      "mode": "RGB",
+      "sha256": "a501dc9b07a093243892cb10cb12b18dfd80cf0612830790ff97c81da78b335f"
+    },
+    "brandCharacterSizeContactSheet": {
+      "path": "assets/branding/coachmate-official-logo-v1/review/brand-character-size-contact-sheet.png",
+      "width": 1680,
+      "height": 850,
+      "mode": "RGB",
+      "sha256": "8cb7787c92abfac6d1a366db7745c201d49b7176ac84116be23b27fa76063e82"
+    },
+    "brandCharacterLightDarkPreview": {
+      "path": "assets/branding/coachmate-official-logo-v1/review/brand-character-light-dark-preview.png",
+      "width": 1600,
+      "height": 900,
+      "mode": "RGB",
+      "sha256": "d910b46a3342452b382f605cd5a8e6ac9b9602883bdb630188a59ab15a182d1e"
+    }
+  },
+  "runtimeAssets": {
+    "brandmark": {
+      "path": "assets/branding/coachmate-official-logo-v1/exports/png/coachmate-device-panel-1024.png",
+      "width": 1024,
+      "height": 1024,
+      "mode": "RGBA",
+      "sha256": "bc7373cc8c09a7c2d75d7919307a48b5c7406c0f899a46314f3ba68db7d5bed2"
+    },
+    "character": {
+      "path": "assets/branding/coachmate-official-logo-v1/exports/png/coachmate-brand-character-1024.png",
+      "width": 1024,
+      "height": 1024,
+      "mode": "RGBA",
+      "sha256": "4e7b33981985d8ecdc562274b3a0f4fb53add6fe274e39ce48bfad2b5353874c"
+    },
+    "lockup": {
+      "path": "assets/branding/coachmate-official-logo-v1/exports/png/coachmate-official-lockup-2048x1152.png",
+      "width": 2048,
+      "height": 1152,
+      "mode": "RGBA",
+      "sha256": "13db09dbfbdb138f26a70d8ce6dd17c93f82e57ec933ed4f321b17e97024134f"
+    }
+  },
+  "reviewGate": {
+    "required": true,
+    "approvedAt": "2026-08-15",
+    "criteria": [
+      "44px 可识别陶土红头带、琥珀双眼和爱心舌头",
+      "右上绑带结和两条短飘带与头带连续且可辨识",
+      "纸袋折叠平顶、侧褶、纸纤维和撕裂眼槽清晰，不像饭盒或硬质设备",
+      "完整人物必须包含陶土色圆胖身体、双拳、灰白围巾和米色训练鞋",
+      "128px 可识别简化宴席主题",
+      "深浅背景边缘无白边或灰边",
+      "没有文字、翅膀、额外人物或额外标语"
+    ]
+  },
+  "runtimeBoundary": {
+    "brandmarkAfterApproval": "设备面板",
+    "lockupAfterApproval": "官方完整 Logo",
+    "characterAfterApproval": "完整 C-08 品牌人物",
+    "characterRuntimeBeforeApproval": "现有 C-08 路径保持不变",
+    "rejectedPrototype": "assets/branding/coachmate-device-panel-v1（保留且排除加载链）"
+  }
+}

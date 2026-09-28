@@ -15,6 +15,7 @@ class MotionAnalysisService {
     final TrainingDecisionImpact impact = _impactForRisk(rule.riskLevel);
 
     return MotionAnalysisResult(
+      evidenceKind: MotionEvidenceKind.demonstration,
       id: 'motion-analysis-${capturedAt.millisecondsSinceEpoch}',
       sourceRuleId: rule.id,
       type: rule.type,
@@ -50,9 +51,7 @@ class MotionAnalysisService {
       frame: frame,
     );
     final TrainingDecisionImpact impact = _impactForRisk(analysis.riskLevel);
-    final List<String> errors = analysis.detectedErrors.isEmpty
-        ? rule.commonIssues.take(2).toList()
-        : analysis.detectedErrors.take(3).toList();
+    final List<String> errors = analysis.detectedErrors.take(3).toList();
 
     return MotionAnalysisResult(
       id: 'motion-pose-analysis-${capturedAt.millisecondsSinceEpoch}',

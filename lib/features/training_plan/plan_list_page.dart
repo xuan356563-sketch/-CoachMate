@@ -1,3 +1,4 @@
+import '../daily_adjustment/application/daily_course_adjustment.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -6,6 +7,7 @@ import '../../app/router/app_routes.dart';
 import '../../core/constants/app_colors.dart';
 import '../../core/theme/trainmate_visual_mode.dart';
 import '../../core/widgets/flow_mascot.dart';
+import '../../core/widgets/trainmate_action_character.dart';
 import '../../core/widgets/trainmate_showcase_widgets.dart';
 import '../../core/widgets/trainflow_widgets.dart';
 import '../../data/models/training_metrics.dart';
@@ -62,7 +64,7 @@ class PlanListPage extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final TrainingMvpState state = ref.watch(trainingMvpProvider);
     final TrainingScheduleState schedule =
-        ref.watch(trainingScheduleControllerProvider);
+        ref.watch(effectiveTrainingScheduleProvider);
     final FourWeekPlanState fourWeekPlan =
         ref.watch(fourWeekPlanControllerProvider);
     final AsyncValue<AdjustmentProposalState> adjustmentProposals =
@@ -100,19 +102,24 @@ class PlanListPage extends ConsumerWidget {
         : '${nextWorkout.scheduledDate.month} 月 ${nextWorkout.scheduledDate.day} 日 · ${nextWorkout.timeLabel} · ${nextWorkout.allocatedMinutes} 分钟';
 
     return TrainMateImmersiveHubPage(
-      mode: TrainMateVisualMode.darkTraining,
+      mode: TrainMateVisualMode.referenceShowcase,
+      showcaseOverviewChildCount: 5,
       hero: KeyedSubtree(
         key: const ValueKey<String>('plans-showcase-header'),
         child: TrainMateSceneHero(
+          style: TrainMateSceneHeroStyle.referenceShowcase,
+          referenceBackgroundColor: TrainFlowTokens.yellow,
           sceneAsset:
               'assets/images/immersive_scenes/trainmate_plan_studio.png',
           greeting:
               '你好，${state.profile.name.trim().isEmpty ? '训练者' : state.profile.name}',
           dateLabel: '${DateTime.now().month} 月 ${DateTime.now().day} 日 · 本周节奏',
-          character: TrainMateIllustration(
-            assetPath: 'assets/images/trainmate_plans_showcase.png',
-            semanticLabel: '训练计划人物插画',
-            fallback: FloatingFlowMascot(size: 156, spec: mascotSpec),
+          character: const TrainMateActionCharacter(
+            action: TrainMateAction.pointingGuide,
+            size: 164,
+            backgroundColor: AppColors.transparent,
+            style: TrainMateCharacterStyle.flatShowcase,
+            semanticLabel: 'CoachMate 正在指向当前训练计划',
           ),
           taskTitle: planTitle,
           taskSubtitle: scheduleSubtitle,
@@ -127,6 +134,22 @@ class PlanListPage extends ConsumerWidget {
           taskProgressLabel: '本周已排期 ${schedule.workouts.length} 次',
         ),
       ),
+      storyChildren: <Widget>[
+        TrainMateShowcaseActionCard(
+          title: '调整本周节奏',
+          subtitle: '已排期 ${schedule.workouts.length} 次 · 生成后需要你确认',
+          icon: Icons.auto_awesome_rounded,
+          color: TrainFlowTokens.purple,
+          artwork: const TrainMateActionCharacter(
+            action: TrainMateAction.pointingGuide,
+            size: 88,
+            backgroundColor: AppColors.transparent,
+            style: TrainMateCharacterStyle.flatShowcase,
+            semanticLabel: 'CoachMate 正在指向本周节奏',
+          ),
+          onTap: () => context.push(AppRoutes.planGenerate),
+        ),
+      ],
       children: [
         TrainMateStatusStrip(
           semanticLabel: '计划状态',
@@ -165,6 +188,7 @@ class PlanListPage extends ConsumerWidget {
               icon: Icons.sync_outlined,
               wide: true),
         ),
+        _AcwrAdjustmentProposalSection(state: adjustmentProposals),
         const SizedBox(height: 20),
         TrainFlowCard(
           tone: TrainFlowCardTone.peach,
@@ -251,7 +275,6 @@ class PlanListPage extends ConsumerWidget {
             ),
           ),
         ),
-        _AcwrAdjustmentProposalSection(state: adjustmentProposals),
         const _PlanRevisionSection(),
         guidedWorkoutCatalog.when(
           data: (GuidedWorkoutCatalog catalog) => GuidedWorkoutCourseSection(

@@ -13,22 +13,48 @@ class TrainMateImmersiveHubPage extends StatelessWidget {
   const TrainMateImmersiveHubPage({
     super.key,
     required this.hero,
-    required this.children,
+    this.children = const <Widget>[],
+    this.storyChildren = const <Widget>[],
+    this.paperOverviewChildren,
+    this.deepActionChildren,
     this.includeDisclaimer = true,
     this.mode = TrainMateVisualMode.darkTraining,
-  });
+    this.showcaseOverviewChildCount,
+  }) : assert(
+          showcaseOverviewChildCount == null || showcaseOverviewChildCount >= 0,
+          '纸白概览数量不能小于 0',
+        );
 
   final Widget hero;
   final List<Widget> children;
+
+  /// 波浪下方的深紫行动区。为空时保持既有页面结构。
+  final List<Widget> storyChildren;
+
+  /// 参考图模式下显式放在纸白区的组件。
+  ///
+  /// 设置后不再依赖组件数量切割，避免间距组件被误算为内容。
+  final List<Widget>? paperOverviewChildren;
+
+  /// 参考图模式下显式放在深紫行动区的组件。
+  final List<Widget>? deepActionChildren;
   final bool includeDisclaimer;
   final TrainMateVisualMode mode;
+
+  /// 参考图模式下，保留在纸白区的前 N 个子组件。
+  ///
+  /// 其余子组件会跟随 [storyChildren] 进入波浪下方的深紫行动区。未设置时
+  /// 保持旧布局，避免影响尚未迁移的调用方。
+  final int? showcaseOverviewChildCount;
 
   @override
   Widget build(BuildContext context) {
     final bool dark = mode == TrainMateVisualMode.darkTraining;
-    final Color surface = dark
-        ? TrainFlowTokens.darkTrainingSurface
-        : TrainFlowTokens.lightCompanionSurface;
+    final Color surface = mode == TrainMateVisualMode.referenceShowcase
+        ? TrainFlowTokens.showcasePaper
+        : dark
+            ? TrainFlowTokens.darkTrainingSurface
+            : TrainFlowTokens.lightCompanionSurface;
     final ThemeData baseTheme = Theme.of(context);
     final Color foreground = dark
         ? TrainFlowTokens.darkTrainingOnSurface
@@ -42,6 +68,30 @@ class TrainMateImmersiveHubPage extends StatelessWidget {
     final Color raised = dark
         ? TrainFlowTokens.darkTrainingRaised
         : TrainFlowTokens.lightCompanionCard;
+    final bool hasExplicitReferenceSections =
+        mode == TrainMateVisualMode.referenceShowcase &&
+            (paperOverviewChildren != null || deepActionChildren != null);
+    final bool splitReferenceContent =
+        mode == TrainMateVisualMode.referenceShowcase &&
+            storyChildren.isNotEmpty &&
+            showcaseOverviewChildCount != null;
+    final int overviewCount = splitReferenceContent
+        ? showcaseOverviewChildCount!.clamp(0, children.length).toInt()
+        : children.length;
+    final List<Widget> overviewChildren = hasExplicitReferenceSections
+        ? paperOverviewChildren ?? const <Widget>[]
+        : children.take(overviewCount).toList(growable: false);
+    final List<Widget> actionChildren = hasExplicitReferenceSections
+        ? <Widget>[
+            ...storyChildren,
+            ...?deepActionChildren,
+          ]
+        : splitReferenceContent
+            ? <Widget>[
+                ...storyChildren,
+                ...children.skip(overviewCount),
+              ]
+            : storyChildren;
     final OutlineInputBorder inputBorder = OutlineInputBorder(
       borderRadius: const BorderRadius.all(
         Radius.circular(TrainFlowTokens.mainTabControlRadius),
@@ -181,28 +231,42 @@ class TrainMateImmersiveHubPage extends StatelessWidget {
                   padding: EdgeInsets.zero,
                   children: <Widget>[
                     hero,
-                    DecoratedBox(
-                      key: const ValueKey<String>(
-                        'trainmate-immersive-hub-content',
-                      ),
-                      decoration: BoxDecoration(color: surface),
-                      child: Padding(
-                        padding: const EdgeInsets.fromLTRB(
-                          TrainFlowTokens.mainTabPageGutter,
-                          18,
-                          TrainFlowTokens.mainTabPageGutter,
-                          TrainFlowTokens.immersiveBottomContentPadding,
+                    if ((!splitReferenceContent &&
+                            !hasExplicitReferenceSections) ||
+                        overviewChildren.isNotEmpty)
+                      DecoratedBox(
+                        key: const ValueKey<String>(
+                          'trainmate-showcase-paper-overview',
                         ),
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.stretch,
-                          children: <Widget>[
-                            ...children,
-                            if (includeDisclaimer)
-                              const TrainFlowMedicalDisclaimer(),
-                          ],
+                        decoration: BoxDecoration(color: surface),
+                        child: Padding(
+                          padding: EdgeInsets.fromLTRB(
+                            TrainFlowTokens.mainTabPageGutter,
+                            18,
+                            TrainFlowTokens.mainTabPageGutter,
+                            splitReferenceContent ||
+                                    hasExplicitReferenceSections
+                                ? 12
+                                : TrainFlowTokens.immersiveBottomContentPadding,
+                          ),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.stretch,
+                            children: <Widget>[
+                              ...overviewChildren,
+                              if (includeDisclaimer && actionChildren.isEmpty)
+                                const TrainFlowMedicalDisclaimer(),
+                            ],
+                          ),
                         ),
                       ),
-                    ),
+                    if (actionChildren.isNotEmpty)
+                      TrainMateWaveActionSection(
+                        children: <Widget>[
+                          ...actionChildren,
+                          if (includeDisclaimer)
+                            const TrainFlowMedicalDisclaimer(),
+                        ],
+                      ),
                   ],
                 ),
               ),
@@ -213,6 +277,165 @@ class TrainMateImmersiveHubPage extends StatelessWidget {
     );
   }
 }
+
+/// 参考图语言中的纸白数据区到深紫行动区的波浪分界。
+class TrainMateWaveActionSection extends StatelessWidget {
+  const TrainMateWaveActionSection({super.key, required this.children});
+
+  final List<Widget> children;
+
+  @override
+  Widget build(BuildContext context) {
+    return CustomPaint(
+      key: const ValueKey<String>('trainmate-wave-action-section'),
+      painter: const _WaveActionSurfacePainter(),
+      child: Padding(
+        padding: const EdgeInsets.fromLTRB(
+          TrainFlowTokens.mainTabPageGutter,
+          58,
+          TrainFlowTokens.mainTabPageGutter,
+          TrainFlowTokens.immersiveBottomContentPadding,
+        ),
+        child: TrainMateActionSurfaceScope(
+          child: DefaultTextStyle.merge(
+            style: const TextStyle(color: TrainFlowTokens.paper),
+            child: IconTheme(
+              data: const IconThemeData(color: TrainFlowTokens.yellow),
+              child: KeyedSubtree(
+                key: const ValueKey<String>(
+                  'trainmate-showcase-action-content',
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: children,
+                ),
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+/// 深紫行动区中的高对比行动卡，供五个主标签复用。
+class TrainMateShowcaseActionCard extends StatelessWidget {
+  const TrainMateShowcaseActionCard({
+    super.key,
+    required this.title,
+    required this.subtitle,
+    required this.icon,
+    required this.color,
+    required this.onTap,
+    this.artwork,
+  });
+
+  final String title;
+  final String subtitle;
+  final IconData icon;
+  final Color color;
+  final VoidCallback onTap;
+  final Widget? artwork;
+
+  @override
+  Widget build(BuildContext context) {
+    final Color foreground = color.computeLuminance() > 0.45
+        ? TrainFlowTokens.showcaseActionSurface
+        : TrainFlowTokens.paper;
+    return Semantics(
+      button: true,
+      label: '$title，$subtitle',
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          onTap: onTap,
+          borderRadius: BorderRadius.circular(28),
+          child: Ink(
+            padding: const EdgeInsets.all(20),
+            decoration: BoxDecoration(
+              color: color,
+              borderRadius: BorderRadius.circular(28),
+            ),
+            child: LayoutBuilder(
+              builder: (BuildContext context, BoxConstraints constraints) {
+                final double artworkWidth =
+                    constraints.maxWidth < 330 ? 68 : 88;
+                return Row(
+                  children: <Widget>[
+                    Icon(icon, color: foreground, size: 30),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: <Widget>[
+                          Text(
+                            title,
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: Theme.of(context)
+                                .textTheme
+                                .titleMedium
+                                ?.copyWith(
+                                  color: foreground,
+                                  fontWeight: FontWeight.w700,
+                                ),
+                          ),
+                          const SizedBox(height: 4),
+                          Text(
+                            subtitle,
+                            maxLines: 2,
+                            overflow: TextOverflow.ellipsis,
+                            style:
+                                Theme.of(context).textTheme.bodySmall?.copyWith(
+                                      color: foreground.withValues(alpha: 0.76),
+                                    ),
+                          ),
+                        ],
+                      ),
+                    ),
+                    if (artwork != null) ...<Widget>[
+                      const SizedBox(width: 8),
+                      SizedBox(
+                        width: artworkWidth,
+                        height: 72,
+                        child: FittedBox(fit: BoxFit.contain, child: artwork),
+                      ),
+                    ],
+                    const SizedBox(width: 8),
+                    Icon(Icons.arrow_forward_rounded, color: foreground),
+                  ],
+                );
+              },
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _WaveActionSurfacePainter extends CustomPainter {
+  const _WaveActionSurfacePainter();
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final Paint paint = Paint()..color = TrainFlowTokens.showcaseActionSurface;
+    final Path path = Path()
+      ..moveTo(0, 28)
+      ..cubicTo(
+          size.width * 0.19, 4, size.width * 0.37, 48, size.width * 0.56, 28)
+      ..cubicTo(size.width * 0.74, 8, size.width * 0.9, 40, size.width, 20)
+      ..lineTo(size.width, size.height)
+      ..lineTo(0, size.height)
+      ..close();
+    canvas.drawPath(path, paint);
+  }
+
+  @override
+  bool shouldRepaint(covariant _WaveActionSurfacePainter oldDelegate) => false;
+}
+
+enum TrainMateSceneHeroStyle { immersive, referenceShowcase }
 
 class TrainMateSceneHero extends StatelessWidget {
   const TrainMateSceneHero({
@@ -230,6 +453,10 @@ class TrainMateSceneHero extends StatelessWidget {
     this.onAction,
     this.taskProgress,
     this.taskProgressLabel,
+    this.style = TrainMateSceneHeroStyle.immersive,
+    this.referenceBackgroundColor,
+    this.characterInsets,
+    this.metricOverlay,
   });
 
   final String sceneAsset;
@@ -245,10 +472,23 @@ class TrainMateSceneHero extends StatelessWidget {
   final VoidCallback? onAction;
   final double? taskProgress;
   final String? taskProgressLabel;
+  final TrainMateSceneHeroStyle style;
+  final Color? referenceBackgroundColor;
+
+  /// 人物在 Hero 内的安全区。默认值保持旧版布局。
+  final EdgeInsets? characterInsets;
+
+  /// 可选指标叠层。调用方必须通过 Positioned 明确其安全位置。
+  final Widget? metricOverlay;
 
   @override
   Widget build(BuildContext context) {
     final bool dark = TrainMateVisualScope.isDark(context);
+    final bool reference = style == TrainMateSceneHeroStyle.referenceShowcase;
+    final Color referenceSurface =
+        referenceBackgroundColor ?? TrainFlowTokens.showcasePaper;
+    final EdgeInsets resolvedCharacterInsets =
+        characterInsets ?? const EdgeInsets.fromLTRB(96, 66, 96, 108);
     final double heroHeight = (MediaQuery.sizeOf(context).height *
             TrainFlowTokens.compactHubHeroContentRatio)
         .clamp(
@@ -262,27 +502,66 @@ class TrainMateSceneHero extends StatelessWidget {
         clipBehavior: Clip.none,
         children: <Widget>[
           DecoratedBox(
-            decoration: const BoxDecoration(
-              gradient: LinearGradient(
-                begin: Alignment.topLeft,
-                end: Alignment.bottomRight,
-                colors: <Color>[
-                  TrainFlowTokens.accent, // #6C3DF4 主紫
-                  TrainFlowTokens.brandDark, // #191331 深紫
-                ],
+            decoration: BoxDecoration(
+              gradient: reference
+                  ? LinearGradient(
+                      colors: <Color>[referenceSurface, referenceSurface],
+                    )
+                  : const LinearGradient(
+                      begin: Alignment.topLeft,
+                      end: Alignment.bottomRight,
+                      colors: <Color>[
+                        TrainFlowTokens.accent,
+                        TrainFlowTokens.brandDark,
+                      ],
+                    ),
+            ),
+          ),
+          if (reference)
+            CustomPaint(
+              painter: _ReferenceHeroDoodlePainter(
+                color: referenceSurface.computeLuminance() > 0.55
+                    ? TrainFlowTokens.purple
+                    : TrainFlowTokens.paper,
               ),
             ),
-          ),
-          Opacity(
-            opacity: dark ? 0.13 : 0.08,
-            child: Image.asset(
-              sceneAsset,
-              fit: BoxFit.cover,
-              errorBuilder:
-                  (BuildContext context, Object error, StackTrace? stack) =>
-                      const _SceneFallback(),
+          if (reference) ...<Widget>[
+            const Positioned(
+              top: 34,
+              right: 38,
+              child: _ReferenceColorDot(
+                size: 28,
+                color: TrainFlowTokens.blue,
+              ),
             ),
-          ),
+            const Positioned(
+              top: 76,
+              right: 70,
+              child: _ReferenceColorDot(
+                size: 13,
+                color: TrainFlowTokens.yellow,
+              ),
+            ),
+            const Positioned(
+              bottom: 102,
+              left: 28,
+              child: _ReferenceColorDot(
+                size: 16,
+                color: TrainFlowTokens.pink,
+              ),
+            ),
+          ],
+          if (!reference)
+            Opacity(
+              opacity: dark ? 0.13 : 0.08,
+              child: Image.asset(
+                sceneAsset,
+                fit: BoxFit.cover,
+                errorBuilder:
+                    (BuildContext context, Object error, StackTrace? stack) =>
+                        const _SceneFallback(),
+              ),
+            ),
           DecoratedBox(
             decoration: BoxDecoration(
               gradient: LinearGradient(
@@ -300,25 +579,37 @@ class TrainMateSceneHero extends StatelessWidget {
             ),
           ),
           Positioned(
-            left: 16,
+            left: 20,
             top: 16,
-            child: _SceneGreeting(greeting: greeting, dateLabel: dateLabel),
+            right: onAction == null ? 20 : 78,
+            child: Align(
+              alignment: Alignment.centerLeft,
+              child: _SceneGreeting(
+                greeting: greeting,
+                dateLabel: dateLabel,
+                reference: reference,
+              ),
+            ),
           ),
           if (onAction != null)
             Positioned(
-              right: 16,
+              right: 20,
               top: 16,
               child: IconButton(
                 tooltip: actionTooltip,
                 onPressed: onAction,
                 style: IconButton.styleFrom(
                   minimumSize: const Size(48, 48),
-                  backgroundColor: dark
-                      ? TrainFlowTokens.darkTrainingRaised
-                      : TrainFlowTokens.lightCompanionCard,
-                  foregroundColor: dark
-                      ? TrainFlowTokens.darkTrainingOnSurface
-                      : TrainFlowTokens.lightCompanionOnSurface,
+                  backgroundColor: reference
+                      ? TrainFlowTokens.paper
+                      : dark
+                          ? TrainFlowTokens.darkTrainingRaised
+                          : TrainFlowTokens.lightCompanionCard,
+                  foregroundColor: reference
+                      ? TrainFlowTokens.brandDark
+                      : dark
+                          ? TrainFlowTokens.darkTrainingOnSurface
+                          : TrainFlowTokens.lightCompanionOnSurface,
                   shape: const RoundedRectangleBorder(
                     borderRadius: BorderRadius.all(
                       Radius.circular(TrainFlowTokens.mainTabControlRadius),
@@ -329,10 +620,10 @@ class TrainMateSceneHero extends StatelessWidget {
               ),
             ),
           Positioned(
-            top: 66,
-            left: 96,
-            right: 96,
-            bottom: 108,
+            top: resolvedCharacterInsets.top,
+            left: resolvedCharacterInsets.left,
+            right: resolvedCharacterInsets.right,
+            bottom: resolvedCharacterInsets.bottom,
             child: TrainMateShowcaseEntrance(
               duration: TrainFlowMotion.sceneEntrance,
               offset: 0,
@@ -340,6 +631,7 @@ class TrainMateSceneHero extends StatelessWidget {
               child: FittedBox(fit: BoxFit.contain, child: character),
             ),
           ),
+          if (metricOverlay != null) metricOverlay!,
           Positioned(
             left: 12,
             right: 12,
@@ -355,6 +647,7 @@ class TrainMateSceneHero extends StatelessWidget {
                 onTap: onTaskTap,
                 progress: taskProgress,
                 progressLabel: taskProgressLabel,
+                reference: reference,
               ),
             ),
           ),
@@ -371,17 +664,25 @@ class TrainMateSceneHero extends StatelessWidget {
 }
 
 class _SceneGreeting extends StatelessWidget {
-  const _SceneGreeting({required this.greeting, required this.dateLabel});
+  const _SceneGreeting({
+    required this.greeting,
+    required this.dateLabel,
+    required this.reference,
+  });
   final String greeting;
   final String dateLabel;
+  final bool reference;
   @override
   Widget build(BuildContext context) {
     final bool dark = TrainMateVisualScope.isDark(context);
     final Color foreground = TrainMateVisualScope.foreground(context);
     return DecoratedBox(
       decoration: BoxDecoration(
-        color:
-            dark ? TrainFlowTokens.darkTrainingRaised : const Color(0xE6FFFFFF),
+        color: reference
+            ? TrainFlowTokens.paper.withValues(alpha: 0.9)
+            : dark
+                ? TrainFlowTokens.darkTrainingRaised
+                : const Color(0xE6FFFFFF),
         borderRadius: BorderRadius.circular(TrainFlowTokens.mainTabCardRadius),
       ),
       child: Padding(
@@ -393,11 +694,16 @@ class _SceneGreeting extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: <Widget>[
                 Text(greeting,
-                    style: Theme.of(context).textTheme.labelLarge?.copyWith(
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: Theme.of(context).textTheme.titleMedium?.copyWith(
                           color: foreground,
+                          fontSize: reference ? 18 : null,
                           fontWeight: FontWeight.w700,
                         )),
                 Text(dateLabel,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
                     style: Theme.of(context).textTheme.labelSmall?.copyWith(
                           color: TrainMateVisualScope.muted(context),
                         )),
@@ -408,6 +714,55 @@ class _SceneGreeting extends StatelessWidget {
   }
 }
 
+class _ReferenceHeroDoodlePainter extends CustomPainter {
+  const _ReferenceHeroDoodlePainter({required this.color});
+
+  final Color color;
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final Paint line = Paint()
+      ..color = color.withValues(alpha: TrainFlowTokens.mainTabDoodleOpacity)
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = 2.2
+      ..strokeCap = StrokeCap.round;
+    final Path leftPath = Path()
+      ..moveTo(-18, size.height * 0.36)
+      ..quadraticBezierTo(
+        size.width * 0.14,
+        size.height * 0.22,
+        size.width * 0.30,
+        size.height * 0.38,
+      )
+      ..quadraticBezierTo(
+        size.width * 0.38,
+        size.height * 0.47,
+        size.width * 0.48,
+        size.height * 0.34,
+      );
+    canvas.drawPath(leftPath, line);
+    canvas.drawCircle(
+      Offset(size.width * 0.86, size.height * 0.45),
+      34,
+      line,
+    );
+    canvas.drawArc(
+      Rect.fromCircle(
+        center: Offset(size.width * 0.78, size.height * 0.58),
+        radius: 54,
+      ),
+      -0.7,
+      2.2,
+      false,
+      line,
+    );
+  }
+
+  @override
+  bool shouldRepaint(covariant _ReferenceHeroDoodlePainter oldDelegate) =>
+      oldDelegate.color != color;
+}
+
 class _SceneTaskCard extends StatelessWidget {
   const _SceneTaskCard(
       {required this.title,
@@ -416,7 +771,8 @@ class _SceneTaskCard extends StatelessWidget {
       this.trailing,
       this.onTap,
       this.progress,
-      this.progressLabel});
+      this.progressLabel,
+      required this.reference});
   final String title;
   final String subtitle;
   final IconData icon;
@@ -424,13 +780,18 @@ class _SceneTaskCard extends StatelessWidget {
   final VoidCallback? onTap;
   final double? progress;
   final String? progressLabel;
+  final bool reference;
   @override
   Widget build(BuildContext context) {
     final bool dark = TrainMateVisualScope.isDark(context);
-    final Color cardColor = dark
-        ? TrainFlowTokens.darkTrainingCard
-        : TrainFlowTokens.lightCompanionCard;
-    final Color foreground = TrainMateVisualScope.foreground(context);
+    final Color cardColor = reference
+        ? TrainFlowTokens.showcaseActionSurface
+        : dark
+            ? TrainFlowTokens.darkTrainingCard
+            : TrainFlowTokens.lightCompanionCard;
+    final Color foreground = reference
+        ? TrainFlowTokens.paper
+        : TrainMateVisualScope.foreground(context);
     return Material(
       color: cardColor,
       borderRadius: BorderRadius.circular(TrainFlowTokens.mainTabCardRadius),
@@ -448,15 +809,22 @@ class _SceneTaskCard extends StatelessWidget {
               )
             else
               DecoratedBox(
-                decoration: const BoxDecoration(
-                  color: TrainFlowTokens.accent,
-                  borderRadius: BorderRadius.all(
+                decoration: BoxDecoration(
+                  color: reference
+                      ? TrainFlowTokens.yellow
+                      : TrainFlowTokens.accent,
+                  borderRadius: const BorderRadius.all(
                     Radius.circular(TrainFlowTokens.mainTabControlRadius),
                   ),
                 ),
                 child: SizedBox.square(
                   dimension: 42,
-                  child: Icon(icon, color: TrainFlowTokens.onAccent),
+                  child: Icon(
+                    icon,
+                    color: reference
+                        ? TrainFlowTokens.brandDark
+                        : TrainFlowTokens.onAccent,
+                  ),
                 ),
               ),
             const SizedBox(width: 12),
@@ -474,7 +842,9 @@ class _SceneTaskCard extends StatelessWidget {
                       maxLines: 2,
                       overflow: TextOverflow.ellipsis,
                       style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                          color: TrainMateVisualScope.muted(context))),
+                          color: reference
+                              ? TrainFlowTokens.paper.withValues(alpha: 0.72)
+                              : TrainMateVisualScope.muted(context))),
                 ])),
             if (trailing != null) ...<Widget>[
               const SizedBox(width: 8),
@@ -485,6 +855,19 @@ class _SceneTaskCard extends StatelessWidget {
       ),
     );
   }
+}
+
+class _ReferenceColorDot extends StatelessWidget {
+  const _ReferenceColorDot({required this.size, required this.color});
+
+  final double size;
+  final Color color;
+
+  @override
+  Widget build(BuildContext context) => DecoratedBox(
+        decoration: BoxDecoration(color: color, shape: BoxShape.circle),
+        child: SizedBox.square(dimension: size),
+      );
 }
 
 class _SceneFallback extends StatelessWidget {
@@ -533,46 +916,58 @@ class TrainMateStatusStrip extends StatelessWidget {
           onTap: onTap,
           borderRadius:
               BorderRadius.circular(TrainFlowTokens.mainTabCardRadius),
-          child: SingleChildScrollView(
-            scrollDirection: Axis.horizontal,
-            child: Row(children: <Widget>[
-              for (final TrainMateStatusMetric metric in metrics)
-                Padding(
-                  padding: const EdgeInsets.only(right: 10),
-                  child: DecoratedBox(
-                    decoration: BoxDecoration(
-                      color: dark
-                          ? TrainFlowTokens.darkTrainingRaised
-                          : TrainFlowTokens.lightCompanionCard,
-                      borderRadius: BorderRadius.circular(
-                        TrainFlowTokens.mainTabControlRadius,
-                      ),
-                    ),
-                    child: Padding(
-                      padding: const EdgeInsets.symmetric(
-                          horizontal: 12, vertical: 10),
-                      child: Row(
-                          mainAxisSize: MainAxisSize.min,
-                          children: <Widget>[
-                            Icon(
-                              metric.icon,
-                              size: 17,
-                              color: TrainFlowTokens.accent,
-                            ),
-                            const SizedBox(width: 6),
-                            Text('${metric.label} ${metric.value}',
-                                style: Theme.of(context)
-                                    .textTheme
-                                    .labelMedium
-                                    ?.copyWith(
-                                      color: foreground,
-                                      fontWeight: FontWeight.w600,
-                                    )),
-                          ]),
+          child: SizedBox(
+            height: 48,
+            child: ListView.separated(
+              scrollDirection: Axis.horizontal,
+              clipBehavior: Clip.hardEdge,
+              padding: const EdgeInsets.only(
+                right: TrainFlowTokens.mainTabCarouselPeek,
+              ),
+              itemCount: metrics.length,
+              separatorBuilder: (_, __) => const SizedBox(width: 10),
+              itemBuilder: (BuildContext context, int index) {
+                final TrainMateStatusMetric metric = metrics[index];
+                return DecoratedBox(
+                  decoration: BoxDecoration(
+                    color: dark
+                        ? TrainFlowTokens.darkTrainingRaised
+                        : TrainFlowTokens.lightCompanionCard,
+                    borderRadius: BorderRadius.circular(
+                      TrainFlowTokens.mainTabControlRadius,
                     ),
                   ),
-                ),
-            ]),
+                  child: Padding(
+                    padding:
+                        const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+                    child:
+                        Row(mainAxisSize: MainAxisSize.min, children: <Widget>[
+                      DecoratedBox(
+                        decoration: BoxDecoration(
+                          color: metric.color.withValues(alpha: 0.16),
+                          borderRadius: BorderRadius.circular(10),
+                        ),
+                        child: SizedBox.square(
+                          dimension: 28,
+                          child: Icon(
+                            metric.icon,
+                            size: 16,
+                            color: metric.color,
+                          ),
+                        ),
+                      ),
+                      const SizedBox(width: 6),
+                      Text('${metric.label} ${metric.value}',
+                          style:
+                              Theme.of(context).textTheme.labelMedium?.copyWith(
+                                    color: foreground,
+                                    fontWeight: FontWeight.w600,
+                                  )),
+                    ]),
+                  ),
+                );
+              },
+            ),
           ),
         ),
       ),
@@ -713,9 +1108,8 @@ class _TrainMateTrainingTrackPainter extends CustomPainter {
       size.width - stroke,
     );
     final Paint base = Paint()
-      ..color = dark
-          ? TrainFlowTokens.darkTrainingRaised
-          : const Color(0xFFD9D8D4)
+      ..color =
+          dark ? TrainFlowTokens.darkTrainingRaised : const Color(0xFFD9D8D4)
       ..style = PaintingStyle.stroke
       ..strokeWidth = stroke
       ..strokeCap = StrokeCap.round;
@@ -1211,8 +1605,7 @@ class TrainMateImmersivePage extends StatelessWidget {
                         decoration: const BoxDecoration(
                           color: TrainFlowTokens.darkTrainingSurface,
                           borderRadius: BorderRadius.vertical(
-                            top:
-                                Radius.circular(TrainFlowTokens.sectionRadius),
+                            top: Radius.circular(TrainFlowTokens.sectionRadius),
                           ),
                         ),
                         child: ListView(

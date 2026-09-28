@@ -1,7 +1,7 @@
 import '../../../../data/models/pet.dart';
 import 'pixel_frame.dart';
 
-/// 衡衡狸五阶段原创主体点阵。
+/// 袋小满五阶段原创主体点阵（文件名保留历史内部 ID）。
 final List<PetFormFrames> balanceRaccoonForms = <PetFormFrames>[
   PetFormFrames(
     species: PetSpecies.balanceRaccoon,

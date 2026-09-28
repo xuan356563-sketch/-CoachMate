@@ -3,7 +3,7 @@ from __future__ import annotations
 from functools import lru_cache
 from typing import Literal
 
-from pydantic import Field, SecretStr, model_validator
+from pydantic import Field, SecretStr, field_validator, model_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
@@ -125,6 +125,14 @@ class Settings(BaseSettings):
     race_image_max_bytes: int = Field(default=10 * 1024 * 1024, ge=1024)
     race_recognition_limit: int = Field(default=10, ge=1, le=100)
     race_recognition_window_seconds: int = Field(default=600, ge=60, le=3600)
+
+    @field_validator("apple_app_id", mode="before")
+    @classmethod
+    def normalize_optional_apple_app_id(cls, value: object) -> object | None:
+        """将空白的可选 Apple App ID 解释为未配置。"""
+        if isinstance(value, str) and not value.strip():
+            return None
+        return value
 
     @property
     def cors_origin_list(self) -> list[str]:

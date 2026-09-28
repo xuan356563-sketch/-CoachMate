@@ -2,10 +2,12 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../data/local/trainmate_structured_database_gateway.dart';
 import '../../../data/models/training_metrics.dart';
+import '../../../plugins/application/feature_access.dart';
+import '../../../plugins/application/feature_controller_binding.dart';
+import '../../../plugins/application/plugin_runtime_provider.dart';
 import '../../../services/local_report_generation_coordinator.dart';
 import '../../../services/training_metrics_pipeline.dart';
 import '../../profile/application/health_sync_controller.dart';
-import 'training_metrics_provider.dart';
 
 /// 一条仍需用户确认公路/越野场景的 HealthKit `.running` 事实。
 class RunContextReviewItem {
@@ -76,19 +78,20 @@ final pendingRunContextReviewsProvider =
 
 final runContextConfirmationServiceProvider =
     Provider<RunContextConfirmationService>(
-  (Ref ref) => RunContextConfirmationService(
-    database: ref.watch(healthSyncStructuredDatabaseGatewayProvider)
-            is RunContextDatabaseGateway
-        ? ref.watch(healthSyncStructuredDatabaseGatewayProvider)
-            as RunContextDatabaseGateway
-        : null,
-    metricsPipeline: ref.watch(healthSyncMetricsPipelineProvider),
-    reportCoordinator: LocalReportGenerationCoordinator(
-      repository: ref.watch(trainingMetricsRepositoryProvider),
+  (Ref ref) {
+    final RunContextConfirmationService service = RunContextConfirmationService(
+      database: ref.watch(healthSyncStructuredDatabaseGatewayProvider)
+              is RunContextDatabaseGateway
+          ? ref.watch(healthSyncStructuredDatabaseGatewayProvider)
+              as RunContextDatabaseGateway
+          : null,
       metricsPipeline: ref.watch(healthSyncMetricsPipelineProvider),
-      monthlySummaryLoader: ref.watch(monthlySummaryLoaderProvider),
-    ),
-  ),
+      reportCoordinator: ref.watch(localReportGenerationCoordinatorProvider),
+      featureAccess: ref.watch(featureAccessProvider),
+    );
+    bindFeatureController(ref, 'feature.growth', 'runContext', service);
+    return service;
+  },
 );
 
 /// 保存用户确认，并让受影响的训练、周/月指标和已结束周期报告重新计算。
@@ -97,15 +100,18 @@ class RunContextConfirmationService {
     required RunContextDatabaseGateway? database,
     required TrainingMetricsPipeline? metricsPipeline,
     required LocalReportGenerationCoordinator reportCoordinator,
+    FeatureAccess? featureAccess,
     DateTime Function()? clock,
   })  : _database = database,
         _metricsPipeline = metricsPipeline,
         _reportCoordinator = reportCoordinator,
+        _featureAccess = featureAccess,
         _clock = clock ?? DateTime.now;
 
   final RunContextDatabaseGateway? _database;
   final TrainingMetricsPipeline? _metricsPipeline;
   final LocalReportGenerationCoordinator _reportCoordinator;
+  final FeatureAccess? _featureAccess;
   final DateTime Function() _clock;
 
   Future<void> confirm({
@@ -113,24 +119,36 @@ class RunContextConfirmationService {
     required String workoutId,
     required String runContext,
   }) async {
+    final FeatureOperation? operation =
+        _featureAccess?.beginOperation('feature.growth');
     final RunContextDatabaseGateway? structured = _database;
     if (structured == null) {
       throw StateError('当前设备不支持 HealthKit 跑步项目确认。');
     }
-    await structured.confirmRunningWorkoutContext(
-      athleteProfileId: athleteProfileId,
-      workoutId: workoutId,
-      runContext: runContext,
-      confirmedAt: _clock(),
-    );
+    Future<void> save() => structured.confirmRunningWorkoutContext(
+          athleteProfileId: athleteProfileId,
+          workoutId: workoutId,
+          runContext: runContext,
+          confirmedAt: _clock(),
+        );
+    if (operation == null) {
+      await save();
+    } else {
+      await operation.commit(save);
+    }
 
     final TrainingMetricsPipeline? pipeline = _metricsPipeline;
     if (pipeline == null) return;
     try {
-      final WorkoutAnalysisOutcome outcome = await pipeline.analyzeWorkout(
-        athleteProfileId: athleteProfileId,
-        workoutId: workoutId,
-      );
+      final WorkoutAnalysisOutcome outcome = operation == null
+          ? await pipeline.analyzeWorkout(
+              athleteProfileId: athleteProfileId,
+              workoutId: workoutId,
+            )
+          : await operation.commit(() => pipeline.analyzeWorkout(
+                athleteProfileId: athleteProfileId,
+                workoutId: workoutId,
+              ));
       final DateTime weekStart = outcome.occurredOn.subtract(
         Duration(days: outcome.occurredOn.weekday - DateTime.monday),
       );
@@ -145,11 +163,19 @@ class RunContextConfirmationService {
         (period: MetricPeriod.week, start: weekStart),
         (period: MetricPeriod.month, start: monthStart),
       ]) {
-        await pipeline.aggregatePeriod(
-          athleteProfileId: athleteProfileId,
-          period: target.period,
-          periodStart: target.start,
-        );
+        if (operation == null) {
+          await pipeline.aggregatePeriod(
+            athleteProfileId: athleteProfileId,
+            period: target.period,
+            periodStart: target.start,
+          );
+        } else {
+          await operation.commit(() => pipeline.aggregatePeriod(
+                athleteProfileId: athleteProfileId,
+                period: target.period,
+                periodStart: target.start,
+              ));
+        }
         await _reportCoordinator.ensureClosedPeriod(
           athleteProfileId: athleteProfileId,
           period: target.period,
@@ -157,6 +183,13 @@ class RunContextConfirmationService {
         );
       }
     } catch (error, stackTrace) {
+      if (operation != null) {
+        try {
+          operation.checkActive();
+        } catch (_) {
+          Error.throwWithStackTrace(error, stackTrace);
+        }
+      }
       Error.throwWithStackTrace(
         const RunContextRecalculationException(),
         stackTrace,

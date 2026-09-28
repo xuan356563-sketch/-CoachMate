@@ -8,8 +8,8 @@ import 'package:trainflow_ai/features/profile/application/training_schedule_cont
 import 'package:trainflow_ai/features/profile/application/user_profile_controller.dart';
 import 'package:trainflow_ai/services/local_storage_service.dart';
 
-void main() {
-  test('保存可训练时间后生成排期，并可从本地重新读取', () {
+void main() async {
+  test('保存可训练时间后生成排期，并可从本地重新读取', () async {
     final storage = InMemoryLocalStorageService();
     final now = DateTime(2026, 7, 13, 8);
     ProviderContainer createContainer() => ProviderContainer(overrides: [
@@ -18,7 +18,7 @@ void main() {
         ]);
 
     final first = createContainer();
-    first.read(trainingScheduleControllerProvider.notifier).addSlot(
+    await first.read(trainingScheduleControllerProvider.notifier).addSlot(
           date: now,
           startMinute: 12 * 60,
           endMinute: 12 * 60 + 35,
@@ -39,7 +39,7 @@ void main() {
     second.dispose();
   });
 
-  test('重叠时间段会合并，同一天最多保留三个时间段', () {
+  test('重叠时间段会合并，同一天最多保留三个时间段', () async {
     final storage = InMemoryLocalStorageService();
     final now = DateTime(2026, 7, 13, 8);
     final container = ProviderContainer(overrides: [
@@ -50,11 +50,11 @@ void main() {
     final controller =
         container.read(trainingScheduleControllerProvider.notifier);
 
-    controller.addSlot(date: now, startMinute: 360, endMinute: 420);
-    controller.addSlot(date: now, startMinute: 400, endMinute: 480);
-    controller.addSlot(date: now, startMinute: 720, endMinute: 760);
-    controller.addSlot(date: now, startMinute: 1020, endMinute: 1080);
-    controller.addSlot(date: now, startMinute: 1260, endMinute: 1320);
+    await controller.addSlot(date: now, startMinute: 360, endMinute: 420);
+    await controller.addSlot(date: now, startMinute: 400, endMinute: 480);
+    await controller.addSlot(date: now, startMinute: 720, endMinute: 760);
+    await controller.addSlot(date: now, startMinute: 1020, endMinute: 1080);
+    await controller.addSlot(date: now, startMinute: 1260, endMinute: 1320);
 
     final slots =
         container.read(trainingScheduleControllerProvider).availability;
@@ -62,7 +62,7 @@ void main() {
     expect(slots.first.timeLabel, '06:00-08:00');
   });
 
-  test('读取旧排期时不根据 allocatedMinutes 补猜主目标', () {
+  test('读取旧排期时不根据 allocatedMinutes 补猜主目标', () async {
     final storage = InMemoryLocalStorageService();
     final now = DateTime(2026, 7, 13, 8);
     ProviderContainer createContainer() => ProviderContainer(overrides: [
@@ -71,7 +71,7 @@ void main() {
         ]);
 
     final ProviderContainer first = createContainer();
-    first.read(trainingScheduleControllerProvider.notifier).addSlot(
+    await first.read(trainingScheduleControllerProvider.notifier).addSlot(
           date: now,
           startMinute: 18 * 60,
           endMinute: 19 * 60,
@@ -103,7 +103,7 @@ void main() {
     second.dispose();
   });
 
-  test('确认主目标后，训练日程使用对应的个性化四周计划', () {
+  test('确认主目标后，训练日程使用对应的个性化四周计划', () async {
     final storage = InMemoryLocalStorageService();
     final now = DateTime(2026, 7, 13, 8);
     final container = ProviderContainer(overrides: [
@@ -121,7 +121,7 @@ void main() {
         container.read(trainingScheduleControllerProvider.notifier);
 
     for (final int dayOffset in const <int>[0, 2, 4]) {
-      controller.addSlot(
+      await controller.addSlot(
         date: now.add(Duration(days: dayOffset)),
         startMinute: 18 * 60,
         endMinute: 19 * 60,

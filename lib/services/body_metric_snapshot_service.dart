@@ -1,5 +1,6 @@
 import '../data/models/body_metric.dart';
 import '../data/models/body_metric_snapshot.dart';
+import 'body_metric_input_validation.dart';
 
 class BodyMetricSnapshotRecognitionService {
   BodyMetricSnapshotRecognitionResult recognize(
@@ -11,16 +12,21 @@ class BodyMetricSnapshotRecognitionService {
       throw const FormatException('识别失败：请粘贴体脂秤、手表或跑步 App 截图中的文字。');
     }
 
-    final double? weight = _doubleValue(text, const ['体重', 'weight']);
-    final double? bodyFat = _doubleValue(text, const ['体脂率', '体脂', 'body fat']);
+    final double? weight = _doubleValue(text, const ['体重', 'weight'], units: r'kg|公斤|千克');
+    final double? bodyFat = _doubleValue(text, const ['体脂率', '体脂', 'body fat'], units: r'%|％');
     final int? restingHr = _intValue(
       text,
       const ['静息心率', '静息心', 'resting heart rate', 'resting hr'],
+      units: r'bpm|次/分|次/分钟',
     );
-    final int? hrv = _intValue(text, const ['hrv', 'HRV']);
-    final double? sleep = _doubleValue(text, const ['睡眠时长', '睡眠', 'sleep']);
-    final int? fatigue = _intValue(text, const ['疲劳', 'fatigue']);
-    final int? soreness = _intValue(text, const ['酸痛', 'soreness']);
+    final int? hrv = _intValue(text, const ['HRV', 'hrv'], units: r'ms|毫秒');
+    final double? sleep = _doubleValue(text, const ['睡眠', '睡眠时长', 'sleep'], units: r'h|小时');
+    final int? fatigue = _intValue(text, const ['疲劳', 'fatigue'], units: r'/10');
+    final int? soreness = _intValue(text, const ['酸痛', 'soreness'], units: r'/10');
+    validateBodyMetricInput({
+      '体重': weight, '体脂率': bodyFat, '静息心率': restingHr,
+      'HRV': hrv, '睡眠': sleep, '疲劳': fatigue, '酸痛': soreness,
+    });
     final DateTime measuredAt = _dateValue(text) ?? DateTime.now();
     final int matchedFieldCount = [
       weight,
@@ -54,6 +60,12 @@ class BodyMetricSnapshotRecognitionService {
 
     final DateTime now = DateTime.now();
     final BodyMetric metric = BodyMetric(
+      recordedFields: {
+        if (weight != null) 'weightKg', if (bodyFat != null) 'bodyFatPercentage',
+        if (restingHr != null) 'restingHeartRate', if (hrv != null) 'hrvMs',
+        if (sleep != null) 'sleepHours', if (fatigue != null) 'fatigueLevel',
+        if (soreness != null) 'sorenessLevel',
+      },
       id: 'body-snapshot-${now.millisecondsSinceEpoch}',
       measuredAt: DateTime(
         measuredAt.year,
@@ -67,8 +79,8 @@ class BodyMetricSnapshotRecognitionService {
       restingHeartRate: restingHr ?? fallback!.restingHeartRate,
       hrvMs: hrv ?? fallback!.hrvMs,
       sleepHours: sleep ?? fallback!.sleepHours,
-      fatigueLevel: (fatigue ?? fallback!.fatigueLevel).clamp(1, 10).toInt(),
-      sorenessLevel: (soreness ?? fallback!.sorenessLevel).clamp(1, 10).toInt(),
+      fatigueLevel: fatigue ?? fallback!.fatigueLevel,
+      sorenessLevel: soreness ?? fallback!.sorenessLevel,
       moodLabel: (fatigue ?? fallback!.fatigueLevel) >= 7 ? '偏疲劳' : '截图识别',
       source: BodyMetricSource.screenshot,
       note: inheritedFieldLabels.isEmpty
@@ -84,23 +96,45 @@ class BodyMetricSnapshotRecognitionService {
     );
   }
 
-  double? _doubleValue(String text, List<String> keys) {
+  double? _doubleValue(String text, List<String> keys, {String units = ''}) {
+    final token = _numericToken(text, keys, units: units);
+    return token == null ? null : double.parse(token);
+  }
+
+  String? _numericToken(String text, List<String> keys, {String units = ''}) {
     for (final String key in keys) {
       final RegExp pattern = RegExp(
-        '${RegExp.escape(key)}\\s*(?:[:：=]|为)?\\s*([0-9]+(?:\\.[0-9]+)?)',
+        '${RegExp.escape(key)}(?=\\s|[:：=为+−.0-9-]|\$)\\s*(?:[:：=]|为)?\\s*([^\\s,，;；]*)',
         caseSensitive: false,
       );
       final RegExpMatch? match = pattern.firstMatch(text);
       if (match != null) {
-        return double.tryParse(match.group(1) ?? '');
+        // 完整读取数值与已知单位，负数、小数、指数不能被截成正整数。
+        final token = match.group(1) ?? '';
+        final numeric = RegExp(
+          r'^([+-]?(?:\d+(?:\.\d*)?|\.\d+)(?:[eE][+-]?\d+)?|[+-]?(?:NaN|Infinity))'
+          '(?:$units)?\$',
+          caseSensitive: false,
+        ).firstMatch(token);
+        final value = double.tryParse(numeric?.group(1) ?? '');
+        if (value == null || !value.isFinite) {
+          throw FormatException('${keys.first} 格式错误，必须提供完整的有限数值。');
+        }
+        return numeric!.group(1);
       }
     }
     return null;
   }
 
-  int? _intValue(String text, List<String> keys) {
-    final double? value = _doubleValue(text, keys);
-    return value?.round();
+  int? _intValue(String text, List<String> keys, {String units = ''}) {
+    final token = _numericToken(text, keys, units: units);
+    if (token == null) return null;
+    // 和 CSV 一致直接解析整数，避免先经过浮点数而丢失精度。
+    final integer = int.tryParse(token);
+    if (integer == null) {
+      throw FormatException('${keys.first} 必须是整数，不会自动四舍五入。');
+    }
+    return integer;
   }
 
   DateTime? _dateValue(String text) {

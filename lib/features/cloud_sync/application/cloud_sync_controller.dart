@@ -1,6 +1,9 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../data/models/cloud_sync.dart';
+import '../../../plugins/application/feature_access.dart';
+import '../../../plugins/application/feature_controller_binding.dart';
+import '../../../plugins/application/plugin_runtime_provider.dart';
 import '../../auth/application/auth_controller.dart';
 import '../../auth/data/authenticated_api_client.dart';
 import '../data/cloud_sync_api.dart';
@@ -66,6 +69,7 @@ class CloudSyncUiState {
 }
 
 class CloudSyncController extends AsyncNotifier<CloudSyncUiState> {
+  static const String _featureId = 'feature.cloud_sync';
   CloudSyncLocalStore? _localStore;
   CloudSyncRemoteGateway? _remoteGateway;
   String? _accountId;
@@ -82,6 +86,13 @@ class CloudSyncController extends AsyncNotifier<CloudSyncUiState> {
     _localStore = localStore;
     _remoteGateway = ref.watch(cloudSyncRemoteGatewayProvider);
     _accountId = accountId;
+    bindFeatureController(
+      ref,
+      _featureId,
+      'controller',
+      this,
+      cleanup: _pauseResources,
+    );
     final CloudSyncAccountState accountState =
         await localStore.readAccountState(accountId);
     final List<CloudSyncConflict> conflicts =
@@ -98,6 +109,8 @@ class CloudSyncController extends AsyncNotifier<CloudSyncUiState> {
   }
 
   Future<void> enable({required bool confirmed}) async {
+    final FeatureOperation operation =
+        ref.read(featureAccessProvider).beginOperation(_featureId);
     final CloudSyncUiState current = _current;
     final CloudSyncCoordinator coordinator = _coordinator();
     state = AsyncData<CloudSyncUiState>(
@@ -107,8 +120,15 @@ class CloudSyncController extends AsyncNotifier<CloudSyncUiState> {
       await coordinator.enable(
         accountId: _requiredAccountId,
         confirmed: confirmed,
+        operation: operation,
       );
-      await _runSync(coordinator, current.copyWith(enabled: true));
+      await _runSync(
+        coordinator,
+        current.copyWith(enabled: true),
+        operation,
+      );
+    } on StateError {
+      rethrow;
     } catch (error) {
       state = AsyncData<CloudSyncUiState>(
         current.copyWith(
@@ -135,11 +155,13 @@ class CloudSyncController extends AsyncNotifier<CloudSyncUiState> {
   }
 
   Future<void> synchronize() async {
+    final FeatureOperation operation =
+        ref.read(featureAccessProvider).beginOperation(_featureId);
     final CloudSyncUiState current = _current;
     state = AsyncData<CloudSyncUiState>(
       current.copyWith(busy: true, statusMessage: '正在同步允许的数据…'),
     );
-    await _runSync(_coordinator(), current);
+    await _runSync(_coordinator(), current, operation);
   }
 
   Future<void> resolveConflict({
@@ -147,6 +169,8 @@ class CloudSyncController extends AsyncNotifier<CloudSyncUiState> {
     required CloudSyncConflictResolution resolution,
     required bool confirmed,
   }) async {
+    final FeatureOperation operation =
+        ref.read(featureAccessProvider).beginOperation(_featureId);
     final CloudSyncUiState current = _current;
     state = AsyncData<CloudSyncUiState>(
       current.copyWith(busy: true, statusMessage: '正在保存冲突选择…'),
@@ -157,9 +181,11 @@ class CloudSyncController extends AsyncNotifier<CloudSyncUiState> {
         conflictId: conflictId,
         resolution: resolution,
         confirmed: confirmed,
+        operation: operation,
       );
       final List<CloudSyncConflict> conflicts =
           await _localStore!.readPendingConflicts(_requiredAccountId);
+      operation.checkActive();
       state = AsyncData<CloudSyncUiState>(
         current.copyWith(
           busy: false,
@@ -170,6 +196,8 @@ class CloudSyncController extends AsyncNotifier<CloudSyncUiState> {
               : '冲突选择已保存，仍有 ${conflicts.length} 项待确认',
         ),
       );
+    } on StateError {
+      rethrow;
     } on CloudSyncConfirmationRequiredException catch (error) {
       state = AsyncData<CloudSyncUiState>(
         current.copyWith(busy: false, statusMessage: error.toString()),
@@ -187,15 +215,18 @@ class CloudSyncController extends AsyncNotifier<CloudSyncUiState> {
   Future<void> _runSync(
     CloudSyncCoordinator coordinator,
     CloudSyncUiState current,
+    FeatureOperation operation,
   ) async {
     try {
       final CloudSyncRunResult result = await coordinator.synchronize(
         accountId: _requiredAccountId,
+        operation: operation,
       );
       final CloudSyncAccountState accountState =
           await _localStore!.readAccountState(_requiredAccountId);
       final List<CloudSyncConflict> conflicts =
           await _localStore!.readPendingConflicts(_requiredAccountId);
+      operation.checkActive();
       state = AsyncData<CloudSyncUiState>(
         current.copyWith(
           enabled: accountState.enabled,
@@ -210,6 +241,8 @@ class CloudSyncController extends AsyncNotifier<CloudSyncUiState> {
           },
         ),
       );
+    } on StateError {
+      rethrow;
     } catch (_) {
       state = AsyncData<CloudSyncUiState>(
         current.copyWith(
@@ -239,5 +272,14 @@ class CloudSyncController extends AsyncNotifier<CloudSyncUiState> {
       localStore: localStore,
       remoteGateway: remoteGateway,
     );
+  }
+
+  void _pauseResources() {
+    if (!ref.mounted) return;
+    final CloudSyncUiState current = _current;
+    state = AsyncData<CloudSyncUiState>(current.copyWith(
+      busy: false,
+      statusMessage: '云同步功能已暂停，待上传队列、冲突和游标均已保留。',
+    ));
   }
 }

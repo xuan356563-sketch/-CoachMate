@@ -85,6 +85,9 @@ const Set<String> _aiDemoSlugs = <String>{
     'wall_sit',
 };
 
+/// 已登记的 AI 模特图动作 slug 数量，供资源清单校验使用。
+int get seedAiDemoSlugCount => _aiDemoSlugs.length;
+
 /// 解析某个动作的示范图路径前缀：重叠动作优先用当前启用的 AI 套，否则回退免费库。
 String _seedExerciseImageBase(String slug) {
   if (activeExerciseDemoSet == ExerciseDemoSet.freeDb || !_aiDemoSlugs.contains(slug)) {

@@ -1,16 +1,22 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../../plugins/application/plugin_runtime_provider.dart';
+import '../../plugins/application/plugin_routes.dart';
+import '../../plugins/core/plugin_core.dart';
+import '../../plugins/features/built_in_features.dart';
 import 'package:flutter/services.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../core/constants/app_colors.dart';
+import '../../core/theme/trainmate_visual_mode.dart';
 import '../../core/theme/trainflow_tokens.dart';
 import '../router/app_routes.dart';
 import 'trainmate_bottom_navigation.dart'
     show NavigationItem, NavigationItemRole;
 import 'trainmate_bottom_navigation_v2.dart';
 
-/// 底部导航 v2 槽位顺序：训练计划 / 今日训练 / 中央球体（运动搭子）/ 动作库 / 我的。
-final List<NavigationItem> bottomNavItems = const [
+/// 底部导航槽位顺序：训练计划 / 今日训练 / 运动搭子 / 动作库 / 我的。
+const List<NavigationItem> _navigationVisuals = [
   NavigationItem(
     path: AppRoutes.plans,
     label: '训练计划',
@@ -48,56 +54,138 @@ final List<NavigationItem> bottomNavItems = const [
   ),
 ];
 
-class MainShell extends StatelessWidget {
+List<NavigationItem> navigationItemsFor(
+    Iterable<FeatureContribution> contributions) {
+  final entries = contributions.whereType<NavigationContribution>().toList()
+    ..sort((a, b) => a.order.compareTo(b.order));
+  return [
+    for (final entry in entries)
+      for (final visual in _navigationVisuals)
+        if (visual.path == entry.routeId)
+          NavigationItem(
+              path: entry.routeId,
+              label: visual.label,
+              displayLabel: entry.label,
+              icon: visual.icon,
+              role: visual.role)
+  ];
+}
+
+final List<NavigationItem> bottomNavItems = navigationItemsFor(
+    [for (final feature in builtInFeatures) ...feature.contributions]);
+
+class MainShell extends ConsumerWidget {
   final Widget child;
 
   const MainShell({super.key, required this.child});
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final String location = GoRouterState.of(context).uri.toString();
-    final int currentIndex = _indexForLocation(location);
-    // 全 App 已收敛为浅色「暖灰底 + 深紫品牌」，状态栏统一使用深色图标。
-    final SystemUiOverlayStyle systemUiStyle = SystemUiOverlayStyle.dark.copyWith(
-      statusBarColor: AppColors.transparent,
-    );
+    final runtime = ref.watch(pluginRuntimeProvider);
+    final items = navigationItemsFor(runtime.contributions);
+    final String? unavailable =
+        disabledRouteOwner(runtime, Uri.parse(location).path);
+    if (unavailable != null) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (context.mounted) {
+          context.go('${AppRoutes.capabilities}?feature=$unavailable');
+        }
+      });
+    }
+    final selectedRoute = _routeForLocation(location);
+    final matchedIndex = items.indexWhere((item) => item.path == selectedRoute);
+    final currentIndex = matchedIndex >= 0
+        ? matchedIndex
+        : items.indexWhere((item) => item.path == AppRoutes.dashboard);
+    final bool immersive = _isImmersivePlayer(location);
+    final TrainMatePageAccent? pageAccent = _accentForLocation(location);
+    final SystemUiOverlayStyle systemUiStyle =
+        (immersive ? SystemUiOverlayStyle.light : SystemUiOverlayStyle.dark)
+            .copyWith(statusBarColor: AppColors.transparent);
 
     return AnnotatedRegion<SystemUiOverlayStyle>(
       key: const ValueKey<String>('main-shell-system-ui-style'),
       value: systemUiStyle,
       child: Scaffold(
-        extendBody: true,
-        backgroundColor: AppColors.primary,
+        extendBody: !immersive,
+        backgroundColor: TrainFlowTokens.showcaseActionSurface,
         body: Center(
           child: ConstrainedBox(
             constraints: const BoxConstraints(
               maxWidth: TrainFlowTokens.pageMaxWidth,
             ),
-            child: child,
+            child: TrainMatePageStyleScope(
+              accent: pageAccent,
+              immersive: immersive,
+              child: child,
+            ),
           ),
         ),
-        bottomNavigationBar: TrainMateBottomNavigationV2(
-          items: bottomNavItems,
-          selectedIndex: currentIndex,
-          surfaceColor: Colors.transparent,
-          animationDuration: TrainFlowMotion.resolve(
-            context,
-            TrainFlowMotion.selection,
-          ),
-          onDestinationSelected: (int index) {
-            context.go(bottomNavItems[index].path);
-          },
-        ),
+        bottomNavigationBar: immersive
+            ? null
+            : TrainMateBottomNavigationV2(
+                items: items,
+                selectedIndex: currentIndex,
+                surfaceColor: Colors.transparent,
+                animationDuration: TrainFlowMotion.resolve(
+                  context,
+                  TrainFlowMotion.navigation,
+                ),
+                onDestinationSelected: (int index) {
+                  context.go(items[index].path);
+                },
+              ),
       ),
     );
   }
 
-  int _indexForLocation(String location) {
+  bool _isImmersivePlayer(String location) {
+    return location.startsWith(AppRoutes.workoutPlayer) ||
+        (location.endsWith('/session') &&
+            (location.startsWith(AppRoutes.guidedWorkouts) ||
+                location.startsWith(AppRoutes.exerciseCircuits)));
+  }
+
+  TrainMatePageAccent? _accentForLocation(String location) {
+    if (location.startsWith(AppRoutes.weeklyReport) ||
+        location.startsWith(AppRoutes.growthEvidence) ||
+        location.startsWith(AppRoutes.progressReview) ||
+        location.startsWith(AppRoutes.userInsights)) {
+      return TrainMatePageAccent.profile;
+    }
+    if (location.startsWith(AppRoutes.plans) ||
+        location.startsWith(AppRoutes.guidedWorkouts) ||
+        location.startsWith(AppRoutes.races)) {
+      return TrainMatePageAccent.plan;
+    }
+    if (location.startsWith(AppRoutes.dashboard) ||
+        location.startsWith(AppRoutes.dailyAdjustment) ||
+        location.startsWith(AppRoutes.dailyCheckIn) ||
+        location.startsWith(AppRoutes.workoutPlayer) ||
+        location.startsWith(AppRoutes.rhythmDetail)) {
+      return TrainMatePageAccent.today;
+    }
+    if (location.startsWith(AppRoutes.companion)) {
+      return TrainMatePageAccent.companion;
+    }
+    if (location.startsWith(AppRoutes.exercises) ||
+        location.startsWith(AppRoutes.motionCheck)) {
+      return TrainMatePageAccent.exercises;
+    }
+    if (location.startsWith(AppRoutes.profile) ||
+        location.startsWith(AppRoutes.history)) {
+      return TrainMatePageAccent.profile;
+    }
+    return null;
+  }
+
+  String _routeForLocation(String location) {
     if (location.startsWith(AppRoutes.plans) ||
         location.startsWith(AppRoutes.races) ||
         location.startsWith(AppRoutes.starterProgram) ||
         location.startsWith(AppRoutes.starterGraduation)) {
-      return 0;
+      return AppRoutes.plans;
     }
     if (location.startsWith(AppRoutes.dashboard) ||
         location.startsWith(AppRoutes.aiCenter) ||
@@ -109,17 +197,18 @@ class MainShell extends StatelessWidget {
         location.startsWith(AppRoutes.growthEvidence) ||
         location.startsWith(AppRoutes.rhythmDetail) ||
         location.startsWith(AppRoutes.progressReview)) {
-      return 1;
+      return AppRoutes.dashboard;
     }
     if (location.startsWith(AppRoutes.companion) ||
         location.startsWith(AppRoutes.pet)) {
-      return 2;
+      return AppRoutes.companion;
     }
     if (location.startsWith(AppRoutes.exercises) ||
         location.startsWith(AppRoutes.motionCheck)) {
-      return 3;
+      return AppRoutes.exercises;
     }
     if (location.startsWith(AppRoutes.profile) ||
+        location.startsWith(AppRoutes.history) ||
         location.startsWith(AppRoutes.rehab) ||
         location.startsWith(AppRoutes.dataCenter) ||
         location.startsWith(AppRoutes.activityImport) ||
@@ -129,8 +218,8 @@ class MainShell extends StatelessWidget {
         location.startsWith(AppRoutes.userInsights) ||
         location.startsWith(AppRoutes.selfUseAcceptance) ||
         location.startsWith(AppRoutes.pilotValidation)) {
-      return 4;
+      return AppRoutes.profile;
     }
-    return 1;
+    return AppRoutes.dashboard;
   }
 }

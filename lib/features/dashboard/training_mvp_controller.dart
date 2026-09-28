@@ -1,6 +1,12 @@
+import '../../services/readiness_evidence_service.dart';
+import '../../services/plan_context_digest_service.dart';
+import '../../plugins/application/feature_controller_binding.dart';
+import '../../plugins/application/feature_access.dart';
+import '../../plugins/application/plugin_runtime_provider.dart';
 import 'dart:async';
 import 'dart:convert';
 
+import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../data/models/achievement.dart';
@@ -452,30 +458,22 @@ class RaceImportTextController extends Notifier<String> {
 class BodyMetricCsvImportTextController extends Notifier<String> {
   @override
   String build() {
-    return sampleBodyMetricCsvImportText;
+    return '';
   }
 
   void setValue(String value) {
     state = value;
-  }
-
-  void useSample() {
-    state = sampleBodyMetricCsvImportText;
   }
 }
 
 class BodyMetricSnapshotTextController extends Notifier<String> {
   @override
   String build() {
-    return sampleBodyMetricSnapshotText;
+    return '';
   }
 
   void setValue(String value) {
     state = value;
-  }
-
-  void useSample() {
-    state = sampleBodyMetricSnapshotText;
   }
 }
 
@@ -553,6 +551,7 @@ class TrainingMvpState {
   final TrainingEnvironment dailyTrainingEnvironment;
   final WeatherCondition dailyWeather;
   final String dailyAdjustmentStatusMessage;
+  final DateTime? dailyStatusConfirmedAt;
   final int workoutPlayerStepIndex;
   final bool workoutPlayerDeloaded;
   final bool workoutPlayerFinished;
@@ -561,6 +560,7 @@ class TrainingMvpState {
   final String workoutPlayerStatusMessage;
   final int workoutPlayerRemainingSeconds;
   final bool workoutPlayerTimerRunning;
+  final bool workoutPlayerStepSaving;
   final bool workoutPlayerVoiceEnabled;
   final List<String> workoutPlayerVoiceQueue;
   final String workoutPlayerVoiceStatusMessage;
@@ -628,6 +628,7 @@ class TrainingMvpState {
     required this.dailyTrainingEnvironment,
     required this.dailyWeather,
     required this.dailyAdjustmentStatusMessage,
+    this.dailyStatusConfirmedAt,
     required this.workoutPlayerStepIndex,
     required this.workoutPlayerDeloaded,
     required this.workoutPlayerFinished,
@@ -636,6 +637,7 @@ class TrainingMvpState {
     required this.workoutPlayerStatusMessage,
     required this.workoutPlayerRemainingSeconds,
     required this.workoutPlayerTimerRunning,
+    required this.workoutPlayerStepSaving,
     required this.workoutPlayerVoiceEnabled,
     required this.workoutPlayerVoiceQueue,
     required this.workoutPlayerVoiceStatusMessage,
@@ -667,6 +669,11 @@ class TrainingMvpState {
     }
     final WorkoutDay base =
         findWorkoutDay(scheduled.workoutDayId) ?? activePlan.workoutDays.first;
+    final snapshot = latestPlanAdjustmentFor(base.id)?.workoutSnapshot;
+    if (snapshot != null && const PlanContextDigestService().buildCanonicalDigest(base.toJson()) ==
+        const PlanContextDigestService().buildCanonicalDigest(snapshot.toJson())) {
+      return base;
+    }
     return applyScheduledWorkout(base, scheduled);
   }
 
@@ -789,10 +796,28 @@ class TrainingMvpState {
   }
 
   List<WorkoutPlayerStep> get workoutPlayerSteps {
+    return playerStepsFor(activeWorkoutPlayerWorkout,
+        deloaded: workoutPlayerDeloaded);
+  }
+
+  /// 已确认课程按同一时长执行；历史普通计划保持原有计时行为。
+  List<WorkoutPlayerStep> playerStepsFor(WorkoutDay workout,
+      {required bool deloaded}) {
     return buildWorkoutPlayerSteps(
-      activeWorkoutPlayerWorkout,
-      deloaded: workoutPlayerDeloaded,
+      workout,
+      deloaded: deloaded,
+      matchDeclaredDuration: hasConfirmedDailyCourse(workout),
     );
+  }
+
+  bool hasConfirmedDailyCourse(WorkoutDay workout) {
+    final adjustment = latestPlanAdjustmentFor(workout.id);
+    if (adjustment?.isActive != true) return false;
+    final snapshot = adjustment?.workoutSnapshot;
+    const digest = PlanContextDigestService();
+    return snapshot != null &&
+        digest.buildCanonicalDigest(snapshot.toJson()) ==
+            digest.buildCanonicalDigest(workout.toJson());
   }
 
   WorkoutDay get activeWorkoutPlayerWorkout {
@@ -858,6 +883,14 @@ class TrainingMvpState {
     return bodyMetrics.first;
   }
 
+  BodyMetric? get currentDecisionBodyMetric {
+    final now = DateTime.now();
+    final current = bodyMetrics.where((m) => m.sourceVerified &&
+        !m.measuredAt.isAfter(now) && _dateOnly(m.measuredAt.toLocal()) == _dateOnly(now)).toList()
+      ..sort((a,b) => b.measuredAt.compareTo(a.measuredAt));
+    return current.firstOrNull;
+  }
+
   BodyMetricExportRecord? get latestBodyMetricExportRecord {
     if (bodyMetricExportRecords.isEmpty) {
       return null;
@@ -880,7 +913,8 @@ class TrainingMvpState {
   }
 
   List<BodyMetric> get recentBodyMetrics {
-    return bodyMetrics.take(7).toList();
+    final now = DateTime.now();
+    return bodyMetrics.where((m) => m.sourceVerified && !m.measuredAt.isAfter(now) && now.difference(m.measuredAt) < const Duration(days: 7)).toList();
   }
 
   List<BodyMetric> bodyMetricsForWindow(BodyMetricTrendWindow window) {
@@ -906,6 +940,7 @@ class TrainingMvpState {
   double averageSleepForWindow(BodyMetricTrendWindow window) {
     return _average(
       bodyMetricsForWindow(window)
+          .where((m) => m.hasValue('sleepHours'))
           .map((BodyMetric metric) => metric.sleepHours),
     );
   }
@@ -913,6 +948,7 @@ class TrainingMvpState {
   double averageRestingHrForWindow(BodyMetricTrendWindow window) {
     return _average(
       bodyMetricsForWindow(window)
+          .where((m) => m.hasValue('restingHeartRate'))
           .map((BodyMetric metric) => metric.restingHeartRate.toDouble()),
     );
   }
@@ -920,6 +956,7 @@ class TrainingMvpState {
   double averageHrvForWindow(BodyMetricTrendWindow window) {
     return _average(
       bodyMetricsForWindow(window)
+          .where((m) => m.hasValue('hrvMs'))
           .map((BodyMetric metric) => metric.hrvMs.toDouble()),
     );
   }
@@ -927,6 +964,7 @@ class TrainingMvpState {
   double averageFatigueForWindow(BodyMetricTrendWindow window) {
     return _average(
       bodyMetricsForWindow(window)
+          .where((m) => m.hasValue('fatigueLevel'))
           .map((BodyMetric metric) => metric.fatigueLevel.toDouble()),
     );
   }
@@ -939,26 +977,26 @@ class TrainingMvpState {
 
   double get averageSleep7d {
     return _average(
-      recentBodyMetrics.map((BodyMetric metric) => metric.sleepHours),
+      recentBodyMetrics.where((m) => m.hasValue('sleepHours')).map((BodyMetric metric) => metric.sleepHours),
     );
   }
 
   double get averageRestingHr7d {
     return _average(
-      recentBodyMetrics
+      recentBodyMetrics.where((m) => m.hasValue('restingHeartRate'))
           .map((BodyMetric metric) => metric.restingHeartRate.toDouble()),
     );
   }
 
   double get averageHrv7d {
     return _average(
-      recentBodyMetrics.map((BodyMetric metric) => metric.hrvMs.toDouble()),
+      recentBodyMetrics.where((m) => m.hasValue('hrvMs')).map((BodyMetric metric) => metric.hrvMs.toDouble()),
     );
   }
 
   double get averageFatigue7d {
     return _average(
-      recentBodyMetrics
+      recentBodyMetrics.where((m) => m.hasValue('fatigueLevel'))
           .map((BodyMetric metric) => metric.fatigueLevel.toDouble()),
     );
   }
@@ -988,15 +1026,17 @@ class TrainingMvpState {
       for (final BodyMetric metric in bodyMetrics)
         [
           metric.measuredAt.toIso8601String(),
-          metric.weightKg.toStringAsFixed(1),
-          metric.bodyFatPercentage.toStringAsFixed(1),
-          '${metric.restingHeartRate}',
-          '${metric.hrvMs}',
-          metric.sleepHours.toStringAsFixed(1),
-          '${metric.fatigueLevel}',
-          '${metric.sorenessLevel}',
+          metric.hasValue('weightKg') ? metric.weightKg.toStringAsFixed(1) : '',
+          metric.hasValue('bodyFatPercentage')
+              ? metric.bodyFatPercentage.toStringAsFixed(1)
+              : '',
+          metric.hasValue('restingHeartRate') ? '${metric.restingHeartRate}' : '',
+          metric.hasValue('hrvMs') ? '${metric.hrvMs}' : '',
+          metric.hasValue('sleepHours') ? metric.sleepHours.toStringAsFixed(1) : '',
+          metric.hasValue('fatigueLevel') ? '${metric.fatigueLevel}' : '',
+          metric.hasValue('sorenessLevel') ? '${metric.sorenessLevel}' : '',
           metric.moodLabel,
-          metric.source.jsonValue,
+          metric.sourceVerified ? metric.source.jsonValue : 'unknown',
           metric.note,
         ],
     ];
@@ -1047,6 +1087,17 @@ class TrainingMvpState {
     return latestPainLog?.requiresMedicalAttention ?? false;
   }
 
+  TrainingLog? get recoveryTrainingLog {
+    final DateTime now = DateTime.now();
+    final List<TrainingLog> candidates = logs
+        .where((log) => log.canEstimateRecoveryAt(now)).toList()
+      ..sort((a, b) {
+        final int byDate = b.date.compareTo(a.date);
+        return byDate != 0 ? byDate : b.createdAt.compareTo(a.createdAt);
+      });
+    return candidates.firstOrNull;
+  }
+
   int get recommendedRecoveryHours {
     final int baseHours = switch (todayWorkout.decisionType) {
       TrainingDecisionType.normal => 18,
@@ -1055,18 +1106,18 @@ class TrainingMvpState {
       TrainingDecisionType.technique => 12,
       TrainingDecisionType.rest => 6,
     };
-    final TrainingLog? log = latestLog;
+    final TrainingLog? log = recoveryTrainingLog;
     final int rpePenalty =
         log == null ? 0 : ((log.rpe - 5).clamp(0, 5) * 3).toInt();
-    final BodyMetric? metric = latestBodyMetric;
-    final int fatiguePenalty = metric == null
+    final BodyMetric? metric = currentDecisionBodyMetric;
+    final int fatiguePenalty = metric == null || !metric.hasValue('fatigueLevel')
         ? 0
         : ((metric.fatigueLevel - 5).clamp(0, 5) * 2).toInt();
-    final int sleepPenalty = metric != null && metric.sleepHours < 6.5 ? 4 : 0;
-    final int sorenessPenalty = metric == null
+    final int sleepPenalty = metric != null && metric.hasValue('sleepHours') && metric.sleepHours < 6.5 ? 4 : 0;
+    final int sorenessPenalty = metric == null || !metric.hasValue('sorenessLevel')
         ? 0
         : ((metric.sorenessLevel - 4).clamp(0, 5) * 2).toInt();
-    final int readinessDiscount = readinessScore >= 82 ? 4 : 0;
+    final int readinessDiscount = readinessScore != null && readinessScore! >= 82 ? 4 : 0;
 
     return (baseHours +
             rpePenalty +
@@ -1079,35 +1130,68 @@ class TrainingMvpState {
   }
 
   int get remainingRecoveryHours {
-    final TrainingLog? log = latestLog;
+    final TrainingLog? log = recoveryTrainingLog;
     if (log == null) {
-      return recommendedRecoveryHours;
+      // 没有训练证据时不安排按小时提醒；界面另外明确显示无法估算。
+      return 0;
     }
-    final int elapsedHours = DateTime.now().difference(log.createdAt).inHours;
+    final int elapsedHours = DateTime.now().difference(log.date).inHours;
     return (recommendedRecoveryHours - elapsedHours).clamp(0, 72).toInt();
   }
 
   String get recoveryCountdownLabel {
-    if (latestLog == null) {
-      return '预计 $recommendedRecoveryHours 小时';
+    if (recoveryTrainingLog == null) {
+      return '无法估算：缺少有效会话反馈';
     }
     if (remainingRecoveryHours == 0) {
-      return '已恢复到可评估';
+      return '估算时段已结束';
     }
-    return '还需约 $remainingRecoveryHours 小时';
+    return '工程估算：剩余约 $remainingRecoveryHours 小时';
+  }
+
+  String get recoveryEvidenceSummary {
+    final TrainingLog? log = recoveryTrainingLog;
+    final BodyMetric? metric = currentDecisionBodyMetric;
+    final Map<String, String> fields = {
+      'fatigueLevel': '疲劳', 'sorenessLevel': '酸痛', 'sleepHours': '睡眠',
+    };
+    final List<String> used = [
+      for (final entry in fields.entries)
+        if (metric?.hasValue(entry.key) ?? false)
+          switch (entry.key) {
+            'fatigueLevel' => '疲劳 ${metric!.fatigueLevel}/10',
+            'sorenessLevel' => '酸痛 ${metric!.sorenessLevel}/10',
+            _ => '睡眠 ${metric!.sleepHours} 小时',
+          },
+    ];
+    final List<String> missing = [
+      for (final entry in fields.entries)
+        if (!(metric?.hasValue(entry.key) ?? false)) entry.value,
+    ];
+    final String session = log == null
+        ? '没有来源明确、时间有效的会话 RPE。'
+        : '训练记录时间 ${log.date.toLocal().toIso8601String().substring(0, 16).replaceFirst('T', ' ')}，'
+            '${log.isSessionReview ? '训练复盘' : log.kind == TrainingLogKind.manual ? '手动记录' : '跟练记录'} RPE ${log.rpe}。';
+    final String body = used.isEmpty
+        ? '没有当日有效身体字段。'
+        : '当日身体记录 ${metric!.measuredAt.toLocal().toIso8601String().substring(0, 16).replaceFirst('T', ' ')}（${metric.source.label}）：${used.join('、')}。';
+    return '$session$body'
+        '${missing.isEmpty ? '' : '缺失：${missing.join('、')}，未计入。'}'
+        '沿用课程类型、RPE 和已有身体规则；${readinessScore == null ? '准备度缺失，未减免时长。' : '准备度按已有阈值参与估算。'}'
+        '时间以训练记录为准，补录时间精度有限；不代表实际测得的恢复时间。';
   }
 
   String get recoveryAdvice {
     if (requiresMedicalAttention) {
       return '疼痛红线优先于恢复倒计时，今天停止相关训练并就医。';
     }
-    if (latestLog == null) {
-      return '完成一次跟练或反馈后，首页会按 RPE 和身体数据更新倒计时。';
+    if (recoveryTrainingLog == null) {
+      return '请在训练后保存实际会话反馈；步骤记录和导入推算不能代替主观 RPE。缺少证据不代表身体已恢复。';
     }
     if (remainingRecoveryHours == 0) {
-      return '可以重新评估下一次高强度课，仍需先看睡眠、HRV 和疼痛。';
+      return '估算时段结束不代表身体已恢复；请重新确认当日状态，并检查有效身体记录及疼痛。';
     }
-    return '倒计时结束前避免高强度课，可做轻松步行、灵活性或低压技术练习。';
+    return '工程估算仅供复核，不能作为高强度训练准入证明；继续遵守当前筛查、疼痛和训练安排。';
   }
 
   double get acuteLoadScore {
@@ -1154,12 +1238,7 @@ class TrainingMvpState {
 
   DateTime _latestTrainingLoadDate() {
     DateTime latestDate = _dateOnly(DateTime.now());
-    for (final BodyMetric metric in bodyMetrics) {
-      final DateTime metricDate = _dateOnly(metric.measuredAt);
-      if (metricDate.isAfter(latestDate)) {
-        latestDate = metricDate;
-      }
-    }
+    // 身体记录不能把训练负荷窗口推到未来；训练日志日期逻辑保持原样。
     for (final TrainingLog log in logs) {
       final DateTime logDate = _dateOnly(log.date);
       if (logDate.isAfter(latestDate)) {
@@ -1179,18 +1258,30 @@ class TrainingMvpState {
       );
     }
 
-    BodyMetric? metricForDate;
-    for (final BodyMetric metric in bodyMetrics) {
-      if (_isSameDate(metric.measuredAt, date)) {
-        metricForDate = metric;
-        break;
-      }
-    }
+    final now = DateTime.now();
+    final candidates = bodyMetrics
+        .where((metric) =>
+            metric.sourceVerified &&
+            !metric.measuredAt.isAfter(now) &&
+            _isSameDate(metric.measuredAt.toLocal(), date.toLocal()) &&
+            ['fatigueLevel', 'sorenessLevel', 'sleepHours', 'hrvMs']
+                .any(metric.hasValue))
+        .toList()
+      ..sort((a, b) => b.measuredAt.compareTo(a.measuredAt));
+    // 整条选取最近相关记录，不把不同记录的字段拼接成一次测量。
+    final BodyMetric? metricForDate = candidates.firstOrNull;
     if (metricForDate != null) {
-      final double fatigueLoad = metricForDate.fatigueLevel * 6;
-      final double sorenessLoad = metricForDate.sorenessLevel * 4;
-      final double recoveryPenalty = (metricForDate.sleepHours < 6.5 ? 12 : 0) +
-          (metricForDate.hrvMs < 48 ? 10 : 0);
+      final double fatigueLoad = metricForDate.hasValue('fatigueLevel')
+          ? metricForDate.fatigueLevel * 6
+          : 0;
+      final double sorenessLoad = metricForDate.hasValue('sorenessLevel')
+          ? metricForDate.sorenessLevel * 4
+          : 0;
+      final double recoveryPenalty =
+          (metricForDate.hasValue('sleepHours') && metricForDate.sleepHours < 6.5
+              ? 12 : 0) +
+          (metricForDate.hasValue('hrvMs') && metricForDate.hrvMs < 48
+              ? 10 : 0);
       return (fatigueLoad + sorenessLoad + recoveryPenalty)
           .clamp(18, 95)
           .toDouble();
@@ -1233,16 +1324,17 @@ class TrainingMvpState {
   }
 
   String get trainingStatusLabel {
+    if (readinessScore == null && !requiresMedicalAttention) return '无法评估';
     if (requiresMedicalAttention ||
         todayWorkout.decisionType == TrainingDecisionType.rest) {
       return '恢复中';
     }
     if (averageFatigue7d >= 6 ||
-        averageHrv7d < 48 ||
+        (recentBodyMetrics.any((m) => m.hasValue('hrvMs')) && averageHrv7d < 48) ||
         acuteLoadScore > chronicLoadScore * 1.25) {
       return '过度风险';
     }
-    if (readinessScore >= 78 &&
+    if (readinessScore != null && readinessScore! >= 78 &&
         averageFatigue7d <= 4.8 &&
         acuteLoadScore >= chronicLoadScore * 0.45) {
       return '进步中';
@@ -1252,6 +1344,8 @@ class TrainingMvpState {
 
   String get trainingStatusReason {
     switch (trainingStatusLabel) {
+      case '无法评估':
+        return '缺少当日确认或有效恢复记录，不能据此判断身体状态或训练进步。';
       case '恢复中':
         return '今日决策已转为休息或恢复，优先让疼痛和疲劳回落。';
       case '过度风险':
@@ -1264,16 +1358,17 @@ class TrainingMvpState {
   }
 
   String get morningReportAdvice {
+    if (readinessScore == null && !requiresMedicalAttention) return '请先确认今日状态并补充睡眠、疲劳记录；当前无法评估准备度。';
     if (requiresMedicalAttention) {
       return '今天不要硬练，先处理疼痛红线。';
     }
-    if (remainingRecoveryHours > 18 && latestLog != null) {
-      return '今天把训练换成轻松版，等恢复倒计时下降。';
+    if (remainingRecoveryHours > 18 && recoveryTrainingLog != null) {
+      return '恢复时间工程估算仍较长，请复核今日状态，再确认是否采用轻松版。';
     }
-    if (readinessScore >= 82) {
+    if (readinessScore != null && readinessScore! >= 82) {
       return '今天可以按计划推进，但仍保持动作质量优先。';
     }
-    if (readinessScore >= 60) {
+    if (readinessScore != null && readinessScore! >= 60) {
       return '今天可训练，但强度留余量。';
     }
     return '今天优先恢复，训练只做低压版本。';
@@ -1302,7 +1397,7 @@ class TrainingMvpState {
       starterProgramStreak: starterProgramStreak,
       starterProgramDayIndex: starterProgramDayIndex,
       formalPlanUnlocked: formalPlanUnlocked,
-      latestBodyMetric: latestBodyMetric,
+      latestBodyMetric: currentDecisionBodyMetric,
       remainingRecoveryHours: remainingRecoveryHours,
       recoveryAdvice: recoveryAdvice,
       readinessScore: readinessScore,
@@ -1334,6 +1429,8 @@ class TrainingMvpState {
   DailyCheckInSummary get dailyCheckInSummary {
     return DailyCheckInService().buildSummary(
       latestBodyMetric: latestBodyMetric,
+      currentBodyMetric: currentDecisionBodyMetric,
+      bodyMetrics: bodyMetrics,
       latestPainLog: latestPainLog,
       starterProgramStreak: starterProgramStreak,
       highConfidenceInsightCount: highConfidenceInsightCount,
@@ -1353,7 +1450,7 @@ class TrainingMvpState {
           ? TrainingEnvironment.noEquipment
           : dailyTrainingEnvironment,
       weather: dailyWeather,
-      latestBodyMetric: latestBodyMetric,
+      latestBodyMetric: currentDecisionBodyMetric,
       latestPainLog: latestPainLog,
       latestMotionAnalysisResult: latestMotionAnalysisResult,
       readinessScore: readinessScore,
@@ -1401,8 +1498,8 @@ class TrainingMvpState {
     return UserInsightService().buildPredictionLogs(
       recommendedRecoveryHours: recommendedRecoveryHours,
       remainingRecoveryHours: remainingRecoveryHours,
-      hasLatestLog: latestLog != null,
-      latestLog: latestLog,
+      hasLatestLog: recoveryTrainingLog != null,
+      latestLog: recoveryTrainingLog,
       bodyMetrics: bodyMetrics,
     );
   }
@@ -1515,39 +1612,17 @@ class TrainingMvpState {
     }
   }
 
-  int get readinessScore {
-    final int injuryPenalty = profile.injuryHistory.isEmpty ? 0 : 8;
-    final int schedulePenalty =
-        profile.workScheduleType == WorkScheduleType.overtimeHeavy ? 8 : 0;
-    final PainLog? latestPainLogValue = latestPainLog;
-    final int painPenalty = latestPainLogValue == null
-        ? 0
-        : latestPainLogValue.requiresMedicalAttention
-            ? 36
-            : latestPainLogValue.painLevel >= 4
-                ? 18
-                : 5;
-    final BodyMetric? metric = latestBodyMetric;
-    final int sleepPenalty = metric != null && metric.sleepHours < 6.5 ? 8 : 0;
-    final int hrvPenalty = metric != null && metric.hrvMs < 45 ? 6 : 0;
-    final int fatiguePenalty =
-        metric != null && metric.fatigueLevel >= 7 ? 8 : 0;
-    final int restingHrPenalty =
-        metric != null && metric.restingHeartRate > averageRestingHr7d + 6
-            ? 6
-            : 0;
-    final double score = 48 +
-        profile.weeklyTrainingDays * 5 +
-        profile.dailyAvailableMinutes * 0.35 -
-        injuryPenalty -
-        schedulePenalty -
-        painPenalty -
-        sleepPenalty -
-        hrvPenalty -
-        fatiguePenalty -
-        restingHrPenalty;
-    return score.clamp(35, 94).round();
+  ReadinessEvidence get readinessEvidence {
+    if (!profileCompleted) {
+      return const ReadinessEvidence(score: null, inputs: [], missing: ['已确认档案'],
+          confirmed: false, observedAt: null);
+    }
+    return const ReadinessEvidenceService().evaluate(
+        profile: profile, metrics: bodyMetrics, pain: latestPainLog,
+        now: DateTime.now(), confirmedAt: dailyStatusConfirmedAt);
   }
+  int? get readinessScore => readinessEvidence.score;
+  String get readinessValueLabel => readinessEvidence.valueLabel;
 
   String get readinessLabel {
     if (requiresMedicalAttention) {
@@ -1556,13 +1631,14 @@ class TrainingMvpState {
     if ((latestPainLog?.painLevel ?? 0) >= 4) {
       return '自动降级';
     }
-    if (readinessScore >= 82) {
+    if (readinessScore == null) return '无法评估';
+    if (readinessScore! >= 82) {
       return '状态充足';
     }
-    if (readinessScore >= 66) {
+    if (readinessScore != null && readinessScore! >= 66) {
       return '可以推进';
     }
-    if (readinessScore >= 52) {
+    if (readinessScore != null && readinessScore! >= 52) {
       return '控制强度';
     }
     return '优先恢复';
@@ -1732,6 +1808,7 @@ class TrainingMvpState {
     TrainingEnvironment? dailyTrainingEnvironment,
     WeatherCondition? dailyWeather,
     String? dailyAdjustmentStatusMessage,
+    Object? dailyStatusConfirmedAt = _unchanged,
     int? workoutPlayerStepIndex,
     bool? workoutPlayerDeloaded,
     bool? workoutPlayerFinished,
@@ -1740,6 +1817,7 @@ class TrainingMvpState {
     String? workoutPlayerStatusMessage,
     int? workoutPlayerRemainingSeconds,
     bool? workoutPlayerTimerRunning,
+    bool? workoutPlayerStepSaving,
     bool? workoutPlayerVoiceEnabled,
     List<String>? workoutPlayerVoiceQueue,
     String? workoutPlayerVoiceStatusMessage,
@@ -1832,6 +1910,8 @@ class TrainingMvpState {
       dailyWeather: dailyWeather ?? this.dailyWeather,
       dailyAdjustmentStatusMessage:
           dailyAdjustmentStatusMessage ?? this.dailyAdjustmentStatusMessage,
+      dailyStatusConfirmedAt: identical(dailyStatusConfirmedAt, _unchanged)
+          ? this.dailyStatusConfirmedAt : dailyStatusConfirmedAt as DateTime?,
       workoutPlayerStepIndex:
           workoutPlayerStepIndex ?? this.workoutPlayerStepIndex,
       workoutPlayerDeloaded:
@@ -1848,6 +1928,8 @@ class TrainingMvpState {
           workoutPlayerRemainingSeconds ?? this.workoutPlayerRemainingSeconds,
       workoutPlayerTimerRunning:
           workoutPlayerTimerRunning ?? this.workoutPlayerTimerRunning,
+      workoutPlayerStepSaving:
+          workoutPlayerStepSaving ?? this.workoutPlayerStepSaving,
       workoutPlayerVoiceEnabled:
           workoutPlayerVoiceEnabled ?? this.workoutPlayerVoiceEnabled,
       workoutPlayerVoiceQueue:
@@ -1887,11 +1969,16 @@ class TrainingMvpState {
 
 class TrainingMvpController extends Notifier<TrainingMvpState> {
   Timer? _workoutPlayerTimer;
+  bool _workoutPlayerStarted = false;
+  String? _workoutPlayerSessionId;
+  Future<void>? _workoutPlayerStepCompletion;
 
-  WeeklyReportRepository? _weeklyReportRepositoryInstance;
+  bool _weeklyReportSaving = false;
+  bool _weeklyReportRecoveryRequired = false;
 
   WeeklyReportRepository get _weeklyReportRepository {
-    return _weeklyReportRepositoryInstance ??= PersistedWeeklyReportRepository(
+    // 聚合控制器重建时必须回读当前账号，不能沿用已清理账号的仓储缓存。
+    return PersistedWeeklyReportRepository(
       ref.read(localStorageServiceProvider),
     );
   }
@@ -2000,8 +2087,33 @@ class TrainingMvpController extends Notifier<TrainingMvpState> {
       MotionPoseImportService();
   @override
   TrainingMvpState build() {
+    bindFeatureController(ref, 'feature.race_prep', 'mvp', this);
+    bindFeatureController(ref, 'feature.knowledge_library', 'mvp', this);
+    bindFeatureController(ref, 'support.rehab', 'mvp', this);
+    bindFeatureController(ref, 'feature.motion_check', 'mvp', this);
+    bindFeatureController(ref, 'feature.training_plan', 'mvp', this);
+    bindFeatureController(ref, 'feature.user_insights', 'mvp', this);
+    bindFeatureController(ref, 'feature.activity_import', 'mvp', this);
+    bindFeatureController(ref, 'feature.starter_program', 'mvp', this);
+    bindFeatureController(ref, 'feature.workout_player', 'mvp', this);
+    bindFeatureController(ref, 'feature.training_log', 'mvp', this);
+    bindFeatureController(ref, 'feature.weekly_report', 'mvp', this);
+    final access = ref.read(featureAccessProvider);
+    final assist = ref.read(workoutPlayerAssistControllerProvider.notifier);
+    bindFeatureController(ref, 'feature.workout_player', 'execution', this,
+        cleanup: () => _releaseWorkoutPlayer(assist), onRestore: () {});
+    for (final id in [
+      'feature.workout_player',
+      'feature.training_log',
+      'feature.training_plan'
+    ]) {
+      ref.onDispose(access.registerDisableLock(
+          id, () => _workoutPlayerStarted ? '训练尚未结束，请先结束本次跟练。' : null));
+    }
+
     ref.onDispose(() {
       _stopWorkoutPlayerTimer();
+      unawaited(assist.releaseResources(updateState: false));
     });
 
     final PlanAdjustmentState planAdjustmentState =
@@ -2017,7 +2129,7 @@ class TrainingMvpController extends Notifier<TrainingMvpState> {
             plans: _applyPlanAdjustments(
               _basePlansFor(state.profileCompleted),
               next.adjustments,
-            ),
+             currentVersionId: ref.read(fourWeekPlanControllerProvider).activeVersionId,),
             planAdjustments: next.adjustments,
             planAdjustmentStatusMessage: next.statusMessage,
           );
@@ -2041,7 +2153,7 @@ class TrainingMvpController extends Notifier<TrainingMvpState> {
                   ]
                 : _planRepository.listPlans(),
             state.planAdjustments,
-          ),
+           currentVersionId: ref.read(fourWeekPlanControllerProvider).activeVersionId,),
         );
         state = profileUpdatedState.copyWith(
           coachAdvices: _aiTrainingService.buildMockCoachAdvice(
@@ -2072,7 +2184,7 @@ class TrainingMvpController extends Notifier<TrainingMvpState> {
             plans: _applyPlanAdjustments(
               <TrainingPlan>[next.activePlan],
               state.planAdjustments,
-            ),
+             currentVersionId: ref.read(fourWeekPlanControllerProvider).activeVersionId,),
           );
           state = planUpdatedState.copyWith(
             coachAdvices: _aiTrainingService.buildMockCoachAdvice(
@@ -2096,8 +2208,7 @@ class TrainingMvpController extends Notifier<TrainingMvpState> {
           final ScheduledWorkout? scheduled = next.workoutFor(DateTime.now());
           final TrainingMvpState nextState = state.copyWith(
             scheduledTodayWorkout: scheduled,
-            dailyAvailableMinutesOverride: scheduled?.allocatedMinutes ??
-                state.dailyAvailableMinutesOverride,
+            // 排期分配时长不覆盖用户已保存的今日时间约束；约束由每日上下文管理。
           );
           state = nextState.copyWith(
             coachAdvices: _aiTrainingService.buildMockCoachAdvice(
@@ -2127,6 +2238,7 @@ class TrainingMvpController extends Notifier<TrainingMvpState> {
             dailyTrainingEnvironment: context.environment,
             dailyWeather: context.weather,
             dailyAdjustmentStatusMessage: next.statusMessage,
+            dailyStatusConfirmedAt: context.statusConfirmedAt,
           );
         }));
       },
@@ -2261,7 +2373,10 @@ class TrainingMvpController extends Notifier<TrainingMvpState> {
                     .syncBodyMetric(
                       profile: state.profile,
                       metric: next.metrics.first,
-                    ),
+                    )
+                    .onError((Object _, StackTrace __) {
+                  // 身体数据已落库；成长证据是可选派生，失败不得形成未处理异步错误。
+                }),
               );
             }
           }
@@ -2276,7 +2391,7 @@ class TrainingMvpController extends Notifier<TrainingMvpState> {
           ? <TrainingPlan>[fourWeekPlanState.activePlan]
           : _planRepository.listPlans(),
       planAdjustments,
-    );
+     currentVersionId: ref.read(fourWeekPlanControllerProvider).activeVersionId,);
     final List<Exercise> exercises = _exerciseRepository.listExercises();
     final List<TrainingBook> knowledgeBooks = _knowledgeRepository.listBooks();
     final List<BookQuote> bookQuotes = _knowledgeRepository.listQuotes();
@@ -2393,6 +2508,7 @@ class TrainingMvpController extends Notifier<TrainingMvpState> {
       dailyTrainingEnvironment: dailyAdjustmentState.context.environment,
       dailyWeather: dailyAdjustmentState.context.weather,
       dailyAdjustmentStatusMessage: dailyAdjustmentState.statusMessage,
+      dailyStatusConfirmedAt: dailyAdjustmentState.context.statusConfirmedAt,
       workoutPlayerStepIndex: 0,
       workoutPlayerDeloaded: false,
       workoutPlayerFinished: false,
@@ -2401,6 +2517,7 @@ class TrainingMvpController extends Notifier<TrainingMvpState> {
       workoutPlayerStatusMessage: '点击“开始跟练”后，按步骤完成今日训练。',
       workoutPlayerRemainingSeconds: initialWorkoutPlayerRemainingSeconds,
       workoutPlayerTimerRunning: false,
+      workoutPlayerStepSaving: false,
       workoutPlayerVoiceEnabled: workoutPlayerAssistState.voiceEnabled,
       workoutPlayerVoiceQueue: workoutPlayerAssistState.voiceQueue,
       workoutPlayerVoiceStatusMessage:
@@ -2437,20 +2554,31 @@ class TrainingMvpController extends Notifier<TrainingMvpState> {
       initialWorkout.id: initialWorkout,
     };
     unawaited(Future<void>.microtask(() async {
-      if (!ref.mounted) return;
-      await ref.read(growthEvidenceControllerProvider.notifier).reconcile(
-            profile: profile,
-            logs: logs,
-            bodyMetrics: bodyMetrics,
-            painLogs: painLogs,
-            workoutsById: workoutsById,
-            fallbackWorkout: initialWorkout,
-          );
+      try {
+        if (!ref.mounted ||
+            !ref.read(featureAccessProvider).isWritable('feature.growth')) {
+          return;
+        }
+        await ref.read(growthEvidenceControllerProvider.notifier).reconcile(
+              profile: profile,
+              logs: logs,
+              bodyMetrics: bodyMetrics,
+              painLogs: painLogs,
+              workoutsById: workoutsById,
+              fallbackWorkout: initialWorkout,
+            );
+      } catch (error, stackTrace) {
+        // 容器销毁或账户换绑会使旧后台任务按设计失效；真实仓储与业务异常仍必须上报。
+        if (!isFeatureOperationInvalidation(error)) {
+          Error.throwWithStackTrace(error, stackTrace);
+        }
+      }
     }));
     return initialState;
   }
 
   void importRaceText(String rawText) {
+    ref.read(featureAccessProvider).requireEnabled('feature.race_prep');
     try {
       final RacePlan race = _raceImportService.parse(rawText);
       _raceRepository.saveRace(race);
@@ -2464,7 +2592,7 @@ class TrainingMvpController extends Notifier<TrainingMvpState> {
             ? _applyPlanAdjustments(
                 <TrainingPlan>[planState.activePlan],
                 state.planAdjustments,
-              )
+               currentVersionId: ref.read(fourWeekPlanControllerProvider).activeVersionId,)
             : state.plans,
         raceImportStatusMessage: '已导入 ${race.name}，并写入本地 races；自动排期会按比赛日期重算。',
       );
@@ -2491,6 +2619,7 @@ class TrainingMvpController extends Notifier<TrainingMvpState> {
     required String durationText,
     DateTime? confirmedAt,
   }) {
+    ref.read(featureAccessProvider).requireEnabled('feature.race_prep');
     final RacePlan? race = state.findRace(raceId);
     if (race == null) {
       return '未找到这场比赛，请刷新后重试。';
@@ -2544,6 +2673,7 @@ class TrainingMvpController extends Notifier<TrainingMvpState> {
     required String raceId,
     DateTime? revokedAt,
   }) {
+    ref.read(featureAccessProvider).requireEnabled('feature.race_prep');
     final RacePlan? race = state.findRace(raceId);
     if (race == null) {
       return '未找到这场比赛，请刷新后重试。';
@@ -2569,10 +2699,18 @@ class TrainingMvpController extends Notifier<TrainingMvpState> {
   void _syncAchievementRecordsForCurrentState({
     bool showNoChangeMessage = false,
   }) {
-    ref.read(achievementControllerProvider.notifier).sync(
-          state.achievementProgressList,
-          showNoChangeMessage: showNoChangeMessage,
-        );
+    if (!ref.read(featureAccessProvider).isWritable('feature.growth')) return;
+    unawaited(
+      ref
+          .read(achievementControllerProvider.notifier)
+          .sync(
+            state.achievementProgressList,
+            showNoChangeMessage: showNoChangeMessage,
+          )
+          .onError((Object _, StackTrace __) {
+        // 成就同步是训练主流程的可选派生，失败不能反向破坏已保存的训练事实。
+      }),
+    );
   }
 
   void setKnowledgeSearchQuery(String query) {
@@ -2585,6 +2723,7 @@ class TrainingMvpController extends Notifier<TrainingMvpState> {
   }
 
   void importKnowledgeText(String rawText) {
+    ref.read(featureAccessProvider).requireEnabled('feature.knowledge_library');
     try {
       final KnowledgeImportResult result = _knowledgeImportService.parse(
         rawText,
@@ -2610,6 +2749,17 @@ class TrainingMvpController extends Notifier<TrainingMvpState> {
     required PainTiming timing,
     String note = '',
   }) {
+    ref.read(featureAccessProvider).requireEnabled('support.rehab');
+    recordSafetyPain(
+        bodyPart: bodyPart, painLevel: painLevel, timing: timing, note: note);
+  }
+
+  /// 训练中的疼痛安全事实不随可选康复功能关闭。
+  void recordSafetyPain(
+      {required String bodyPart,
+      required int painLevel,
+      required PainTiming timing,
+      String note = ''}) {
     final DateTime now = DateTime.now();
     final PainLog painLog = PainLog(
       id: 'pain-${now.millisecondsSinceEpoch}',
@@ -2636,6 +2786,7 @@ class TrainingMvpController extends Notifier<TrainingMvpState> {
   }
 
   void analyzeMotionCheck(String ruleId) {
+    ref.read(featureAccessProvider).requireEnabled('feature.motion_check');
     final MotionCheckRule? rule = state.findMotionCheck(ruleId);
     if (rule == null) {
       state = state.copyWith(motionAnalysisStatusMessage: '动作分析失败：找不到对应动作规则。');
@@ -2656,13 +2807,14 @@ class TrainingMvpController extends Notifier<TrainingMvpState> {
     state = state.copyWith(
       motionAnalysisResults: results,
       motionAnalysisStatusMessage:
-          '已完成 Motion Vision Mock 分析：${rule.type.label} · ${result.riskLevel.label}，并写入今日决策输入。',
+          '已完成 Motion Vision Mock 分析：${rule.type.label} · ${result.riskLevel.label}，仅供演示查看，不参与训练调整。',
       dailyAdjustmentStatusMessage:
-          '动作质量风险已更新：${result.suggestedImpact.label}。打开每日调整可查看重算结果。',
+          '演示结果已保存，真实训练建议保持不变。',
     );
   }
 
   void analyzeMotionCheckWithPose(String ruleId) {
+    ref.read(featureAccessProvider).requireEnabled('feature.motion_check');
     final MotionCheckRule? rule = state.findMotionCheck(ruleId);
     if (rule == null) {
       state = state.copyWith(motionAnalysisStatusMessage: '动作分析失败：找不到对应动作规则。');
@@ -2679,6 +2831,7 @@ class TrainingMvpController extends Notifier<TrainingMvpState> {
     required String ruleId,
     required String rawJson,
   }) {
+    ref.read(featureAccessProvider).requireEnabled('feature.motion_check');
     final MotionPoseImportResult importResult =
         _motionPoseImportService.parse(rawJson);
     if (!importResult.isValid) {
@@ -2705,6 +2858,8 @@ class TrainingMvpController extends Notifier<TrainingMvpState> {
     required AiArtifact artifact,
     required String ruleId,
   }) {
+    ref.read(featureAccessProvider).requireEnabled('feature.motion_check');
+    ref.read(featureAccessProvider).requireEnabled('feature.ai_center');
     final AiMotionScore? score = artifact.motionScore;
     final MotionCheckRule? rule = state.findMotionCheck(ruleId);
     if (artifact.decision != AiArtifactDecision.accepted ||
@@ -2715,14 +2870,6 @@ class TrainingMvpController extends Notifier<TrainingMvpState> {
       );
       return;
     }
-    final MotionAnalysisResult fallback =
-        _motionAnalysisService.buildMockResult(
-      rule: rule,
-      capturedAt: artifact.generatedAt,
-      bodyProfile: rule.exerciseId == null
-          ? null
-          : state.findExercise(rule.exerciseId!)?.bodyEngineProfile,
-    );
     final MotionRiskLevel riskLevel = motionRiskLevelFromJson(score.riskLevel);
     final TrainingDecisionImpact suggestedImpact = switch (riskLevel) {
       MotionRiskLevel.low => TrainingDecisionImpact.keep,
@@ -2737,12 +2884,13 @@ class TrainingMvpController extends Notifier<TrainingMvpState> {
       score: score.score,
       riskLevel: riskLevel,
       capturedAt: artifact.generatedAt,
-      detectedErrors: score.detectedErrors.isEmpty
-          ? fallback.detectedErrors
-          : score.detectedErrors,
-      involvedAreas: fallback.involvedAreas,
+      evidenceKind: artifact.provider.toLowerCase().contains('mock')
+          ? MotionEvidenceKind.demonstration
+          : MotionEvidenceKind.confirmedCloud,
+      detectedErrors: score.detectedErrors,
+      involvedAreas: const [],
       bodyEngineSummary: score.corrections.isEmpty
-          ? fallback.bodyEngineSummary
+          ? '未提供纠正说明，无法判断'
           : 'AI 建议：${score.corrections.join('；')}',
       decisionImpact: riskLevel == MotionRiskLevel.high
           ? 'AI 图片复核提示高风险，今天应转为技术练习或停止相关负重。'
@@ -2750,10 +2898,8 @@ class TrainingMvpController extends Notifier<TrainingMvpState> {
               ? 'AI 图片复核提示中风险，今天建议降级并优先处理动作质量。'
               : 'AI 图片复核未见明显高风险，仍需按本地反馈决定训练强度。',
       suggestedImpact: suggestedImpact,
-      replacementActions: score.replacements.isEmpty
-          ? fallback.replacementActions
-          : score.replacements,
-      evidenceSources: fallback.evidenceSources,
+      replacementActions: score.replacements,
+      evidenceSources: rule.evidenceSources,
       analysisSource: 'AI Motion 图片分析（用户确认上传）',
       analysisConfidence: score.confidence,
       angleMetrics: score.corrections,
@@ -2766,12 +2912,16 @@ class TrainingMvpController extends Notifier<TrainingMvpState> {
       motionAnalysisStatusMessage:
           '已采用 AI Motion 图片分析：${rule.type.label} · ${result.riskLevel.label}。',
       dailyAdjustmentStatusMessage:
-          'AI Motion 已写入本地决策输入：${result.suggestedImpact.label}。',
+          result.usableForDecision
+              ? 'AI Motion 已作为经确认的建议依据，计划未自动改变。'
+              : 'AI Motion 内容不完整，仅保存供查看，未参与训练调整。',
     );
   }
 
   /// 将已确认的 AI Trainer 卡片保存为本地个性化计划，不覆盖种子计划。
   void applyAiTrainerArtifact(AiArtifact artifact) {
+    ref.read(featureAccessProvider).requireEnabled('feature.training_plan');
+    ref.read(featureAccessProvider).requireEnabled('feature.ai_center');
     final AiTrainerPlan? plan = artifact.trainerPlan;
     if (artifact.decision != AiArtifactDecision.accepted || plan == null) {
       state = state.copyWith(
@@ -2829,11 +2979,12 @@ class TrainingMvpController extends Notifier<TrainingMvpState> {
       motionAnalysisStatusMessage:
           '$statusPrefix：${rule.type.label} · ${result.riskLevel.label}；结果不代表相机识别。',
       dailyAdjustmentStatusMessage:
-          '关键点几何风险已更新：${result.suggestedImpact.label}。打开每日调整可查看重算结果。',
+          '关键点测量仅供查看，未验证来源不参与训练调整。',
     );
   }
 
   void markInsightNeedsCorrection(UserProfileInsight insight) {
+    ref.read(featureAccessProvider).requireEnabled('feature.user_insights');
     state = state.copyWith(
       userInsightStatusMessage:
           '已记录修正：${insight.title}。后续画像更新会降低该结论置信度，并继续走保守策略。',
@@ -2841,6 +2992,7 @@ class TrainingMvpController extends Notifier<TrainingMvpState> {
   }
 
   void generateWeeklyUserInsightTask() {
+    ref.read(featureAccessProvider).requireEnabled('feature.user_insights');
     final UserInsightTableState tableState =
         _userInsightRepository.saveWeeklySnapshot(
       profile: state.profile,
@@ -2857,12 +3009,15 @@ class TrainingMvpController extends Notifier<TrainingMvpState> {
     );
   }
 
-  void importActivityText(String rawText) {
-    _importActivity(() => _activityImportService.parse(rawText));
+  Future<void> importActivityText(String rawText) async {
+    ref.read(featureAccessProvider).requireEnabled('feature.activity_import');
+    await _importActivity(() => _activityImportService.parse(rawText));
   }
 
-  void importGpxDocument(String rawText, {required String fileName}) {
-    _importActivity(
+  Future<void> importGpxDocument(String rawText,
+      {required String fileName}) async {
+    ref.read(featureAccessProvider).requireEnabled('feature.activity_import');
+    await _importActivity(
       () => _activityImportService.parseGpx(rawText, fileName: fileName),
     );
   }
@@ -2880,7 +3035,10 @@ class TrainingMvpController extends Notifier<TrainingMvpState> {
     state = state.copyWith(activityImportStatusMessage: message);
   }
 
-  void _importActivity(ImportedWorkout Function() parseWorkout) {
+  Future<void> _importActivity(ImportedWorkout Function() parseWorkout) async {
+    final FeatureOperation operation = ref
+        .read(featureAccessProvider)
+        .beginOperation('feature.activity_import');
     try {
       final ImportedWorkout importedWorkout = parseWorkout();
       final bool alreadyImported = state.importedWorkouts.any(
@@ -2921,9 +3079,17 @@ class TrainingMvpController extends Notifier<TrainingMvpState> {
                     importedWorkout.distanceKm)
                 .round(),
       );
-      final List<TrainingLog> logs =
-          ref.read(trainingLogControllerProvider.notifier).save(log);
-      _importedWorkoutRepository.saveWorkout(importedWorkout);
+      late final List<TrainingLog> logs;
+      await operation.commit(() async {
+        logs = await readFeatureController<TrainingLogController>(
+                ref,
+                'feature.training_log',
+                'controller',
+                () => ref.read(trainingLogControllerProvider.notifier))
+            .save(log, sourceOperation: operation);
+        _importedWorkoutRepository.saveWorkout(importedWorkout);
+        await ref.read(localStorageServiceProvider).flush();
+      });
       final List<ImportedWorkout> importedWorkouts =
           _importedWorkoutRepository.listWorkouts();
       state = state.copyWith(
@@ -2950,6 +3116,7 @@ class TrainingMvpController extends Notifier<TrainingMvpState> {
   }
 
   void setStarterProgramGoal(StarterProgramGoal goal) {
+    ref.read(featureAccessProvider).requireEnabled('feature.starter_program');
     _formalAiPlanRepository.clearPlan();
     final TrainingMvpState nextState = state.copyWith(
       starterProgramGoal: goal,
@@ -2967,6 +3134,7 @@ class TrainingMvpController extends Notifier<TrainingMvpState> {
   }
 
   void completeStarterProgramDay(StarterProgramFeedback feedback) {
+    ref.read(featureAccessProvider).requireEnabled('feature.starter_program');
     final int nextDay = state.starterProgramDayIndex >= 30
         ? 30
         : state.starterProgramDayIndex + 1;
@@ -2994,6 +3162,8 @@ class TrainingMvpController extends Notifier<TrainingMvpState> {
   }
 
   void unlockFormalAiPlanFromGraduation() {
+    ref.read(featureAccessProvider).requireEnabled('feature.training_plan');
+    ref.read(featureAccessProvider).requireEnabled('feature.starter_program');
     final StarterGraduationReport report = state.starterGraduationReport;
     final FormalAiPlan formalPlan = _formalAiPlanService.generatePlan(
       graduationReport: report,
@@ -3012,6 +3182,7 @@ class TrainingMvpController extends Notifier<TrainingMvpState> {
   }
 
   void postponeStarterProgramDay() {
+    ref.read(featureAccessProvider).requireEnabled('feature.starter_program');
     final TrainingMvpState nextState = state.copyWith(
       starterProgramRescueMode: false,
       starterProgramStatusMessage: '计划已顺延：今天仍保留当前任务，完成后计入累计成长日。',
@@ -3021,6 +3192,7 @@ class TrainingMvpController extends Notifier<TrainingMvpState> {
   }
 
   void useStarterRescueVersion() {
+    ref.read(featureAccessProvider).requireEnabled('feature.starter_program');
     final TrainingMvpState nextState = state.copyWith(
       starterProgramRescueMode: true,
       starterProgramStatusMessage: '已切换 5 分钟补救版，完成后计入累计成长日。',
@@ -3076,6 +3248,7 @@ class TrainingMvpController extends Notifier<TrainingMvpState> {
   }
 
   void toggleWorkoutPlayerVoice() {
+    ref.read(featureAccessProvider).requireEnabled('feature.workout_player');
     ref.read(workoutPlayerAssistControllerProvider.notifier).toggleVoice();
     _projectWorkoutPlayerAssist(
       ref.read(workoutPlayerAssistControllerProvider),
@@ -3083,6 +3256,7 @@ class TrainingMvpController extends Notifier<TrainingMvpState> {
   }
 
   void toggleWorkoutPlayerScreenAwake() {
+    ref.read(featureAccessProvider).requireEnabled('feature.workout_player');
     ref
         .read(workoutPlayerAssistControllerProvider.notifier)
         .toggleScreenAwake();
@@ -3092,17 +3266,27 @@ class TrainingMvpController extends Notifier<TrainingMvpState> {
   }
 
   bool startWorkoutPlayer({String? workoutDayId}) {
+    ref.read(featureAccessProvider).requireEnabled('feature.workout_player');
     if (!_ensureSkillExecutionIsCurrent()) return false;
     _stopWorkoutPlayerTimer();
     final WorkoutDay selectedWorkout = workoutDayId == null
         ? state.todayWorkout
         : state.findWorkoutDay(workoutDayId) ?? state.todayWorkout;
     final WorkoutDay workout = state.withEquipmentConstraint(selectedWorkout);
-    final List<WorkoutPlayerStep> steps = buildWorkoutPlayerSteps(
+    final List<WorkoutPlayerStep> steps = state.playerStepsFor(
       workout,
       deloaded: false,
     );
+    if (state.hasConfirmedDailyCourse(workout) &&
+        steps.fold<int>(0, (total, step) => total + step.estimatedSeconds) >
+            workout.estimatedMinutes * 60) {
+      state = state.copyWith(workoutPlayerStatusMessage:
+          '已保存课程的时长无法容纳完整跟练步骤，请重新生成并确认适用计划；历史记录仍保留。');
+      return false;
+    }
     final WorkoutPlayerStep firstStep = steps.first;
+    _workoutPlayerSessionId =
+        'player-session-${DateTime.now().microsecondsSinceEpoch}';
     final int remainingSeconds = firstStep.estimatedSeconds;
     final String voiceCue = '准备开始：${workout.title}。${firstStep.voiceCue}';
     ref
@@ -3126,11 +3310,13 @@ class TrainingMvpController extends Notifier<TrainingMvpState> {
           '已请求浏览器屏幕常亮；不支持 Wake Lock 的环境会保持普通显示。',
       workoutPlayerStatusMessage: '已进入跟练模式：可启动真实倒计时，动作、休息和语音提示按步骤推进。',
     );
+    _workoutPlayerStarted = true;
     _requestScreenAwake(true);
     return true;
   }
 
   void startWorkoutPlayerCountdown() {
+    ref.read(featureAccessProvider).requireEnabled('feature.workout_player');
     if (!_ensureSkillExecutionIsCurrent()) return;
     if (state.workoutPlayerFinished || state.workoutPlayerTimerRunning) {
       return;
@@ -3156,6 +3342,7 @@ class TrainingMvpController extends Notifier<TrainingMvpState> {
   }
 
   void pauseWorkoutPlayerCountdown() {
+    ref.read(featureAccessProvider).requireEnabled('feature.workout_player');
     _stopWorkoutPlayerTimer();
     final String voiceCue =
         '暂停计时：${state.activeWorkoutPlayerStep.title}，剩余 ${state.workoutPlayerRemainingLabel}。';
@@ -3169,6 +3356,7 @@ class TrainingMvpController extends Notifier<TrainingMvpState> {
   }
 
   void resetWorkoutPlayerCountdown() {
+    ref.read(featureAccessProvider).requireEnabled('feature.workout_player');
     _stopWorkoutPlayerTimer();
     final String voiceCue = '已重置：${state.activeWorkoutPlayerStep.title}。';
     state = state.copyWith(
@@ -3183,6 +3371,10 @@ class TrainingMvpController extends Notifier<TrainingMvpState> {
   }
 
   void _tickWorkoutPlayerCountdown() {
+    if (!ref.read(featureAccessProvider).isWritable('feature.workout_player')) {
+      _stopWorkoutPlayerTimer();
+      return;
+    }
     if (!_ensureSkillExecutionIsCurrent()) return;
     if (state.workoutPlayerFinished || !state.workoutPlayerTimerRunning) {
       _stopWorkoutPlayerTimer();
@@ -3190,10 +3382,11 @@ class TrainingMvpController extends Notifier<TrainingMvpState> {
     }
     final int nextRemaining = state.workoutPlayerRemainingSeconds - 1;
     if (nextRemaining <= 0) {
-      completeWorkoutPlayerStep(autoCompleted: true);
+      unawaited(completeWorkoutPlayerStep(autoCompleted: true));
       return;
     }
     if (nextRemaining <= 3) {
+      ref.read(featureAccessProvider).requireEnabled('feature.workout_player');
       final String countdownCue = '倒数 $nextRemaining';
       state = state.copyWith(
         workoutPlayerRemainingSeconds: nextRemaining,
@@ -3211,25 +3404,77 @@ class TrainingMvpController extends Notifier<TrainingMvpState> {
     );
   }
 
+  /// 结束训练只释放资源，不制造完成或暂停日志。
+  Future<void> stopWorkoutPlayer() => _releaseWorkoutPlayer(
+      ref.read(workoutPlayerAssistControllerProvider.notifier));
+
+  Future<void> _releaseWorkoutPlayer(
+      WorkoutPlayerAssistController assist) async {
+    _stopWorkoutPlayerTimer();
+    _workoutPlayerStarted = false;
+    _workoutPlayerSessionId = null;
+    if (ref.mounted) {
+      state = state.copyWith(
+          workoutPlayerTimerRunning: false,
+          workoutPlayerScreenAwakeRequested: false,
+          workoutPlayerStatusMessage: '跟练已停止，未新增训练记录。');
+    }
+    await assist.releaseResources();
+  }
+
   void _stopWorkoutPlayerTimer() {
     _workoutPlayerTimer?.cancel();
     _workoutPlayerTimer = null;
   }
 
-  void completeWorkoutPlayerStep({bool autoCompleted = false}) {
+  Future<void> completeWorkoutPlayerStep({bool autoCompleted = false}) {
+    final Future<void>? pending = _workoutPlayerStepCompletion;
+    if (pending != null) return pending;
+    final Future<void> completion =
+        _completeWorkoutPlayerStep(autoCompleted: autoCompleted);
+    _workoutPlayerStepCompletion = completion;
+    void clearPending() {
+      if (identical(_workoutPlayerStepCompletion, completion)) {
+        _workoutPlayerStepCompletion = null;
+      }
+    }
+
+    unawaited(completion.then<void>(
+      (_) => clearPending(),
+      onError: (Object _, StackTrace __) => clearPending(),
+    ));
+    return completion;
+  }
+
+  Future<void> _completeWorkoutPlayerStep({
+    required bool autoCompleted,
+  }) async {
     if (!_ensureSkillExecutionIsCurrent()) return;
     _stopWorkoutPlayerTimer();
+    state = state.copyWith(
+      workoutPlayerTimerRunning: false,
+      workoutPlayerStepSaving: true,
+      workoutPlayerStatusMessage: '正在保存当前步骤，请稍候…',
+    );
     final WorkoutPlayerStep step = state.activeWorkoutPlayerStep;
     final List<WorkoutPlayerStep> steps = state.workoutPlayerSteps;
     final bool isLastStep = state.workoutPlayerSafeIndex >= steps.length - 1;
     final int nextStepIndex = isLastStep
         ? state.workoutPlayerSafeIndex
         : state.workoutPlayerSafeIndex + 1;
-    final List<TrainingLog> logs = _saveWorkoutPlayerLog(
-      event: autoCompleted ? '计时完成：${step.title}' : '完成：${step.title}',
-      completed: true,
-      rpe: state.workoutPlayerDeloaded ? 4 : 6,
-    );
+    final List<TrainingLog>? logs;
+    try {
+      logs = await _saveWorkoutPlayerLog(
+        event: autoCompleted ? '计时完成：${step.title}' : '完成：${step.title}',
+        completed: true,
+        rpe: state.workoutPlayerDeloaded ? 4 : 6,
+      );
+    } finally {
+      if (ref.mounted && state.workoutPlayerStepSaving) {
+        state = state.copyWith(workoutPlayerStepSaving: false);
+      }
+    }
+    if (logs == null) return;
     final List<String> events = [
       ...state.workoutPlayerEvents,
       autoCompleted ? '计时完成 ${step.title}' : '完成 ${step.title}',
@@ -3255,6 +3500,7 @@ class TrainingMvpController extends Notifier<TrainingMvpState> {
       workoutPlayerRemainingSeconds:
           isLastStep ? 0 : steps[nextStepIndex].estimatedSeconds,
       workoutPlayerTimerRunning: false,
+      workoutPlayerStepSaving: false,
       workoutPlayerVoiceQueue: _nextWorkoutPlayerVoiceQueue(voiceCue),
       workoutPlayerVoiceStatusMessage: _voiceStatusFor(voiceCue),
       workoutPlayerScreenAwakeRequested:
@@ -3269,12 +3515,14 @@ class TrainingMvpController extends Notifier<TrainingMvpState> {
               : '已完成${step.title}，自动进入下一步。',
     );
     if (isLastStep) {
+      _workoutPlayerStarted = false;
       _requestScreenAwake(false);
     }
     _syncAchievementRecordsForCurrentState();
   }
 
-  void skipWorkoutPlayerStep() {
+  Future<void> skipWorkoutPlayerStep() async {
+    ref.read(featureAccessProvider).requireEnabled('feature.workout_player');
     if (!_ensureSkillExecutionIsCurrent()) return;
     _stopWorkoutPlayerTimer();
     final WorkoutPlayerStep step = state.activeWorkoutPlayerStep;
@@ -3283,11 +3531,12 @@ class TrainingMvpController extends Notifier<TrainingMvpState> {
     final int nextStepIndex = isLastStep
         ? state.workoutPlayerSafeIndex
         : state.workoutPlayerSafeIndex + 1;
-    final List<TrainingLog> logs = _saveWorkoutPlayerLog(
+    final List<TrainingLog>? logs = await _saveWorkoutPlayerLog(
       event: '跳过：${step.title}',
       completed: false,
       rpe: 5,
     );
+    if (logs == null) return;
     final List<String> events = [
       ...state.workoutPlayerEvents,
       '跳过 ${step.title}',
@@ -3325,12 +3574,14 @@ class TrainingMvpController extends Notifier<TrainingMvpState> {
           : '已跳过${step.title}，继续下一步。',
     );
     if (isLastStep) {
+      _workoutPlayerStarted = false;
       _requestScreenAwake(false);
     }
     _syncAchievementRecordsForCurrentState();
   }
 
-  void deloadWorkoutPlayer() {
+  Future<void> deloadWorkoutPlayer() async {
+    ref.read(featureAccessProvider).requireEnabled('feature.workout_player');
     if (!_ensureSkillExecutionIsCurrent()) return;
     _stopWorkoutPlayerTimer();
     final WorkoutPlayerStep step = state.activeWorkoutPlayerStep;
@@ -3338,11 +3589,12 @@ class TrainingMvpController extends Notifier<TrainingMvpState> {
       state.activeWorkoutPlayerWorkout,
       deloaded: true,
     );
-    final List<TrainingLog> logs = _saveWorkoutPlayerLog(
+    final List<TrainingLog>? logs = await _saveWorkoutPlayerLog(
       event: '太累了：${step.title}，剩余内容降级',
       completed: false,
       rpe: 8,
     );
+    if (logs == null) return;
     final String voiceCue =
         '已切换低强度版本。下一步：${deloadedSteps[3].title}，${deloadedSteps[3].voiceCue}';
     state = state.copyWith(
@@ -3377,7 +3629,7 @@ class TrainingMvpController extends Notifier<TrainingMvpState> {
     final bool activeVersionIsSkill = activeVersionId != null &&
         planState.history.any(
           (version) =>
-              version.id == activeVersionId && version.isSkillGenerated,
+              version.id == activeVersionId && version.requiresClearance,
         );
     if (!activeVersionIsSkill) return true;
 
@@ -3405,7 +3657,7 @@ class TrainingMvpController extends Notifier<TrainingMvpState> {
     final List<TrainingPlan> fallbackPlans = _applyPlanAdjustments(
       <TrainingPlan>[planState.fallbackGeneration.plan],
       state.planAdjustments,
-    );
+     currentVersionId: ref.read(fourWeekPlanControllerProvider).activeVersionId,);
     final WorkoutDay fallbackWorkout = fallbackPlans.first.workoutDays.first;
     final int remainingSeconds = buildWorkoutPlayerSteps(
       fallbackWorkout,
@@ -3431,11 +3683,12 @@ class TrainingMvpController extends Notifier<TrainingMvpState> {
     _requestScreenAwake(false);
   }
 
-  void saveTodayLog({
+  Future<void> saveTodayLog({
     required bool completed,
     required int rpe,
     String? userNote,
-  }) {
+  }) async {
+    ref.read(featureAccessProvider).requireEnabled('feature.training_log');
     final DateTime now = DateTime.now();
     final TrainingLog log = TrainingLog(
       id: 'log-${now.millisecondsSinceEpoch}',
@@ -3455,7 +3708,11 @@ class TrainingMvpController extends Notifier<TrainingMvpState> {
       kind: TrainingLogKind.manual,
     );
     final List<TrainingLog> logs =
-        ref.read(trainingLogControllerProvider.notifier).save(log);
+        await readFeatureController<TrainingLogController>(
+            ref,
+            'feature.training_log',
+            'controller',
+            () => ref.read(trainingLogControllerProvider.notifier)).save(log);
     state = state.copyWith(
       logs: logs,
       coachAdvices: _aiTrainingService.buildMockCoachAdvice(
@@ -3470,7 +3727,7 @@ class TrainingMvpController extends Notifier<TrainingMvpState> {
     _syncGrowthForTrainingLog(log, workout: state.todayWorkout);
   }
 
-  void saveWorkoutSessionReview({
+  Future<void> saveWorkoutSessionReview({
     required int actualDurationMinutes,
     required int completionPercentage,
     required int rpe,
@@ -3484,7 +3741,10 @@ class TrainingMvpController extends Notifier<TrainingMvpState> {
     bool abortedByUser = false,
     SessionFeel? sessionFeel,
     int? focusQuality,
-  }) {
+  }) async {
+    final FeatureOperation operation = ref
+        .read(featureAccessProvider)
+        .beginOperation('feature.workout_player');
     final DateTime now = DateTime.now();
     final int safeDuration = actualDurationMinutes.clamp(5, 360).toInt();
     final int safeCompletion = completionPercentage.clamp(0, 100).toInt();
@@ -3571,7 +3831,12 @@ class TrainingMvpController extends Notifier<TrainingMvpState> {
       focusQuality: focusQuality?.clamp(1, 5).toInt(),
     );
     final List<TrainingLog> logs =
-        ref.read(trainingLogControllerProvider.notifier).save(log);
+        await readFeatureController<TrainingLogController>(
+                ref,
+                'feature.training_log',
+                'controller',
+                () => ref.read(trainingLogControllerProvider.notifier))
+            .save(log, sourceOperation: operation);
     final CoachFeedback feedback =
         const CoachFeedbackPolicy().buildTrainingReceipt(
       current: log,
@@ -3593,10 +3858,14 @@ class TrainingMvpController extends Notifier<TrainingMvpState> {
       log,
       workout: state.activeWorkoutPlayerWorkout,
     );
-    unawaited(ref.read(petControllerProvider.notifier).refreshToday());
+    if (ref.read(featureAccessProvider).isWritable('feature.pet')) {
+      unawaited(ref.read(petControllerProvider.notifier).refreshToday());
+    }
   }
 
-  TrainingLog saveTrainingRecord(TrainingRecordSaveRequest request) {
+  Future<TrainingLog> saveTrainingRecord(
+      TrainingRecordSaveRequest request) async {
+    ref.read(featureAccessProvider).requireEnabled('feature.training_log');
     request.validate();
     final DateTime createdAt = DateTime.now();
     final String dayKey =
@@ -3656,7 +3925,11 @@ class TrainingMvpController extends Notifier<TrainingMvpState> {
       deviceWorkoutId: deviceWorkoutId.isEmpty ? null : deviceWorkoutId,
     );
     final List<TrainingLog> logs =
-        ref.read(trainingLogControllerProvider.notifier).save(log);
+        await readFeatureController<TrainingLogController>(
+            ref,
+            'feature.training_log',
+            'controller',
+            () => ref.read(trainingLogControllerProvider.notifier)).save(log);
     final WorkoutDay relatedWorkout =
         state.findWorkoutDay(request.workoutDayId) ?? state.todayWorkout;
     final String workoutLabel =
@@ -3681,13 +3954,16 @@ class TrainingMvpController extends Notifier<TrainingMvpState> {
     );
     _syncAchievementRecordsForCurrentState();
     _syncGrowthForTrainingLog(log, workout: relatedWorkout);
-    unawaited(ref.read(petControllerProvider.notifier).refreshToday());
+    if (ref.read(featureAccessProvider).isWritable('feature.pet')) {
+      unawaited(ref.read(petControllerProvider.notifier).refreshToday());
+    }
     return log;
   }
 
-  void savePsychologyWeeklyReport({
+  Future<void> savePsychologyWeeklyReport({
     required WeeklyPsychCheckIn psychCheckIn,
-  }) {
+  }) async {
+    ref.read(featureAccessProvider).requireEnabled('feature.weekly_report');
     final WeeklyReport report = WeeklyReportService().buildWeeklyReport(
       profile: state.profile,
       todayWorkout: state.todayWorkout,
@@ -3707,17 +3983,14 @@ class TrainingMvpController extends Notifier<TrainingMvpState> {
           )
           .toList(growable: false),
     );
-    _weeklyReportRepository.saveReport(report);
-    state = state.copyWith(
-      savedWeeklyReports: _weeklyReportRepository.listReports(),
-      weeklyReportSaveStatusMessage: '周报状态已保存在本地，可继续选择下周方向。',
-    );
+    await _persistWeeklyReport(report, '周报状态已保存在本地，可继续选择下周方向。');
   }
 
-  void selectWeeklyReportOption({
+  Future<void> selectWeeklyReportOption({
     required String reportId,
     required String optionId,
-  }) {
+  }) async {
+    ref.read(featureAccessProvider).requireEnabled('feature.weekly_report');
     WeeklyReport? target;
     for (final WeeklyReport report in state.savedWeeklyReports) {
       if (report.id == reportId) {
@@ -3727,24 +4000,68 @@ class TrainingMvpController extends Notifier<TrainingMvpState> {
     }
     if (target == null ||
         !target.options.any((WeeklyReportOption item) => item.id == optionId)) {
-      state = state.copyWith(
-        weeklyReportSaveStatusMessage: '下周方向保存失败：选项不存在。',
-      );
-      return;
+      throw StateError('下周方向保存失败：选项不存在，请重新打开报告。');
     }
-    _weeklyReportRepository.saveReport(
-      target.copyWith(selectedOptionId: optionId),
-    );
-    state = state.copyWith(
-      savedWeeklyReports: _weeklyReportRepository.listReports(),
-      weeklyReportSaveStatusMessage: '已保存你选择的下周方向。',
-    );
+    await _persistWeeklyReport(
+        target.copyWith(selectedOptionId: optionId), '已保存你选择的下周方向。');
+  }
+
+  Future<void> _persistWeeklyReport(WeeklyReport report, String message) async {
+    if (_weeklyReportSaving) throw StateError('周报正在保存，请勿重复操作。');
+    if (_weeklyReportRecoveryRequired) {
+      throw StateError('周报存储仍需恢复，请重启后检查报告再重试。');
+    }
+    final ownerRef = ref;
+    final operation = ownerRef
+        .read(featureAccessProvider)
+        .beginOperation('feature.weekly_report');
+    _weeklyReportSaving = true;
+    try {
+      await operation.commit(() async {
+        final storage = ownerRef.read(localStorageServiceProvider);
+        const key = PersistedWeeklyReportRepository.storageKey;
+        final previous = storage.readJson(key);
+        // 从当前账号的文档构造候选；不提前发布仓储内存或界面成功状态。
+        final repository = PersistedWeeklyReportRepository(storage);
+        state = state.copyWith(weeklyReportSaveStatusMessage: '正在保存周报，请稍候…');
+        try {
+          repository.saveReport(report);
+          await storage.flush();
+        } catch (_) {
+          String failure = '周报保存失败，原报告已保留，请重试。';
+          try {
+            if (previous == null) {
+              storage.remove(key);
+            } else {
+              storage.saveJson(key, previous);
+            }
+            await storage.flush();
+          } catch (_) {
+            _weeklyReportRecoveryRequired = true;
+            failure = '周报保存失败，原报告恢复未完成；磁盘状态无法确认，请重启后检查。';
+          }
+          if (ownerRef.mounted) {
+            state = state.copyWith(weeklyReportSaveStatusMessage: failure);
+          }
+          throw StateError(failure);
+        }
+        // 保存与恢复均在提交保护内；销毁后的迟到完成不再更新页面。
+        if (!ownerRef.mounted) return;
+        state = state.copyWith(
+          savedWeeklyReports: repository.listReports(),
+          weeklyReportSaveStatusMessage: message,
+        );
+      });
+    } finally {
+      _weeklyReportSaving = false;
+    }
   }
 
   void _syncGrowthForTrainingLog(
     TrainingLog log, {
     required WorkoutDay workout,
   }) {
+    if (!ref.read(featureAccessProvider).isWritable('feature.growth')) return;
     PainLog? painLog;
     for (final PainLog item in state.painLogs) {
       if (_isSameDate(item.date, log.date)) {
@@ -3753,23 +4070,35 @@ class TrainingMvpController extends Notifier<TrainingMvpState> {
       }
     }
     unawaited(
-      ref.read(growthEvidenceControllerProvider.notifier).syncTrainingLog(
+      ref
+          .read(growthEvidenceControllerProvider.notifier)
+          .syncTrainingLog(
             profile: state.profile,
             log: log,
             workout: workout,
             painLog: painLog,
-          ),
+          )
+          .onError((Object _, StackTrace __) {
+        // 训练记录已保存；成长证据是可选派生，失败不得形成未处理异步错误。
+      }),
     );
   }
 
-  List<TrainingLog> _saveWorkoutPlayerLog({
+  Future<List<TrainingLog>?> _saveWorkoutPlayerLog({
     required String event,
     required bool completed,
     required int rpe,
-  }) {
+  }) async {
+    final FeatureOperation operation = ref
+        .read(featureAccessProvider)
+        .beginOperation('feature.workout_player');
     final DateTime now = DateTime.now();
+    final String sessionId = _workoutPlayerSessionId ??
+        'player-session-${now.microsecondsSinceEpoch}';
     final TrainingLog log = TrainingLog(
-      id: 'player-log-${now.millisecondsSinceEpoch}',
+      // 同一场跟练的同一步复用日志标识；落盘失败后重试会覆盖暂存记录，
+      // 不会因新的时间戳制造重复日志。
+      id: 'player-log-$sessionId-${state.workoutPlayerSafeIndex}',
       workoutDayId: state.activeWorkoutPlayerWorkout.id,
       planItemId: state.scheduledTodayWorkout?.workoutDayId ==
               state.activeWorkoutPlayerWorkout.id
@@ -3787,9 +4116,26 @@ class TrainingMvpController extends Notifier<TrainingMvpState> {
       createdAt: now,
       kind: TrainingLogKind.playerStep,
     );
-    return ref.read(trainingLogControllerProvider.notifier).save(log);
+    try {
+      return await readFeatureController<TrainingLogController>(
+              ref,
+              'feature.training_log',
+              'controller',
+              () => ref.read(trainingLogControllerProvider.notifier))
+          .save(log, sourceOperation: operation);
+    } on Object catch (error) {
+      state = state.copyWith(
+        workoutPlayerTimerRunning: false,
+        workoutPlayerStatusMessage: '训练记录保存失败：$error，请重试当前步骤。',
+      );
+      return null;
+    }
   }
 }
+
+@visibleForTesting
+bool isFeatureOperationInvalidation(Object error) =>
+    error is FeatureOperationInvalidation;
 
 double _average(Iterable<double> values) {
   if (values.isEmpty) {
@@ -3824,7 +4170,7 @@ String _formatBytes(int bytes) {
 
 List<TrainingPlan> _applyPlanAdjustments(
   List<TrainingPlan> plans,
-  List<PlanAdjustment> adjustments,
+  List<PlanAdjustment> adjustments, {String? currentVersionId}
 ) {
   final Map<String, PlanAdjustment> latestAdjustments =
       <String, PlanAdjustment>{};
@@ -3837,6 +4183,15 @@ List<TrainingPlan> _applyPlanAdjustments(
         final PlanAdjustment? adjustment = latestAdjustments[workout.id];
         if (adjustment == null || !adjustment.isActive) {
           return workout;
+        }
+        if (adjustment.workoutSnapshot != null) {
+          final fingerprint = const PlanContextDigestService().buildCanonicalDigest(plan.toJson());
+          if (adjustment.baseVersionId != currentVersionId ||
+              adjustment.basePlanFingerprint != fingerprint ||
+              adjustment.workoutSnapshot!.id != workout.id) {
+            return workout;
+          }
+          return adjustment.workoutSnapshot!;
         }
         return workout.copyWith(
           estimatedMinutes: adjustment.adjustedEstimatedMinutes,

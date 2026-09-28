@@ -1,3 +1,5 @@
+import '../../plugins/application/plugin_runtime_provider.dart';
+import '../../plugins/core/plugin_core.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -8,12 +10,16 @@ import '../../core/design_system/trainmate_primitives.dart';
 import '../../core/theme/trainmate_visual_mode.dart';
 import '../../core/widgets/emp_system.dart';
 import '../../core/widgets/flow_mascot.dart';
+import '../../core/widgets/trainmate_action_character.dart';
 import '../../core/widgets/trainmate_showcase_widgets.dart';
 import '../../core/widgets/trainflow_widgets.dart';
 import '../../data/local/trainmate_structured_database_gateway.dart';
 import '../../data/models/daily_adjustment.dart';
 import '../../data/models/body_metric.dart';
+import '../../data/models/daily_activity_summary.dart';
+import '../../data/models/daily_check_in_record.dart';
 import '../../data/models/growth_evidence.dart';
+import '../../data/models/health_snapshot.dart';
 import '../../data/models/pain_log.dart';
 import '../../data/models/training_log.dart';
 import '../../data/models/training_metrics.dart';
@@ -26,11 +32,15 @@ import '../growth/application/local_training_fact_sync.dart';
 import '../growth/application/training_metrics_projection_service.dart';
 import '../growth/application/training_metrics_provider.dart';
 import '../growth/ability_progress_overview.dart';
+import '../data_center/application/body_metric_controller.dart';
+import '../pet/application/daily_activity_sync_controller.dart';
+import '../profile/application/health_sync_controller.dart';
 import '../profile/application/training_schedule_controller.dart';
 import '../rhythm/application/body_rhythm_controller.dart';
 import '../profile/application/user_profile_controller.dart';
 import '../training_log/presentation/training_record_editor.dart';
 import 'training_mvp_controller.dart';
+import 'widgets/today_health_overview.dart';
 import 'widgets/today_showcase_header.dart';
 
 FlowMascotSpec selectTodayMascotSpec({
@@ -246,110 +256,195 @@ class _TodayTrainingPageState extends ConsumerState<TodayTrainingPage> {
     );
     final AsyncValue<BodyRhythmState> rhythmAsync =
         ref.watch(bodyRhythmControllerProvider);
+    final AsyncValue<DailyActivitySyncState> dailyActivityAsync =
+        ref.watch(dailyActivitySyncControllerProvider);
+    final AsyncValue<HealthSyncState> healthSyncAsync =
+        ref.watch(healthSyncControllerProvider);
+    final CheckInStreakState checkInStreak = ref.watch(
+      bodyMetricControllerProvider.select(
+        (BodyMetricState value) => value.checkInStreak,
+      ),
+    );
 
-    final BodyMetric? latestMetric = state.latestBodyMetric;
+    final BodyMetric? currentMetric = state.currentDecisionBodyMetric;
+    // 成长任务完成不等于课程完成；只读取今日同一课程的实际会话记录。
+    final workoutLogs = state.logs
+        .where((log) =>
+            log.isSessionRecord &&
+            log.workoutDayId == todayWorkout.id &&
+            DateUtils.isSameDay(log.date, now))
+        .toList()
+      ..sort((a, b) => b.createdAt.compareTo(a.createdAt));
+    final double workoutCompletionRate = workoutLogs.isEmpty
+        ? 0
+        : workoutLogs.first.normalizedCompletionPercentage / 100;
     final String completionLabel =
-        '${(growthDashboard.completionRate.clamp(0, 1) * 100).round()}%';
+        '${(workoutCompletionRate * 100).round()}%';
+    final DailyActivitySyncState? dailyActivityState =
+        dailyActivityAsync.asData?.value;
+    final HealthSyncState? healthSyncState = healthSyncAsync.asData?.value;
+    final String activityStatusMessage;
+    if (dailyActivityAsync.isLoading) {
+      activityStatusMessage = '正在读取每日活动摘要…';
+    } else if (dailyActivityAsync.hasError) {
+      activityStatusMessage = '每日活动摘要读取失败，请稍后重试。';
+    } else {
+      activityStatusMessage =
+          dailyActivityState?.statusMessage ?? '尚未同步每日活动摘要。';
+    }
+    final TodayHealthOverviewData healthOverviewData =
+        TodayHealthOverviewData.fromSources(
+      activitySummaries:
+          dailyActivityState?.summaries ?? const <DailyActivitySummary>[],
+      healthSnapshots: healthSyncState?.snapshots ?? const <HealthSnapshot>[],
+      latestBodyMetric: currentMetric,
+      checkInStreak: checkInStreak,
+      activityStatusMessage: activityStatusMessage,
+      now: now,
+    );
 
+    final runtime = ref.watch(pluginRuntimeProvider);
+    final cards = runtime.contributions
+        .whereType<CardContribution>()
+        .map((c) => c.id)
+        .toSet();
+    bool available(String id) =>
+        runtime.isWritable(id) && cards.contains('$id.home');
     return TrainMateImmersiveHubPage(
-      mode: TrainMateVisualMode.darkTraining,
+      mode: TrainMateVisualMode.referenceShowcase,
+      showcaseOverviewChildCount: 2,
       hero: TodayShowcaseHeader(
         athleteName: state.profile.name,
         growthLabel: growthDashboard.level.label,
         growthXp: growthDashboard.level.currentXp,
         nextLevelXp: growthDashboard.level.nextLevelXp,
-        completionRate: growthDashboard.completionRate,
+        completionRate: workoutCompletionRate,
+        readinessScore: state.readinessScore,
         weeklyConsistencyLabel: l1Projection.weeklyConsistencyLabel,
         workout: todayWorkout,
-        onOpenCoach: () => context.go(AppRoutes.aiCenter),
-        onStartWorkout: _startWorkoutFromShowcase,
+        onOpenCoach: available('feature.ai_center')
+            ? () => context.go(AppRoutes.aiCenter)
+            : null,
+        onStartWorkout: available('feature.workout_player')
+            ? _startWorkoutFromShowcase
+            : null,
       ),
+      storyChildren: <Widget>[
+        if (available('feature.workout_player'))
+          TrainMateShowcaseActionCard(
+            title: '继续今日训练',
+            subtitle:
+                '${todayWorkout.trainingType.label} · $completionLabel 完成',
+            icon: Icons.play_arrow_rounded,
+            color: TrainFlowTokens.yellow,
+            artwork: const TrainMateActionCharacter(
+              action: TrainMateAction.running,
+              size: 88,
+              backgroundColor: AppColors.transparent,
+              style: TrainMateCharacterStyle.flatShowcase,
+              semanticLabel: 'CoachMate 正在陪伴今日训练',
+            ),
+            onTap: _startWorkoutFromShowcase,
+          ),
+      ],
       children: [
-        EmpStatPanel(
-          value: '${state.readinessScore}',
-          unit: '今日准备度',
-          secondary: state.readinessLabel,
-          progress: (state.readinessScore / 100).clamp(0, 1),
-          color: TrainFlowTokens.accent,
-          foreground: TrainFlowTokens.onAccent,
-        ),
-        const SizedBox(height: 20),
         TrainMateStatusStrip(
           semanticLabel: '今日最新状态，点击进入签到',
-          onTap: () => context.push(AppRoutes.dailyCheckIn),
+          onTap: available('feature.daily_check_in')
+              ? () => context.push(AppRoutes.dailyCheckIn)
+              : null,
           metrics: <TrainMateStatusMetric>[
             TrainMateStatusMetric(
               label: '睡眠',
-              value: latestMetric == null
+              value: !(currentMetric?.hasValue('sleepHours') ?? false)
                   ? '待记录'
-                  : '${latestMetric.sleepHours.toStringAsFixed(1)}h',
+                  : '${currentMetric!.sleepHours.toStringAsFixed(1)}h',
               icon: Icons.bedtime_outlined,
               color: TrainFlowTokens.darkTrainingRaised,
             ),
             TrainMateStatusMetric(
-              label: '准备度',
-              value: '${state.readinessScore}',
+              label: '准备度估算',
+              value: state.readinessValueLabel,
               icon: Icons.bolt_outlined,
               color: AppColors.secondaryLight,
             ),
             TrainMateStatusMetric(
               label: '疲劳',
-              value: latestMetric == null
+              value: !(currentMetric?.hasValue('fatigueLevel') ?? false)
                   ? '待记录'
-                  : '${latestMetric.fatigueLevel}/10',
+                  : '${currentMetric!.fatigueLevel}/10',
               icon: Icons.battery_alert_outlined,
               color: AppColors.background,
             ),
             TrainMateStatusMetric(
               label: '酸痛',
-              value: latestMetric == null
+              value: !(currentMetric?.hasValue('sorenessLevel') ?? false)
                   ? '待记录'
-                  : '${latestMetric.sorenessLevel}/10',
+                  : '${currentMetric!.sorenessLevel}/10',
               icon: Icons.accessibility_new_outlined,
               color: TrainFlowTokens.darkTrainingRaised,
             ),
             TrainMateStatusMetric(
-              label: '心情',
-              value: latestMetric?.moodLabel.isNotEmpty == true
-                  ? latestMetric!.moodLabel
+              label: '记录标签',
+              value: currentMetric?.moodLabel.isNotEmpty == true
+                  ? currentMetric!.moodLabel
                   : '待记录',
               icon: Icons.sentiment_satisfied_alt_outlined,
               color: AppColors.secondaryLight,
             ),
           ],
         ),
+        const SizedBox(height: 12),
+        TodayHealthOverview(
+          data: healthOverviewData,
+          now: now,
+          darkCanvas: true,
+          onOpenActivitySettings: available('feature.pet')
+              ? () => context.push(AppRoutes.petData)
+              : null,
+          onOpenCheckIn: available('feature.daily_check_in')
+              ? () => context.push(AppRoutes.dailyCheckIn)
+              : null,
+        ),
+        const SizedBox(height: 20),
+        EmpStatPanel(
+          value: state.readinessValueLabel,
+          unit: '今日准备度',
+          secondary: state.readinessLabel,
+          progress: ((state.readinessScore ?? 0) / 100).clamp(0, 1),
+          color: TrainFlowTokens.accent,
+          foreground: TrainFlowTokens.onAccent,
+        ),
         const SizedBox(height: 20),
         EmpIllustrationCard(
           title: '今日成就',
           subtitle:
-              '已完成 ${growthDashboard.completedTaskCount}/${growthDashboard.totalTaskCount} 项 · 完成度 ${(growthDashboard.completionRate * 100).round()}%',
+              '已完成 ${growthDashboard.completedTaskCount}/${growthDashboard.totalTaskCount} 项 · 任务完成度 ${(growthDashboard.completionRate * 100).round()}%',
           bg: TrainFlowTokens.yellow,
           actionLabel: '去完成',
-          onAction: _startWorkoutFromShowcase,
+          onAction: available('feature.workout_player')
+              ? _startWorkoutFromShowcase
+              : null,
         ),
         const SizedBox(height: 20),
         TrainMateOverviewGrid(
           first: _TodayOverviewCard(
             icon: Icons.favorite_outline,
             label: '训练准备度',
-            value: '${state.readinessScore}',
+            value: state.readinessValueLabel,
             detail: state.readinessLabel,
           ),
           second: _TodayOverviewCard(
             icon: Icons.calendar_today_outlined,
             label: '本周一致性',
             value: l1Projection.weeklyConsistencyLabel,
-            detail: '$completionLabel 完成',
+            detail: '本次训练 $completionLabel 完成',
           ),
           trend: _TodayOverviewCard(
             icon: Icons.insights_outlined,
             label: '恢复与训练记录',
-            value: latestMetric == null
-                ? '暂无身体数据'
-                : 'HRV ${latestMetric.hrvMs} · 睡眠 ${latestMetric.sleepHours.toStringAsFixed(1)}h',
-            detail: latestMetric == null
-                ? '完成签到后会在这里显示最新真实状态。'
-                : '最近状态来自 ${latestMetric.source.label} · ${latestMetric.measuredDateLabel}',
+            value: '准备度 ${state.readinessValueLabel}',
+            detail: state.readinessEvidence.explanation,
             wide: true,
           ),
         ),
@@ -369,15 +464,18 @@ class _TodayTrainingPageState extends ConsumerState<TodayTrainingPage> {
           rhythm: rhythmAsync,
         ),
         const SectionTitle(title: '今日状态与签到'),
-        const _DailyCheckInPreviewCard(),
+        if (available('feature.daily_check_in'))
+          const _DailyCheckInPreviewCard(),
         if (state.latestPainLog != null)
           _PainRiskCard(painLog: state.latestPainLog!),
         const SectionTitle(title: '今日训练内容'),
         _WorkerProfileStrategyCard(state: state),
-        _DailyAdjustmentPreviewCard(state: state),
+        if (available('feature.daily_adjustment'))
+          _DailyAdjustmentPreviewCard(state: state),
         _WorkoutSummaryCard(workout: todayWorkout),
         const SectionTitle(title: '训练完成记录'),
-        _TrainingRecordEntryCard(workout: todayWorkout),
+        if (available('feature.training_log'))
+          _TrainingRecordEntryCard(workout: todayWorkout),
         _RecentTrainingRecordsCard(logs: state.logs),
         const SectionTitle(title: 'AI 教练建议（本地规则）'),
         _CoachAdviceCard(advice: state.coachAdvices),
@@ -820,7 +918,8 @@ class _DailyCheckInPreviewCard extends StatelessWidget {
         children: [
           Row(
             children: [
-              const Icon(Icons.fact_check_outlined, color: TrainFlowTokens.accent),
+              const Icon(Icons.fact_check_outlined,
+                  color: TrainFlowTokens.accent),
               const SizedBox(width: 8),
               Expanded(
                 child: Text(
@@ -1086,7 +1185,11 @@ class _WorkoutSummaryCard extends ConsumerWidget {
             key: const ValueKey<String>('today-workout-start-button'),
             label: '开始跟练 · 约 ${workout.estimatedMinutes} 分钟',
             icon: Icons.play_arrow,
-            onPressed: () => _startPlayer(context, ref),
+            onPressed: ref
+                    .watch(featureAccessProvider)
+                    .isWritable('feature.workout_player')
+                ? () => _startPlayer(context, ref)
+                : null,
             expand: true,
           ),
           const SizedBox(height: 12),

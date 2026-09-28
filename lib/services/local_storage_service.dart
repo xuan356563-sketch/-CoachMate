@@ -33,6 +33,13 @@ abstract class LocalStorageService {
   }
 }
 
+/// 仅供需要保留损坏原文的恢复流程使用。
+abstract interface class RawJsonDocumentStorage {
+  String? readRawJsonDocument(String key);
+
+  void saveRawJsonDocument(String key, String value);
+}
+
 class InMemoryLocalStorageService implements LocalStorageService {
   final Map<String, Map<String, dynamic>> _store = {};
 
@@ -112,7 +119,8 @@ class ReadOnlyRecoveryLocalStorageService implements LocalStorageService {
   }
 }
 
-class SharedPreferencesLocalStorageService implements LocalStorageService {
+class SharedPreferencesLocalStorageService
+    implements LocalStorageService, RawJsonDocumentStorage {
   final SharedPreferencesWithCache _preferences;
 
   SharedPreferencesLocalStorageService(this._preferences);
@@ -135,6 +143,9 @@ class SharedPreferencesLocalStorageService implements LocalStorageService {
     'trainflow.reminder_settings.v1',
     'trainflow.daily_context.v1',
     'trainflow.motion_analysis_results.v1',
+    'trainflow.running_form_reports.v1',
+    'trainflow.assessment_records.v1',
+    'trainflow.local_plan_draft.v1',
     'trainflow.meal_preference.v1',
     'trainflow.imported_workouts.v1',
     'trainflow.weekly_report_exports.v1',
@@ -156,6 +167,7 @@ class SharedPreferencesLocalStorageService implements LocalStorageService {
     'trainflow.ai_chat.v1',
     'trainflow.coach_cloud_consent.v1',
     'trainflow.growth_evidence.v2',
+    'trainflow.plugin_settings.v1',
     'trainflow.sqlite_cutover.v1',
   };
 
@@ -181,6 +193,16 @@ class SharedPreferencesLocalStorageService implements LocalStorageService {
       return null;
     }
     return decoded;
+  }
+
+  @override
+  String? readRawJsonDocument(String key) => _preferences.getString(key);
+
+  @override
+  void saveRawJsonDocument(String key, String value) {
+    _enqueueWrite(() async {
+      await _preferences.setString(key, value);
+    });
   }
 
   @override

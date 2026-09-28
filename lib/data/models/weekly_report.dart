@@ -47,6 +47,8 @@ class WeeklyReport {
   final String? selectedOptionId;
   final WeeklyPsychCheckIn? psychCheckIn;
   final PsychRiskLevel psychRiskLevel;
+  final bool? recoveryEvidenceAvailable;
+  String get psychRiskLabel => recoveryEvidenceAvailable == true ? psychRiskLevel.label : '无法评估';
   final List<TrainingDimensionExposure> dimensionExposure;
 
   const WeeklyReport({
@@ -68,12 +70,14 @@ class WeeklyReport {
     this.selectedOptionId,
     this.psychCheckIn,
     this.psychRiskLevel = PsychRiskLevel.normal,
+    this.recoveryEvidenceAvailable,
     this.dimensionExposure = const <TrainingDimensionExposure>[],
   });
 
   factory WeeklyReport.fromJson(Map<String, dynamic> json) {
     return WeeklyReport(
       id: json['id'] as String? ?? '',
+      recoveryEvidenceAvailable: json['recoveryEvidenceAvailable'] as bool?,
       weekLabel: json['weekLabel'] as String? ?? '',
       generatedAt: DateTime.tryParse(json['generatedAt'] as String? ?? '') ??
           DateTime.fromMillisecondsSinceEpoch(0),
@@ -134,6 +138,7 @@ class WeeklyReport {
       'reflectionQuestion': reflectionQuestion,
       'psychCheckIn': psychCheckIn?.toJson(),
       'psychRiskLevel': psychRiskLevel.jsonValue,
+      if (recoveryEvidenceAvailable != null) 'recoveryEvidenceAvailable': recoveryEvidenceAvailable,
       'dimensionExposure': dimensionExposure
           .map((TrainingDimensionExposure item) => item.toJson())
           .toList(growable: false),
@@ -173,6 +178,7 @@ class WeeklyReport {
           ? this.psychCheckIn
           : psychCheckIn as WeeklyPsychCheckIn?,
       psychRiskLevel: psychRiskLevel,
+      recoveryEvidenceAvailable: recoveryEvidenceAvailable,
       dimensionExposure: dimensionExposure,
     );
   }
@@ -184,7 +190,7 @@ class WeeklyReport {
       ..writeln('- 周期：$weekLabel')
       ..writeln('- 生成日期：$generatedDateLabel')
       ..writeln(
-          '- 完成率：$completedWorkouts/$plannedWorkouts（$completionRateLabel）')
+          '- 完成率：$completionRateLabel（计划目标 $plannedWorkouts 次，按记录完成比例折算）')
       ..writeln('- 负荷趋势：$loadTrendLabel')
       ..writeln('- 决策回顾：$decisionReview')
       ..writeln('- 恢复建议：$recoverySummary')
@@ -204,7 +210,7 @@ class WeeklyReport {
     } else {
       for (final TrainingDimensionExposure exposure in dimensionExposure) {
         buffer.writeln(
-          '- ${exposure.dimension.label}：${exposure.completedSessions}/${exposure.plannedSessions} 次',
+          '- ${exposure.dimension.label}：实际记录 ${exposure.completedSessions} 次，计划 ${exposure.plannedSessions} 次',
         );
       }
     }

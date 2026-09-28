@@ -4,6 +4,7 @@ import 'package:flutter_timezone/flutter_timezone.dart';
 import 'package:timezone/data/latest_10y.dart' as timezone_data;
 import 'package:timezone/timezone.dart' as timezone;
 
+import '../core/constants/app_brand.dart';
 import '../data/models/training_reminder.dart';
 import '../data/models/training_schedule.dart';
 
@@ -13,6 +14,7 @@ const int _companionNotificationIdStart = 411000000;
 const int _companionNotificationIdEnd = 411999999;
 const int _maximumScheduledNotifications = 32;
 const int _maximumScheduledCompanionNotifications = 2;
+const String trainingNotificationBody = '打开${AppBrand.shortName}查看今日安排。';
 
 /// 单条本地训练通知，不包含健康原因或用户自由文本。
 class TrainingNotificationRequest {
@@ -54,33 +56,69 @@ class TrainingNotificationSyncResult {
   });
 }
 
+/// 权限和时区查询可并发，平台取消、安排和迟到清理必须按顺序完成。
+class _NotificationMutations {
+  int generation = 0;
+  Future<void> _tail = Future<void>.value();
+
+  Future<T> run<T>(Future<T> Function() mutate) {
+    final Future<T> result = _tail.then((_) => mutate());
+    // 单次失败仍返回调用者，但不阻断之后的停用清理或重开。
+    _tail = result.then<void>((_) {}, onError: (Object _, StackTrace __) {});
+    return result;
+  }
+}
+
 /// 只负责计算和替换训练提醒；异常不会阻断训练主流程。
 class TrainingNotificationScheduler {
   final TrainingNotificationGateway _gateway;
 
-  const TrainingNotificationScheduler(this._gateway);
+  TrainingNotificationScheduler(this._gateway);
+
+  final _NotificationMutations _mutations = _NotificationMutations();
+
+  Future<void> cancel() {
+    _mutations.generation += 1;
+    return _mutations.run(_gateway.cancelTrainingNotifications);
+  }
 
   Future<TrainingNotificationSyncResult> synchronize({
     required TrainingReminderSettings settings,
     required List<ScheduledWorkout> workouts,
     bool requestPermission = false,
     DateTime? now,
+    bool Function()? isActive,
   }) async {
+    final int generation = ++_mutations.generation;
+    bool active() =>
+        generation == _mutations.generation && (isActive?.call() ?? true);
+    Future<void> cancelIfCurrent() => _mutations.run(() async {
+          if (generation == _mutations.generation) {
+            await _gateway.cancelTrainingNotifications();
+          }
+        });
+    Future<TrainingNotificationSyncResult> stop() async {
+      await cancelIfCurrent();
+      return const TrainingNotificationSyncResult(
+        status: TrainingNotificationSyncStatus.disabled,
+      );
+    }
+
     try {
-      if (!settings.enabled) {
-        await _gateway.cancelTrainingNotifications();
-        return const TrainingNotificationSyncResult(
-          status: TrainingNotificationSyncStatus.disabled,
-        );
-      }
-      if (requestPermission && !await _gateway.requestPermission()) {
-        await _gateway.cancelTrainingNotifications();
-        return const TrainingNotificationSyncResult(
-          status: TrainingNotificationSyncStatus.permissionDenied,
-        );
+      if (!settings.enabled || !active()) return await stop();
+      if (requestPermission) {
+        final bool granted = await _gateway.requestPermission();
+        if (!active()) return await stop();
+        if (!granted) {
+          await cancelIfCurrent();
+          return const TrainingNotificationSyncResult(
+            status: TrainingNotificationSyncStatus.permissionDenied,
+          );
+        }
       }
 
       final timezone.Location location = await _gateway.loadLocalLocation();
+      if (!active()) return await stop();
       final timezone.TZDateTime localNow = now == null
           ? timezone.TZDateTime.now(location)
           : timezone.TZDateTime.from(now, location);
@@ -90,14 +128,35 @@ class TrainingNotificationScheduler {
         location: location,
         now: localNow,
       );
-      await _gateway.cancelTrainingNotifications();
-      for (final TrainingNotificationRequest request in requests) {
-        await _gateway.schedule(request);
-      }
-      return TrainingNotificationSyncResult(
-        status: TrainingNotificationSyncStatus.scheduled,
-        scheduledCount: requests.length,
-      );
+      return await _mutations.run(() async {
+        if (!active()) {
+          if (generation == _mutations.generation) {
+            await _gateway.cancelTrainingNotifications();
+          }
+          return const TrainingNotificationSyncResult(
+            status: TrainingNotificationSyncStatus.disabled,
+          );
+        }
+        try {
+          await _gateway.cancelTrainingNotifications();
+          for (final TrainingNotificationRequest request in requests) {
+            if (!active()) break;
+            await _gateway.schedule(request);
+          }
+          if (!active()) {
+            return const TrainingNotificationSyncResult(
+              status: TrainingNotificationSyncStatus.disabled,
+            );
+          }
+          return TrainingNotificationSyncResult(
+            status: TrainingNotificationSyncStatus.scheduled,
+            scheduledCount: requests.length,
+          );
+        } finally {
+          // 新代变更尚未进入队列；此处可安全清除旧 schedule 的迟到产物。
+          if (!active()) await _gateway.cancelTrainingNotifications();
+        }
+      });
     } catch (_) {
       return const TrainingNotificationSyncResult(
         status: TrainingNotificationSyncStatus.unavailable,
@@ -214,30 +273,53 @@ class CompanionNotificationSyncResult {
 
 /// 仅做本地通知的取消后重排；不读取或写入训练、健康与云端数据。
 class CompanionNotificationScheduler {
-  const CompanionNotificationScheduler(this._gateway);
+  CompanionNotificationScheduler(this._gateway);
+
+  final _NotificationMutations _mutations = _NotificationMutations();
 
   final CompanionNotificationGateway _gateway;
+
+  Future<void> cancel() {
+    _mutations.generation += 1;
+    return _mutations.run(_gateway.cancelCompanionNotifications);
+  }
 
   Future<CompanionNotificationSyncResult> synchronize({
     required bool enabled,
     required Iterable<CompanionNotificationRequest> requests,
     bool requestPermission = false,
     DateTime? now,
+    bool Function()? isActive,
   }) async {
+    final int generation = ++_mutations.generation;
+    bool active() =>
+        generation == _mutations.generation && (isActive?.call() ?? true);
+    Future<void> cancelIfCurrent() => _mutations.run(() async {
+          if (generation == _mutations.generation) {
+            await _gateway.cancelCompanionNotifications();
+          }
+        });
+    Future<CompanionNotificationSyncResult> stop() async {
+      await cancelIfCurrent();
+      return const CompanionNotificationSyncResult(
+        status: CompanionNotificationSyncStatus.disabled,
+      );
+    }
+
     try {
-      if (!enabled) {
-        await _gateway.cancelCompanionNotifications();
-        return const CompanionNotificationSyncResult(
-          status: CompanionNotificationSyncStatus.disabled,
-        );
-      }
-      if (requestPermission && !await _gateway.requestPermission()) {
-        await _gateway.cancelCompanionNotifications();
-        return const CompanionNotificationSyncResult(
-          status: CompanionNotificationSyncStatus.permissionDenied,
-        );
+      if (!enabled || !active()) return await stop();
+      if (requestPermission) {
+        final bool granted = await _gateway.requestPermission();
+        if (!active()) return await stop();
+        if (!granted) {
+          await cancelIfCurrent();
+          return const CompanionNotificationSyncResult(
+            status: CompanionNotificationSyncStatus.permissionDenied,
+          );
+        }
       }
       final timezone.Location location = await _gateway.loadLocalLocation();
+      if (!active()) return await stop();
       final timezone.TZDateTime localNow = now == null
           ? timezone.TZDateTime.now(location)
           : timezone.TZDateTime.from(now, location);
@@ -251,16 +333,37 @@ class CompanionNotificationScheduler {
                   CompanionNotificationRequest second) =>
               first.scheduledAt.compareTo(second.scheduledAt),
         );
-      await _gateway.cancelCompanionNotifications();
-      for (final CompanionNotificationRequest request
-          in upcoming.take(_maximumScheduledCompanionNotifications)) {
-        await _gateway.scheduleCompanion(request);
-      }
-      return CompanionNotificationSyncResult(
-        status: CompanionNotificationSyncStatus.scheduled,
-        scheduledCount:
-            upcoming.take(_maximumScheduledCompanionNotifications).length,
-      );
+      return await _mutations.run(() async {
+        if (!active()) {
+          if (generation == _mutations.generation) {
+            await _gateway.cancelCompanionNotifications();
+          }
+          return const CompanionNotificationSyncResult(
+            status: CompanionNotificationSyncStatus.disabled,
+          );
+        }
+        try {
+          await _gateway.cancelCompanionNotifications();
+          for (final CompanionNotificationRequest request
+              in upcoming.take(_maximumScheduledCompanionNotifications)) {
+            if (!active()) break;
+            await _gateway.scheduleCompanion(request);
+          }
+          if (!active()) {
+            return const CompanionNotificationSyncResult(
+              status: CompanionNotificationSyncStatus.disabled,
+            );
+          }
+          return CompanionNotificationSyncResult(
+            status: CompanionNotificationSyncStatus.scheduled,
+            scheduledCount:
+                upcoming.take(_maximumScheduledCompanionNotifications).length,
+          );
+        } finally {
+          // 旧代清理持有同一变更队列，不会取消新代已成功安排的提醒。
+          if (!active()) await _gateway.cancelCompanionNotifications();
+        }
+      });
     } catch (_) {
       return const CompanionNotificationSyncResult(
         status: CompanionNotificationSyncStatus.unavailable,
@@ -340,6 +443,7 @@ class SystemTrainingNotificationGateway
 
   @override
   Future<void> cancelTrainingNotifications() async {
+    if (!_supportsNotifications) return;
     await _ensureInitialized();
     final List<PendingNotificationRequest> pending =
         await _plugin.pendingNotificationRequests();
@@ -353,6 +457,7 @@ class SystemTrainingNotificationGateway
 
   @override
   Future<void> cancelCompanionNotifications() async {
+    if (!_supportsNotifications) return;
     await _ensureInitialized();
     final List<PendingNotificationRequest> pending =
         await _plugin.pendingNotificationRequests();
@@ -370,7 +475,7 @@ class SystemTrainingNotificationGateway
     await _plugin.zonedSchedule(
       id: request.id,
       title: '训练提醒',
-      body: '打开 TrainMate 查看今日安排。',
+      body: trainingNotificationBody,
       scheduledDate: request.scheduledAt,
       notificationDetails: const NotificationDetails(
         android: AndroidNotificationDetails(
@@ -413,10 +518,7 @@ class SystemTrainingNotificationGateway
 
   Future<void> _ensureInitialized() async {
     if (_initialized) return;
-    if (kIsWeb ||
-        (defaultTargetPlatform != TargetPlatform.android &&
-            defaultTargetPlatform != TargetPlatform.iOS &&
-            defaultTargetPlatform != TargetPlatform.macOS)) {
+    if (!_supportsNotifications) {
       throw UnsupportedError('当前平台不支持系统训练提醒。');
     }
     await _plugin.initialize(
@@ -436,4 +538,10 @@ class SystemTrainingNotificationGateway
     );
     _initialized = true;
   }
+
+  bool get _supportsNotifications =>
+      !kIsWeb &&
+      (defaultTargetPlatform == TargetPlatform.android ||
+          defaultTargetPlatform == TargetPlatform.iOS ||
+          defaultTargetPlatform == TargetPlatform.macOS);
 }

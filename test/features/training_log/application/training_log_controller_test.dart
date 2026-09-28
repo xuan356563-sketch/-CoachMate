@@ -29,15 +29,15 @@ void main() {
     );
   }
 
-  test('初始状态为空，保存后按时间排序并可重新读取', () {
+  test('初始状态为空，保存后按时间排序并可重新读取', () async {
     final InMemoryLocalStorageService storage = InMemoryLocalStorageService();
     final ProviderContainer first = createContainer(storage);
     expect(first.read(trainingLogControllerProvider), isEmpty);
 
     final TrainingLogController controller =
         first.read(trainingLogControllerProvider.notifier);
-    controller.save(createLog('earlier', DateTime(2026, 7, 12, 8)));
-    controller.save(createLog('later', DateTime(2026, 7, 12, 9)));
+    await controller.save(createLog('earlier', DateTime(2026, 7, 12, 8)));
+    await controller.save(createLog('later', DateTime(2026, 7, 12, 9)));
     expect(first.read(trainingLogControllerProvider).first.id, 'later');
     first.dispose();
 
@@ -47,22 +47,22 @@ void main() {
     expect(restored.read(trainingLogControllerProvider).first.id, 'later');
   });
 
-  test('相同日志 ID 会更新且可以清除', () {
+  test('相同日志 ID 会更新且可以清除', () async {
     final InMemoryLocalStorageService storage = InMemoryLocalStorageService();
     final ProviderContainer container = createContainer(storage);
     addTearDown(container.dispose);
     final TrainingLogController controller =
         container.read(trainingLogControllerProvider.notifier);
 
-    controller.save(createLog('same', DateTime(2026, 7, 12, 8)));
-    controller.save(createLog('same', DateTime(2026, 7, 12, 9)));
+    await controller.save(createLog('same', DateTime(2026, 7, 12, 8)));
+    await controller.save(createLog('same', DateTime(2026, 7, 12, 9)));
     expect(container.read(trainingLogControllerProvider), hasLength(1));
     expect(
       container.read(trainingLogControllerProvider).single.createdAt.hour,
       9,
     );
 
-    controller.clear();
+    await controller.clear();
     expect(container.read(trainingLogControllerProvider), isEmpty);
     expect(PersistedLocalStorageProbe(storage).logCount, 0);
   });

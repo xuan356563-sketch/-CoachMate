@@ -1,6 +1,8 @@
+import '../plugins/application/plugin_runtime_provider.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
+import 'package:trainflow_ai/core/constants/app_brand.dart';
 import 'package:trainflow_ai/core/theme/tdesign_theme.dart';
 import 'package:trainflow_ai/features/auth/application/auth_controller.dart';
 import 'package:trainflow_ai/features/auth/application/auth_route_refresh.dart';
@@ -18,12 +20,14 @@ class TrainFlowApp extends ConsumerWidget {
         authRouteRefreshNotifier.refresh();
       },
     );
+    ref.listen(
+        pluginRuntimeProvider, (_, __) => authRouteRefreshNotifier.refresh());
     return ScreenUtilInit(
       designSize: const Size(375, 812),
       minTextAdapt: true,
       builder: (context, child) {
         return MaterialApp.router(
-          title: '智练 TrainMate',
+          title: AppBrand.displayName,
           debugShowCheckedModeBanner: false,
           theme: TDesignTheme.lightTheme,
           darkTheme: TDesignTheme.darkTheme,

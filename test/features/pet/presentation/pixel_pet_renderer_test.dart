@@ -19,7 +19,7 @@ void main() {
                 species: PetSpecies.balanceRaccoon,
                 stage: PetStage.sprout,
                 mood: PetMood.happy,
-                semanticLabel: '衡衡狸，萌芽体，心情开心，今日获得 38 能量，距离下一阶段 712',
+                semanticLabel: '袋小满，萌芽体，心情开心，今日获得 38 能量，距离下一阶段 712',
               ),
             ),
           ),
@@ -50,7 +50,7 @@ void main() {
       expect(find.byKey(const ValueKey<String>('pixel-pet-frame-1')),
           findsNothing);
       expect(
-        find.bySemanticsLabel('衡衡狸，萌芽体，心情开心，今日获得 38 能量，距离下一阶段 712'),
+        find.bySemanticsLabel('袋小满，萌芽体，心情开心，今日获得 38 能量，距离下一阶段 712'),
         findsOne,
       );
     } finally {

@@ -5,6 +5,9 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../data/models/ai_chat.dart';
 import '../../../data/repositories/ai_chat_repository.dart';
 import '../../../services/local_storage_service.dart';
+import '../../../plugins/application/feature_access.dart';
+import '../../../plugins/application/feature_controller_binding.dart';
+import '../../../plugins/application/plugin_runtime_provider.dart';
 import '../../auth/application/auth_controller.dart';
 import '../../auth/data/authenticated_api_client.dart';
 import '../data/ai_api.dart';
@@ -51,6 +54,7 @@ class AiChatState {
 }
 
 class AiChatController extends Notifier<AiChatState> {
+  static const String _featureId = 'feature.ai_center';
   static const ChatPrivacyRouter _privacyRouter = ChatPrivacyRouter();
   final Random _random = Random.secure();
   late AiChatRepository _repository;
@@ -61,6 +65,13 @@ class AiChatController extends Notifier<AiChatState> {
     _repository = ref.watch(aiChatRepositoryProvider);
     _accountId = ref.watch(authControllerProvider).value?.user?.userId ??
         'local-preview-user';
+    bindFeatureController(
+      ref,
+      _featureId,
+      'chat',
+      this,
+      cleanup: _pauseResources,
+    );
     final List<AiChatSession> sessions = _repository.listSessions(_accountId);
     final AiChatSession session =
         sessions.isEmpty ? _newSession(_accountId) : sessions.first;
@@ -74,6 +85,7 @@ class AiChatController extends Notifier<AiChatState> {
   }
 
   void startNewSession() {
+    ref.read(featureAccessProvider).requireEnabled(_featureId);
     if (state.isSending) return;
     final AiChatSession session = _newSession(_accountId);
     state = state.copyWith(
@@ -102,6 +114,8 @@ class AiChatController extends Notifier<AiChatState> {
     required AiLocalStatusSnapshot localStatus,
     required AiChatContext context,
   }) async {
+    final FeatureOperation operation =
+        ref.read(featureAccessProvider).beginOperation(_featureId);
     final String content = text.trim();
     if (content.isEmpty || state.isSending) return;
 
@@ -120,11 +134,12 @@ class AiChatController extends Notifier<AiChatState> {
           : AiChatMessageStatus.sent,
       cloudEligible: decision.sendToCloud,
     );
-    _replaceMessages(
+    await _replaceMessages(
+      operation,
       <AiChatMessage>[...state.session.messages, userMessage],
       now: now,
       isSending: decision.sendToCloud,
-      statusMessage: decision.sendToCloud ? '正在生成训练回复…' : '身体状态已在本机读取，未发送给云端。',
+      statusMessage: decision.sendToCloud ? '正在生成训练回复…' : '内容已在本机处理，未发送给云端。',
     );
 
     if (!decision.sendToCloud) {
@@ -136,11 +151,12 @@ class AiChatController extends Notifier<AiChatState> {
         status: AiChatMessageStatus.sent,
         cloudEligible: false,
       );
-      _replaceMessages(
+      await _replaceMessages(
+        operation,
         <AiChatMessage>[...state.session.messages, localReply],
         now: DateTime.now(),
         isSending: false,
-        statusMessage: '身体状态只在本机处理。',
+        statusMessage: '内容只在本机处理。',
       );
       return;
     }
@@ -155,9 +171,10 @@ class AiChatController extends Notifier<AiChatState> {
     try {
       final AiChatResponse response = await ref.read(aiApiProvider).chat(
             requestId: _id('request'),
-            messages: _privacyRouter.cloudHistory(sentMessages),
+            intent: decision.cloudIntent!,
             context: context,
           );
+      operation.checkActive();
       final AiChatMessage assistant = AiChatMessage(
         id: _id('assistant'),
         role: AiChatMessageRole.assistant,
@@ -166,7 +183,8 @@ class AiChatController extends Notifier<AiChatState> {
         status: AiChatMessageStatus.sent,
         cloudEligible: true,
       );
-      _replaceMessages(
+      await _replaceMessages(
+        operation,
         <AiChatMessage>[...sentMessages, assistant],
         now: DateTime.now(),
         isSending: false,
@@ -176,6 +194,7 @@ class AiChatController extends Notifier<AiChatState> {
         suggestedActions: response.suggestedActions,
       );
     } on ApiException catch (error) {
+      operation.checkActive();
       final List<AiChatMessage> failed = sentMessages
           .map(
             (AiChatMessage item) => item.id == userMessage.id
@@ -183,7 +202,8 @@ class AiChatController extends Notifier<AiChatState> {
                 : item,
           )
           .toList(growable: false);
-      _replaceMessages(
+      await _replaceMessages(
+        operation,
         failed,
         now: DateTime.now(),
         isSending: false,
@@ -192,27 +212,31 @@ class AiChatController extends Notifier<AiChatState> {
     }
   }
 
-  void _replaceMessages(
+  Future<void> _replaceMessages(
+    FeatureOperation operation,
     List<AiChatMessage> messages, {
     required DateTime now,
     required bool isSending,
     required String statusMessage,
     List<String>? suggestedActions,
-  }) {
+  }) async {
     final AiChatSession session = state.session.copyWith(
       updatedAt: now,
       messages: messages,
     );
-    _repository.saveSession(session, now: now);
-    final List<AiChatSession> sessions =
-        _repository.listSessions(_accountId, now: now);
-    state = state.copyWith(
-      session: session,
-      sessions: sessions,
-      isSending: isSending,
-      statusMessage: statusMessage,
-      suggestedActions: suggestedActions ?? const <String>[],
-    );
+    await operation.commit(() async {
+      _repository.saveSession(session, now: now);
+      await ref.read(localStorageServiceProvider).flush();
+      final List<AiChatSession> sessions =
+          _repository.listSessions(_accountId, now: now);
+      state = state.copyWith(
+        session: session,
+        sessions: sessions,
+        isSending: isSending,
+        statusMessage: statusMessage,
+        suggestedActions: suggestedActions ?? const <String>[],
+      );
+    });
   }
 
   AiChatSession _newSession(String accountId) {
@@ -228,4 +252,13 @@ class AiChatController extends Notifier<AiChatState> {
 
   String _id(String prefix) =>
       '$prefix-${DateTime.now().microsecondsSinceEpoch}-${_random.nextInt(1 << 32)}';
+
+  void _pauseResources() {
+    if (!ref.mounted) return;
+    state = state.copyWith(
+      isSending: false,
+      statusMessage: 'AI 对话已暂停，现有会话仍可阅读。',
+      suggestedActions: const <String>[],
+    );
+  }
 }

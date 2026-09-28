@@ -42,6 +42,7 @@ from app.services.training_skills import (
     SkillSelection,
     TrainingSkillRegistry,
 )
+from app.services.training_sport_providers import ProviderRegistry
 
 PopulationTemplateId = Literal[
     "sedentary_beginner",
@@ -265,7 +266,10 @@ class TrainingPrescriptionV2Service:
                 app_cache_hit = False
                 mode = "local_safe_fallback"
                 result = TrainingPrescriptionModelResult(
-                    prescription=_compile_safe_fallback(request),
+                    prescription=_compile_safe_fallback(
+                        request,
+                        self._registry.sport_providers,
+                    ),
                     input_tokens=0,
                     output_tokens=0,
                     prompt_cache_hit_tokens=0,
@@ -273,7 +277,11 @@ class TrainingPrescriptionV2Service:
                 )
                 provider = "local"
                 model = "deterministic-safe-fallback-v1"
-        _validate_for_context(result.prescription, request.context)
+        _validate_for_context(
+            result.prescription,
+            request.context,
+            self._registry.sport_providers,
+        )
         artifact = self._persist_artifact(
             user_id=user_id,
             request=request,
@@ -478,16 +486,12 @@ def _compile_local_template(
 
 def _compile_safe_fallback(
     request: TrainingPrescriptionV2Request,
+    provider_registry: ProviderRegistry | None = None,
 ) -> ValidatedTrainingPrescription:
-    patterns: dict[str, list[TrainingTypeCode]] = {
-        "strength": ["strength", "mobility", "cross_training"],
-        "marathon": ["easy_run", "strength", "long_run", "mobility"],
-        "trail_running": ["easy_run", "strength", "long_run", "mobility"],
-        "hyrox": ["easy_run", "strength", "hyrox", "mobility"],
-        "general_fitness": ["strength", "easy_run", "mobility", "cross_training"],
-        "fat_loss": ["strength", "easy_run", "cross_training", "mobility"],
-    }
-    pattern = patterns[request.context.primary_sport]
+    providers = provider_registry or ProviderRegistry.default()
+    pattern = providers.resolve(
+        request.context.primary_sport,
+    ).safe_fallback_pattern
     sessions = [
         TrainingSessionBlueprint(
             training_type=pattern[index % len(pattern)],

@@ -127,7 +127,7 @@ void main() {
 
     expect(find.text('生成四周训练计划'), findsWidgets);
     expect(find.text('2. 官方运动前筛查'), findsOneWidget);
-    expect(find.textContaining('不复制 PAR-Q+ 题目'), findsOneWidget);
+    expect(find.textContaining('练搭 CoachMate 不复制 PAR-Q+ 题目'), findsOneWidget);
     expect(find.textContaining('不发送姓名、年龄、身体数据'), findsOneWidget);
     expect(find.textContaining('即使可用 7 天，仍最多安排 6 练'), findsOneWidget);
     expect(tester.takeException(), isNull);

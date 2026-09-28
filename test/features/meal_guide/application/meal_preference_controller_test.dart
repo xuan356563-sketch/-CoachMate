@@ -25,7 +25,7 @@ void main() {
     );
   });
 
-  test('保存和清除照吃场景会更新独立状态并保留本地兼容', () {
+  test('保存和清除照吃场景会更新独立状态并保留本地兼容', () async {
     final InMemoryLocalStorageService storage = InMemoryLocalStorageService();
     final ProviderContainer first = createContainer(storage);
     expect(
@@ -33,7 +33,7 @@ void main() {
       MealScenario.takeaway,
     );
 
-    first
+    await first
         .read(mealPreferenceControllerProvider.notifier)
         .saveScenario(MealScenario.homeCooking);
     expect(
@@ -48,7 +48,7 @@ void main() {
       restored.read(mealPreferenceControllerProvider).scenario,
       MealScenario.homeCooking,
     );
-    restored.read(mealPreferenceControllerProvider.notifier).clear();
+    await restored.read(mealPreferenceControllerProvider.notifier).clear();
     expect(
       restored.read(mealPreferenceControllerProvider).scenario,
       MealScenario.takeaway,

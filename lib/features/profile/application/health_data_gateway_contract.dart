@@ -235,6 +235,12 @@ abstract class NativeHealthKitBridge {
     required String athleteId,
   });
 
+  /// 无损暂停原生观察与后台投递；不得删除批次、锚点、配置或授权。
+  Future<void> pauseBackgroundSync({required String athleteId}) async {}
+
+  /// 仅恢复既有配置，不得借此请求新的 HealthKit 授权。
+  Future<void> resumeBackgroundSync({required String athleteId}) async {}
+
   Future<List<HealthSyncBatch>> drainPendingBatches({int limit = 20});
 
   Future<void> acknowledgeBatch(String batchId);
@@ -293,6 +299,10 @@ abstract class HealthDataGateway {
     required HealthPermissionStage stage,
     required String athleteId,
   }) async {}
+
+  Future<void> pauseBackgroundSync({required String athleteId}) async {}
+
+  Future<void> resumeBackgroundSync({required String athleteId}) async {}
 
   Future<List<HealthSyncBatch>> drainPendingBatches({int limit = 20});
 

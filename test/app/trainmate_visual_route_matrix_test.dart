@@ -5,28 +5,32 @@ import 'package:trainflow_ai/app/router/app_router.dart';
 import 'package:trainflow_ai/app/router/app_routes.dart';
 
 void main() {
-  test('48 个生产目的页均保留真实 GoRouter 页面入口', () {
-    final List<GoRoute> pages = <GoRoute>[];
+  test('50 个 pageBuilder 目的页和能力管理 builder 均保留真实入口', () {
+    final List<GoRoute> routes = <GoRoute>[];
     for (final RouteBase route in router.configuration.routes) {
-      _collectPageRoutes(route, pages);
+      _collectRoutes(route, routes);
     }
 
-    final List<String> productionPaths = pages
+    final List<GoRoute> productionRoutes = routes
+        .where((GoRoute route) => route.path != AppRoutes.pilotValidation)
+        .toList(growable: false);
+    final List<String> productionPagePaths = productionRoutes
+        .where((GoRoute route) => route.pageBuilder != null)
         .map((GoRoute route) => route.path)
-        .where((String path) => path != AppRoutes.pilotValidation)
         .toList(growable: false);
 
-    expect(productionPaths, hasLength(48));
-    expect(productionPaths.toSet(), hasLength(48));
-    expect(productionPaths, isNot(contains(AppRoutes.pilotValidation)));
+    expect(productionPagePaths, hasLength(50));
+    expect(productionPagePaths.toSet(), hasLength(50));
+    expect(productionPagePaths, isNot(contains(AppRoutes.pilotValidation)));
     expect(
-      productionPaths,
+      productionPagePaths,
       containsAll(<String>[
         AppRoutes.authLoading,
         AppRoutes.login,
         AppRoutes.terms,
         AppRoutes.privacy,
         AppRoutes.dashboard,
+        AppRoutes.history,
         AppRoutes.plans,
         AppRoutes.companion,
         AppRoutes.companionArchive,
@@ -37,14 +41,17 @@ void main() {
         AppRoutes.workoutPlayer,
       ]),
     );
+    final GoRoute capabilities = productionRoutes.singleWhere(
+      (GoRoute route) => route.path == AppRoutes.capabilities,
+    );
+    expect(capabilities.builder, isNotNull);
+    expect(capabilities.pageBuilder, isNull);
   });
 }
 
-void _collectPageRoutes(RouteBase route, List<GoRoute> result) {
-  if (route is GoRoute && route.pageBuilder != null) {
-    result.add(route);
-  }
+void _collectRoutes(RouteBase route, List<GoRoute> result) {
+  if (route is GoRoute) result.add(route);
   for (final RouteBase child in route.routes) {
-    _collectPageRoutes(child, result);
+    _collectRoutes(child, result);
   }
 }

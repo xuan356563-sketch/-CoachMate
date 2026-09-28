@@ -9,11 +9,11 @@ class FormalAiPlanService {
     required StarterProgramGoal starterGoal,
     required UserProfile profile,
     required String trainingStatusLabel,
-    required int readinessScore,
+    required int? readinessScore,
   }) {
     final DateTime now = DateTime.now();
     final bool needsRecoveryBridge =
-        trainingStatusLabel == '过度风险' || readinessScore < 60;
+        trainingStatusLabel == '过度风险' || (readinessScore != null && readinessScore < 60);
     final String title = needsRecoveryBridge
         ? '恢复过渡 + ${graduationReport.recommendedNextPlan}'
         : graduationReport.recommendedNextPlan;
@@ -67,8 +67,9 @@ class FormalAiPlanService {
 
   String _progressionRule({
     required StarterProgramGoal starterGoal,
-    required int readinessScore,
+    required int? readinessScore,
   }) {
+    if (readinessScore == null) return '当前准备度无法评估，先补充并确认状态；不据此增加训练量。';
     final String target = switch (starterGoal) {
       StarterProgramGoal.habit => '先稳定出勤，再增加动作复杂度',
       StarterProgramGoal.fatLoss => '先稳定总量，再增加有氧密度',

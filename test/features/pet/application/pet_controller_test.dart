@@ -19,6 +19,10 @@ import 'package:trainflow_ai/features/pet/application/pet_controller.dart';
 import 'package:trainflow_ai/features/profile/application/health_sync_controller.dart';
 import 'package:trainflow_ai/features/training_log/application/training_log_controller.dart';
 import 'package:trainflow_ai/services/local_storage_service.dart';
+import 'package:trainflow_ai/plugins/application/plugin_runtime.dart';
+import 'package:trainflow_ai/plugins/application/plugin_runtime_provider.dart';
+import 'package:trainflow_ai/plugins/assembly/built_in_distribution.dart';
+import 'package:trainflow_ai/plugins/core/plugin_core.dart';
 
 void main() {
   group('PetController 可用状态与首蛋', () {
@@ -54,7 +58,7 @@ void main() {
       );
     });
 
-    test('未选蛋时进入首蛋态，选择衡衡狸后进入可用态', () async {
+    test('未选蛋时进入首蛋态，选择袋小满后进入可用态', () async {
       final _MemoryPetGateway gateway = _MemoryPetGateway();
       final _MutablePetTime time = _MutablePetTime(
         _time(localDate: '2026-08-01'),
@@ -75,7 +79,7 @@ void main() {
       expect(state.status, PetStateStatus.ready);
       expect(state.profile?.firstEggSpecies, PetSpecies.balanceRaccoon);
       expect(state.activeCompanion?.species, PetSpecies.balanceRaccoon);
-      expect(state.activeCompanion?.nickname, '衡衡狸');
+      expect(state.activeCompanion?.nickname, '袋小满');
     });
   });
 
@@ -412,6 +416,80 @@ void main() {
     expect(state.status, PetStateStatus.ready);
     expect(state.statusMessage, contains('失败'));
   });
+
+  test('停用清理能量订阅，再启用只恢复一份且停用 build 不补算', () async {
+    final PluginRuntime runtime = PluginRuntime(
+      PluginRegistry(plugins: builtInDistribution()),
+    );
+    await runtime.initialize();
+    final _MemoryPetGateway gateway = _MemoryPetGateway();
+    final _MutablePetTime time = _MutablePetTime(
+      _time(localDate: '2026-09-04'),
+    );
+    final ProviderContainer container = _container(
+      gateway,
+      time: time,
+      runtime: runtime,
+    );
+    addTearDown(container.dispose);
+    await container.read(petControllerProvider.future);
+    final ProviderSubscription<AsyncValue<PetState>> keepAlive =
+        container.listen(petControllerProvider, (_, __) {});
+    addTearDown(keepAlive.close);
+    await container
+        .read(petControllerProvider.notifier)
+        .chooseFirstEgg(PetSpecies.balanceRaccoon);
+
+    await runtime.disable('feature.pet');
+    final int beforePausedSignal = gateway.settlementWrites.length;
+    container
+        .read(dailyActivityEnergyRefreshSignalProvider.notifier)
+        .requestRefresh();
+    await Future<void>.delayed(Duration.zero);
+    expect(gateway.settlementWrites, hasLength(beforePausedSignal));
+
+    await runtime.enable('feature.pet');
+    await container.pump();
+    await container.read(petControllerProvider.future);
+    await _pumpEvents();
+    final int beforeFirstSignal = gateway.settlementWrites.length;
+    container
+        .read(dailyActivityEnergyRefreshSignalProvider.notifier)
+        .requestRefresh();
+    await _pumpUntil(
+      () => gateway.settlementWrites.length > beforeFirstSignal,
+    );
+    expect(gateway.settlementWrites, hasLength(beforeFirstSignal + 1));
+
+    await runtime.disable('feature.pet');
+    final int beforeSecondPause = gateway.settlementWrites.length;
+    container
+        .read(dailyActivityEnergyRefreshSignalProvider.notifier)
+        .requestRefresh();
+    await Future<void>.delayed(Duration.zero);
+    expect(gateway.settlementWrites, hasLength(beforeSecondPause));
+
+    await runtime.enable('feature.pet');
+    await container.pump();
+    await container.read(petControllerProvider.future);
+    await _pumpEvents();
+    container
+        .read(dailyActivityEnergyRefreshSignalProvider.notifier)
+        .requestRefresh();
+    await _pumpUntil(
+      () => gateway.settlementWrites.length > beforeSecondPause,
+    );
+    expect(gateway.settlementWrites, hasLength(beforeSecondPause + 1));
+
+    await runtime.disable('feature.pet');
+    final int beforeDisabledBuild = gateway.settlementWrites.length;
+    container.invalidate(petControllerProvider);
+    final PetState disabled =
+        await container.read(petControllerProvider.future);
+    expect(disabled.status, PetStateStatus.ready);
+    expect(disabled.statusMessage, contains('已暂停'));
+    expect(gateway.settlementWrites, hasLength(beforeDisabledBuild));
+  });
 }
 
 ProviderContainer _container(
@@ -419,6 +497,7 @@ ProviderContainer _container(
   required _MutablePetTime time,
   InMemoryTrainingLogRepository? trainingLogs,
   InMemoryDailyContextRepository? dailyContext,
+  PluginRuntime? runtime,
 }) {
   return ProviderContainer(
     overrides: [
@@ -434,8 +513,22 @@ ProviderContainer _container(
       localStorageServiceProvider.overrideWithValue(
         InMemoryLocalStorageService(),
       ),
+      if (runtime != null) pluginRuntimeProvider.overrideWith((ref) => runtime),
     ],
   );
+}
+
+Future<void> _pumpUntil(bool Function() condition) async {
+  for (int attempt = 0; attempt < 50 && !condition(); attempt += 1) {
+    await Future<void>.delayed(Duration.zero);
+  }
+  expect(condition(), isTrue);
+}
+
+Future<void> _pumpEvents() async {
+  for (int attempt = 0; attempt < 10; attempt += 1) {
+    await Future<void>.delayed(Duration.zero);
+  }
 }
 
 class _MutablePetTime {

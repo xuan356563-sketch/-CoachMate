@@ -7,7 +7,7 @@ import 'package:trainflow_ai/features/dashboard/training_mvp_controller.dart';
 import 'package:trainflow_ai/features/training_plan/application/plan_adjustment_controller.dart';
 import 'package:trainflow_ai/services/local_storage_service.dart';
 
-void main() {
+void main() async {
   test('计划调整控制器同步旧训练状态并保留跟练会话与知识查询', () async {
     final InMemoryLocalStorageService storage = InMemoryLocalStorageService();
     final ProviderContainer container = ProviderContainer(
@@ -20,14 +20,14 @@ void main() {
     final TrainingMvpController trainingController =
         container.read(trainingMvpProvider.notifier);
     trainingController.startWorkoutPlayer(workoutDayId: 'workout-week1-day2');
-    trainingController.completeWorkoutPlayerStep();
+    await trainingController.completeWorkoutPlayerStep();
     trainingController.setKnowledgeSearchQuery('跑步');
     final TrainingMvpState before = container.read(trainingMvpProvider);
     final TrainingRuleAuditReport beforeAudit =
         before.activePlanRuleAuditReport;
     final WorkoutDay workout = before.todayWorkout;
 
-    container
+    await container
         .read(planAdjustmentControllerProvider.notifier)
         .saveManualAdjustment(
           workout: workout,
@@ -48,7 +48,7 @@ void main() {
     expect(updated.knowledgeSearchQuery, before.knowledgeSearchQuery);
     _expectSameRuleAudit(updated.activePlanRuleAuditReport, beforeAudit);
 
-    container
+    await container
         .read(planAdjustmentControllerProvider.notifier)
         .restoreOriginalPlan(updated.todayWorkout);
     await Future<void>.delayed(Duration.zero);
@@ -75,7 +75,7 @@ void main() {
     final TrainingMvpState initial = firstContainer.read(trainingMvpProvider);
     final WorkoutDay workout = initial.todayWorkout;
 
-    firstContainer
+    await firstContainer
         .read(planAdjustmentControllerProvider.notifier)
         .saveManualAdjustment(
           workout: workout,

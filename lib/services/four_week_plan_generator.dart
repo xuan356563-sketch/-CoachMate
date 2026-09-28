@@ -1,5 +1,10 @@
-import '../data/models/race.dart';
+import '../plugins/core/plugin_ref.dart';
+import '../plugins/sports/sport_plan_strategy.dart';
+import '../plugins/sports/sport_workout_template.dart';
+import '../plugins/sports/sport_capability_directory.dart';
+import '../core/constants/app_brand.dart';
 import '../core/config/training_structure_config.dart';
+import '../data/models/race.dart';
 import '../data/models/plan_generation_preferences.dart';
 import '../data/models/training_plan.dart';
 import '../data/models/user_profile.dart';
@@ -7,6 +12,7 @@ import '../data/models/workout_day.dart';
 import '../data/seed/seed_training_plans.dart';
 import '../data/seed/seed_exercises.dart';
 import 'abc_strength_cycle_compiler.dart';
+import 'resource_workout_binding_service.dart';
 import 'exercise_substitution_service.dart';
 import 'training_structure_policy.dart';
 
@@ -85,6 +91,7 @@ class FourWeekPlanGeneration {
     required this.primarySport,
     required this.secondarySport,
     required this.appliedRace,
+    this.pluginRefs = const [],
   });
 
   final TrainingPlan plan;
@@ -92,6 +99,7 @@ class FourWeekPlanGeneration {
   final MainSport primarySport;
   final MainSport? secondarySport;
   final RacePlan? appliedRace;
+  final List<PluginRef> pluginRefs;
 }
 
 class FourWeekPlanGenerator {
@@ -99,12 +107,15 @@ class FourWeekPlanGenerator {
     AbcStrengthCycleCompiler? abcStrengthCycleCompiler,
     TrainingStructurePolicy? trainingStructurePolicy,
     bool? structureEnabled,
-  })  : _abcStrengthCycleCompiler =
+    SportCapabilityDirectory? sportDirectory,
+  })  : _sportDirectory = sportDirectory ?? SportCapabilityDirectory.builtIn(),
+        _abcStrengthCycleCompiler =
             abcStrengthCycleCompiler ?? AbcStrengthCycleCompiler(),
         _trainingStructurePolicy =
             trainingStructurePolicy ?? const TrainingStructurePolicy(),
         _structureEnabled = structureEnabled ?? TrainingStructureConfig.enabled;
 
+  final SportCapabilityDirectory _sportDirectory;
   final AbcStrengthCycleCompiler _abcStrengthCycleCompiler;
   final TrainingStructurePolicy _trainingStructurePolicy;
   final bool _structureEnabled;
@@ -114,6 +125,7 @@ class FourWeekPlanGenerator {
     required DateTime startsOn,
     RacePlan? race,
     PlanGenerationPreferences? preferences,
+    bool bindResourceExercises = false,
   }) {
     final DateTime planStart = _dateOnly(startsOn);
     final MainSport primarySport = profile.mainSports.isEmpty
@@ -123,13 +135,32 @@ class FourWeekPlanGenerator {
         profile.mainSports.length > 1 && profile.mainSports[1] != primarySport
             ? profile.mainSports[1]
             : null;
+    final SportPlanStrategy primaryStrategy =
+        _sportDirectory.require(primarySport);
+    final bool primaryMatchesRace =
+        race != null && primaryStrategy.matchesRace(race.type);
+    final bool secondaryMatchesRace = race != null &&
+        !primaryMatchesRace &&
+        secondarySport != null &&
+        _sportDirectory.require(secondarySport).matchesRace(race.type);
     final RacePlan? appliedRace =
-        race != null && _raceMatches(race, primarySport, secondarySport)
-            ? race
-            : null;
+        primaryMatchesRace || secondaryMatchesRace ? race : null;
     final int weeklyTrainingDays = preferences == null
         ? profile.weeklyTrainingDays.clamp(1, 7)
         : preferences.weeklySessions.length.clamp(1, 6);
+    final context = SportPlanContext(
+        profile: profile,
+        startsOn: planStart,
+        race: appliedRace,
+        preferences: preferences,
+        trainingDays: weeklyTrainingDays);
+    final List<PluginRef> pluginRefs = [primaryStrategy.definition.pluginRef];
+    if (secondarySport != null &&
+        (secondaryMatchesRace ||
+            (preferences == null && weeklyTrainingDays >= 2))) {
+      pluginRefs
+          .add(_sportDirectory.require(secondarySport).definition.pluginRef);
+    }
     final String planId = _planId(
       profile: profile,
       primarySport: primarySport,
@@ -147,12 +178,10 @@ class FourWeekPlanGenerator {
       final TrainingCyclePhase phase = appliedRace == null
           ? _defaultPhase(weekIndex)
           : _racePhase(appliedRace.raceDate, weekStart);
-      final List<_WorkoutTemplate> templates = _selectTemplates(
-        primarySport: primarySport,
+      final List<SportWorkoutTemplate> templates = _selectTemplates(
+        primaryStrategy: primaryStrategy,
         secondarySport: secondarySport,
-        trainingDays: weeklyTrainingDays,
-        preferences: preferences,
-        equipmentAccessType: profile.equipmentAccessType,
+        context: context,
       );
       final List<WorkoutDay> weekWorkouts = <WorkoutDay>[];
       final List<int> calendarDays = preferences == null
@@ -165,7 +194,7 @@ class FourWeekPlanGenerator {
           sessionIndex < weeklyTrainingDays;
           sessionIndex += 1) {
         final int dayIndex = calendarDays[sessionIndex];
-        final _WorkoutTemplate template = templates[sessionIndex];
+        final SportWorkoutTemplate template = templates[sessionIndex];
         final WorkoutDay compiledWorkout = _buildWorkout(
           planId: planId,
           weekIndex: weekIndex,
@@ -175,15 +204,27 @@ class FourWeekPlanGenerator {
           profile: profile,
           appliedRace: appliedRace,
           skillCompiled: preferences != null,
+          resourceDeload: bindResourceExercises && preferences == null &&
+              appliedRace == null && weekIndex == 4,
           progressionMode: preferences?.progressionMode,
         );
-        final WorkoutDay workout = _structureEnabled
+        final WorkoutDay structuredWorkout = _structureEnabled
             ? _trainingStructurePolicy.apply(
                 workout: compiledWorkout,
                 phaseCode: phase.jsonValue,
                 profile: profile,
               )
             : compiledWorkout;
+        final workout = bindResourceExercises && preferences == null
+            ? const ResourceWorkoutBindingService().bind(
+                structuredWorkout,
+                _workoutExerciseLinks(
+                  workoutId: compiledWorkout.id, template: template,
+                  weekIndex: weekIndex, progressionMode: PlanProgressionMode.conservative,
+                  mainSetCount: compiledWorkout.mainSets.length,
+                  accessoryCount: compiledWorkout.accessoryWork.length),
+              )
+            : structuredWorkout;
         weekWorkouts.add(workout);
         allWorkouts.add(workout);
       }
@@ -204,11 +245,11 @@ class FourWeekPlanGenerator {
         appliedRace == null ? '' : '，并按「${appliedRace.name}」倒计时自动切换阶段';
     final TrainingPlan plan = TrainingPlan(
       id: planId,
-      title: '${_planTitle(primarySport)}$secondaryLabel',
+      title: '${primaryStrategy.planTitle}$secondaryLabel',
       description: preferences == null
           ? '根据当前档案生成的滚动 4 周计划$raceLabel。每周阶段和训练量均可追溯。'
           : '根据结构化 AI 处方由本地规则编译的 4 周计划$raceLabel。'
-              '动作、负荷与安全边界均由 TrainMate 决定。',
+              '动作、负荷与安全边界均由${AppBrand.displayName} 决定。',
       sportType: primarySport,
       level: preferences == null ? '个性化基础' : '个性化 Skill 编译',
       durationWeeks: 4,
@@ -229,6 +270,7 @@ class FourWeekPlanGenerator {
       primarySport: primarySport,
       secondarySport: secondarySport,
       appliedRace: appliedRace,
+      pluginRefs: List.unmodifiable(pluginRefs),
     );
   }
 
@@ -265,20 +307,22 @@ class FourWeekPlanGenerator {
     required int weekIndex,
     required int dayIndex,
     required TrainingCyclePhase phase,
-    required _WorkoutTemplate template,
+    required SportWorkoutTemplate template,
     required UserProfile profile,
     required RacePlan? appliedRace,
     required bool skillCompiled,
+    bool resourceDeload = false,
     required PlanProgressionMode? progressionMode,
   }) {
     final int availableMinutes = profile.dailyAvailableMinutes.clamp(15, 180);
     final int baseMinutes = template.baseMinutes.clamp(15, availableMinutes);
+    // 用户批准仅资源默认计划第四周缩短；赛事阶段和其他生成路径不变。
     final int estimatedMinutes = (baseMinutes *
-            _volumeFactor(
+            (resourceDeload ? 0.55 : _volumeFactor(
               phase,
               progressionMode: progressionMode,
               abcStrengthCycle: template.abcStrengthSession != null,
-            ))
+            )))
         .round()
         .clamp(15, skillCompiled ? availableMinutes : 180);
     final List<String> mainSets = template.abcStrengthSession == null
@@ -342,42 +386,48 @@ class FourWeekPlanGenerator {
     return workout;
   }
 
-  List<_WorkoutTemplate> _selectTemplates({
-    required MainSport primarySport,
+  List<SportWorkoutTemplate> _selectTemplates({
+    required SportPlanStrategy primaryStrategy,
     required MainSport? secondarySport,
-    required int trainingDays,
-    required PlanGenerationPreferences? preferences,
-    required EquipmentAccessType equipmentAccessType,
+    required SportPlanContext context,
   }) {
-    if (preferences != null) {
-      final List<_WorkoutTemplate> templates = _preferenceTemplates(
-        preferences.weeklySessions.take(trainingDays).toList(),
-      );
-      if (primarySport == MainSport.strength &&
-          preferences.usesAbcStrengthCycle &&
-          (equipmentAccessType == EquipmentAccessType.gym ||
-              equipmentAccessType == EquipmentAccessType.mixed)) {
-        return _applyAbcStrengthCycle(templates);
-      }
-      return templates;
+    final source =
+        primaryStrategy.primaryCandidates(context, _compilePreferences);
+    if (source.isEmpty ||
+        (context.preferences != null &&
+            source.length != context.trainingDays)) {
+      throw StateError(
+          '${primaryStrategy.definition.sport.label}候选课程数量无效，请重新生成。');
     }
-    final List<_WorkoutTemplate> source = _templatesFor(primarySport);
-    final List<_WorkoutTemplate> selected = <_WorkoutTemplate>[
-      for (int index = 0; index < trainingDays; index += 1)
+    if (context.preferences != null) return source;
+    final selected = <SportWorkoutTemplate>[
+      for (int index = 0; index < context.trainingDays; index += 1)
         source[index % source.length],
     ];
     if (secondarySport != null && selected.length >= 2) {
-      selected[selected.length - 1] = _secondaryTemplate(secondarySport);
+      selected[selected.length - 1] =
+          _sportDirectory.require(secondarySport).secondaryCandidate(context);
     }
     return selected;
   }
 
-  List<_WorkoutTemplate> _applyAbcStrengthCycle(
-    List<_WorkoutTemplate> templates,
+  List<SportWorkoutTemplate> _compilePreferences(SportPlanContext context) {
+    final preferences = context.preferences!;
+    final templates = _preferenceTemplates(
+        preferences.weeklySessions.take(context.trainingDays).toList());
+    if (context.compileAbcStrengthCycle) {
+      return _applyAbcStrengthCycle(templates);
+    }
+    return templates;
+  }
+
+  List<SportWorkoutTemplate> _applyAbcStrengthCycle(
+    List<SportWorkoutTemplate> templates,
   ) {
     final int strengthSessionCount = templates
         .where(
-          (_WorkoutTemplate item) => item.trainingType == TrainingType.strength,
+          (SportWorkoutTemplate item) =>
+              item.trainingType == TrainingType.strength,
         )
         .length;
     final List<AbcStrengthSessionTemplate> sessions =
@@ -385,8 +435,8 @@ class FourWeekPlanGenerator {
       strengthSessionCount: strengthSessionCount,
     );
     int cursor = 0;
-    return <_WorkoutTemplate>[
-      for (final _WorkoutTemplate template in templates)
+    return <SportWorkoutTemplate>[
+      for (final SportWorkoutTemplate template in templates)
         if (template.trainingType == TrainingType.strength)
           template.copyWith(
             title: sessions[cursor].title,
@@ -405,7 +455,7 @@ class FourWeekPlanGenerator {
     ];
   }
 
-  List<_WorkoutTemplate> _preferenceTemplates(
+  List<SportWorkoutTemplate> _preferenceTemplates(
     List<PlanSessionPreference> preferences,
   ) {
     final List<PlanSessionPreference> ordered =
@@ -456,7 +506,8 @@ class FourWeekPlanGenerator {
         _ => const <int>[1, 2, 3, 5, 6, 7],
       };
 
-  _WorkoutTemplate _templateForPreference(PlanSessionPreference preference) {
+  SportWorkoutTemplate _templateForPreference(
+      PlanSessionPreference preference) {
     final Iterable<WorkoutDay> catalog =
         seedTrainingPlans.expand((TrainingPlan plan) => plan.workoutDays);
     WorkoutDay? source;
@@ -478,7 +529,7 @@ class FourWeekPlanGenerator {
         _ => workout.trainingType == TrainingType.mobility,
       },
     );
-    return _WorkoutTemplate(
+    return SportWorkoutTemplate(
       title: preference.trainingType.label,
       trainingType: preference.trainingType,
       baseMinutes: preference.durationMinutes,
@@ -512,7 +563,7 @@ class FourWeekPlanGenerator {
 
   List<WorkoutExerciseLink> _workoutExerciseLinks({
     required String workoutId,
-    required _WorkoutTemplate template,
+    required SportWorkoutTemplate template,
     required int weekIndex,
     required PlanProgressionMode progressionMode,
     required int mainSetCount,
@@ -706,241 +757,9 @@ class FourWeekPlanGenerator {
       type == TrainingType.intervalRun ||
       type == TrainingType.longRun;
 
-  List<_WorkoutTemplate> _templatesFor(MainSport sport) {
-    switch (sport) {
-      case MainSport.marathon:
-      case MainSport.trailRunning:
-        return const <_WorkoutTemplate>[
-          _WorkoutTemplate(
-            title: '低强度有氧跑',
-            trainingType: TrainingType.easyRun,
-            baseMinutes: 45,
-            baseIntensity: 'RPE 4-5',
-            purpose: '建立有氧基础',
-            mainSets: <String>['轻松跑，保持可以完整说话的强度'],
-          ),
-          _WorkoutTemplate(
-            title: '跑步质量课',
-            trainingType: TrainingType.tempoRun,
-            baseMinutes: 45,
-            baseIntensity: 'RPE 6-7',
-            purpose: '提高稳定配速能力',
-            mainSets: <String>['热身后完成 3 组可控节奏跑', '组间慢跑恢复'],
-          ),
-          _WorkoutTemplate(
-            title: '跑者力量基础',
-            trainingType: TrainingType.strength,
-            baseMinutes: 45,
-            baseIntensity: 'RPE 6',
-            purpose: '提高髋膝踝力量耐受',
-            mainSets: <String>['深蹲模式 3 组', '髋铰链模式 3 组', '单腿稳定 2 组'],
-          ),
-          _WorkoutTemplate(
-            title: '周末耐力跑',
-            trainingType: TrainingType.longRun,
-            baseMinutes: 70,
-            baseIntensity: 'RPE 4-6',
-            purpose: '积累持续运动时间',
-            mainSets: <String>['全程保守完成，不在后半程追配速'],
-          ),
-          _WorkoutTemplate(
-            title: '跑步活动度恢复',
-            trainingType: TrainingType.mobility,
-            baseMinutes: 30,
-            baseIntensity: 'RPE 2-3',
-            purpose: '促进恢复并维护活动度',
-            mainSets: <String>['低强度步行', '踝、髋活动度循环'],
-            recovery: true,
-          ),
-        ];
-      case MainSport.strength:
-        return const <_WorkoutTemplate>[
-          _WorkoutTemplate(
-            title: '下肢力量基础',
-            trainingType: TrainingType.strength,
-            baseMinutes: 50,
-            baseIntensity: 'RPE 6',
-            purpose: '建立下肢动作质量和力量基础',
-            mainSets: <String>['深蹲模式 4 组', '髋铰链模式 3 组', '核心稳定 3 组'],
-          ),
-          _WorkoutTemplate(
-            title: '上肢推拉基础',
-            trainingType: TrainingType.strength,
-            baseMinutes: 45,
-            baseIntensity: 'RPE 6',
-            purpose: '建立上肢推拉平衡',
-            mainSets: <String>['水平推 3 组', '水平拉 3 组', '肩胛稳定 2 组'],
-          ),
-          _WorkoutTemplate(
-            title: '全身力量整合',
-            trainingType: TrainingType.strength,
-            baseMinutes: 50,
-            baseIntensity: 'RPE 6-7',
-            purpose: '整合全身力量动作',
-            mainSets: <String>['下肢主动作 3 组', '上肢主动作 3 组', '负重行走 3 组'],
-          ),
-          _WorkoutTemplate(
-            title: '力量恢复与活动度',
-            trainingType: TrainingType.mobility,
-            baseMinutes: 30,
-            baseIntensity: 'RPE 2-3',
-            purpose: '维持关节活动度并促进恢复',
-            mainSets: <String>['全身活动度循环 3 轮'],
-            recovery: true,
-          ),
-        ];
-      case MainSport.hyrox:
-        return const <_WorkoutTemplate>[
-          _WorkoutTemplate(
-            title: 'HYROX 有氧基础',
-            trainingType: TrainingType.easyRun,
-            baseMinutes: 40,
-            baseIntensity: 'RPE 4-5',
-            purpose: '建立跑段有氧储备',
-            mainSets: <String>['轻松跑 30 分钟', '4 次短加速但不冲刺'],
-          ),
-          _WorkoutTemplate(
-            title: 'HYROX 力量基础',
-            trainingType: TrainingType.strength,
-            baseMinutes: 50,
-            baseIntensity: 'RPE 6',
-            purpose: '建立雪橇、弓步和负重行走所需力量',
-            mainSets: <String>['深蹲模式 3 组', '负重行走 4 组', '核心抗旋转 3 组'],
-          ),
-          _WorkoutTemplate(
-            title: 'HYROX 站点技术',
-            trainingType: TrainingType.hyrox,
-            baseMinutes: 45,
-            baseIntensity: 'RPE 6',
-            purpose: '提高站点动作效率',
-            mainSets: <String>['划船机技术', '墙球分组策略', '波比节奏练习'],
-          ),
-          _WorkoutTemplate(
-            title: 'HYROX 跑站衔接',
-            trainingType: TrainingType.hyrox,
-            baseMinutes: 55,
-            baseIntensity: 'RPE 6-7',
-            purpose: '练习跑后动作转换',
-            mainSets: <String>['完成 3 轮短跑 + 功能动作组合', '每轮保留 2 次余量'],
-          ),
-          _WorkoutTemplate(
-            title: 'HYROX 恢复课',
-            trainingType: TrainingType.mobility,
-            baseMinutes: 30,
-            baseIntensity: 'RPE 2-3',
-            purpose: '恢复肩髋和下肢',
-            mainSets: <String>['低强度单车或步行', '肩髋活动度循环'],
-            recovery: true,
-          ),
-        ];
-      case MainSport.rehab:
-        return const <_WorkoutTemplate>[
-          _WorkoutTemplate(
-            title: '无痛活动度',
-            trainingType: TrainingType.rehab,
-            baseMinutes: 25,
-            baseIntensity: 'RPE 2-3',
-            purpose: '在无痛范围内恢复活动能力',
-            mainSets: <String>['无痛活动度循环', '低强度稳定练习'],
-            recovery: true,
-          ),
-          _WorkoutTemplate(
-            title: '低强度基础体能',
-            trainingType: TrainingType.crossTraining,
-            baseMinutes: 30,
-            baseIntensity: 'RPE 3-4',
-            purpose: '维持基础体能且避免刺激疼痛',
-            mainSets: <String>['无痛步行、单车或椭圆机'],
-            recovery: true,
-          ),
-        ];
-      case MainSport.fatLoss:
-      case MainSport.generalFitness:
-        return const <_WorkoutTemplate>[
-          _WorkoutTemplate(
-            title: '全身基础力量',
-            trainingType: TrainingType.strength,
-            baseMinutes: 45,
-            baseIntensity: 'RPE 6',
-            purpose: '建立全身力量基础',
-            mainSets: <String>['蹲、推、拉各 3 组', '核心稳定 2 组'],
-          ),
-          _WorkoutTemplate(
-            title: '低强度心肺',
-            trainingType: TrainingType.crossTraining,
-            baseMinutes: 40,
-            baseIntensity: 'RPE 4-5',
-            purpose: '建立可恢复的心肺基础',
-            mainSets: <String>['选择跑步、单车或椭圆机持续完成'],
-          ),
-          _WorkoutTemplate(
-            title: '基础体能循环',
-            trainingType: TrainingType.crossTraining,
-            baseMinutes: 40,
-            baseIntensity: 'RPE 5-6',
-            purpose: '提高日常体能和动作耐受',
-            mainSets: <String>['完成 3 轮低冲击全身循环'],
-          ),
-          _WorkoutTemplate(
-            title: '活动度恢复',
-            trainingType: TrainingType.mobility,
-            baseMinutes: 25,
-            baseIntensity: 'RPE 2-3',
-            purpose: '促进恢复并维持活动度',
-            mainSets: <String>['全身活动度循环 3 轮'],
-            recovery: true,
-          ),
-        ];
-    }
-  }
-
-  _WorkoutTemplate _secondaryTemplate(MainSport sport) => switch (sport) {
-        MainSport.marathon || MainSport.trailRunning => const _WorkoutTemplate(
-            title: '次目标跑步技术',
-            trainingType: TrainingType.easyRun,
-            baseMinutes: 35,
-            baseIntensity: 'RPE 4-5',
-            purpose: '用低成本跑步支持次目标',
-            mainSets: <String>['轻松跑与跑姿技术练习'],
-          ),
-        MainSport.strength => const _WorkoutTemplate(
-            title: '次目标全身力量',
-            trainingType: TrainingType.strength,
-            baseMinutes: 40,
-            baseIntensity: 'RPE 6',
-            purpose: '用全身力量支持次目标',
-            mainSets: <String>['蹲、推、拉各 3 组'],
-          ),
-        MainSport.hyrox => const _WorkoutTemplate(
-            title: '次目标 HYROX 技术',
-            trainingType: TrainingType.hyrox,
-            baseMinutes: 40,
-            baseIntensity: 'RPE 5-6',
-            purpose: '用技术课支持 HYROX 次目标',
-            mainSets: <String>['低乳酸站点技术循环'],
-          ),
-        MainSport.rehab => const _WorkoutTemplate(
-            title: '次目标恢复维护',
-            trainingType: TrainingType.rehab,
-            baseMinutes: 25,
-            baseIntensity: 'RPE 2-3',
-            purpose: '把恢复要求纳入当前计划',
-            mainSets: <String>['无痛活动度和稳定练习'],
-            recovery: true,
-          ),
-        MainSport.fatLoss || MainSport.generalFitness => const _WorkoutTemplate(
-            title: '次目标基础体能',
-            trainingType: TrainingType.crossTraining,
-            baseMinutes: 35,
-            baseIntensity: 'RPE 4-5',
-            purpose: '用基础体能课支持次目标',
-            mainSets: <String>['低冲击全身循环 3 轮'],
-          ),
-      };
-
   TrainingDecisionType _decisionType(
     TrainingCyclePhase phase,
-    _WorkoutTemplate template,
+    SportWorkoutTemplate template,
   ) {
     if (phase == TrainingCyclePhase.raceWeek) {
       return TrainingDecisionType.technique;
@@ -1011,7 +830,7 @@ class FourWeekPlanGenerator {
 
   String _intensityFor(
     TrainingCyclePhase phase,
-    _WorkoutTemplate template, {
+    SportWorkoutTemplate template, {
     required TrainingExperienceLevel experienceLevel,
     required bool skillCompiled,
   }) {
@@ -1053,7 +872,7 @@ class FourWeekPlanGenerator {
   }
 
   List<String> _accessoryFor(
-    _WorkoutTemplate template,
+    SportWorkoutTemplate template,
     TrainingCyclePhase phase,
   ) {
     if (phase == TrainingCyclePhase.deload ||
@@ -1081,27 +900,6 @@ class FourWeekPlanGenerator {
     return const <String>['臀中肌激活 2 组', '踝弹跳或提踵 2 组'];
   }
 
-  bool _raceMatches(
-    RacePlan race,
-    MainSport primary,
-    MainSport? secondary,
-  ) {
-    final MainSport raceSport = switch (race.type) {
-      RaceType.hyrox => MainSport.hyrox,
-      RaceType.trailRunning => MainSport.trailRunning,
-      RaceType.marathon || RaceType.roadRunning => MainSport.marathon,
-    };
-    return raceSport == primary || raceSport == secondary;
-  }
-
-  String _planTitle(MainSport sport) => switch (sport) {
-        MainSport.marathon || MainSport.trailRunning => '跑步 4 周计划',
-        MainSport.strength => '健身力量 4 周计划',
-        MainSport.hyrox => 'HYROX 基础 4 周计划',
-        MainSport.rehab => '恢复基础 4 周计划',
-        MainSport.fatLoss || MainSport.generalFitness => '基础体能 4 周计划',
-      };
-
   String _planId({
     required UserProfile profile,
     required MainSport primarySport,
@@ -1126,47 +924,4 @@ class FourWeekPlanGenerator {
 
   DateTime _dateOnly(DateTime value) =>
       DateTime(value.year, value.month, value.day);
-}
-
-class _WorkoutTemplate {
-  const _WorkoutTemplate({
-    required this.title,
-    required this.trainingType,
-    required this.baseMinutes,
-    required this.baseIntensity,
-    required this.purpose,
-    required this.mainSets,
-    this.recovery = false,
-    this.preferredIntensity,
-    this.abcStrengthSession,
-  });
-
-  final String title;
-  final TrainingType trainingType;
-  final int baseMinutes;
-  final String baseIntensity;
-  final String purpose;
-  final List<String> mainSets;
-  final bool recovery;
-  final PlanIntensityBand? preferredIntensity;
-  final AbcStrengthSessionTemplate? abcStrengthSession;
-
-  _WorkoutTemplate copyWith({
-    String? title,
-    String? purpose,
-    List<String>? mainSets,
-    AbcStrengthSessionTemplate? abcStrengthSession,
-  }) {
-    return _WorkoutTemplate(
-      title: title ?? this.title,
-      trainingType: trainingType,
-      baseMinutes: baseMinutes,
-      baseIntensity: baseIntensity,
-      purpose: purpose ?? this.purpose,
-      mainSets: mainSets ?? this.mainSets,
-      recovery: recovery,
-      preferredIntensity: preferredIntensity,
-      abcStrengthSession: abcStrengthSession ?? this.abcStrengthSession,
-    );
-  }
 }

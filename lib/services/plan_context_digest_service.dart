@@ -1,3 +1,4 @@
+import '../plugins/core/plugin_ref.dart';
 import 'dart:convert';
 
 import '../data/models/race.dart';
@@ -26,6 +27,7 @@ class PlanContextDigestService {
     required DateTime startsOn,
     RacePlan? race,
     String? activeVersionId,
+    List<PluginRef>? pluginRefs,
   }) {
     final Map<String, dynamic> values = _localFingerprintValues(
       profile: profile,
@@ -33,6 +35,12 @@ class PlanContextDigestService {
       race: race,
       activeVersionId: activeVersionId,
     );
+    if (pluginRefs != null) {
+      final refs = List<PluginRef>.from(pluginRefs)
+        ..sort((a, b) => a.id.compareTo(b.id));
+      values['plugin_refs'] =
+          refs.map((ref) => ref.toJson()).toList(growable: false);
+    }
     return buildCanonicalDigest(values);
   }
 

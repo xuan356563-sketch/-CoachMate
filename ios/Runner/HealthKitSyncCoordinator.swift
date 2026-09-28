@@ -20,6 +20,8 @@ final class HealthKitSyncCoordinator {
   private static let channelName = "trainflow.ai/healthkit_sync"
   private static let backgroundConfigurationKey =
     "trainmate.healthkit.background.configuration.v1"
+  private static let backgroundPausedAthleteKey =
+    "trainmate.healthkit.background.paused-athlete.v1"
   private static let queryVersion = 1
   private static let heartRateDeletionLookback = TimeInterval(7 * 24 * 60 * 60)
   private static let maximumHeartRateSupportGap = TimeInterval(10)
@@ -68,7 +70,8 @@ final class HealthKitSyncCoordinator {
       ),
       let athleteId = configuration["athleteId"] as? String,
       !athleteId.isEmpty,
-      let stageNames = configuration["stages"] as? [String]
+      let stageNames = configuration["stages"] as? [String],
+      !isBackgroundSyncPaused(athleteId: athleteId)
     else {
       return
     }
@@ -97,6 +100,10 @@ final class HealthKitSyncCoordinator {
       fetchWorkoutDetails(arguments: call.arguments, result: result)
     case "enableBackgroundSync":
       enableBackgroundSync(arguments: call.arguments, result: result)
+    case "pauseBackgroundSync":
+      pauseBackgroundSync(arguments: call.arguments, result: result)
+    case "resumeBackgroundSync":
+      resumeBackgroundSync(arguments: call.arguments, result: result)
     case "drainPendingBatches":
       drainPendingBatches(arguments: call.arguments, result: result)
     case "ackPendingBatch":
@@ -343,6 +350,9 @@ final class HealthKitSyncCoordinator {
       ["athleteId": athleteId, "stages": stages.sorted()],
       forKey: Self.backgroundConfigurationKey
     )
+    if isBackgroundSyncPaused(athleteId: athleteId) {
+      defaults.removeObject(forKey: Self.backgroundPausedAthleteKey)
+    }
     startObservers(stage: stage, athleteId: athleteId)
 
     let group = DispatchGroup()
@@ -379,6 +389,155 @@ final class HealthKitSyncCoordinator {
     }
   }
 
+  func pauseBackgroundSync(
+    arguments: Any?,
+    result: @escaping FlutterResult
+  ) {
+    guard
+      let values = arguments as? [String: Any],
+      let athleteId = values["athleteId"] as? String,
+      !athleteId.isEmpty
+    else {
+      result(Self.flutterError(
+        code: "invalid_healthkit_athlete",
+        message: "运动员标识无效。"
+      ))
+      return
+    }
+    defaults.set(athleteId, forKey: Self.backgroundPausedAthleteKey)
+    stopObservers()
+    let types = configuredObserverTypes(athleteId: athleteId)
+    updateBackgroundDelivery(types: types, enabled: false) { error in
+      if let error {
+        result(Self.flutterError(
+          code: "healthkit_background_pause_failed",
+          message: "后台健康更新未完全暂停，请重试。",
+          details: error.localizedDescription
+        ))
+      } else {
+        result(nil)
+      }
+    }
+  }
+
+  func resumeBackgroundSync(
+    arguments: Any?,
+    result: @escaping FlutterResult
+  ) {
+    guard
+      let values = arguments as? [String: Any],
+      let athleteId = values["athleteId"] as? String,
+      !athleteId.isEmpty
+    else {
+      result(Self.flutterError(
+        code: "invalid_healthkit_athlete",
+        message: "运动员标识无效。"
+      ))
+      return
+    }
+    guard
+      let configuration = defaults.dictionary(
+        forKey: Self.backgroundConfigurationKey
+      ),
+      configuration["athleteId"] as? String == athleteId,
+      let stages = configuration["stages"] as? [String]
+    else {
+      if isBackgroundSyncPaused(athleteId: athleteId) {
+        defaults.removeObject(forKey: Self.backgroundPausedAthleteKey)
+      }
+      result(nil)
+      return
+    }
+    defaults.removeObject(forKey: Self.backgroundPausedAthleteKey)
+    for stage in stages {
+      startObservers(stage: stage, athleteId: athleteId)
+    }
+    updateBackgroundDelivery(
+      types: configuredObserverTypes(athleteId: athleteId),
+      enabled: true
+    ) { error in
+      if let error {
+        result(Self.flutterError(
+          code: "healthkit_background_resume_failed",
+          message: "后台健康更新暂未恢复。",
+          details: error.localizedDescription
+        ))
+      } else {
+        result(nil)
+      }
+    }
+  }
+
+  func isBackgroundSyncPaused(athleteId: String) -> Bool {
+    defaults.string(forKey: Self.backgroundPausedAthleteKey) == athleteId
+  }
+
+  func shouldRestoreObservers(athleteId: String) -> Bool {
+    !isBackgroundSyncPaused(athleteId: athleteId)
+  }
+
+  private func configuredObserverTypes(athleteId: String) -> [HKSampleType] {
+    guard
+      let configuration = defaults.dictionary(
+        forKey: Self.backgroundConfigurationKey
+      ),
+      configuration["athleteId"] as? String == athleteId,
+      let stages = configuration["stages"] as? [String]
+    else {
+      return []
+    }
+    var byIdentifier: [String: HKSampleType] = [:]
+    for stage in stages {
+      for type in observerTypes(stage: stage) ?? [] {
+        byIdentifier[type.identifier] = type
+      }
+    }
+    return Array(byIdentifier.values)
+  }
+
+  private func updateBackgroundDelivery(
+    types: [HKSampleType],
+    enabled: Bool,
+    completion: @escaping (Error?) -> Void
+  ) {
+    guard !types.isEmpty else {
+      completion(nil)
+      return
+    }
+    let group = DispatchGroup()
+    let lock = NSLock()
+    var firstError: Error?
+    for type in types {
+      group.enter()
+      let callback: (Bool, Error?) -> Void = { success, error in
+        if !success || error != nil {
+          lock.lock()
+          if firstError == nil {
+            firstError = error ?? NSError(
+              domain: "TrainMateHealthKit",
+              code: enabled ? 2 : 3,
+              userInfo: [NSLocalizedDescriptionKey: enabled
+                ? "系统未恢复后台健康更新。"
+                : "系统未暂停后台健康更新。"]
+            )
+          }
+          lock.unlock()
+        }
+        group.leave()
+      }
+      if enabled {
+        healthStore.enableBackgroundDelivery(
+          for: type,
+          frequency: .immediate,
+          withCompletion: callback
+        )
+      } else {
+        healthStore.disableBackgroundDelivery(for: type, withCompletion: callback)
+      }
+    }
+    group.notify(queue: .main) { completion(firstError) }
+  }
+
   private func drainPendingBatches(
     arguments: Any?,
     result: @escaping FlutterResult
@@ -404,7 +563,7 @@ final class HealthKitSyncCoordinator {
     }
   }
 
-  private func acknowledgePendingBatch(
+  func acknowledgePendingBatch(
     arguments: Any?,
     result: @escaping FlutterResult
   ) {
@@ -421,6 +580,11 @@ final class HealthKitSyncCoordinator {
       return
     }
     do {
+      let pendingMetadata = try pendingStore.metadata(batchId: batchId)
+      guard !isBackgroundSyncPaused(athleteId: pendingMetadata.athleteId) else {
+        result(nil)
+        return
+      }
       let metadata = try pendingStore.acknowledge(batchId: batchId)
       if let type = sampleType(identifier: metadata.objectType) {
         captureChanges(
@@ -464,6 +628,9 @@ final class HealthKitSyncCoordinator {
         forKey: Self.backgroundConfigurationKey
       ), configuration["athleteId"] as? String == athleteId {
         defaults.removeObject(forKey: Self.backgroundConfigurationKey)
+        if isBackgroundSyncPaused(athleteId: athleteId) {
+          defaults.removeObject(forKey: Self.backgroundPausedAthleteKey)
+        }
         stopObservers()
         healthStore.disableAllBackgroundDelivery { _, _ in }
       }
@@ -548,6 +715,10 @@ final class HealthKitSyncCoordinator {
     athleteId: String,
     completion: @escaping () -> Void
   ) {
+    guard !isBackgroundSyncPaused(athleteId: athleteId) else {
+      completion()
+      return
+    }
     if isHeartRateType(type) {
       captureHeartRateChanges(
         type: type,
@@ -606,6 +777,10 @@ final class HealthKitSyncCoordinator {
         requiresAcknowledgement: true
       )
       do {
+        guard !self.isBackgroundSyncPaused(athleteId: athleteId) else {
+          completion()
+          return
+        }
         try pendingStore.enqueue(batch)
       } catch {
         completion()
@@ -665,6 +840,10 @@ final class HealthKitSyncCoordinator {
       }
 
       let enqueue: ([[String: Any]]) -> Void = { records in
+        guard !self.isBackgroundSyncPaused(athleteId: athleteId) else {
+          completion()
+          return
+        }
         let batch = self.makeBatch(
           athleteId: athleteId,
           objectType: type.identifier,

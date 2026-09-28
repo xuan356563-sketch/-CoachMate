@@ -8,6 +8,9 @@ import '../../../data/models/body_metric.dart';
 import '../../../data/models/body_rhythm.dart';
 import '../../../data/models/health_snapshot.dart';
 import '../../../data/models/training_log.dart';
+import '../../../plugins/application/feature_access.dart';
+import '../../../plugins/application/feature_controller_binding.dart';
+import '../../../plugins/application/plugin_runtime_provider.dart';
 import '../../../services/rhythm_engine.dart';
 import '../../dashboard/training_mvp_controller.dart';
 import '../../profile/application/health_sync_controller.dart';
@@ -51,6 +54,8 @@ class BodyRhythmController extends AsyncNotifier<BodyRhythmState> {
 
   @override
   Future<BodyRhythmState> build() async {
+    final bool featureEnabled =
+        ref.watch(featureEnabledProvider('feature.rhythm'));
     _rhythmDatabase = ref.watch(rhythmDatabaseGatewayProvider);
     _structuredDatabase =
         ref.watch(healthSyncStructuredDatabaseGatewayProvider);
@@ -58,13 +63,24 @@ class BodyRhythmController extends AsyncNotifier<BodyRhythmState> {
     final List<HealthSnapshot> healthSnapshots =
         ref.watch(healthSyncControllerProvider).value?.snapshots ??
             const <HealthSnapshot>[];
-    return _load(training: training, healthSnapshots: healthSnapshots);
+    if (featureEnabled) {
+      bindFeatureController(ref, 'feature.rhythm', 'controller', this);
+    }
+    return _load(
+      training: training,
+      healthSnapshots: healthSnapshots,
+      featureEnabled: featureEnabled,
+    );
   }
 
   Future<BodyRhythmState> _load({
     required TrainingMvpState training,
     required List<HealthSnapshot> healthSnapshots,
+    required bool featureEnabled,
   }) async {
+    final FeatureOperation? operation = featureEnabled
+        ? ref.read(featureAccessProvider).beginOperation('feature.rhythm')
+        : null;
     final DateTime now = DateTime.now();
     final DateTime weekStart = _weekStart(now);
     final DateTime windowStart = now.subtract(const Duration(days: 29));
@@ -77,6 +93,7 @@ class BodyRhythmController extends AsyncNotifier<BodyRhythmState> {
         athleteProfileId: athleteId,
         weekStart: weekKey,
       );
+      operation?.checkActive();
       if (existing != null) {
         return _stateFor(
           training: training,
@@ -84,14 +101,17 @@ class BodyRhythmController extends AsyncNotifier<BodyRhythmState> {
           snapshot: RhythmSnapshot.fromDatabaseRow(existing),
           now: now,
           statusMessage: '本周身体节奏已建立。',
+          canPersist: featureEnabled,
         );
       }
     }
 
     final List<Map<String, Object?>> observations =
         await _healthObservations(athleteId, windowStart, now);
+    operation?.checkActive();
     final List<Map<String, Object?>> workouts =
         await _workouts(athleteId, windowStart, now);
+    operation?.checkActive();
     final RhythmInput input = _buildInput(
       training: training,
       healthSnapshots: healthSnapshots,
@@ -114,12 +134,13 @@ class BodyRhythmController extends AsyncNotifier<BodyRhythmState> {
       createdAt: now,
     );
     final RhythmSnapshot snapshot;
-    if (rhythmDatabase == null) {
+    if (rhythmDatabase == null || !featureEnabled) {
       snapshot = candidate;
     } else {
-      final Map<String, Object?> persisted =
-          await rhythmDatabase.insertRhythmSnapshotIfAbsent(
-        candidate.toDatabaseRow(),
+      final Map<String, Object?> persisted = await operation!.commit(
+        () => rhythmDatabase.insertRhythmSnapshotIfAbsent(
+          candidate.toDatabaseRow(),
+        ),
       );
       snapshot = RhythmSnapshot.fromDatabaseRow(persisted);
     }
@@ -128,9 +149,12 @@ class BodyRhythmController extends AsyncNotifier<BodyRhythmState> {
       healthSnapshots: healthSnapshots,
       snapshot: snapshot,
       now: now,
-      statusMessage: snapshot.hasBaseline
-          ? '本周身体节奏已建立。'
-          : '正在积累身体节奏基线。',
+      statusMessage: !featureEnabled
+          ? '身体节奏功能已停用；暂无本周历史快照，未创建新记录。'
+          : snapshot.hasBaseline
+              ? '本周身体节奏已建立。'
+              : '正在积累身体节奏基线。',
+      canPersist: featureEnabled,
     );
   }
 
@@ -138,6 +162,8 @@ class BodyRhythmController extends AsyncNotifier<BodyRhythmState> {
     required MealType mealType,
     required String summary,
   }) async {
+    final FeatureOperation operation =
+        ref.read(featureAccessProvider).beginOperation('feature.rhythm');
     final BodyRhythmState? current = state.value;
     final RhythmDatabaseGateway? database = _rhythmDatabase;
     if (current == null || database == null) {
@@ -157,9 +183,13 @@ class BodyRhythmController extends AsyncNotifier<BodyRhythmState> {
       summary: normalized,
       createdAt: now,
     );
-    await database.saveMealRecord(record.toDatabaseRow());
-    ref.invalidateSelf();
-    await future;
+    await operation.commit(
+      () => database.saveMealRecord(record.toDatabaseRow()),
+    );
+    operation.checkActive();
+    if (ref.read(featureAccessProvider).isEnabled('feature.rhythm')) {
+      ref.invalidateSelf();
+    }
   }
 
   Future<void> revokeMeal(String recordId) async {
@@ -171,8 +201,9 @@ class BodyRhythmController extends AsyncNotifier<BodyRhythmState> {
       recordId: recordId,
       revokedAt: DateTime.now().toUtc().toIso8601String(),
     );
-    ref.invalidateSelf();
-    await future;
+    if (ref.read(featureAccessProvider).isEnabled('feature.rhythm')) {
+      ref.invalidateSelf();
+    }
   }
 
   Future<BodyRhythmState> _stateFor({
@@ -181,6 +212,7 @@ class BodyRhythmController extends AsyncNotifier<BodyRhythmState> {
     required RhythmSnapshot snapshot,
     required DateTime now,
     required String statusMessage,
+    required bool canPersist,
   }) async {
     final DateTime start = now.subtract(const Duration(days: 14));
     final List<MealRecord> meals = await _mealRecords(
@@ -220,7 +252,7 @@ class BodyRhythmController extends AsyncNotifier<BodyRhythmState> {
       weightDates: List<DateTime>.unmodifiable(weightDates.values),
       trainingDates: List<DateTime>.unmodifiable(trainingDates.values),
       statusMessage: statusMessage,
-      canPersist: _rhythmDatabase != null,
+      canPersist: canPersist && _rhythmDatabase != null,
     );
   }
 
@@ -246,8 +278,7 @@ class BodyRhythmController extends AsyncNotifier<BodyRhythmState> {
       if (snapshot.sleepHours != null && snapshot.sleepHours! > 0) {
         sleepByDay[_dateKey(snapshot.date)] = snapshot.sleepHours!;
       }
-      if (snapshot.restingHeartRate != null &&
-          snapshot.restingHeartRate! > 0) {
+      if (snapshot.restingHeartRate != null && snapshot.restingHeartRate! > 0) {
         restingByDay[_dateKey(snapshot.date)] =
             snapshot.restingHeartRate!.toDouble();
       }
@@ -284,11 +315,10 @@ class BodyRhythmController extends AsyncNotifier<BodyRhythmState> {
     int strengthMinutes = 0;
     for (final Map<String, Object?> row in workouts) {
       if (row['discipline'] == 'strength') {
-        strengthMinutes +=
-            ((row['active_duration_seconds'] as num?)?.toInt() ??
-                    (row['elapsed_duration_seconds'] as num?)?.toInt() ??
-                    0) ~/
-                60;
+        strengthMinutes += ((row['active_duration_seconds'] as num?)?.toInt() ??
+                (row['elapsed_duration_seconds'] as num?)?.toInt() ??
+                0) ~/
+            60;
       }
     }
     DateTime? latestTraining;
@@ -327,7 +357,8 @@ class BodyRhythmController extends AsyncNotifier<BodyRhythmState> {
     return database.listHealthObservationFactRows(
       athleteProfileId: athleteId,
       observedAtOrAfter: start.toUtc().toIso8601String(),
-      observedBefore: end.add(const Duration(days: 1)).toUtc().toIso8601String(),
+      observedBefore:
+          end.add(const Duration(days: 1)).toUtc().toIso8601String(),
     );
   }
 

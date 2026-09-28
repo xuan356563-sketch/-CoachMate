@@ -281,6 +281,8 @@ class TrainingLog {
   final String? userNote;
   final DateTime createdAt;
   final TrainingLogKind kind;
+  /// 本机恢复估算的来源校验；不改变旧记录展示或云端摘要字段。
+  final bool recoveryEvidenceVerified;
   final int actualDurationMinutes;
   final double distanceKm;
   final int completionPercentage;
@@ -313,6 +315,7 @@ class TrainingLog {
     required this.userNote,
     required this.createdAt,
     this.kind = TrainingLogKind.manual,
+    this.recoveryEvidenceVerified = true,
     this.actualDurationMinutes = 0,
     this.distanceKm = 0,
     this.completionPercentage = 0,
@@ -359,6 +362,12 @@ class TrainingLog {
       createdAt: DateTime.tryParse(json['createdAt'] as String? ?? '') ??
           DateTime.fromMillisecondsSinceEpoch(0),
       kind: TrainingLogKind.fromJson(json['logKind'] as String?, userNote),
+      recoveryEvidenceVerified: (json['recoveryEvidenceVerified'] == null ||
+              json['recoveryEvidenceVerified'] == true) &&
+          TrainingLogKind.values.any((kind) => kind.jsonValue == json['logKind']) &&
+          json['rpe'] is num &&
+          (json['rpe'] as num).isFinite &&
+          json['rpe'] == (json['rpe'] as num).toInt(),
       actualDurationMinutes:
           ((json['actualDurationMinutes'] as num?)?.toInt() ?? 0)
               .clamp(0, 360)
@@ -409,6 +418,19 @@ class TrainingLog {
   bool get isSessionRecord => kind != TrainingLogKind.playerStep;
 
   bool get isSessionReview => kind == TrainingLogKind.sessionReview;
+
+  /// 步骤默认值、导入推算 RPE 和没有实际执行的反馈不作为恢复证据。
+  bool canEstimateRecoveryAt(DateTime now) =>
+      recoveryEvidenceVerified &&
+      isSessionRecord &&
+      kind != TrainingLogKind.activityImport &&
+      rpe >= 1 && rpe <= 10 &&
+      (completed || actualDurationMinutes > 0 || completionPercentage > 0 ||
+          completedSetCount > 0) &&
+      date.millisecondsSinceEpoch > 0 &&
+      !date.isAfter(now) &&
+      !createdAt.isAfter(now) &&
+      !createdAt.isBefore(date);
 
   /// 正式比赛成绩只能关联到一条已经完成且包含实际训练量的会话记录。
   bool get canConfirmOfficialRaceResult {
@@ -487,6 +509,7 @@ class TrainingLog {
       'userNote': userNote,
       'createdAt': createdAt.toIso8601String(),
       'logKind': kind.jsonValue,
+      if (!recoveryEvidenceVerified) 'recoveryEvidenceVerified': false,
       'actualDurationMinutes': actualDurationMinutes,
       'distanceKm': distanceKm,
       'completionPercentage': completionPercentage,

@@ -25,7 +25,7 @@ void main() {
     }
   }
 
-  test('初始状态、三种导出和重新读取保持原有行为', () {
+  test('初始状态、三种导出和重新读取保持原有行为', () async {
     final InMemoryLocalStorageService storage = InMemoryLocalStorageService();
     seedStorage(storage);
     final ProviderContainer first = createContainer(storage);
@@ -38,9 +38,9 @@ void main() {
 
     final BodyMetricExportController controller =
         first.read(bodyMetricExportControllerProvider.notifier);
-    controller.recordJsonExport('{"name":"训练"}');
-    controller.recordCsvExport('date,weight\n2026-07-12,72.5');
-    controller.recordPackageExport('TrainFlow 导出包摘要');
+    await controller.recordJsonExport('{"name":"训练"}');
+    await controller.recordCsvExport('date,weight\n2026-07-12,72.5');
+    await controller.recordPackageExport('TrainFlow 导出包摘要');
 
     final BodyMetricExportState saved =
         first.read(bodyMetricExportControllerProvider);
@@ -64,18 +64,18 @@ void main() {
     );
   });
 
-  test('导出记录可以清除', () {
+  test('导出记录可以清除', () async {
     final InMemoryLocalStorageService storage = InMemoryLocalStorageService();
     final ProviderContainer container = createContainer(storage);
     addTearDown(container.dispose);
     final BodyMetricExportController controller =
         container.read(bodyMetricExportControllerProvider.notifier);
 
-    controller.recordJsonExport('{"index":1}');
+    await controller.recordJsonExport('{"index":1}');
     expect(container.read(bodyMetricExportControllerProvider).records,
         hasLength(1));
 
-    controller.clear();
+    await controller.clear();
     final BodyMetricExportState cleared =
         container.read(bodyMetricExportControllerProvider);
     expect(cleared.records, isEmpty);

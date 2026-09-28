@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 
-import '../../../../core/constants/app_colors.dart';
 import '../../../../core/theme/trainflow_tokens.dart';
 import '../../../../core/widgets/trainflow_widgets.dart';
 import '../../application/pet_controller.dart';
@@ -41,12 +40,12 @@ class PetTrainingReceiptCard extends StatelessWidget {
           children: <Widget>[
             Row(
               children: <Widget>[
-                const Icon(Icons.pets_outlined, color: AppColors.primary),
+                const Icon(Icons.pets_outlined, color: TrainFlowTokens.accent),
                 const SizedBox(width: 8),
                 Text(
                   '伙伴主食 +${value.awardedDelta}',
                   style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                        fontWeight: FontWeight.w900,
+                        fontWeight: FontWeight.w700,
                       ),
                 ),
               ],

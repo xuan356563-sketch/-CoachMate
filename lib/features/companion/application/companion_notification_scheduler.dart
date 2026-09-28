@@ -1,3 +1,5 @@
+import 'package:trainflow_ai/core/constants/app_brand.dart';
+import 'package:trainflow_ai/data/models/pet.dart';
 import 'package:trainflow_ai/features/companion/domain/companion_models.dart';
 import 'package:trainflow_ai/services/system_training_notification_service.dart';
 
@@ -14,11 +16,14 @@ CompanionNotificationRequest? notificationRequestForCompanionMessage(
   final bool neutral = message.privacyLevel == PrivacyLevel.l0 ||
       message.intent.isStrictL0 ||
       message.facts.any((CompanionFact fact) => fact.isSensitive);
-  final String title =
-      neutral ? 'TrainMate' : (message.notificationTitle ?? '衡衡狸');
+  final String title = neutral
+      ? AppBrand.shortName
+      : normalizeBalanceRaccoonDisplayName(
+          message.notificationTitle ?? balanceRaccoonDisplayName,
+        );
   final String body = neutral
       ? '你的运动搭子有一条新消息。'
-      : (message.notificationBody ?? '打开 TrainMate 查看搭子消息。');
+      : (message.notificationBody ?? '打开${AppBrand.shortName}查看搭子消息。');
   return CompanionNotificationRequest(
     id: message.notificationId ?? companionNotificationId(message.messageId),
     scheduledAt: scheduledAt,
@@ -37,6 +42,7 @@ Future<CompanionNotificationSyncResult> rescheduleCompanionNotifications({
   required Iterable<CompanionMessage> messages,
   required DateTime now,
   bool requestPermission = false,
+  bool Function()? isActive,
 }) {
   final List<CompanionNotificationRequest> requests = messages
       .map(notificationRequestForCompanionMessage)
@@ -47,5 +53,6 @@ Future<CompanionNotificationSyncResult> rescheduleCompanionNotifications({
     requests: requests,
     requestPermission: requestPermission,
     now: now,
+    isActive: isActive,
   );
 }

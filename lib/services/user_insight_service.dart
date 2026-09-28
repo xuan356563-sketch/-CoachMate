@@ -49,8 +49,8 @@ class UserInsightService {
         ProfileEvent(
           id: 'event-deload-${log.id}',
           type: ProfileEventType.deloadUsed,
-          title: '主动选择降级',
-          detail: '系统记录到“太累了”，后续安排会更保守。',
+          title: '主观疲劳反馈',
+          detail: '已记录“太累了”；是否改变课程以确认后的课程记录为准。',
           occurredAt: log.createdAt,
         ),
       for (final BodyMetric metric in bodyMetrics.take(3))
@@ -105,9 +105,12 @@ class UserInsightService {
     required List<PainLog> painLogs,
     required List<ImportedWorkout> importedWorkouts,
     required int starterProgramStreak,
-    required int readinessScore,
+    required int? readinessScore,
     required String trainingStatusLabel,
   }) {
+    logs = logs.where((l) => l.isSessionRecord && !l.createdAt.isAfter(DateTime.now())).toList();
+    bodyMetrics = bodyMetrics.where((m) => m.sourceVerified && !m.measuredAt.isAfter(DateTime.now())).toList()..sort((a,b) => b.measuredAt.compareTo(a.measuredAt));
+    final fatigueMetrics = bodyMetrics.where((m) => m.hasValue('fatigueLevel')).toList();
     final int signalCount = logs.length +
         bodyMetrics.length +
         painLogs.length +
@@ -119,12 +122,12 @@ class UserInsightService {
     final double completionConfidence = _confidence(logs.length, min: 0.35);
     final double completionRate =
         logs.isEmpty ? 0 : completedLogs / logs.length;
-    final double averageFatigue = bodyMetrics.isEmpty
+    final double averageFatigue = fatigueMetrics.isEmpty
         ? 0
-        : bodyMetrics
+        : fatigueMetrics
                 .map((BodyMetric metric) => metric.fatigueLevel)
                 .reduce((int a, int b) => a + b) /
-            bodyMetrics.length;
+            fatigueMetrics.length;
     final bool hasPainRedline =
         painLogs.any((PainLog log) => log.requiresMedicalAttention);
 
@@ -143,7 +146,7 @@ class UserInsightService {
           '目标：${profile.trainingGoal}',
         ],
         conservativeAction:
-            baseConfidence < 0.65 ? '数据还少，先不自动增加训练天数。' : '可在完成率稳定后尝试小幅加量。',
+            baseConfidence < 0.65 ? '数据还少，先不自动增加训练天数。' : '这是档案中的可用时间，不能据此判断是否应该加量。',
       ),
       UserProfileInsight(
         id: 'behavior-completion',
@@ -162,23 +165,24 @@ class UserInsightService {
         ],
         conservativeAction: completionConfidence < 0.65
             ? '继续收集完成/跳过信号，不做高置信度判断。'
-            : '下周只增加一个变量，避免过快堆量。',
+            : '先查看实际执行差异，任何训练变化都需另行确认。',
       ),
       UserProfileInsight(
         id: 'physiology-recovery',
         dimension: UserInsightDimension.physiology,
         title: '恢复敏感度',
-        conclusion: bodyMetrics.isEmpty
-            ? '还缺少恢复指标，系统会按保守规则安排。'
+        conclusion: fatigueMetrics.isEmpty
+            ? '无法评估：缺少有效疲劳记录。'
             : averageFatigue >= 5.5
-                ? '近期疲劳偏高，对加班和强度叠加较敏感。'
-                : '近期睡眠、HRV 和疲劳相对稳定。',
-        confidence: _confidence(bodyMetrics.length, min: 0.38),
+                ? '近期手动疲劳记录偏高；不能据此推断加班或训练的因果影响。'
+                : '本段疲劳记录未达到既有规则的偏高阈值，睡眠和 HRV 需分别查看。',
+        confidence: _confidence(fatigueMetrics.length, min: 0.38),
         evidenceLabels: [
           'body_metrics ${bodyMetrics.length} 条',
-          if (bodyMetrics.isNotEmpty)
+          if (fatigueMetrics.isNotEmpty)
             '平均疲劳 ${averageFatigue.toStringAsFixed(1)}/10',
-          '准备度 $readinessScore',
+          readinessScore == null ? '准备度：无法评估' : '准备度工程估算 $readinessScore',
+          if (bodyMetrics.isNotEmpty) '记录范围：${bodyMetrics.last.measuredDateLabel} 至 ${bodyMetrics.first.measuredDateLabel}',
         ],
         conservativeAction: '置信度不足或疲劳偏高时，优先给恢复/技术课。',
       ),
@@ -245,30 +249,26 @@ class UserInsightService {
     required bool hasLatestLog,
     required TrainingLog? latestLog,
   }) {
-    final DateTime predictedAt = latestLog?.createdAt ?? now;
+    final bool hasObservedSession = hasLatestLog && latestLog != null &&
+        latestLog.canEstimateRecoveryAt(now);
+    final DateTime predictedAt = hasObservedSession ? latestLog.date : now;
     final DateTime dueAt =
         predictedAt.add(Duration(hours: recommendedRecoveryHours));
-    final bool due = hasLatestLog && !now.isBefore(dueAt);
     return PredictionLog(
       id: 'prediction-recovery-current',
       predictionType: '恢复时间',
-      predictedValue: '建议恢复 $recommendedRecoveryHours 小时',
-      actualValue: due
-          ? remainingRecoveryHours == 0
-              ? '已自动回填：已恢复到可评估'
-              : '已自动回填：仍需约 $remainingRecoveryHours 小时'
-          : null,
-      status: due
-          ? remainingRecoveryHours == 0
-              ? PredictionStatus.hit
-              : PredictionStatus.missed
-          : PredictionStatus.pending,
+      predictedValue: hasObservedSession ? '工程估算：建议恢复 $recommendedRecoveryHours 小时' : '无法评估：没有有效训练记录',
+      // 倒计时结束不等于观测到恢复，不能用同一公式给自身预测判定命中。
+      actualValue: '未有独立恢复观测，无法验证；倒计时不作为身体恢复证明。',
+      status: PredictionStatus.pending,
       predictedAt: predictedAt,
       dueAt: dueAt,
     );
   }
 
   PredictionLog? _buildBodyTrendPrediction(List<BodyMetric> bodyMetrics) {
+    bodyMetrics = bodyMetrics.where((m) => m.hasValue('weightKg') &&
+        !m.measuredAt.isAfter(DateTime.now())).toList();
     if (bodyMetrics.length < 4) {
       return null;
     }
@@ -288,7 +288,7 @@ class UserInsightService {
     return PredictionLog(
       id: 'prediction-weight-trend-backfilled',
       predictionType: '体重趋势',
-      predictedValue: '7 日窗口预期：$predictedTrend',
+      predictedValue: '记录窗口 ${predictionStart.measuredDateLabel} 至 ${predictionEnd.measuredDateLabel}（3 个样本）预期：$predictedTrend',
       actualValue: '已自动回填：$actualTrend（${actualChange.toStringAsFixed(1)} kg）',
       status: predictedTrend == actualTrend
           ? PredictionStatus.hit
@@ -309,6 +309,7 @@ class UserInsightService {
   }
 
   double _confidence(int signalCount, {required double min}) {
+    if (signalCount == 0) return 0;
     final double value = min + signalCount * 0.06;
     return value.clamp(min, 0.92).toDouble();
   }

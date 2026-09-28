@@ -22,11 +22,34 @@ void main() {
     expect(decision.localReply, contains('疼痛 2/10'));
   });
 
-  test('普通训练问题可以发送，但上下文不包含本地健康字段', () {
-    final ChatRouteDecision decision = router.route('帮我解释今天训练的重点', snapshot);
+  test('三个固定训练问题映射为结构化云端意图', () {
+    expect(
+      router.route('解释今天训练重点', snapshot).cloudIntent,
+      AiChatCloudIntent.explainTodayTraining,
+    );
+    expect(
+      router.route('解释当前计划安排', snapshot).cloudIntent,
+      AiChatCloudIntent.explainPlanStructure,
+    );
+    expect(
+      router.route('解释训练动作重点', snapshot).cloudIntent,
+      AiChatCloudIntent.explainTrainingFocus,
+    );
+  });
 
-    expect(decision.sendToCloud, isTrue);
-    expect(decision.localReply, isNull);
+  test('任意自由文本只保留在本机', () {
+    final ChatRouteDecision decision = router.route('怎样提高长距离配速', snapshot);
+
+    expect(decision.sendToCloud, isFalse);
+    expect(decision.localReply, contains('没有发送给云端'));
+  });
+
+  test('遗漏关键词的常见健康表达也不进入云端', () {
+    for (final String text in <String>['膝盖不舒服', '胸闷眩晕', '血糖偏高']) {
+      final ChatRouteDecision decision = router.route(text, snapshot);
+      expect(decision.sendToCloud, isFalse, reason: text);
+      expect(decision.cloudIntent, isNull, reason: text);
+    }
   });
 
   test('今日训练和当前计划查询直接在本地回答', () {
@@ -38,35 +61,5 @@ void main() {
     expect(today.localReply, contains('30 分钟'));
     expect(plan.sendToCloud, isFalse);
     expect(plan.localReply, contains('四周基础周期'));
-  });
-
-  test('云端历史只保留最近四条且正文不超过 1200 字符', () {
-    final List<AiChatMessage> messages = List<AiChatMessage>.generate(
-      12,
-      (int index) => AiChatMessage(
-        id: '$index',
-        role: index == 5
-            ? AiChatMessageRole.local
-            : index.isEven
-                ? AiChatMessageRole.user
-                : AiChatMessageRole.assistant,
-        content: '消息 $index ${'训练' * 120}',
-        createdAt: DateTime(2026, 7, 27, 8, index),
-        status: AiChatMessageStatus.sent,
-        cloudEligible: index != 5,
-      ),
-    );
-
-    final List<AiChatMessage> cloud = router.cloudHistory(messages);
-
-    expect(cloud.length, lessThanOrEqualTo(4));
-    expect(
-      cloud.fold<int>(0, (int total, AiChatMessage item) => total + item.content.length),
-      lessThanOrEqualTo(1200),
-    );
-    expect(
-        cloud.any((AiChatMessage item) => item.role == AiChatMessageRole.local),
-        isFalse);
-    expect(cloud.last.content, startsWith('消息 11'));
   });
 }

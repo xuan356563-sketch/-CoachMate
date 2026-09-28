@@ -88,8 +88,8 @@ final List<CitationLink> seedCitationLinks = [
     id: 'citation-today-easy-run',
     quoteId: 'quote-daniels-easy-run',
     targetType: CitationTargetType.workout,
-    targetId: 'workout-day-1',
-    targetTitle: '今日训练：轻松跑 + 技术动作',
+    targetId: 'workout-week1-day1',
+    targetTitle: '低强度有氧跑',
     reason: '解释今日不追配速、优先完成和恢复的原因。',
   ),
   CitationLink(
@@ -120,8 +120,8 @@ final List<CitationLink> seedCitationLinks = [
     id: 'citation-plan-progressive',
     quoteId: 'quote-daniels-progressive-load',
     targetType: CitationTargetType.plan,
-    targetId: 'plan-hybrid-run-strength-4w',
-    targetTitle: '跑步 + 力量 4 周适应计划',
+    targetId: 'plan-hyrox-run-base',
+    targetTitle: '跑步 + HYROX 基础 4 周计划',
     reason: '解释周计划为什么固定轻松日和降级空间。',
   ),
 ];

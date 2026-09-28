@@ -85,7 +85,7 @@ class AiChatConversation extends ConsumerWidget {
         if (chat.session.messages.isEmpty)
           const TrainFlowCard(
             tone: TrainFlowCardTone.peach,
-            child: Text('可以问今天练什么、动作重点或计划安排。身体状态会留在本机处理。'),
+            child: Text('自由文本只在本机处理；需要云端解释时，请使用下方三个固定训练问题。'),
           )
         else
           for (final AiChatMessage message in chat.session.messages)
@@ -163,6 +163,27 @@ class _AiChatComposerState extends ConsumerState<AiChatComposer>
                       ),
                 ),
               ),
+            Align(
+              alignment: Alignment.centerLeft,
+              child: Wrap(
+                spacing: 6,
+                runSpacing: 6,
+                children: const <String>[
+                  '解释今天训练重点',
+                  '解释当前计划安排',
+                  '解释训练动作重点',
+                ]
+                    .map(
+                      (String label) => ActionChip(
+                        label: Text(label),
+                        onPressed:
+                            chat.isSending ? null : () => _sendPreset(label),
+                      ),
+                    )
+                    .toList(growable: false),
+              ),
+            ),
+            const SizedBox(height: 8),
             Row(
               crossAxisAlignment: CrossAxisAlignment.end,
               children: [
@@ -260,17 +281,31 @@ class _AiChatComposerState extends ConsumerState<AiChatComposer>
           text: text,
           localStatus: _localStatus(ref, listen: false),
           context: AiChatContext(
-            goal: training.todayWorkout.title,
-            sports: training.profile.mainSports
-                .map((item) => item.label)
+            sportCodes: training.profile.mainSports
+                .map((item) => item.jsonValue)
                 .toList(growable: false),
             availableMinutes: training.dailyAvailableMinutesOverride,
             scheduledMinutes: training.scheduledTodayWorkout?.allocatedMinutes,
-            scheduledPeriod: training.scheduledTodayWorkout?.period.label,
+            scheduledPeriod: _cloudPeriod(
+              training.scheduledTodayWorkout?.period,
+            ),
           ),
         );
   }
+
+  Future<void> _sendPreset(String text) async {
+    _controller.text = text;
+    await _send();
+  }
 }
+
+String? _cloudPeriod(TrainingTimePeriod? period) => switch (period) {
+      TrainingTimePeriod.morning => 'morning',
+      TrainingTimePeriod.midday => 'midday',
+      TrainingTimePeriod.evening => 'evening',
+      TrainingTimePeriod.lateNight => 'late_night',
+      null => null,
+    };
 
 class _LocalStatusCards extends StatelessWidget {
   const _LocalStatusCards({required this.snapshot});

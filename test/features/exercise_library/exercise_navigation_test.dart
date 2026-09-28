@@ -120,6 +120,7 @@ void main() {
     ]) {
       router.go(AppRoutes.exerciseDetail(exerciseId));
       await tester.pumpAndSettle();
+      expect(currentPath(), AppRoutes.exerciseDetail(exerciseId));
 
       final Finder backButton = find.byKey(
         const ValueKey<String>('exercise-detail-back'),

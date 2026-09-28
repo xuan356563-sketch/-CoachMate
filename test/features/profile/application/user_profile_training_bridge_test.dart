@@ -8,7 +8,7 @@ import 'package:trainflow_ai/features/profile/application/user_profile_controlle
 import 'package:trainflow_ai/services/local_storage_service.dart';
 
 void main() {
-  test('保存资料时同步训练资料和建议并保留跟练会话', () {
+  test('保存资料时同步训练资料和建议并保留跟练会话', () async {
     final InMemoryLocalStorageService storage = InMemoryLocalStorageService();
     final ProviderContainer container = ProviderContainer(
       overrides: [
@@ -21,7 +21,7 @@ void main() {
         container.read(trainingMvpProvider.notifier);
     final TrainingMvpState initialState = container.read(trainingMvpProvider);
     controller.startWorkoutPlayer(workoutDayId: 'workout-week1-day2');
-    controller.completeWorkoutPlayerStep();
+    await controller.completeWorkoutPlayerStep();
     final TrainingMvpState sessionState = container.read(trainingMvpProvider);
     final UserProfile profile =
         container.read(userProfileControllerProvider).profile.copyWith(

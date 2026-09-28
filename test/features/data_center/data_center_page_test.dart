@@ -99,8 +99,11 @@ void main() {
         child: const MaterialApp(home: DataCenterPage()),
       ),
     );
-    await tester.pump();
+    await tester.pumpAndSettle();
 
+    await tester.scrollUntilVisible(find.text('清除身体数据'), 400,
+        scrollable: find.byType(Scrollable).first);
+    await tester.pumpAndSettle();
     await tester.tap(find.text('清除身体数据'));
     await tester.pumpAndSettle();
 
@@ -112,6 +115,9 @@ void main() {
 
     expect(container.read(bodyMetricControllerProvider).metrics, isNotEmpty);
 
+    await tester.scrollUntilVisible(find.text('清除身体数据'), 400,
+        scrollable: find.byType(Scrollable).first);
+    await tester.pumpAndSettle();
     await tester.tap(find.text('清除身体数据'));
     await tester.pumpAndSettle();
     await tester.tap(find.text('确认清除'));

@@ -28,13 +28,13 @@
 - 身体数据：路由 `/data-center`，支持 10 秒快录体重、静息心率、HRV、睡眠和疲劳，支持今天/昨天/前天补录、异常值二次确认、同日覆盖修订留痕、截图文字识别 Mock 和 CSV 批量导入，身体数据和修订留痕会写入本地 `shared_preferences`，并展示 7/30/90 日窗口均值趋势、指标目标、趋势洞察和本地数据质量检查。
 - 训练文件导入：路由 `/activity-import`，支持粘贴 GPX 文本或 FIT 摘要，解析配速、心率和爬升，生成训练效果标签并写入本地持久化 `imported_workouts` 与 `workout_logs`。
 - 训练计划：路由 `/plans`，展示训练计划列表、计划详情和训练日详情。
-- 动作库：路由 `/exercises`，展示首批 80 个 MVP 内置动作说明、本地动作媒体或占位回退、呼吸方式、适用场景、暂停条件和动作详情；扩展种子集中在 `lib/data/seed/seed_exercise_extensions.dart`，替代、退阶和器械条件决策集中在 `ExerciseSubstitutionService`。
+- 动作库：路由 `/exercises`，展示当前 239 个内置动作说明、本地动作媒体或占位回退、呼吸方式、适用场景、暂停条件和动作详情；扩展种子集中在 `lib/data/seed/seed_exercise_extensions.dart`，替代、退阶和器械条件决策集中在 `ExerciseSubstitutionService`。
 - AI 中心：路由 `/ai-center`，首批提供 AI Trainer、AI Motion 和 AI Recovery。所有结果以待确认的结构化卡片展示，用户确认后才会影响本地训练；原 `/ai-coach` 会跳转到 AI 中心。
 - 书库 / 知识库：路由 `/knowledge`，展示本地书籍、引文和引用关联，支持全文搜索和手动导入知识片段，证明计划、动作、照吃卡和纠错建议可追溯。
 - 比赛备战：路由 `/races`，本地 Mock 展示 base→build→specific→taper 周期反推、赛前减量、装备建议、比赛策略、成绩预测和赛后恢复；支持粘贴赛事信息导入并写入本地持久化 `races`。
 - 康复记录：路由 `/rehab`，记录疼痛部位、等级和出现时机并写入本地持久化 `rehab_logs`；疼痛会触发训练自动降级，疼痛 ≥7 或持续超过 2 周会提示停止相关训练并就医。
 - 照吃指令卡：路由 `/meal-guide`，按外卖、食堂、自炊三类场景给出每日最小饮食指令，并把当前吃饭场景写入本地 `meal_preference`。
-- 动作纠错：路由 `/motion-check`，先用本地规则 Mock 覆盖深蹲、弓步蹲、髋铰链、俯卧撑、平板支撑、提踵、高抬腿和跑步侧面姿态 8 个动作；每条规则关联动作库条目，动作库提供呼吸方式、适用场景和暂停条件，并支持从纠错页进入对应安全提示。当前还接入结构化关键点几何计算样例和 JSON 导入校验，输出关节角度、评分、风险和置信度，并明确不等同相机识别。分析结果会把动作质量风险写入每日调整并持久化到本地 `motion_analysis_results`。
+- 动作纠错：路由 `/motion-check`，先用本地规则 Mock 覆盖深蹲、弓步蹲、髋铰链、俯卧撑、平板支撑、提踵、高抬腿和跑步侧面姿态 8 个动作；每条规则关联动作库条目，动作库提供呼吸方式、适用场景和暂停条件，并支持从纠错页进入对应安全提示。当前还接入结构化关键点几何计算样例和 JSON 导入校验，输出关节角度、评分、风险和置信度，并明确不等同相机识别。结果持久化到本机；Mock、样例几何、未知来源及不完整云端结果仅供查看，不参与正式调整建议。闭环现状与边界见[专业训练闭环实施记录](docs/plans/2026-09-12-training-loop-implementation.md)。
 - 我的：路由 `/profile`，展示个人资料、训练偏好和最近反馈。
 - 14 天自用验收：从“我的”进入 `/self-use-acceptance`，逐日记录身体数据、计划确认、训练执行、反馈、30 天引导检查和阻断问题；记录写入本地 `shared_preferences`，完成 14 天后仍需人工 Gate A 复核。
 
@@ -231,7 +231,7 @@ scripts/run_flutter_tests_clean_copy.sh
 - 动作纠错最小版已接入：支持 8 个核心动作的本地规则 Mock，展示角度观察点、主要问题、纠正建议、退阶动作、拍摄建议和依据来源；新增 `MotionPoseFrame`、`MotionPoseAnalysisService`、`MotionPoseImportService`、`MotionAnalysisResult`、`MotionAnalysisService` 和 `PersistedMotionAnalysisRepository`，结构化关键点样例和合法 JSON 输入会计算关节角度、评分、风险和置信度，原始关键点帧与计算结果一起持久化，接入 Body Engine 解释与训练决策影响，并把结果写入每日调整和 `shared_preferences` 本地 `motion_analysis_results`。真实姿态识别结果仍未接入，结构化样例或 JSON 输入不能当作相机识别结果。
 - 比赛备战最小版已接入：支持本地 `races` 结构，展示周期反推、赛前减量、装备建议、比赛策略、成绩预测和赛后恢复；新增 `RaceAutoSchedule`、`RaceAutoScheduleService`、`RaceImportService` 和 `PersistedRaceRepository`，可按比赛日期、准备度和疼痛红线自动生成本周阶段、训练任务、补给提示、恢复规则和安全门槛，也可粘贴赛事名称、类型、日期、目标和赛道信息导入本地 `races`。当前未接真实成绩模型、报名平台赛事导入、日历系统或完整训练计划自动改写。
 - 当前训练日已显式展示泡沫轴放松、动态拉伸、激活、正式训练、训练后放松与反馈五步流程，并标注正常/降级/恢复/技术/休息五类决策。
-- 动作库已接入 `mediaUrl` 占位兼容链路和 `mediaUrls` 本地媒体列表，当前首批 80 个动作均有媒体字段和依据来源；8 个动作纠错核心动作已接入本地媒体，高抬腿已替换为可准确对应的 GIF，A Skip 和跑步侧面姿态仍明确标注为通用参考图。素材来源和许可记录见 `assets/images/exercises/free-exercise-db/来源说明.md`。
+- 动作库已接入 `mediaUrl` 占位兼容链路和 `mediaUrls` 本地媒体列表；当前 239 个动作中有 185 个关联 368 个本地媒体文件，54 个明确使用占位回退，所有动作保留依据来源。8 个动作纠错核心动作已接入本地媒体，高抬腿已替换为可准确对应的 GIF，A Skip 和跑步侧面姿态仍明确标注为通用参考图。素材来源和许可记录见 `assets/images/exercises/free-exercise-db/来源说明.md`，统一业务内容索引见 `content_catalog/README.md`。
 - 动作媒体已增加 `mediaStatus` 状态：精确示范、通用参考、媒体占位；页面和回归测试会区分这些状态，不把通用参考图当作精确纠错示范。
 - 14 天自用验收记录已接入本地 `self_use_acceptance`，支持每日五项记录、阻断问题和备注持久化；记录按开始日期逐日开放，未来日期不能提前选择或写入；当前尚未开始真实连续 14 天使用，Gate A 不能宣称通过。配套清单见 `14天自用验收清单.md`。
 - 康复最小版已接入结构化疼痛记录和 `PersistedPainLogRepository`，记录会写入 `shared_preferences` 本地 `rehab_logs`；疼痛 4-6 分会自动切换为恢复课，疼痛 ≥7 分或持续超过 2 周会切换为休息/就医红线。当前未接真实康复数据库、医生工作流或医疗诊断。

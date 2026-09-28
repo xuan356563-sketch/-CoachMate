@@ -184,6 +184,7 @@ class DailyAdjustmentContext {
   final WeatherCondition weather;
   final String statusMessage;
   final List<AppliedDailyDecisionFact> appliedDecisions;
+  final DateTime? statusConfirmedAt;
 
   const DailyAdjustmentContext({
     required this.availableMinutes,
@@ -192,6 +193,7 @@ class DailyAdjustmentContext {
     required this.weather,
     required this.statusMessage,
     this.appliedDecisions = const <AppliedDailyDecisionFact>[],
+    this.statusConfirmedAt,
   });
 
   factory DailyAdjustmentContext.defaults({
@@ -215,11 +217,13 @@ class DailyAdjustmentContext {
       weather: weatherConditionFromJson(json['weather'] as String?),
       statusMessage: json['statusMessage'] as String? ?? '尚未应用今日现实约束调整。',
       appliedDecisions: _appliedDecisionFactsFromJson(json['appliedDecisions']),
+      statusConfirmedAt: DateTime.tryParse(json['statusConfirmedAt'] as String? ?? ''),
     );
   }
 
   Map<String, dynamic> toJson() {
     return {
+      if (statusConfirmedAt != null) 'statusConfirmedAt': statusConfirmedAt!.toIso8601String(),
       'availableMinutes': availableMinutes,
       'workStress': workStress.jsonValue,
       'environment': environment.jsonValue,

@@ -7,7 +7,7 @@ import 'package:trainflow_ai/features/pet/application/pet_controller.dart';
 import 'package:trainflow_ai/features/pet/presentation/pet_home_page.dart';
 
 void main() {
-  testWidgets('M1 首蛋页只开放衡衡狸并在选择后进入伙伴首页', (tester) async {
+  testWidgets('M1 首蛋页只开放袋小满并在选择后进入伙伴首页', (tester) async {
     await tester.pumpWidget(
       ProviderScope(
         overrides: [
@@ -19,15 +19,27 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(find.text('选择第一颗伙伴蛋'), findsOneWidget);
-    expect(find.text('衡衡狸'), findsWidgets);
+    expect(find.text('袋小满'), findsWidgets);
     expect(find.textContaining('其余五种伙伴将在下一里程碑开放'), findsOneWidget);
     expect(find.text('风步狐'), findsNothing);
+    expect(
+      find.byKey(
+        const ValueKey<String>('mate-companion-pattern_egg-waiting'),
+      ),
+      findsOneWidget,
+    );
+    expect(
+      find.byKey(
+        const ValueKey<String>('mate-companion-pattern_egg-calm'),
+      ),
+      findsNothing,
+    );
 
-    await tester.tap(find.widgetWithText(FilledButton, '选择衡衡狸'));
+    await tester.tap(find.widgetWithText(FilledButton, '选择袋小满'));
     await tester.pumpAndSettle();
 
     expect(find.text('我的伙伴'), findsOneWidget);
-    expect(find.bySemanticsLabel(RegExp('衡衡狸')), findsWidgets);
+    expect(find.bySemanticsLabel(RegExp('袋小满')), findsWidgets);
   });
 
   testWidgets('存储不可用时只显示说明且不提供选蛋写操作', (tester) async {
@@ -44,7 +56,7 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(find.textContaining('本地存储暂不可用'), findsOneWidget);
-    expect(find.widgetWithText(FilledButton, '选择衡衡狸'), findsNothing);
+    expect(find.widgetWithText(FilledButton, '选择袋小满'), findsNothing);
   });
 }
 

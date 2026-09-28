@@ -6,6 +6,9 @@ import '../../../data/models/ai_artifact.dart';
 import '../../../data/models/plan_revision_proposal.dart';
 import '../../../data/repositories/ai_artifact_repository.dart';
 import '../../../services/local_storage_service.dart';
+import '../../../plugins/application/feature_access.dart';
+import '../../../plugins/application/feature_controller_binding.dart';
+import '../../../plugins/application/plugin_runtime_provider.dart';
 import '../../auth/data/authenticated_api_client.dart';
 import '../data/ai_api.dart';
 import '../data/plan_revision_api_models.dart';
@@ -85,10 +88,18 @@ class AiArtifactState {
 
 /// 管理跨设备 AI 卡片缓存，不保存原始图片、音频或用户提示词。
 class AiArtifactController extends Notifier<AiArtifactState> {
+  static const String _featureId = 'feature.ai_center';
   late final AiArtifactRepository _repository;
 
   @override
   AiArtifactState build() {
+    bindFeatureController(
+      ref,
+      _featureId,
+      'controller',
+      this,
+      cleanup: _pauseResources,
+    );
     _repository = ref.watch(aiArtifactRepositoryProvider);
     // 旧版本允许保存“发送健康摘要”同意；v1 成长系统改为健康数据仅本地，
     // 启动控制器时强制撤销旧开关，避免未来界面误用陈旧状态。
@@ -104,6 +115,7 @@ class AiArtifactController extends Notifier<AiArtifactState> {
   }
 
   Future<void> sync() async {
+    final FeatureOperation operation = _operation();
     if (state.isBusy) return;
     state = state.copyWith(
       isSyncing: true,
@@ -112,8 +124,9 @@ class AiArtifactController extends Notifier<AiArtifactState> {
     try {
       final List<AiArtifact> remote =
           await ref.read(aiApiProvider).listArtifacts();
+      operation.checkActive();
       final List<AiArtifact> merged = _mergeArtifacts(state.artifacts, remote);
-      _repository.replaceArtifacts(merged);
+      await _commit(operation, () => _repository.replaceArtifacts(merged));
       state = state.copyWith(
         artifacts: merged,
         isSyncing: false,
@@ -121,6 +134,7 @@ class AiArtifactController extends Notifier<AiArtifactState> {
             remote.isEmpty ? '云端暂无 AI 卡片。' : '已同步 ${remote.length} 张 AI 卡片。',
       );
     } on ApiException catch (error) {
+      operation.checkActive();
       state = state.copyWith(
         isSyncing: false,
         statusMessage: '暂时无法同步，已保留本机 AI 卡片：${error.message}',
@@ -142,6 +156,7 @@ class AiArtifactController extends Notifier<AiArtifactState> {
     required AiGenerationContext context,
     bool force = false,
   }) async {
+    final FeatureOperation operation = _operation();
     if (capability != AiCapability.trainer &&
         capability != AiCapability.recovery) {
       state = state.copyWith(statusMessage: '该 AI 能力正在准备中。');
@@ -160,7 +175,8 @@ class AiArtifactController extends Notifier<AiArtifactState> {
             context: context,
             force: force,
           );
-      _repository.upsert(artifact);
+      operation.checkActive();
+      await _commit(operation, () => _repository.upsert(artifact));
       state = state.copyWith(
         artifacts: _repository.listArtifacts(),
         isGenerating: false,
@@ -171,6 +187,7 @@ class AiArtifactController extends Notifier<AiArtifactState> {
       );
       return artifact;
     } on ApiException catch (error) {
+      operation.checkActive();
       state = state.copyWith(
         isGenerating: false,
         clearActiveCapability: true,
@@ -181,8 +198,10 @@ class AiArtifactController extends Notifier<AiArtifactState> {
   }
 
   Future<AiArtifact?> generateTrainingPrescription(
-    TrainingPrescriptionRequest request,
-  ) async {
+    TrainingPrescriptionRequest request, {
+    FeatureOperation? sourceOperation,
+  }) async {
+    final FeatureOperation operation = _operation(sourceOperation);
     if (state.isBusy) return null;
     state = state.copyWith(
       isGenerating: true,
@@ -192,7 +211,8 @@ class AiArtifactController extends Notifier<AiArtifactState> {
     try {
       final AiArtifact artifact =
           await ref.read(aiApiProvider).generateTrainingPrescription(request);
-      _repository.upsert(artifact);
+      operation.checkActive();
+      await _commit(operation, () => _repository.upsert(artifact));
       state = state.copyWith(
         artifacts: _repository.listArtifacts(),
         isGenerating: false,
@@ -200,7 +220,15 @@ class AiArtifactController extends Notifier<AiArtifactState> {
         statusMessage: '训练处方已生成，正在进行本地编译和安全审计。',
       );
       return artifact;
+    } on StateError {
+      state = state.copyWith(
+        isGenerating: false,
+        clearActiveCapability: true,
+        statusMessage: '来源功能已停用，迟到结果未写入本机。',
+      );
+      rethrow;
     } on ApiException catch (error) {
+      operation.checkActive();
       state = state.copyWith(
         isGenerating: false,
         clearActiveCapability: true,
@@ -218,8 +246,10 @@ class AiArtifactController extends Notifier<AiArtifactState> {
   }
 
   Future<AiArtifact?> generateTrainingPrescriptionV2(
-    TrainingPrescriptionV2Request request,
-  ) async {
+    TrainingPrescriptionV2Request request, {
+    FeatureOperation? sourceOperation,
+  }) async {
+    final FeatureOperation operation = _operation(sourceOperation);
     if (state.isBusy) return null;
     state = state.copyWith(
       isGenerating: true,
@@ -229,7 +259,8 @@ class AiArtifactController extends Notifier<AiArtifactState> {
     try {
       final AiArtifact artifact =
           await ref.read(aiApiProvider).generateTrainingPrescriptionV2(request);
-      _repository.upsert(artifact);
+      operation.checkActive();
+      await _commit(operation, () => _repository.upsert(artifact));
       state = state.copyWith(
         artifacts: _repository.listArtifacts(),
         isGenerating: false,
@@ -237,7 +268,15 @@ class AiArtifactController extends Notifier<AiArtifactState> {
         statusMessage: 'V2 训练处方已生成，正在进行本地编译和安全审计。',
       );
       return artifact;
+    } on StateError {
+      state = state.copyWith(
+        isGenerating: false,
+        clearActiveCapability: true,
+        statusMessage: '来源功能已停用，迟到结果未写入本机。',
+      );
+      rethrow;
     } on ApiException catch (error) {
+      operation.checkActive();
       state = state.copyWith(
         isGenerating: false,
         clearActiveCapability: true,
@@ -255,8 +294,10 @@ class AiArtifactController extends Notifier<AiArtifactState> {
   }
 
   Future<PlanRevisionProposal?> generatePlanRevision(
-    PlanRevisionRequest request,
-  ) async {
+    PlanRevisionRequest request, {
+    FeatureOperation? sourceOperation,
+  }) async {
+    final FeatureOperation operation = _operation(sourceOperation);
     if (state.isBusy) return null;
     state = state.copyWith(
       isGenerating: true,
@@ -266,7 +307,8 @@ class AiArtifactController extends Notifier<AiArtifactState> {
     try {
       final PlanRevisionProposal proposal =
           await ref.read(aiApiProvider).generatePlanRevision(request);
-      _repository.upsert(proposal.artifact);
+      operation.checkActive();
+      await _commit(operation, () => _repository.upsert(proposal.artifact));
       state = state.copyWith(
         artifacts: _repository.listArtifacts(),
         isGenerating: false,
@@ -274,7 +316,15 @@ class AiArtifactController extends Notifier<AiArtifactState> {
         statusMessage: '周期重排提议已生成，确认前当前计划不会改变。',
       );
       return proposal;
+    } on StateError {
+      state = state.copyWith(
+        isGenerating: false,
+        clearActiveCapability: true,
+        statusMessage: '来源功能已停用，迟到结果未写入本机。',
+      );
+      rethrow;
     } on ApiException catch (error) {
+      operation.checkActive();
       state = state.copyWith(
         isGenerating: false,
         clearActiveCapability: true,
@@ -290,6 +340,7 @@ class AiArtifactController extends Notifier<AiArtifactState> {
     required String ruleId,
     required String localPoseSummary,
   }) async {
+    final FeatureOperation operation = _operation();
     if (state.isBusy) return null;
     state = state.copyWith(
       isGenerating: true,
@@ -303,7 +354,8 @@ class AiArtifactController extends Notifier<AiArtifactState> {
             ruleId: ruleId,
             localPoseSummary: localPoseSummary,
           );
-      _repository.upsert(artifact);
+      operation.checkActive();
+      await _commit(operation, () => _repository.upsert(artifact));
       state = state.copyWith(
         artifacts: _repository.listArtifacts(),
         isGenerating: false,
@@ -312,6 +364,7 @@ class AiArtifactController extends Notifier<AiArtifactState> {
       );
       return artifact;
     } on ApiException catch (error) {
+      operation.checkActive();
       state = state.copyWith(
         isGenerating: false,
         clearActiveCapability: true,
@@ -325,6 +378,7 @@ class AiArtifactController extends Notifier<AiArtifactState> {
     required AiArtifact artifact,
     required AiArtifactDecision decision,
   }) async {
+    final FeatureOperation operation = _operation();
     final bool isAcceptedPrescriptionRevalidation =
         (artifact.artifactType == 'training_prescription_v1' ||
                 artifact.artifactType == 'training_prescription_v2') &&
@@ -344,7 +398,8 @@ class AiArtifactController extends Notifier<AiArtifactState> {
             artifactId: artifact.id,
             decision: decision,
           );
-      _repository.upsert(saved);
+      operation.checkActive();
+      await _commit(operation, () => _repository.upsert(saved));
       state = state.copyWith(
         artifacts: _repository.listArtifacts(),
         isGenerating: false,
@@ -355,6 +410,7 @@ class AiArtifactController extends Notifier<AiArtifactState> {
       );
       return saved;
     } on ApiException catch (error) {
+      operation.checkActive();
       state = state.copyWith(
         isGenerating: false,
         clearActiveCapability: true,
@@ -397,5 +453,43 @@ class AiArtifactController extends Notifier<AiArtifactState> {
     merged.sort(
         (AiArtifact a, AiArtifact b) => b.generatedAt.compareTo(a.generatedAt));
     return merged;
+  }
+
+  FeatureOperation _operation([FeatureOperation? sourceOperation]) {
+    if (sourceOperation != null) {
+      sourceOperation.checkActive();
+      if (!sourceOperation.containsSource(_featureId)) {
+        try {
+          sourceOperation.includeDependencies(const <String>[_featureId]);
+        } on StateError {
+          throw StateError('当前操作未包含 AI 中心来源，不能提交 AI 结果，请重新发起操作。');
+        }
+      }
+      if (!sourceOperation.containsSource(_featureId)) {
+        throw StateError('当前操作未包含 AI 中心来源，不能提交 AI 结果，请重新发起操作。');
+      }
+      return sourceOperation;
+    }
+    return ref.read(featureAccessProvider).beginOperation(_featureId);
+  }
+
+  Future<void> _commit(
+    FeatureOperation operation,
+    void Function() write,
+  ) {
+    return operation.commit(() async {
+      write();
+      await ref.read(localStorageServiceProvider).flush();
+    });
+  }
+
+  void _pauseResources() {
+    if (!ref.mounted) return;
+    state = state.copyWith(
+      isSyncing: false,
+      isGenerating: false,
+      clearActiveCapability: true,
+      statusMessage: 'AI 中心已暂停，现有卡片仍可阅读。',
+    );
   }
 }

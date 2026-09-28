@@ -1,5 +1,6 @@
 import '../data/models/body_metric.dart';
 import '../data/models/body_metric_import.dart';
+import 'body_metric_input_validation.dart';
 
 class BodyMetricImportService {
   BodyMetricImportResult parseCsv(
@@ -69,6 +70,10 @@ class BodyMetricImportService {
           fieldLabel: '酸痛',
         );
 
+        validateBodyMetricInput({
+          '体重': weight, '体脂率': bodyFat, '静息心率': restingHr,
+          'HRV': hrv, '睡眠': sleep, '疲劳': fatigue, '酸痛': soreness,
+        });
         final int matchedFieldCount = <num?>[
           weight,
           bodyFat,
@@ -100,8 +105,14 @@ class BodyMetricImportService {
 
         final String metricId = 'body-csv-${measuredAt.millisecondsSinceEpoch}';
         final int resolvedFatigue =
-            (fatigue ?? historicalFallback!.fatigueLevel).clamp(1, 10).toInt();
+            fatigue ?? historicalFallback!.fatigueLevel;
         final BodyMetric metric = BodyMetric(
+      recordedFields: {
+        if (weight != null) 'weightKg', if (bodyFat != null) 'bodyFatPercentage',
+        if (restingHr != null) 'restingHeartRate', if (hrv != null) 'hrvMs',
+        if (sleep != null) 'sleepHours', if (fatigue != null) 'fatigueLevel',
+        if (soreness != null) 'sorenessLevel',
+      },
           id: metricId,
           measuredAt: measuredAt,
           weightKg: weight ?? historicalFallback!.weightKg,
@@ -110,9 +121,7 @@ class BodyMetricImportService {
           hrvMs: hrv ?? historicalFallback!.hrvMs,
           sleepHours: sleep ?? historicalFallback!.sleepHours,
           fatigueLevel: resolvedFatigue,
-          sorenessLevel: (soreness ?? historicalFallback!.sorenessLevel)
-              .clamp(1, 10)
-              .toInt(),
+          sorenessLevel: soreness ?? historicalFallback!.sorenessLevel,
           moodLabel: resolvedFatigue >= 7 ? '偏疲劳' : 'CSV 导入',
           source: BodyMetricSource.importFile,
           note: inheritedFieldLabels.isEmpty
@@ -147,6 +156,7 @@ class BodyMetricImportService {
       skippedRows: skippedRows,
       sourceLabel: 'CSV 文件',
       inheritedFieldLabelsByMetricId: inheritedFieldLabelsByMetricId,
+      rowErrors: rowErrors,
     );
   }
 

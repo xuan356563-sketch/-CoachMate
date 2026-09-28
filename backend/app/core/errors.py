@@ -54,6 +54,7 @@ async def request_validation_error_handler(
         "/v1/ai/training-prescriptions",
         "/v2/ai/training-prescriptions",
         "/v1/ai/chat",
+        "/v2/ai/chat",
     }:
         code = (
             "training_plan_request_invalid"

@@ -114,6 +114,92 @@ void main() {
     );
   });
 
+  test('五主标签扁平人物限定九种姿态并回退到 C-08', () {
+    expect(
+      TrainMateActionAssets.flatShowcaseActions,
+      hasLength(9),
+    );
+    expect(
+      TrainMateActionAssets.flatShowcaseActions,
+      containsAll(<TrainMateAction>[
+        TrainMateAction.pointingGuide,
+        TrainMateAction.running,
+        TrainMateAction.sideLungeStretch,
+        TrainMateAction.seatedMeditation,
+        TrainMateAction.jumpingJack,
+        TrainMateAction.highKnees,
+        TrainMateAction.squat,
+        TrainMateAction.seatedForwardFold,
+        TrainMateAction.treePoseBalance,
+      ]),
+    );
+    final Set<String> flatPaths = <String>{
+      for (final TrainMateAction action
+          in TrainMateActionAssets.flatShowcaseActions)
+        for (final TrainMateCharacterVariant variant
+            in TrainMateCharacterVariant.values)
+          TrainMateActionAssets.flatShowcasePath(action, variant),
+    };
+    expect(flatPaths, hasLength(18));
+    expect(
+      flatPaths.every(
+        (String path) => path.startsWith(
+          'assets/branding/mate-flat-showcase-v1/action-characters/',
+        ),
+      ),
+      isTrue,
+    );
+
+    const TrainMateActionCharacter showcaseCharacter = TrainMateActionCharacter(
+      action: TrainMateAction.running,
+      backgroundColor: AppColors.transparent,
+      style: TrainMateCharacterStyle.flatShowcase,
+    );
+    expect(
+      showcaseCharacter.assetPath,
+      contains(
+        'mate-flat-showcase-v1/action-characters/peach-light/02-running.png',
+      ),
+    );
+
+    const TrainMateActionCharacter teachingCharacter = TrainMateActionCharacter(
+      action: TrainMateAction.sprint,
+      backgroundColor: AppColors.transparent,
+      style: TrainMateCharacterStyle.flatShowcase,
+    );
+    expect(
+      teachingCharacter.assetPath,
+      contains('mate-feast-bag-v2/action-characters/peach-light/07-sprint.png'),
+    );
+  });
+
+  test('五主标签扁平人物按背景应用两套品牌校色矩阵', () {
+    expect(
+      TrainMateActionAssets.flatShowcaseNavyColorMatrix,
+      hasLength(20),
+    );
+    expect(
+      TrainMateActionAssets.flatShowcasePeachLightColorMatrix,
+      hasLength(20),
+    );
+    expect(
+      TrainMateActionAssets.flatShowcaseColorMatrix(
+        TrainMateCharacterVariant.navy,
+      ),
+      same(TrainMateActionAssets.flatShowcaseNavyColorMatrix),
+    );
+    expect(
+      TrainMateActionAssets.flatShowcaseColorMatrix(
+        TrainMateCharacterVariant.peachLight,
+      ),
+      same(TrainMateActionAssets.flatShowcasePeachLightColorMatrix),
+    );
+    expect(
+      TrainMateActionAssets.flatShowcasePeachLightColorMatrix,
+      isNot(TrainMateActionAssets.flatShowcaseNavyColorMatrix),
+    );
+  });
+
   test('动作分类和器械状态按固定规则映射动作', () {
     expect(
       trainMateActionForExercise(
@@ -196,11 +282,15 @@ void main() {
 
     // 页头（深紫底）加载浅色（peachLight）；卡片（白底）加载墨兰（navy）。
     expect(
-      find.byKey(const ValueKey<String>('trainmate-action-running-peachLight')),
+      find.byKey(
+        const ValueKey<String>('trainmate-action-running-peachLight'),
+      ),
       findsOneWidget,
     );
     expect(
-      find.byKey(const ValueKey<String>('trainmate-action-running-navy')),
+      find.byKey(
+        const ValueKey<String>('trainmate-action-running-navy'),
+      ),
       findsOneWidget,
     );
     expect(
@@ -219,6 +309,50 @@ void main() {
         ),
       ),
       findsOneWidget,
+    );
+    expect(tester.takeException(), isNull);
+  });
+
+  testWidgets('扁平展示人物应用校色而 C-08 保持原色', (tester) async {
+    await tester.pumpWidget(
+      const MaterialApp(
+        home: Scaffold(
+          body: Row(
+            children: [
+              TrainMateActionCharacter(
+                action: TrainMateAction.sideLungeStretch,
+                backgroundColor: Color(0xFF438CF5),
+                style: TrainMateCharacterStyle.flatShowcase,
+              ),
+              TrainMateActionCharacter(
+                action: TrainMateAction.sideLungeStretch,
+                backgroundColor: Color(0xFF438CF5),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+
+    final Finder flatCharacter = find.byKey(
+      const ValueKey<String>(
+        'trainmate-flat-showcase-action-sideLungeStretch-peachLight',
+      ),
+    );
+    final Finder c08Character = find.byKey(
+      const ValueKey<String>(
+        'trainmate-action-sideLungeStretch-peachLight',
+      ),
+    );
+    expect(flatCharacter, findsOneWidget);
+    expect(c08Character, findsOneWidget);
+    expect(
+      find.ancestor(of: flatCharacter, matching: find.byType(ColorFiltered)),
+      findsOneWidget,
+    );
+    expect(
+      find.ancestor(of: c08Character, matching: find.byType(ColorFiltered)),
+      findsNothing,
     );
     expect(tester.takeException(), isNull);
   });

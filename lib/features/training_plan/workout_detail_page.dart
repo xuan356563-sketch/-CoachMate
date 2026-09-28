@@ -288,7 +288,7 @@ class _PlanAdjustmentSheetState extends ConsumerState<_PlanAdjustmentSheet> {
     super.dispose();
   }
 
-  void _save() {
+  Future<void> _save() async {
     final int? adjustedMinutes = int.tryParse(_minutesController.text.trim());
     final String reason = _reasonController.text.trim();
     if (adjustedMinutes == null ||
@@ -305,19 +305,41 @@ class _PlanAdjustmentSheetState extends ConsumerState<_PlanAdjustmentSheet> {
       });
       return;
     }
-    ref.read(planAdjustmentControllerProvider.notifier).saveManualAdjustment(
-          workout: widget.workout,
-          adjustedMinutes: adjustedMinutes,
-          adjustedIntensity: _selectedIntensity,
-          reason: reason,
-        );
+    try {
+      await ref
+          .read(planAdjustmentControllerProvider.notifier)
+          .saveManualAdjustment(
+            workout: widget.workout,
+            adjustedMinutes: adjustedMinutes,
+            adjustedIntensity: _selectedIntensity,
+            reason: reason,
+          );
+    } on Object catch (error) {
+      if (!mounted) return;
+      setState(() => _errorMessage = _operationError(
+            error,
+            fallback: '计划调整保存失败，请重试。',
+          ));
+      return;
+    }
+    if (!mounted) return;
     Navigator.of(context).pop();
   }
 
-  void _restore() {
-    ref
-        .read(planAdjustmentControllerProvider.notifier)
-        .restoreOriginalPlan(widget.workout);
+  Future<void> _restore() async {
+    try {
+      await ref
+          .read(planAdjustmentControllerProvider.notifier)
+          .restoreOriginalPlan(widget.workout);
+    } on Object catch (error) {
+      if (!mounted) return;
+      setState(() => _errorMessage = _operationError(
+            error,
+            fallback: '恢复原计划失败，请重试。',
+          ));
+      return;
+    }
+    if (!mounted) return;
     Navigator.of(context).pop();
   }
 
@@ -429,6 +451,11 @@ class _PlanAdjustmentSheetState extends ConsumerState<_PlanAdjustmentSheet> {
       ),
     );
   }
+}
+
+String _operationError(Object error, {required String fallback}) {
+  if (error is StateError) return error.message.toString();
+  return fallback;
 }
 
 Color _decisionColor(TrainingDecisionType decisionType) {

@@ -15,12 +15,25 @@ from app.core.config import Settings
 from app.core.errors import ApiError
 from app.services.ai_response_cache import (
     AiResponseCache,
+    build_ai_idempotency_key,
     build_ai_response_cache_key,
     cache_user_domain,
 )
-from app.services.prompt_budget import CHAT_PROMPT_POLICY, compact_chat_messages
+from app.services.prompt_budget import CHAT_PROMPT_POLICY
 
-AiChatRole = Literal["user", "assistant"]
+AiChatRequestIntent = Literal[
+    "explain_today_training",
+    "explain_plan_structure",
+    "explain_training_focus",
+]
+AiChatSportCode = Literal[
+    "marathon",
+    "trail_running",
+    "strength",
+    "hyrox",
+    "general_fitness",
+]
+AiChatScheduledPeriod = Literal["morning", "midday", "evening", "late_night"]
 AiChatIntent = Literal[
     "training_question",
     "explain_plan",
@@ -31,43 +44,36 @@ AiChatAction = Literal[
     "view_active_plan",
     "open_plan_generator",
 ]
-AI_CHAT_PROMPT_CONTRACT = "ai-chat-v2"
-
-
-class AiChatMessageInput(BaseModel):
-    """允许进入云端的最小聊天消息。"""
-
-    model_config = ConfigDict(extra="forbid", str_strip_whitespace=True)
-
-    role: AiChatRole
-    content: str = Field(min_length=1, max_length=600)
+AI_CHAT_PROMPT_CONTRACT = "ai-chat-v3-structured"
 
 
 class AiChatContext(BaseModel):
-    """仅包含非健康训练约束的上下文。"""
+    """只允许固定代码和数值进入云端的训练上下文。"""
 
     model_config = ConfigDict(extra="forbid", str_strip_whitespace=True)
 
-    goal: str = Field(default="保持稳定训练", max_length=120)
-    sports: list[str] = Field(default_factory=list, max_length=4)
+    sport_codes: list[AiChatSportCode] = Field(default_factory=list, max_length=4)
     available_minutes: int = Field(default=30, ge=0, le=360)
     scheduled_minutes: int | None = Field(default=None, ge=0, le=360)
-    scheduled_period: str | None = Field(default=None, max_length=32)
+    scheduled_period: AiChatScheduledPeriod | None = None
 
-    @field_validator("sports")
+    @field_validator("sport_codes")
     @classmethod
-    def normalize_sports(cls, values: list[str]) -> list[str]:
-        return [value.strip()[:32] for value in values if value.strip()][:4]
+    def deduplicate_sport_codes(
+        cls,
+        values: list[AiChatSportCode],
+    ) -> list[AiChatSportCode]:
+        return list(dict.fromkeys(values))[:4]
 
 
 class AiChatRequest(BaseModel):
-    """无状态聊天请求；服务端不保存原始消息。"""
+    """结构化聊天请求；协议中不存在可承载健康正文的字段。"""
 
     model_config = ConfigDict(extra="forbid", str_strip_whitespace=True)
 
-    contract_version: Literal[1]
+    contract_version: Literal[2]
     request_id: str = Field(min_length=8, max_length=80)
-    messages: list[AiChatMessageInput] = Field(min_length=1, max_length=8)
+    intent: AiChatRequestIntent
     context: AiChatContext
 
 
@@ -122,15 +128,9 @@ class HttpDeepSeekChatClient:
             "不得声称已经修改训练计划；需要改计划时只建议打开计划生成器。"
             "只返回 JSON：reply、intent、suggested_actions、warnings。"
         )
-        compacted_messages = compact_chat_messages(
-            [
-                item.model_dump(mode="json")
-                for item in request.messages
-            ],
-        )
         user_prompt = json.dumps(
             {
-                "messages": compacted_messages,
+                "intent": request.intent,
                 "context": request.context.model_dump(
                     mode="json",
                     exclude_none=True,
@@ -226,6 +226,7 @@ class HttpDeepSeekChatClient:
 @dataclass(frozen=True)
 class _CachedReply:
     expires_at: float
+    request_digest: str
     response: AiChatResponse
 
 
@@ -245,19 +246,31 @@ class AiChatService:
         self._response_cache = response_cache
         self._model = model
         self._cache: dict[tuple[UUID, str], _CachedReply] = {}
+        self._inflight: dict[
+            tuple[UUID, str],
+            tuple[str, asyncio.Task[AiChatResponse]],
+        ] = {}
         self._lock = asyncio.Lock()
 
     async def reply(self, user_id: UUID, request: AiChatRequest) -> AiChatResponse:
-        if contains_health_content(request):
-            raise ApiError(
-                422,
-                "ai_chat_health_data_not_allowed",
-                "身体与健康信息只在本机处理，请使用本地状态卡。",
-            )
+        request_digest = _request_digest(request)
         if self._response_cache is not None:
-            request_digest = hashlib.sha256(
-                request.request_id.encode("utf-8"),
-            ).hexdigest()
+            binding = await self._response_cache.bind_request_digest(
+                key=build_ai_idempotency_key(
+                    user_id=user_id,
+                    request_id=request.request_id,
+                ),
+                request_digest=request_digest,
+                ttl_seconds=self._cache_ttl_seconds,
+            )
+            if binding == "conflict":
+                raise _idempotency_conflict()
+            if binding == "unavailable":
+                return await self._reply_with_local_cache(
+                    user_id,
+                    request,
+                    request_digest,
+                )
             cache_key = build_ai_response_cache_key(
                 capability="chat",
                 model=self._model,
@@ -279,6 +292,19 @@ class AiChatService:
             )
             return _response_from_cache(cached, cache_hit=cache_hit)
 
+        return await self._reply_with_local_cache(
+            user_id,
+            request,
+            request_digest,
+        )
+
+    async def _reply_with_local_cache(
+        self,
+        user_id: UUID,
+        request: AiChatRequest,
+        request_digest: str,
+    ) -> AiChatResponse:
+        """Redis 不可用时复用进程内短期结果，并保留冲突检测。"""
         key = (user_id, request.request_id)
         now = time.monotonic()
         async with self._lock:
@@ -289,12 +315,30 @@ class AiChatService:
             }
             cached = self._cache.get(key)
             if cached is not None:
+                if cached.request_digest != request_digest:
+                    raise _idempotency_conflict()
                 return cached.response
+            inflight = self._inflight.get(key)
+            if inflight is not None:
+                bound_digest, task = inflight
+                if bound_digest != request_digest:
+                    raise _idempotency_conflict()
+            else:
+                task = asyncio.create_task(self._client.reply(request))
+                self._inflight[key] = (request_digest, task)
 
-        response = await self._client.reply(request)
+        try:
+            response = await task
+        finally:
+            if task.done():
+                async with self._lock:
+                    current = self._inflight.get(key)
+                    if current is not None and current[1] is task:
+                        self._inflight.pop(key, None)
         async with self._lock:
             self._cache[key] = _CachedReply(
                 expires_at=time.monotonic() + self._cache_ttl_seconds,
+                request_digest=request_digest,
                 response=response,
             )
         return response
@@ -334,34 +378,22 @@ def _response_from_cache(
     )
 
 
-_HEALTH_TERMS = (
-    "身体",
-    "健康",
-    "睡眠",
-    "心率",
-    "静息",
-    "hrv",
-    "体重",
-    "体脂",
-    "疲劳",
-    "酸痛",
-    "疼痛",
-    "伤病",
-    "受伤",
-    "恢复",
-    "准备度",
-    "healthkit",
-    "blood pressure",
-    "blood glucose",
-)
+def _request_digest(request: AiChatRequest) -> str:
+    material = request.model_dump(mode="json", exclude={"request_id"})
+    encoded = json.dumps(
+        material,
+        ensure_ascii=True,
+        sort_keys=True,
+        separators=(",", ":"),
+    )
+    return hashlib.sha256(encoded.encode("utf-8")).hexdigest()
 
 
-def contains_health_content(request: AiChatRequest) -> bool:
-    """保守识别健康内容，客户端漏拦截时仍拒绝发送给模型。"""
-    return any(
-        term in message.content.lower()
-        for message in request.messages
-        for term in _HEALTH_TERMS
+def _idempotency_conflict() -> ApiError:
+    return ApiError(
+        409,
+        "ai_chat_idempotency_conflict",
+        "同一请求标识不能用于不同的训练问题，请重新发送。",
     )
 
 

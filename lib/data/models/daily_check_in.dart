@@ -23,6 +23,8 @@ class DailyCheckInSummary {
   final String explanation;
   final String sortExplanation;
   final bool canUseYesterday;
+  final String yesterdayDescription;
+  final String? yesterdayFingerprint;
   final List<DailyCheckInPrompt> prompts;
 
   const DailyCheckInSummary({
@@ -32,6 +34,8 @@ class DailyCheckInSummary {
     required this.explanation,
     required this.sortExplanation,
     required this.canUseYesterday,
+    this.yesterdayDescription = '尚无可用昨日记录，请填写今天的状态。',
+    this.yesterdayFingerprint,
     required this.prompts,
   });
 

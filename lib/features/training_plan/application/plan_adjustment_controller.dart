@@ -1,3 +1,6 @@
+import '../../../plugins/application/feature_controller_binding.dart';
+import '../../../plugins/application/feature_access.dart';
+import '../../../plugins/application/plugin_runtime_provider.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../data/models/plan_adjustment.dart';
@@ -38,6 +41,7 @@ class PlanAdjustmentController extends Notifier<PlanAdjustmentState> {
 
   @override
   PlanAdjustmentState build() {
+    bindFeatureController(ref, 'feature.training_plan', 'adjustment', this);
     final List<PlanAdjustment> adjustments =
         ref.watch(planAdjustmentRepositoryProvider).listAdjustments();
     return PlanAdjustmentState(
@@ -49,12 +53,15 @@ class PlanAdjustmentController extends Notifier<PlanAdjustmentState> {
   }
 
   /// 保存用户手动调整后的训练日记录。
-  void saveManualAdjustment({
+  Future<void> saveManualAdjustment({
     required WorkoutDay workout,
     required int adjustedMinutes,
     required String adjustedIntensity,
     required String reason,
-  }) {
+    FeatureOperation? sourceOperation,
+  }) async {
+    final FeatureOperation operation = sourceOperation ??
+        ref.read(featureAccessProvider).beginOperation('feature.training_plan');
     final String intensity = adjustedIntensity.trim();
     final String normalizedReason = reason.trim();
     if (adjustedMinutes < 5 || adjustedMinutes > 180) {
@@ -79,29 +86,33 @@ class PlanAdjustmentController extends Notifier<PlanAdjustmentState> {
     final String originalIntensity =
         previous?.originalIntensity ?? canonicalWorkout.intensity;
     final DateTime now = DateTime.now();
-    ref.read(planAdjustmentRepositoryProvider).saveAdjustment(
-          PlanAdjustment(
-            id: 'plan-adjustment-${canonicalWorkout.id}-${now.millisecondsSinceEpoch}',
-            planId: canonicalWorkout.planId,
-            workoutDayId: canonicalWorkout.id,
-            workoutTitle: canonicalWorkout.title,
-            originalEstimatedMinutes: originalMinutes,
-            adjustedEstimatedMinutes: adjustedMinutes,
-            originalIntensity: originalIntensity,
-            adjustedIntensity: intensity,
-            reason: normalizedReason,
-            kind: PlanAdjustmentKind.adjusted,
-            adjustedAt: now,
-          ),
-        );
-    _refresh(
+    final PlanAdjustment adjustment = PlanAdjustment(
+      id: 'plan-adjustment-${canonicalWorkout.id}-${now.millisecondsSinceEpoch}',
+      planId: canonicalWorkout.planId,
+      workoutDayId: canonicalWorkout.id,
+      workoutTitle: canonicalWorkout.title,
+      originalEstimatedMinutes: originalMinutes,
+      adjustedEstimatedMinutes: adjustedMinutes,
+      originalIntensity: originalIntensity,
+      adjustedIntensity: intensity,
+      reason: normalizedReason,
+      kind: PlanAdjustmentKind.adjusted,
+      adjustedAt: now,
+    );
+    await _commitAdjustmentWrite(
+      operation,
+      () =>
+          ref.read(planAdjustmentRepositoryProvider).saveAdjustment(adjustment),
       '已记录为本地学习信号：${canonicalWorkout.title} 调整为 '
       '$adjustedMinutes 分钟 · $intensity。',
     );
   }
 
   /// 保存恢复原始计划的本地学习信号。
-  void restoreOriginalPlan(WorkoutDay workout) {
+  Future<void> restoreOriginalPlan(WorkoutDay workout,
+      {FeatureOperation? sourceOperation}) async {
+    final FeatureOperation operation = sourceOperation ??
+        ref.read(featureAccessProvider).beginOperation('feature.training_plan');
     final WorkoutDay? canonicalWorkout =
         _planRepository.findWorkoutDayById(workout.id);
     if (canonicalWorkout == null) {
@@ -115,31 +126,37 @@ class PlanAdjustmentController extends Notifier<PlanAdjustmentState> {
     final String originalIntensity =
         previous?.originalIntensity ?? canonicalWorkout.intensity;
     final DateTime now = DateTime.now();
-    ref.read(planAdjustmentRepositoryProvider).saveAdjustment(
-          PlanAdjustment(
-            id: 'plan-restored-${canonicalWorkout.id}-${now.millisecondsSinceEpoch}',
-            planId: canonicalWorkout.planId,
-            workoutDayId: canonicalWorkout.id,
-            workoutTitle: canonicalWorkout.title,
-            originalEstimatedMinutes: originalMinutes,
-            adjustedEstimatedMinutes: originalMinutes,
-            originalIntensity: originalIntensity,
-            adjustedIntensity: originalIntensity,
-            reason: '用户恢复原计划。',
-            kind: PlanAdjustmentKind.restored,
-            adjustedAt: now,
-          ),
-        );
-    _refresh('已恢复原计划并记录为本地学习信号：${canonicalWorkout.title}。');
+    final PlanAdjustment adjustment = PlanAdjustment(
+      id: 'plan-restored-${canonicalWorkout.id}-${now.millisecondsSinceEpoch}',
+      planId: canonicalWorkout.planId,
+      workoutDayId: canonicalWorkout.id,
+      workoutTitle: canonicalWorkout.title,
+      originalEstimatedMinutes: originalMinutes,
+      adjustedEstimatedMinutes: originalMinutes,
+      originalIntensity: originalIntensity,
+      adjustedIntensity: originalIntensity,
+      reason: '用户恢复原计划。',
+      kind: PlanAdjustmentKind.restored,
+      adjustedAt: now,
+    );
+    await _commitAdjustmentWrite(
+      operation,
+      () =>
+          ref.read(planAdjustmentRepositoryProvider).saveAdjustment(adjustment),
+      '已恢复原计划并记录为本地学习信号：${canonicalWorkout.title}。',
+    );
   }
 
   /// 应用已经由用户确认的 ACWR 调整建议。
   ///
   /// 该入口只接受单个训练日的确定性差异；周总量建议不会在这里猜测分摊。
-  void applyConfirmedProposal({
+  Future<void> applyConfirmedProposal({
     required AdjustmentProposal proposal,
     required WorkoutDay currentWorkout,
-  }) {
+    FeatureOperation? sourceOperation,
+  }) async {
+    final FeatureOperation operation = sourceOperation ??
+        ref.read(featureAccessProvider).beginOperation('feature.training_plan');
     if (proposal.status != AdjustmentProposalStatus.confirmed) {
       throw StateError('调整建议尚未确认，训练计划保持不变。');
     }
@@ -161,30 +178,36 @@ class PlanAdjustmentController extends Notifier<PlanAdjustmentState> {
     }
 
     final DateTime adjustedAt = proposal.confirmedAt ?? DateTime.now();
-    ref.read(planAdjustmentRepositoryProvider).saveAdjustment(
-          PlanAdjustment(
-            id: 'plan-proposal-${proposal.id}-${adjustedAt.microsecondsSinceEpoch}',
-            planId: proposal.planId,
-            workoutDayId: currentWorkout.id,
-            workoutTitle: currentWorkout.title,
-            originalEstimatedMinutes: proposal.originalMinutes,
-            adjustedEstimatedMinutes: proposal.adjustedMinutes,
-            originalIntensity: proposal.originalIntensity,
-            adjustedIntensity: adjustedIntensity,
-            reason: proposal.explanation,
-            kind: PlanAdjustmentKind.adjusted,
-            adjustedAt: adjustedAt,
-            sourceProposalId: proposal.id,
-          ),
-        );
-    _refresh('已应用经确认的负荷调整：${currentWorkout.title}。');
+    final PlanAdjustment adjustment = PlanAdjustment(
+      id: 'plan-proposal-${proposal.id}-${adjustedAt.microsecondsSinceEpoch}',
+      planId: proposal.planId,
+      workoutDayId: currentWorkout.id,
+      workoutTitle: currentWorkout.title,
+      originalEstimatedMinutes: proposal.originalMinutes,
+      adjustedEstimatedMinutes: proposal.adjustedMinutes,
+      originalIntensity: proposal.originalIntensity,
+      adjustedIntensity: adjustedIntensity,
+      reason: proposal.explanation,
+      kind: PlanAdjustmentKind.adjusted,
+      adjustedAt: adjustedAt,
+      sourceProposalId: proposal.id,
+    );
+    await _commitAdjustmentWrite(
+      operation,
+      () =>
+          ref.read(planAdjustmentRepositoryProvider).saveAdjustment(adjustment),
+      '已应用经确认的负荷调整：${currentWorkout.title}。',
+    );
   }
 
   /// 把周总量建议按预览快照一次性写入；任一训练日变化都会阻止整组应用。
-  void applyConfirmedWeeklyProposal({
+  Future<void> applyConfirmedWeeklyProposal({
     required AdjustmentProposal proposal,
     required List<WorkoutDay> currentWorkouts,
-  }) {
+    FeatureOperation? sourceOperation,
+  }) async {
+    final FeatureOperation operation = sourceOperation ??
+        ref.read(featureAccessProvider).beginOperation('feature.training_plan');
     if (proposal.status != AdjustmentProposalStatus.confirmed) {
       throw StateError('周总量调整建议尚未确认，训练计划保持不变。');
     }
@@ -243,20 +266,26 @@ class PlanAdjustmentController extends Notifier<PlanAdjustmentState> {
           ),
         )
         .toList(growable: false);
-    ref
-        .read(planAdjustmentRepositoryProvider)
-        .saveAdjustmentsAtomically(adjustments);
-    _refresh('已应用经确认的周总量调整，共 ${adjustments.length} 个训练日。');
+    await _commitAdjustmentWrite(
+      operation,
+      () => ref
+          .read(planAdjustmentRepositoryProvider)
+          .saveAdjustmentsAtomically(adjustments),
+      '已应用经确认的周总量调整，共 ${adjustments.length} 个训练日。',
+    );
   }
 
   /// 撤销指定建议产生的调整；若用户随后又手动修改计划，则拒绝覆盖新修改。
-  void undoConfirmedProposal(AdjustmentProposal proposal) {
+  Future<void> undoConfirmedProposal(AdjustmentProposal proposal,
+      {FeatureOperation? sourceOperation}) async {
+    final FeatureOperation operation = sourceOperation ??
+        ref.read(featureAccessProvider).beginOperation('feature.training_plan');
     if (proposal.status != AdjustmentProposalStatus.confirmed &&
         proposal.status != AdjustmentProposalStatus.undone) {
       throw StateError('只有已确认的调整建议可以撤销。');
     }
     if (proposal.workoutChanges.isNotEmpty) {
-      _undoConfirmedWeeklyProposal(proposal);
+      await _undoConfirmedWeeklyProposal(proposal, operation);
       return;
     }
     final String? workoutDayId = proposal.workoutDayId;
@@ -271,26 +300,30 @@ class PlanAdjustmentController extends Notifier<PlanAdjustmentState> {
     }
 
     final DateTime adjustedAt = proposal.undoneAt ?? DateTime.now();
-    ref.read(planAdjustmentRepositoryProvider).saveAdjustment(
-          PlanAdjustment(
-            id: 'plan-proposal-undo-${proposal.id}-${adjustedAt.microsecondsSinceEpoch}',
-            planId: proposal.planId,
-            workoutDayId: workoutDayId,
-            workoutTitle: proposal.workoutTitle,
-            originalEstimatedMinutes: proposal.originalMinutes,
-            adjustedEstimatedMinutes: proposal.originalMinutes,
-            originalIntensity: proposal.originalIntensity,
-            adjustedIntensity: proposal.originalIntensity,
-            reason: '用户撤销 ACWR 调整建议，恢复确认前快照。',
-            kind: PlanAdjustmentKind.restored,
-            adjustedAt: adjustedAt,
-            sourceProposalId: proposal.id,
-          ),
-        );
-    _refresh('已撤销负荷调整并恢复确认前计划：${proposal.workoutTitle}。');
+    final PlanAdjustment adjustment = PlanAdjustment(
+      id: 'plan-proposal-undo-${proposal.id}-${adjustedAt.microsecondsSinceEpoch}',
+      planId: proposal.planId,
+      workoutDayId: workoutDayId,
+      workoutTitle: proposal.workoutTitle,
+      originalEstimatedMinutes: proposal.originalMinutes,
+      adjustedEstimatedMinutes: proposal.originalMinutes,
+      originalIntensity: proposal.originalIntensity,
+      adjustedIntensity: proposal.originalIntensity,
+      reason: '用户撤销 ACWR 调整建议，恢复确认前快照。',
+      kind: PlanAdjustmentKind.restored,
+      adjustedAt: adjustedAt,
+      sourceProposalId: proposal.id,
+    );
+    await _commitAdjustmentWrite(
+      operation,
+      () =>
+          ref.read(planAdjustmentRepositoryProvider).saveAdjustment(adjustment),
+      '已撤销负荷调整并恢复确认前计划：${proposal.workoutTitle}。',
+    );
   }
 
-  void _undoConfirmedWeeklyProposal(AdjustmentProposal proposal) {
+  Future<void> _undoConfirmedWeeklyProposal(
+      AdjustmentProposal proposal, FeatureOperation operation) async {
     final List<PlanAdjustment> active = <PlanAdjustment>[];
     for (final AdjustmentProposalWorkoutChange change
         in proposal.workoutChanges) {
@@ -325,10 +358,13 @@ class PlanAdjustmentController extends Notifier<PlanAdjustmentState> {
           sourceProposalId: proposal.id,
         ),
     ];
-    ref.read(planAdjustmentRepositoryProvider).saveAdjustmentsAtomically(
-          restored,
-        );
-    _refresh('已整组撤销周总量调整并恢复确认前计划。');
+    await _commitAdjustmentWrite(
+      operation,
+      () => ref
+          .read(planAdjustmentRepositoryProvider)
+          .saveAdjustmentsAtomically(restored),
+      '已整组撤销周总量调整并恢复确认前计划。',
+    );
   }
 
   /// 删除由健康指标建议产生的计划投影，保留用户手动调整记录。
@@ -357,6 +393,43 @@ class PlanAdjustmentController extends Notifier<PlanAdjustmentState> {
       adjustments: adjustments,
       statusMessage: statusMessage,
     );
+  }
+
+  Future<void> _commitAdjustmentWrite(
+    FeatureOperation operation,
+    void Function() write,
+    String statusMessage,
+  ) {
+    return operation.commit(() async {
+      write();
+      await ref.read(localStorageServiceProvider).flush();
+      _refresh(statusMessage);
+    });
+  }
+
+  /// 每日提案经审核后以原调整文档作为唯一权威写入，失败恢复文档和缓存。
+  Future<void> commitCourseAdjustment(PlanAdjustment adjustment,
+      {required FeatureOperation operation, required void Function() recheck}) {
+    return operation.commit(() async {
+      recheck();
+      final storage = ref.read(localStorageServiceProvider);
+      final before = storage.readJson(PersistedPlanAdjustmentRepository.storageKey);
+      try {
+        ref.read(planAdjustmentRepositoryProvider).saveAdjustment(adjustment);
+        await storage.flush();
+      } catch (_) {
+        if (before == null) {
+          storage.remove(PersistedPlanAdjustmentRepository.storageKey);
+        } else {
+          storage.saveJson(PersistedPlanAdjustmentRepository.storageKey, before);
+        }
+        try { await storage.flush(); } finally {
+          ref.invalidate(planAdjustmentRepositoryProvider);
+        }
+        rethrow;
+      }
+      _refresh('已应用经确认的每日课程调整：${adjustment.workoutTitle}。');
+    });
   }
 
   void _setStatus(String statusMessage) {

@@ -1,16 +1,13 @@
-import 'dart:math' as math;
 import 'dart:ui' as ui;
 
 import 'package:flutter/material.dart';
 
 import '../../core/theme/trainflow_tokens.dart';
-import '../../core/widgets/coach_mate_orb.dart';
 import 'trainmate_bottom_navigation.dart' show NavigationItem;
 
-/// 底部导航 v2：悬浮白玻璃胶囊 + 中央 hero 球体（AI / 运动搭子入口）。
+/// 五槽位深紫导航：选中胶囊在固定入口之间连续移动。
 ///
-/// 参考图形态：5 等分 —— 4 角线性图标（无文字标签）+ 中央 64pt 渐变球体向上凸出；
-/// 角落 Tab 选中用深色圆底 + 青柠图标，切换为颜色 / 缩放过渡（无滑动圆盘）。
+/// 外部接口保持与旧 v2 一致，避免影响路由和测试调用；内部不再保留中央常驻球体。
 class TrainMateBottomNavigationV2 extends StatefulWidget {
   const TrainMateBottomNavigationV2({
     super.key,
@@ -19,16 +16,14 @@ class TrainMateBottomNavigationV2 extends StatefulWidget {
     required this.animationDuration,
     required this.onDestinationSelected,
     this.surfaceColor = Colors.transparent,
-  }) : assert(items.length == 5, '底部导航 v2 需要 5 个槽位（含中央球体）');
+  })  : assert(items.length >= 2, '底部导航至少保留今日和我的'),
+        assert(selectedIndex >= 0 && selectedIndex < items.length, '导航选中项超出范围');
 
   final List<NavigationItem> items;
   final int selectedIndex;
   final Duration animationDuration;
   final ValueChanged<int> onDestinationSelected;
   final Color surfaceColor;
-
-  /// 中央球体固定在第 3 格（index 2）。
-  static const int orbIndex = 2;
 
   @override
   State<TrainMateBottomNavigationV2> createState() =>
@@ -38,44 +33,83 @@ class TrainMateBottomNavigationV2 extends StatefulWidget {
 class _TrainMateBottomNavigationV2State
     extends State<TrainMateBottomNavigationV2>
     with SingleTickerProviderStateMixin {
-  late final AnimationController _idleController;
-  bool _orbEntranceStarted = false;
+  late final AnimationController _selectionController;
+  double _fromPosition = 0;
+  double _toPosition = 0;
   int _pressedIndex = -1;
 
   @override
   void initState() {
     super.initState();
-    _idleController = AnimationController(
+    final double initial = widget.selectedIndex.toDouble();
+    _fromPosition = initial;
+    _toPosition = initial;
+    _selectionController = AnimationController(
       vsync: this,
-      duration: const Duration(seconds: 6),
+      duration: widget.animationDuration,
+      value: 1,
     );
+  }
+
+  @override
+  void didUpdateWidget(covariant TrainMateBottomNavigationV2 oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    final changedItems = widget.items.map((i) => i.path).join('|') !=
+        oldWidget.items.map((i) => i.path).join('|');
+    if (changedItems) {
+      _pressedIndex = -1;
+      _fromPosition = widget.selectedIndex.toDouble();
+      _toPosition = _fromPosition;
+      _selectionController.value = 1;
+      return;
+    }
+    if (widget.selectedIndex == oldWidget.selectedIndex) return;
+
+    final double current = _visualPosition;
+    _fromPosition = current;
+    _toPosition = widget.selectedIndex.toDouble();
+    _selectionController.duration = widget.animationDuration;
+    if (!_motionEnabled || widget.animationDuration == Duration.zero) {
+      _selectionController.value = 1;
+    } else {
+      _selectionController.forward(from: 0);
+    }
   }
 
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
-    // 光斑流动只播一次（进场动效），避免无限 repeat 阻塞测试 settle。
-    if (_orbEntranceStarted) return;
-    _orbEntranceStarted = true;
-    if (TrainFlowMotion.isEnabled(context)) {
-      _idleController.forward();
-    } else {
-      _idleController.value = 0.3;
+    if (!_motionEnabled && _selectionController.value != 1) {
+      _selectionController.value = 1;
     }
+  }
+
+  bool get _motionEnabled =>
+      TrainFlowMotion.isEnabled(context) &&
+      widget.animationDuration != Duration.zero;
+
+  double get _visualPosition {
+    final double curved = Curves.easeOutCubic.transform(
+      _selectionController.value,
+    );
+    return ui.lerpDouble(_fromPosition, _toPosition, curved) ?? _toPosition;
   }
 
   @override
   void dispose() {
-    _idleController.dispose();
+    _selectionController.dispose();
     super.dispose();
   }
 
   void _setPressed(int index, bool pressed) {
-    if (pressed && _pressedIndex != index) {
-      setState(() => _pressedIndex = index);
-    } else if (!pressed && _pressedIndex == index) {
-      setState(() => _pressedIndex = -1);
+    if ((_pressedIndex == index && !pressed) ||
+        (_pressedIndex != index && pressed)) {
+      setState(() => _pressedIndex = pressed ? index : -1);
     }
+  }
+
+  void _select(int index) {
+    widget.onDestinationSelected(index);
   }
 
   @override
@@ -85,172 +119,115 @@ class _TrainMateBottomNavigationV2State
       color: widget.surfaceColor,
       child: SafeArea(
         top: false,
-        minimum: const EdgeInsets.only(bottom: 16),
-        child: Center(
-          heightFactor: 1,
-          child: ConstrainedBox(
-            constraints: const BoxConstraints(
-              maxWidth: TrainFlowTokens.pageMaxWidth,
-            ),
-            child: LayoutBuilder(
-              builder: (BuildContext context, BoxConstraints constraints) {
-                final double viewWidth = constraints.maxWidth;
-                final double capsuleWidth =
-                    math.min(viewWidth - 32, TrainFlowTokens.pageMaxWidth - 32);
-                final double capsuleLeft = (viewWidth - capsuleWidth) / 2;
-                final double orbSize = 56;
-                return SizedBox(
-                  height: TrainFlowTokens.bottomNavigationVisualHeight,
-                  child: Stack(
-                    key: const ValueKey<String>(
-                      'trainmate-bottom-navigation',
-                    ),
-                    clipBehavior: Clip.none,
-                    children: <Widget>[
-                      Positioned(
-                        left: 0,
-                        right: 0,
-                        bottom: 0,
-                        height: 96,
-                        child: IgnorePointer(
-                          child: _BottomGlow(
-                            animation: widget.animationDuration == Duration.zero
-                                ? 0.3
-                                : _idleController.value,
+        minimum: const EdgeInsets.only(bottom: 12),
+        child: SizedBox(
+          height: TrainFlowTokens.bottomNavigationVisualHeight,
+          child: Center(
+            child: ConstrainedBox(
+              constraints: const BoxConstraints(
+                maxWidth: TrainFlowTokens.pageMaxWidth,
+              ),
+              child: LayoutBuilder(
+                builder: (BuildContext context, BoxConstraints constraints) {
+                  final double navigationWidth =
+                      (constraints.maxWidth - 32).clamp(0, 398).toDouble();
+                  final double navigationLeft =
+                      (constraints.maxWidth - navigationWidth) / 2;
+                  final double slotWidth =
+                      navigationWidth / widget.items.length;
+                  return SizedBox(
+                    height: TrainFlowTokens.bottomNavigationVisualHeight,
+                    child: Stack(
+                      key:
+                          const ValueKey<String>('trainmate-bottom-navigation'),
+                      clipBehavior: Clip.none,
+                      children: <Widget>[
+                        Positioned(
+                          left: navigationLeft,
+                          bottom: 0,
+                          width: navigationWidth,
+                          height: TrainFlowTokens.bottomNavigationHeight,
+                          child: RepaintBoundary(
+                            child: DecoratedBox(
+                              key: const ValueKey<String>(
+                                'trainmate-bottom-navigation-v2-capsule',
+                              ),
+                              decoration: BoxDecoration(
+                                color: TrainFlowTokens.showcaseActionSurface,
+                                borderRadius: BorderRadius.circular(32),
+                                boxShadow: const <BoxShadow>[
+                                  BoxShadow(
+                                    color: TrainFlowTokens.showcaseShadow,
+                                    blurRadius: 12,
+                                    offset: Offset(0, 5),
+                                  ),
+                                ],
+                              ),
+                              child: Row(
+                                children: <Widget>[
+                                  for (int index = 0;
+                                      index < widget.items.length;
+                                      index += 1)
+                                    Expanded(
+                                      child: _NavigationSlot(
+                                        item: widget.items[index],
+                                        index: index,
+                                        selected: widget.selectedIndex == index,
+                                        pressed: _pressedIndex == index,
+                                        motionEnabled: _motionEnabled,
+                                        onPressed: () => _select(index),
+                                        onPressedChanged: (bool pressed) =>
+                                            _setPressed(index, pressed),
+                                      ),
+                                    ),
+                                ],
+                              ),
+                            ),
                           ),
                         ),
-                      ),
-                      Positioned(
-                        left: capsuleLeft,
-                        bottom: 16,
-                        width: capsuleWidth,
-                        height: 76,
-                        child: _buildCapsule(
-                          capsuleWidth: capsuleWidth,
+                        AnimatedBuilder(
+                          animation: _selectionController,
+                          builder: (BuildContext context, Widget? child) {
+                            final int targetIndex = widget.selectedIndex;
+                            final double left = navigationLeft +
+                                _visualPosition * slotWidth +
+                                (slotWidth -
+                                        TrainFlowTokens
+                                            .bottomNavigationSelectedPillWidth) /
+                                    2;
+                            return Positioned(
+                              left: left,
+                              bottom: 4,
+                              width: TrainFlowTokens
+                                  .bottomNavigationSelectedPillWidth,
+                              height: TrainFlowTokens
+                                  .bottomNavigationSelectedPillHeight,
+                              child: IgnorePointer(
+                                child: RepaintBoundary(
+                                  child: _SelectedNavigationPill(
+                                    item: widget.items[targetIndex],
+                                    yellow: targetIndex == 1,
+                                  ),
+                                ),
+                              ),
+                            );
+                          },
                         ),
-                      ),
-                      Positioned(
-                        left: capsuleLeft + capsuleWidth / 2 - orbSize / 2,
-                        top: 2,
-                        width: orbSize,
-                        height: orbSize,
-                        child: _buildOrb(),
-                      ),
-                    ],
-                  ),
-                );
-              },
-            ),
-          ),
-        ),
-      ),
-    );
-  }
-
-  Widget _buildCapsule({required double capsuleWidth}) {
-    return Container(
-      key: const ValueKey<String>('trainmate-bottom-navigation-v2-capsule'),
-      decoration: BoxDecoration(
-        color: const Color(0xFFFFFFFF),
-        borderRadius: BorderRadius.circular(32),
-        border: Border.all(color: TrainFlowTokens.border),
-        boxShadow: const <BoxShadow>[
-          BoxShadow(
-            color: Color(0x26191331),
-            blurRadius: 24,
-            offset: Offset(0, 8),
-          ),
-          BoxShadow(color: Color(0x146C3DF4), blurRadius: 16),
-        ],
-      ),
-      child: ClipRRect(
-        borderRadius: BorderRadius.circular(32),
-        child: BackdropFilter(
-          filter: ui.ImageFilter.blur(sigmaX: 20, sigmaY: 20),
-          child: Row(
-            children: <Widget>[
-              for (int index = 0; index < widget.items.length; index += 1)
-                Expanded(
-                  child: index == TrainMateBottomNavigationV2.orbIndex
-                      ? _OrbLabelCell(item: widget.items[index], selected: widget.selectedIndex == index)
-                      : _CornerTab(
-                          item: widget.items[index],
-                          index: index,
-                          selected: widget.selectedIndex == index,
-                          pressed: _pressedIndex == index,
-                          motionEnabled:
-                              TrainFlowMotion.isEnabled(context),
-                          onPressed: () =>
-                              widget.onDestinationSelected(index),
-                          onPressedChanged: (bool pressed) =>
-                              _setPressed(index, pressed),
-                        ),
-                ),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-
-  Widget _buildOrb() {
-    final int orbIndex = TrainMateBottomNavigationV2.orbIndex;
-    final NavigationItem item = widget.items[orbIndex];
-    final bool active = widget.selectedIndex == orbIndex;
-    return Semantics(
-      key: ValueKey<String>('bottom-nav-item-$orbIndex'),
-      label: item.label,
-      button: true,
-      selected: active,
-      onTap: () => widget.onDestinationSelected(orbIndex),
-      excludeSemantics: true,
-      child: Tooltip(
-        message: item.label,
-        excludeFromSemantics: true,
-        child: TweenAnimationBuilder<double>(
-          tween: Tween<double>(begin: 0, end: 1),
-          duration: TrainFlowMotion.resolve(
-            context,
-            TrainFlowMotion.sceneEntrance,
-          ),
-          curve: TrainFlowMotion.easeOut,
-          child: Material(
-            color: Colors.transparent,
-            child: InkResponse(
-              onTap: () => widget.onDestinationSelected(orbIndex),
-              radius: 32,
-              containedInkWell: true,
-              customBorder: const CircleBorder(),
-              splashColor: Colors.transparent,
-              highlightColor: Colors.transparent,
-              child: CoachMateOrb(
-                size: 56,
-                active: active,
-                phase: widget.animationDuration == Duration.zero
-                    ? 0.3
-                    : _idleController.value,
-                paintKey: const ValueKey<String>('central-hero-orb'),
+                      ],
+                    ),
+                  );
+                },
               ),
             ),
           ),
-          builder: (BuildContext context, double value, Widget? child) {
-            return Opacity(
-              opacity: value,
-              child: Transform.scale(
-                scale: 0.8 + 0.2 * value,
-                child: child,
-              ),
-            );
-          },
         ),
       ),
     );
   }
 }
 
-/// 角落 Tab：28pt 线性图标，选中为深色圆底 + 青柠图标（含发光）。
-class _CornerTab extends StatefulWidget {
-  const _CornerTab({
+class _NavigationSlot extends StatelessWidget {
+  const _NavigationSlot({
     required this.item,
     required this.index,
     required this.selected,
@@ -269,89 +246,43 @@ class _CornerTab extends StatefulWidget {
   final ValueChanged<bool> onPressedChanged;
 
   @override
-  State<_CornerTab> createState() => _CornerTabState();
-}
-
-class _CornerTabState extends State<_CornerTab> {
-  @override
   Widget build(BuildContext context) {
-    final Duration duration = TrainFlowMotion.resolve(
-      context,
-      TrainFlowMotion.navigationStandardSelection,
-    );
-    final double scale = widget.pressed && widget.motionEnabled ? 0.92 : 1;
-    final Color iconColor =
-        widget.selected ? TrainFlowTokens.accent : TrainFlowTokens.navigationInactive;
     return Semantics(
-      key: ValueKey<String>('bottom-nav-item-${widget.index}'),
+      key: ValueKey<String>('bottom-nav-item-$index'),
       button: true,
-      selected: widget.selected,
-      label: widget.item.label,
-      onTap: widget.onPressed,
+      selected: selected,
+      label: item.label,
+      onTap: onPressed,
       excludeSemantics: true,
       child: Tooltip(
-        message: widget.item.label,
+        message: item.label,
         excludeFromSemantics: true,
-        child: Center(
-          child: Material(
-            color: Colors.transparent,
-            child: InkResponse(
-              onTap: widget.onPressed,
-              onTapDown: (_) => widget.onPressedChanged(true),
-              onTapCancel: () => widget.onPressedChanged(false),
-              onTapUp: (_) => widget.onPressedChanged(false),
-              containedInkWell: true,
-              highlightShape: BoxShape.circle,
-              radius: 24,
-              splashColor: Colors.transparent,
-              highlightColor: Colors.transparent,
+        child: Material(
+          color: Colors.transparent,
+          child: InkResponse(
+            onTap: onPressed,
+            onTapDown: (_) => onPressedChanged(true),
+            onTapCancel: () => onPressedChanged(false),
+            onTapUp: (_) => onPressedChanged(false),
+            radius: 28,
+            containedInkWell: true,
+            highlightShape: BoxShape.circle,
+            splashColor: Colors.transparent,
+            highlightColor: Colors.transparent,
+            child: Center(
               child: AnimatedScale(
-                scale: scale,
-                duration: duration,
-                curve: TrainFlowMotion.easeOut,
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  children: <Widget>[
-                    AnimatedContainer(
-                      duration: duration,
-                      curve: TrainFlowMotion.easeOut,
-                      width: 48,
-                      height: 48,
-                      decoration: BoxDecoration(
-                        color: widget.selected
-                            ? TrainFlowTokens.brandDark
-                            : Colors.transparent,
-                        borderRadius: BorderRadius.circular(16),
-                        boxShadow: widget.selected
-                            ? <BoxShadow>[
-                                BoxShadow(
-                                  color: TrainFlowTokens.accentGlow,
-                                  blurRadius: 10,
-                                ),
-                              ]
-                            : null,
-                      ),
-                      child: Icon(
-                        widget.item.icon,
-                        size: 28,
-                        color: iconColor,
-                      ),
-                    ),
-                    const SizedBox(height: 3),
-                    MediaQuery.withClampedTextScaling(
-                      maxScaleFactor: 1.4,
-                      child: Text(
-                        widget.item.displayLabel,
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                        style: Theme.of(context).textTheme.labelSmall?.copyWith(
-                              color: iconColor,
-                              fontSize: 10,
-                              fontWeight: FontWeight.w600,
-                            ),
-                      ),
-                    ),
-                  ],
+                scale: pressed && motionEnabled ? 0.9 : 1,
+                duration: TrainFlowMotion.resolve(
+                  context,
+                  const Duration(milliseconds: 120),
+                ),
+                curve: Curves.easeOut,
+                child: Icon(
+                  item.icon,
+                  size: 24,
+                  color: TrainFlowTokens.paper.withValues(
+                    alpha: selected ? 0 : 0.86,
+                  ),
                 ),
               ),
             ),
@@ -362,59 +293,47 @@ class _CornerTabState extends State<_CornerTab> {
   }
 }
 
-/// 中央球体下方的标签格：给球体留位，标签与角落对齐。
-class _OrbLabelCell extends StatelessWidget {
-  const _OrbLabelCell({required this.item, required this.selected});
+class _SelectedNavigationPill extends StatelessWidget {
+  const _SelectedNavigationPill({required this.item, required this.yellow});
 
   final NavigationItem item;
-  final bool selected;
+  final bool yellow;
 
   @override
   Widget build(BuildContext context) {
-    return Column(
-      mainAxisSize: MainAxisSize.min,
-      children: <Widget>[
-        const SizedBox(width: 48, height: 48),
-        const SizedBox(height: 3),
-        MediaQuery.withClampedTextScaling(
-          maxScaleFactor: 1.4,
-          child: Text(
-            item.displayLabel,
-            maxLines: 1,
-            overflow: TextOverflow.ellipsis,
-            style: Theme.of(context).textTheme.labelSmall?.copyWith(
-                  color: selected
-                      ? TrainFlowTokens.accent
-                      : TrainFlowTokens.navigationLabelInactive,
-                  fontSize: 10,
-                  fontWeight: FontWeight.w600,
-                ),
-          ),
-        ),
-      ],
-    );
-  }
-}
-
-/// 胶囊下方的彩色光晕（暖黑 → 荧光绿 → 淡紫）。
-class _BottomGlow extends StatelessWidget {
-  const _BottomGlow({required this.animation});
-
-  final double animation;
-
-  @override
-  Widget build(BuildContext context) {
+    const Color foreground = TrainFlowTokens.brandDark;
     return DecoratedBox(
+      key: const ValueKey<String>('trainmate-bottom-navigation-selected-pill'),
       decoration: BoxDecoration(
-        gradient: LinearGradient(
-          begin: Alignment.topCenter,
-          end: Alignment.bottomCenter,
-          colors: <Color>[
-            TrainFlowTokens.accent.withValues(alpha: 0.18),
-            const Color(0xFFB388EB).withValues(alpha: 0.10),
-            Colors.transparent,
+        color: yellow ? TrainFlowTokens.yellow : TrainFlowTokens.paper,
+        borderRadius: BorderRadius.circular(18),
+        boxShadow: const <BoxShadow>[
+          BoxShadow(
+            color: Color(0x24191331),
+            blurRadius: 8,
+            offset: Offset(0, 2),
+          ),
+        ],
+      ),
+      child: MediaQuery.withClampedTextScaling(
+        maxScaleFactor: 1.2,
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: <Widget>[
+            Icon(item.icon, size: 21, color: foreground),
+            const SizedBox(height: 1),
+            Text(
+              item.displayLabel,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              textAlign: TextAlign.center,
+              style: Theme.of(context).textTheme.labelSmall?.copyWith(
+                    color: foreground,
+                    fontSize: 10,
+                    fontWeight: FontWeight.w700,
+                  ),
+            ),
           ],
-          stops: const <double>[0.0, 0.45, 1.0],
         ),
       ),
     );

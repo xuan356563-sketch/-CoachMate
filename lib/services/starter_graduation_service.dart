@@ -11,7 +11,7 @@ class StarterGraduationService {
     required String starterProgramStatusMessage,
     required List<BodyMetric> bodyMetrics,
     required List<TrainingLog> logs,
-    required int readinessScore,
+    required int? readinessScore,
     required String readinessLabel,
     required String trainingStatusLabel,
   }) {
@@ -200,12 +200,12 @@ class StarterGraduationService {
   String _transitionSummary({
     required bool readyForFormalPlan,
     required String trainingStatusLabel,
-    required int readinessScore,
+    required int? readinessScore,
   }) {
     if (!readyForFormalPlan) {
       return '当前是毕业报告预览；完成第 30 天后，系统会按完成率、心率变化和主观趋势解锁正式周期。';
     }
-    if (trainingStatusLabel == '过度风险' || readinessScore < 60) {
+    if (trainingStatusLabel == '过度风险' || (readinessScore != null && readinessScore < 60)) {
       return '已达到毕业门槛，但恢复压力偏高，正式周期首周从恢复过渡开始，不直接加量。';
     }
     return '已达到毕业门槛，正式周期从当前能力和恢复状态无缝接上，不重新问一遍基础问题。';

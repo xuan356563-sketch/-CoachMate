@@ -210,7 +210,7 @@ class AiGenerationContext {
   final int availableMinutes;
   final int? scheduledMinutes;
   final String? scheduledPeriod;
-  final int readinessScore;
+  final int? readinessScore;
   final String dailyDecision;
   final int painLevel;
   final AiHealthSummary? healthSummary;

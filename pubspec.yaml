@@ -19,7 +19,7 @@ dependencies:
 
   # 存储
   shared_preferences: ^2.3.4
-  flutter_secure_storage: ^9.2.4
+  flutter_secure_storage: ^10.2.0
   sqflite: ^2.4.3
   path: ^1.9.1
 
@@ -38,7 +38,7 @@ dependencies:
   xml: ^7.0.1
 
   # 手机端动作姿态识别与系统健康数据读取
-  health: ^13.3.1
+  health: ^13.3.2
 
   # 屏幕适配
   flutter_screenutil: ^5.9.3
@@ -77,4 +77,6 @@ flutter:
     - assets/branding/mate-feast-bag-v2/action-characters/navy/
     - assets/branding/mate-feast-bag-v2/action-characters/peach-light/
     - assets/branding/mate-feast-bag-v2/companion-states/
+    - assets/branding/mate-flat-showcase-v1/action-characters/navy/
+    - assets/branding/mate-flat-showcase-v1/action-characters/peach-light/
     - assets/branding/coachmate-official-logo-v1/exports/png/

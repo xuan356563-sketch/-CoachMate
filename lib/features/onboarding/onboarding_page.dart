@@ -7,6 +7,7 @@ import '../../core/widgets/trainmate_branding.dart';
 import '../../core/widgets/trainmate_action_character.dart';
 import '../../core/widgets/trainflow_widgets.dart';
 import '../../data/models/user_profile.dart';
+import '../../plugins/application/plugin_runtime_provider.dart';
 import '../profile/application/user_profile_controller.dart';
 import 'conversational_profile_card.dart';
 
@@ -30,6 +31,7 @@ class _OnboardingPageState extends ConsumerState<OnboardingPage> {
   @override
   Widget build(BuildContext context) {
     final UserProfile profile = _draftProfile;
+    final runtime = ref.watch(pluginRuntimeProvider);
     final MainSport primarySport = profile.mainSports.isEmpty
         ? MainSport.generalFitness
         : profile.mainSports.first;
@@ -247,7 +249,10 @@ class _OnboardingPageState extends ConsumerState<OnboardingPage> {
                   for (final MainSport sport in MainSport.values)
                     DropdownMenuItem<MainSport>(
                       value: sport,
-                      child: Text(sport.label),
+                      enabled: runtime.isEnabled(_pluginIdForSport(sport)),
+                      child: Text(runtime.isEnabled(_pluginIdForSport(sport))
+                          ? sport.label
+                          : '${sport.label}（已停用）'),
                     ),
                 ],
                 onChanged: (MainSport? value) {
@@ -274,7 +279,10 @@ class _OnboardingPageState extends ConsumerState<OnboardingPage> {
                     if (sport != primarySport)
                       DropdownMenuItem<String>(
                         value: sport.jsonValue,
-                        child: Text(sport.label),
+                        enabled: runtime.isEnabled(_pluginIdForSport(sport)),
+                        child: Text(runtime.isEnabled(_pluginIdForSport(sport))
+                            ? sport.label
+                            : '${sport.label}（已停用）'),
                       ),
                 ],
                 onChanged: (String? value) {
@@ -468,6 +476,27 @@ class _OnboardingPageState extends ConsumerState<OnboardingPage> {
                           ref
                               .read(userProfileControllerProvider.notifier)
                               .save(confirmedProfile);
+                          MainSport? unavailable;
+                          for (final MainSport sport
+                              in confirmedProfile.mainSports) {
+                            if (!runtime.isEnabled(_pluginIdForSport(sport))) {
+                              unavailable = sport;
+                              break;
+                            }
+                          }
+                          if (unavailable != null) {
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              SnackBar(
+                                content: Text(
+                                  '${unavailable.label}已停用，其他档案已保存；请先启用后再生成新计划。',
+                                ),
+                              ),
+                            );
+                            context.go(
+                              '${AppRoutes.capabilities}?feature=${_pluginIdForSport(unavailable)}',
+                            );
+                            return;
+                          }
                           context.go(AppRoutes.dashboard);
                         }
                       : null,
@@ -529,7 +558,18 @@ class _OnboardingPageState extends ConsumerState<OnboardingPage> {
 
   void _applyProfilePatch(ProfileDraftPatch patch) {
     final MainSport? primarySport = patch.primarySport;
-    final List<MainSport>? sports = primarySport == null
+    final bool unavailable = primarySport != null &&
+        !ref
+            .read(pluginRuntimeProvider)
+            .isEnabled(_pluginIdForSport(primarySport));
+    if (unavailable) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('${primarySport.label}已停用，未更改主目标。请先到运动与功能中启用。'),
+        ),
+      );
+    }
+    final List<MainSport>? sports = primarySport == null || unavailable
         ? null
         : <MainSport>[
             primarySport,
@@ -608,3 +648,13 @@ class _OnboardingPageState extends ConsumerState<OnboardingPage> {
         Gender.unknown => '暂不填写',
       };
 }
+
+String _pluginIdForSport(MainSport sport) => switch (sport) {
+      MainSport.marathon => 'sport.marathon',
+      MainSport.trailRunning => 'sport.trail_running',
+      MainSport.strength => 'sport.strength',
+      MainSport.hyrox => 'sport.hyrox',
+      MainSport.fatLoss => 'goal.fat_loss',
+      MainSport.rehab => 'support.rehab',
+      MainSport.generalFitness => 'goal.general_fitness',
+    };

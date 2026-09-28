@@ -73,7 +73,11 @@ def test_smtp_provider_uses_starttls_and_sends_plain_text_code(
     assert client.login_credentials == ("smtp-user", "smtp-password")
     assert client.sent_message is not None
     assert client.sent_message["To"] == "runner@example.com"
-    assert "246810" in client.sent_message.get_content()
+    assert client.sent_message["Subject"] == "练搭 CoachMate 登录验证码"
+    content = client.sent_message.get_content()
+    assert "你正在登录练搭 CoachMate。" in content
+    assert "智练 TrainMate" not in content
+    assert "246810" in content
 
 
 def test_smtp_provider_hides_supplier_error(

@@ -20,11 +20,11 @@ void main() {
     training.startWorkoutPlayer(
       workoutDayId: container.read(trainingMvpProvider).todayWorkout.id,
     );
-    training.completeWorkoutPlayerStep();
+    await training.completeWorkoutPlayerStep();
     training.setKnowledgeSearchQuery('深蹲');
     final TrainingMvpState before = container.read(trainingMvpProvider);
 
-    container.read(achievementControllerProvider.notifier).sync(
+    await container.read(achievementControllerProvider.notifier).sync(
           before.achievementProgressList,
           showNoChangeMessage: true,
         );

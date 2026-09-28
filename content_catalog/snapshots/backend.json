@@ -1,0 +1,1116 @@
+{
+  "catalog_version": "2026.09.12-v1",
+  "content_hash": "0890bb995c1808b9022075471481d79ea44a9a4b93645b65b3a602d3d94fbff4",
+  "contract_version": 1,
+  "resource_count": 32,
+  "resources": [
+    {
+      "catalog_status": "approved",
+      "id": "general_balanced_3d",
+      "license_status": "internal_owned",
+      "online_distribution_status": "eligible",
+      "payload": {
+        "content_version": "2026.08.02-v2",
+        "goals": [
+          "general_fitness"
+        ],
+        "id": "general_balanced_3d",
+        "population_template_id": "sedentary_beginner",
+        "primary_sports": [
+          "general_fitness"
+        ],
+        "required_equipment": [
+          "bodyweight"
+        ],
+        "session_pattern": [
+          "strength",
+          "easy_run",
+          "mobility"
+        ],
+        "source_label": "TrainMate 自编结构模板",
+        "status": "verified",
+        "supported_days": [
+          3
+        ],
+        "title": "通用均衡三日"
+      },
+      "resource_key": "backend_training_template:general_balanced_3d",
+      "resource_type": "backend_training_template",
+      "review_receipt": {
+        "catalog_version": "2026.08.02-v2"
+      },
+      "runtime_status": "active",
+      "schema_version": 1,
+      "source_receipts": [
+        "backend_knowledge_seed"
+      ]
+    },
+    {
+      "catalog_status": "approved",
+      "id": "hyrox_hybrid_4d",
+      "license_status": "internal_owned",
+      "online_distribution_status": "eligible",
+      "payload": {
+        "content_version": "2026.08.02-v2",
+        "goals": [
+          "race_preparation",
+          "endurance"
+        ],
+        "id": "hyrox_hybrid_4d",
+        "population_template_id": "hyrox_hybrid",
+        "primary_sports": [
+          "hyrox"
+        ],
+        "required_equipment": [
+          "bodyweight"
+        ],
+        "session_pattern": [
+          "easy_run",
+          "strength",
+          "hyrox",
+          "mobility"
+        ],
+        "source_label": "TrainMate 自编结构模板",
+        "status": "verified",
+        "supported_days": [
+          4
+        ],
+        "title": "HYROX 混合四日"
+      },
+      "resource_key": "backend_training_template:hyrox_hybrid_4d",
+      "resource_type": "backend_training_template",
+      "review_receipt": {
+        "catalog_version": "2026.08.02-v2"
+      },
+      "runtime_status": "active",
+      "schema_version": 1,
+      "source_receipts": [
+        "backend_knowledge_seed"
+      ]
+    },
+    {
+      "catalog_status": "approved",
+      "id": "low_impact_fat_loss_3d",
+      "license_status": "internal_owned",
+      "online_distribution_status": "eligible",
+      "payload": {
+        "content_version": "2026.08.02-v2",
+        "goals": [
+          "fat_loss"
+        ],
+        "id": "low_impact_fat_loss_3d",
+        "population_template_id": "low_impact_fat_loss",
+        "primary_sports": [
+          "general_fitness",
+          "fat_loss"
+        ],
+        "required_equipment": [
+          "bodyweight"
+        ],
+        "session_pattern": [
+          "strength",
+          "easy_run",
+          "cross_training"
+        ],
+        "source_label": "TrainMate 自编结构模板",
+        "status": "verified",
+        "supported_days": [
+          3
+        ],
+        "title": "低冲击减脂三日"
+      },
+      "resource_key": "backend_training_template:low_impact_fat_loss_3d",
+      "resource_type": "backend_training_template",
+      "review_receipt": {
+        "catalog_version": "2026.08.02-v2"
+      },
+      "runtime_status": "active",
+      "schema_version": 1,
+      "source_receipts": [
+        "backend_knowledge_seed"
+      ]
+    },
+    {
+      "catalog_status": "approved",
+      "id": "older_adult_foundation_3d",
+      "license_status": "internal_owned",
+      "online_distribution_status": "eligible",
+      "payload": {
+        "content_version": "2026.08.02-v2",
+        "goals": [
+          "general_fitness"
+        ],
+        "id": "older_adult_foundation_3d",
+        "population_template_id": "older_adult_foundation",
+        "primary_sports": [
+          "general_fitness"
+        ],
+        "required_equipment": [
+          "bodyweight"
+        ],
+        "session_pattern": [
+          "strength",
+          "easy_run",
+          "mobility"
+        ],
+        "source_label": "TrainMate 自编结构模板",
+        "status": "verified",
+        "supported_days": [
+          2,
+          3
+        ],
+        "title": "老年基础三日"
+      },
+      "resource_key": "backend_training_template:older_adult_foundation_3d",
+      "resource_type": "backend_training_template",
+      "review_receipt": {
+        "catalog_version": "2026.08.02-v2"
+      },
+      "runtime_status": "active",
+      "schema_version": 1,
+      "source_receipts": [
+        "backend_knowledge_seed"
+      ]
+    },
+    {
+      "catalog_status": "approved",
+      "id": "run_beginner_3d",
+      "license_status": "internal_owned",
+      "online_distribution_status": "eligible",
+      "payload": {
+        "content_version": "2026.08.02-v2",
+        "goals": [
+          "endurance"
+        ],
+        "id": "run_beginner_3d",
+        "population_template_id": "running_entry_or_race",
+        "primary_sports": [
+          "marathon",
+          "trail_running"
+        ],
+        "required_equipment": [
+          "bodyweight"
+        ],
+        "session_pattern": [
+          "easy_run",
+          "strength",
+          "long_run"
+        ],
+        "source_label": "TrainMate 自编结构模板",
+        "status": "verified",
+        "supported_days": [
+          3
+        ],
+        "title": "跑步入门三日"
+      },
+      "resource_key": "backend_training_template:run_beginner_3d",
+      "resource_type": "backend_training_template",
+      "review_receipt": {
+        "catalog_version": "2026.08.02-v2"
+      },
+      "runtime_status": "active",
+      "schema_version": 1,
+      "source_receipts": [
+        "backend_knowledge_seed"
+      ]
+    },
+    {
+      "catalog_status": "approved",
+      "id": "run_race_4d",
+      "license_status": "internal_owned",
+      "online_distribution_status": "eligible",
+      "payload": {
+        "content_version": "2026.08.02-v2",
+        "goals": [
+          "race_preparation"
+        ],
+        "id": "run_race_4d",
+        "population_template_id": "running_entry_or_race",
+        "primary_sports": [
+          "marathon",
+          "trail_running"
+        ],
+        "required_equipment": [
+          "bodyweight"
+        ],
+        "session_pattern": [
+          "easy_run",
+          "tempo_run",
+          "strength",
+          "long_run"
+        ],
+        "source_label": "TrainMate 自编结构模板",
+        "status": "verified",
+        "supported_days": [
+          4
+        ],
+        "title": "跑步备赛四日"
+      },
+      "resource_key": "backend_training_template:run_race_4d",
+      "resource_type": "backend_training_template",
+      "review_receipt": {
+        "catalog_version": "2026.08.02-v2"
+      },
+      "runtime_status": "active",
+      "schema_version": 1,
+      "source_receipts": [
+        "backend_knowledge_seed"
+      ]
+    },
+    {
+      "catalog_status": "approved",
+      "id": "sedentary_beginner_3d",
+      "license_status": "internal_owned",
+      "online_distribution_status": "eligible",
+      "payload": {
+        "content_version": "2026.08.02-v2",
+        "goals": [
+          "general_fitness"
+        ],
+        "id": "sedentary_beginner_3d",
+        "population_template_id": "sedentary_beginner",
+        "primary_sports": [
+          "general_fitness"
+        ],
+        "required_equipment": [
+          "bodyweight"
+        ],
+        "session_pattern": [
+          "strength",
+          "easy_run",
+          "mobility"
+        ],
+        "source_label": "TrainMate 自编结构模板",
+        "status": "verified",
+        "supported_days": [
+          2,
+          3
+        ],
+        "title": "久坐初学三日"
+      },
+      "resource_key": "backend_training_template:sedentary_beginner_3d",
+      "resource_type": "backend_training_template",
+      "review_receipt": {
+        "catalog_version": "2026.08.02-v2"
+      },
+      "runtime_status": "active",
+      "schema_version": 1,
+      "source_receipts": [
+        "backend_knowledge_seed"
+      ]
+    },
+    {
+      "catalog_status": "approved",
+      "id": "shift_worker_flexible_3d",
+      "license_status": "internal_owned",
+      "online_distribution_status": "eligible",
+      "payload": {
+        "content_version": "2026.08.02-v2",
+        "goals": [
+          "general_fitness",
+          "fat_loss"
+        ],
+        "id": "shift_worker_flexible_3d",
+        "population_template_id": "shift_worker_flexible",
+        "primary_sports": [
+          "general_fitness",
+          "fat_loss"
+        ],
+        "required_equipment": [
+          "bodyweight"
+        ],
+        "session_pattern": [
+          "strength",
+          "easy_run",
+          "mobility"
+        ],
+        "source_label": "TrainMate 自编结构模板",
+        "status": "verified",
+        "supported_days": [
+          2,
+          3,
+          4
+        ],
+        "title": "轮班弹性三日"
+      },
+      "resource_key": "backend_training_template:shift_worker_flexible_3d",
+      "resource_type": "backend_training_template",
+      "review_receipt": {
+        "catalog_version": "2026.08.02-v2"
+      },
+      "runtime_status": "active",
+      "schema_version": 1,
+      "source_receipts": [
+        "backend_knowledge_seed"
+      ]
+    },
+    {
+      "catalog_status": "approved",
+      "id": "strength_progression_3d",
+      "license_status": "internal_owned",
+      "online_distribution_status": "eligible",
+      "payload": {
+        "content_version": "2026.08.02-v2",
+        "goals": [
+          "strength"
+        ],
+        "id": "strength_progression_3d",
+        "population_template_id": "strength_progression",
+        "primary_sports": [
+          "strength"
+        ],
+        "required_equipment": [
+          "bodyweight"
+        ],
+        "session_pattern": [
+          "strength",
+          "strength",
+          "mobility"
+        ],
+        "source_label": "TrainMate 自编结构模板",
+        "status": "verified",
+        "supported_days": [
+          3
+        ],
+        "title": "力量进阶三日"
+      },
+      "resource_key": "backend_training_template:strength_progression_3d",
+      "resource_type": "backend_training_template",
+      "review_receipt": {
+        "catalog_version": "2026.08.02-v2"
+      },
+      "runtime_status": "active",
+      "schema_version": 1,
+      "source_receipts": [
+        "backend_knowledge_seed"
+      ]
+    },
+    {
+      "catalog_status": "approved",
+      "id": "beginner_safety",
+      "license_status": "internal_owned",
+      "online_distribution_status": "eligible",
+      "payload": {
+        "content_version": "2026.08.02-v2",
+        "id": "beginner_safety",
+        "source_label": "TrainMate 内部训练原则",
+        "source_section": "初学者",
+        "status": "verified",
+        "summary": "初学者优先动作质量与稳定习惯，不安排挑战强度和密集间歇。",
+        "tags": [
+          "beginner",
+          "sedentary_beginner"
+        ],
+        "title": "初学者保守进阶"
+      },
+      "resource_key": "knowledge_principle:beginner_safety",
+      "resource_type": "knowledge_principle",
+      "review_receipt": {
+        "catalog_version": "2026.08.02-v2"
+      },
+      "runtime_status": "active",
+      "schema_version": 1,
+      "source_receipts": [
+        "backend_knowledge_seed"
+      ]
+    },
+    {
+      "catalog_status": "approved",
+      "id": "deload",
+      "license_status": "internal_owned",
+      "online_distribution_status": "eligible",
+      "payload": {
+        "content_version": "2026.08.02-v2",
+        "id": "deload",
+        "source_label": "TrainMate 内部训练原则",
+        "source_section": "减量安排",
+        "status": "verified",
+        "summary": "连续推进后安排减量周，减量幅度和触发条件由本地规则裁决。",
+        "tags": [
+          "strength",
+          "endurance",
+          "hyrox"
+        ],
+        "title": "主动减量"
+      },
+      "resource_key": "knowledge_principle:deload",
+      "resource_type": "knowledge_principle",
+      "review_receipt": {
+        "catalog_version": "2026.08.02-v2"
+      },
+      "runtime_status": "active",
+      "schema_version": 1,
+      "source_receipts": [
+        "backend_knowledge_seed"
+      ]
+    },
+    {
+      "catalog_status": "approved",
+      "id": "hyrox_transition",
+      "license_status": "internal_owned",
+      "online_distribution_status": "eligible",
+      "payload": {
+        "content_version": "2026.08.02-v2",
+        "id": "hyrox_transition",
+        "source_label": "TrainMate 内部训练原则",
+        "source_section": "HYROX",
+        "status": "verified",
+        "summary": "HYROX 训练同时保留跑步、基础力量和少量专项转换刺激。",
+        "tags": [
+          "hyrox",
+          "hyrox_hybrid"
+        ],
+        "title": "混合体能转换"
+      },
+      "resource_key": "knowledge_principle:hyrox_transition",
+      "resource_type": "knowledge_principle",
+      "review_receipt": {
+        "catalog_version": "2026.08.02-v2"
+      },
+      "runtime_status": "active",
+      "schema_version": 1,
+      "source_receipts": [
+        "backend_knowledge_seed"
+      ]
+    },
+    {
+      "catalog_status": "approved",
+      "id": "low_impact",
+      "license_status": "internal_owned",
+      "online_distribution_status": "eligible",
+      "payload": {
+        "content_version": "2026.08.02-v2",
+        "id": "low_impact",
+        "source_label": "TrainMate 内部训练原则",
+        "source_section": "低冲击",
+        "status": "verified",
+        "summary": "低冲击减脂优先力量、步行和器械有氧，不使用惩罚性跳跃堆量。",
+        "tags": [
+          "fat_loss",
+          "low_impact_fat_loss"
+        ],
+        "title": "低冲击优先"
+      },
+      "resource_key": "knowledge_principle:low_impact",
+      "resource_type": "knowledge_principle",
+      "review_receipt": {
+        "catalog_version": "2026.08.02-v2"
+      },
+      "runtime_status": "active",
+      "schema_version": 1,
+      "source_receipts": [
+        "backend_knowledge_seed"
+      ]
+    },
+    {
+      "catalog_status": "approved",
+      "id": "low_intensity_base",
+      "license_status": "internal_owned",
+      "online_distribution_status": "eligible",
+      "payload": {
+        "content_version": "2026.08.02-v2",
+        "id": "low_intensity_base",
+        "source_label": "TrainMate 内部训练原则",
+        "source_section": "有氧基础",
+        "status": "verified",
+        "summary": "基础阶段以可持续的低至中等强度建立有氧和工作能力。",
+        "tags": [
+          "fat_loss",
+          "endurance",
+          "marathon",
+          "trail_running"
+        ],
+        "title": "低强度基础"
+      },
+      "resource_key": "knowledge_principle:low_intensity_base",
+      "resource_type": "knowledge_principle",
+      "review_receipt": {
+        "catalog_version": "2026.08.02-v2"
+      },
+      "runtime_status": "active",
+      "schema_version": 1,
+      "source_receipts": [
+        "backend_knowledge_seed"
+      ]
+    },
+    {
+      "catalog_status": "approved",
+      "id": "older_adult_foundation",
+      "license_status": "internal_owned",
+      "online_distribution_status": "eligible",
+      "payload": {
+        "content_version": "2026.08.02-v2",
+        "id": "older_adult_foundation",
+        "source_label": "TrainMate 内部训练原则",
+        "source_section": "老年基础",
+        "status": "verified",
+        "summary": "筛查通过后优先低冲击有氧、基础力量、平衡和活动度，并保留更充分恢复间隔。",
+        "tags": [
+          "older_adult_foundation",
+          "general_fitness"
+        ],
+        "title": "老年基础训练"
+      },
+      "resource_key": "knowledge_principle:older_adult_foundation",
+      "resource_type": "knowledge_principle",
+      "review_receipt": {
+        "catalog_version": "2026.08.02-v2"
+      },
+      "runtime_status": "active",
+      "schema_version": 1,
+      "source_receipts": [
+        "backend_knowledge_seed"
+      ]
+    },
+    {
+      "catalog_status": "approved",
+      "id": "periodization",
+      "license_status": "internal_owned",
+      "online_distribution_status": "eligible",
+      "payload": {
+        "content_version": "2026.08.02-v2",
+        "id": "periodization",
+        "source_label": "TrainMate 内部训练原则",
+        "source_section": "周期结构",
+        "status": "verified",
+        "summary": "先建立基础，再进入专项；只有明确赛事信息时才进入减量阶段。",
+        "tags": [
+          "general_fitness",
+          "race_preparation",
+          "marathon",
+          "hyrox"
+        ],
+        "title": "周期化"
+      },
+      "resource_key": "knowledge_principle:periodization",
+      "resource_type": "knowledge_principle",
+      "review_receipt": {
+        "catalog_version": "2026.08.02-v2"
+      },
+      "runtime_status": "active",
+      "schema_version": 1,
+      "source_receipts": [
+        "backend_knowledge_seed"
+      ]
+    },
+    {
+      "catalog_status": "approved",
+      "id": "progressive_overload",
+      "license_status": "internal_owned",
+      "online_distribution_status": "eligible",
+      "payload": {
+        "content_version": "2026.08.02-v2",
+        "id": "progressive_overload",
+        "source_label": "TrainMate 内部训练原则",
+        "source_section": "负荷进阶",
+        "status": "verified",
+        "summary": "每周只推进一个变量，具体增长上限由本地编译器执行。",
+        "tags": [
+          "strength",
+          "fat_loss",
+          "endurance"
+        ],
+        "title": "渐进负荷"
+      },
+      "resource_key": "knowledge_principle:progressive_overload",
+      "resource_type": "knowledge_principle",
+      "review_receipt": {
+        "catalog_version": "2026.08.02-v2"
+      },
+      "runtime_status": "active",
+      "schema_version": 1,
+      "source_receipts": [
+        "backend_knowledge_seed"
+      ]
+    },
+    {
+      "catalog_status": "approved",
+      "id": "recovery_spacing",
+      "license_status": "internal_owned",
+      "online_distribution_status": "eligible",
+      "payload": {
+        "content_version": "2026.08.02-v2",
+        "id": "recovery_spacing",
+        "source_label": "TrainMate 内部训练原则",
+        "source_section": "恢复安排",
+        "status": "verified",
+        "summary": "避免连续堆叠高负荷课程，每周至少保留一节低强度课程。",
+        "tags": [
+          "general_fitness",
+          "strength",
+          "endurance",
+          "hyrox"
+        ],
+        "title": "恢复间隔"
+      },
+      "resource_key": "knowledge_principle:recovery_spacing",
+      "resource_type": "knowledge_principle",
+      "review_receipt": {
+        "catalog_version": "2026.08.02-v2"
+      },
+      "runtime_status": "active",
+      "schema_version": 1,
+      "source_receipts": [
+        "backend_knowledge_seed"
+      ]
+    },
+    {
+      "catalog_status": "approved",
+      "id": "return_to_training_guard",
+      "license_status": "internal_owned",
+      "online_distribution_status": "eligible",
+      "payload": {
+        "content_version": "2026.08.02-v2",
+        "id": "return_to_training_guard",
+        "source_label": "TrainMate 内部训练原则",
+        "source_section": "重返训练",
+        "status": "verified",
+        "summary": "伤病后重返训练只提供筛查和转介要求，未获得人工许可前不自动生成计划。",
+        "tags": [
+          "return_to_training_guarded",
+          "injury_history"
+        ],
+        "title": "重返训练安全门"
+      },
+      "resource_key": "knowledge_principle:return_to_training_guard",
+      "resource_type": "knowledge_principle",
+      "review_receipt": {
+        "catalog_version": "2026.08.02-v2"
+      },
+      "runtime_status": "active",
+      "schema_version": 1,
+      "source_receipts": [
+        "backend_knowledge_seed"
+      ]
+    },
+    {
+      "catalog_status": "approved",
+      "id": "run_load_balance",
+      "license_status": "internal_owned",
+      "online_distribution_status": "eligible",
+      "payload": {
+        "content_version": "2026.08.02-v2",
+        "id": "run_load_balance",
+        "source_label": "TrainMate 内部训练原则",
+        "source_section": "跑步结构",
+        "status": "verified",
+        "summary": "一周内分离长距离与质量课，其余跑步以轻松强度支持恢复。",
+        "tags": [
+          "endurance",
+          "marathon",
+          "trail_running"
+        ],
+        "title": "跑步负荷平衡"
+      },
+      "resource_key": "knowledge_principle:run_load_balance",
+      "resource_type": "knowledge_principle",
+      "review_receipt": {
+        "catalog_version": "2026.08.02-v2"
+      },
+      "runtime_status": "active",
+      "schema_version": 1,
+      "source_receipts": [
+        "backend_knowledge_seed"
+      ]
+    },
+    {
+      "catalog_status": "approved",
+      "id": "schedule_consistency",
+      "license_status": "internal_owned",
+      "online_distribution_status": "eligible",
+      "payload": {
+        "content_version": "2026.08.02-v2",
+        "id": "schedule_consistency",
+        "source_label": "TrainMate 内部训练原则",
+        "source_section": "日程约束",
+        "status": "verified",
+        "summary": "优先选择能长期完成的训练频次和时长，不用单周激进安排补偿漏练。",
+        "tags": [
+          "general_fitness",
+          "sedentary_beginner",
+          "shift_work"
+        ],
+        "title": "日程一致性"
+      },
+      "resource_key": "knowledge_principle:schedule_consistency",
+      "resource_type": "knowledge_principle",
+      "review_receipt": {
+        "catalog_version": "2026.08.02-v2"
+      },
+      "runtime_status": "active",
+      "schema_version": 1,
+      "source_receipts": [
+        "backend_knowledge_seed"
+      ]
+    },
+    {
+      "catalog_status": "approved",
+      "id": "shift_work_flexibility",
+      "license_status": "internal_owned",
+      "online_distribution_status": "eligible",
+      "payload": {
+        "content_version": "2026.08.02-v2",
+        "id": "shift_work_flexibility",
+        "source_label": "TrainMate 内部训练原则",
+        "source_section": "轮班日程",
+        "status": "verified",
+        "summary": "以锚点课程和可移动恢复日适配轮班，不通过补课堆叠训练负荷。",
+        "tags": [
+          "shift_worker_flexible",
+          "shift_work",
+          "general_fitness"
+        ],
+        "title": "轮班弹性安排"
+      },
+      "resource_key": "knowledge_principle:shift_work_flexibility",
+      "resource_type": "knowledge_principle",
+      "review_receipt": {
+        "catalog_version": "2026.08.02-v2"
+      },
+      "runtime_status": "active",
+      "schema_version": 1,
+      "source_receipts": [
+        "backend_knowledge_seed"
+      ]
+    },
+    {
+      "catalog_status": "approved",
+      "id": "specificity",
+      "license_status": "internal_owned",
+      "online_distribution_status": "eligible",
+      "payload": {
+        "content_version": "2026.08.02-v2",
+        "id": "specificity",
+        "source_label": "TrainMate 内部训练原则",
+        "source_section": "专项匹配",
+        "status": "verified",
+        "summary": "主要课程必须服务当前主运动，次运动只作为辅助且不增加训练天数。",
+        "tags": [
+          "strength",
+          "endurance",
+          "race_preparation"
+        ],
+        "title": "专项性"
+      },
+      "resource_key": "knowledge_principle:specificity",
+      "resource_type": "knowledge_principle",
+      "review_receipt": {
+        "catalog_version": "2026.08.02-v2"
+      },
+      "runtime_status": "active",
+      "schema_version": 1,
+      "source_receipts": [
+        "backend_knowledge_seed"
+      ]
+    },
+    {
+      "catalog_status": "approved",
+      "id": "strength_foundation",
+      "license_status": "internal_owned",
+      "online_distribution_status": "eligible",
+      "payload": {
+        "content_version": "2026.08.02-v2",
+        "id": "strength_foundation",
+        "source_label": "TrainMate 内部训练原则",
+        "source_section": "力量基础",
+        "status": "verified",
+        "summary": "力量入门先覆盖推、拉、蹲、髋和核心模式，再增加专项容量。",
+        "tags": [
+          "strength",
+          "strength_progression"
+        ],
+        "title": "全身力量基础"
+      },
+      "resource_key": "knowledge_principle:strength_foundation",
+      "resource_type": "knowledge_principle",
+      "review_receipt": {
+        "catalog_version": "2026.08.02-v2"
+      },
+      "runtime_status": "active",
+      "schema_version": 1,
+      "source_receipts": [
+        "backend_knowledge_seed"
+      ]
+    },
+    {
+      "catalog_status": "approved",
+      "id": "hyrox_hybrid",
+      "license_status": "internal_owned",
+      "online_distribution_status": "eligible",
+      "payload": {
+        "automatic_plan_allowed": true,
+        "derived_constraint_codes": [
+          "preserve_run_strength_balance"
+        ],
+        "id": "hyrox_hybrid",
+        "progression_mode": "balanced",
+        "progression_rule_codes": [
+          "balanced_single_variable"
+        ],
+        "schedule_modifier": null,
+        "screening_extension_codes": [
+          "hybrid_work_capacity_check"
+        ],
+        "session_structure_codes": [
+          "run_strength_station_mobility"
+        ],
+        "title": "HYROX 混合体能"
+      },
+      "resource_key": "population_template:hyrox_hybrid",
+      "resource_type": "population_template",
+      "review_receipt": {
+        "catalog_version": "2026.08.02-v2"
+      },
+      "runtime_status": "active",
+      "schema_version": 1,
+      "source_receipts": [
+        "backend_knowledge_seed"
+      ]
+    },
+    {
+      "catalog_status": "approved",
+      "id": "low_impact_fat_loss",
+      "license_status": "internal_owned",
+      "online_distribution_status": "eligible",
+      "payload": {
+        "automatic_plan_allowed": true,
+        "derived_constraint_codes": [
+          "avoid_punitive_jumping"
+        ],
+        "id": "low_impact_fat_loss",
+        "progression_mode": "conservative",
+        "progression_rule_codes": [
+          "conservative_single_variable"
+        ],
+        "schedule_modifier": null,
+        "screening_extension_codes": [
+          "impact_tolerance_check"
+        ],
+        "session_structure_codes": [
+          "strength_walk_cardio"
+        ],
+        "title": "低冲击减脂"
+      },
+      "resource_key": "population_template:low_impact_fat_loss",
+      "resource_type": "population_template",
+      "review_receipt": {
+        "catalog_version": "2026.08.02-v2"
+      },
+      "runtime_status": "active",
+      "schema_version": 1,
+      "source_receipts": [
+        "backend_knowledge_seed"
+      ]
+    },
+    {
+      "catalog_status": "approved",
+      "id": "older_adult_foundation",
+      "license_status": "internal_owned",
+      "online_distribution_status": "eligible",
+      "payload": {
+        "automatic_plan_allowed": true,
+        "derived_constraint_codes": [
+          "low_impact_and_balance_first"
+        ],
+        "id": "older_adult_foundation",
+        "progression_mode": "conservative",
+        "progression_rule_codes": [
+          "conservative_single_variable"
+        ],
+        "schedule_modifier": "recovery_spacing",
+        "screening_extension_codes": [
+          "older_adult_preexercise_clearance"
+        ],
+        "session_structure_codes": [
+          "strength_balance_aerobic_mobility"
+        ],
+        "title": "老年基础低冲击"
+      },
+      "resource_key": "population_template:older_adult_foundation",
+      "resource_type": "population_template",
+      "review_receipt": {
+        "catalog_version": "2026.08.02-v2"
+      },
+      "runtime_status": "active",
+      "schema_version": 1,
+      "source_receipts": [
+        "backend_knowledge_seed"
+      ]
+    },
+    {
+      "catalog_status": "approved",
+      "id": "return_to_training_guarded",
+      "license_status": "internal_owned",
+      "online_distribution_status": "eligible",
+      "payload": {
+        "automatic_plan_allowed": false,
+        "derived_constraint_codes": [
+          "no_automatic_plan"
+        ],
+        "id": "return_to_training_guarded",
+        "progression_mode": "conservative",
+        "progression_rule_codes": [
+          "manual_clearance_before_progression"
+        ],
+        "schedule_modifier": "manual_clearance_only",
+        "screening_extension_codes": [
+          "clinical_clearance_required"
+        ],
+        "session_structure_codes": [
+          "screening_and_referral_only"
+        ],
+        "title": "伤病后重返训练"
+      },
+      "resource_key": "population_template:return_to_training_guarded",
+      "resource_type": "population_template",
+      "review_receipt": {
+        "catalog_version": "2026.08.02-v2"
+      },
+      "runtime_status": "active",
+      "schema_version": 1,
+      "source_receipts": [
+        "backend_knowledge_seed"
+      ]
+    },
+    {
+      "catalog_status": "approved",
+      "id": "running_entry_or_race",
+      "license_status": "internal_owned",
+      "online_distribution_status": "eligible",
+      "payload": {
+        "automatic_plan_allowed": true,
+        "derived_constraint_codes": [
+          "separate_long_and_quality"
+        ],
+        "id": "running_entry_or_race",
+        "progression_mode": "balanced",
+        "progression_rule_codes": [
+          "distance_or_intensity_not_both"
+        ],
+        "schedule_modifier": null,
+        "screening_extension_codes": [
+          "race_and_impact_check"
+        ],
+        "session_structure_codes": [
+          "easy_quality_strength_long"
+        ],
+        "title": "跑步入门或备赛"
+      },
+      "resource_key": "population_template:running_entry_or_race",
+      "resource_type": "population_template",
+      "review_receipt": {
+        "catalog_version": "2026.08.02-v2"
+      },
+      "runtime_status": "active",
+      "schema_version": 1,
+      "source_receipts": [
+        "backend_knowledge_seed"
+      ]
+    },
+    {
+      "catalog_status": "approved",
+      "id": "sedentary_beginner",
+      "license_status": "internal_owned",
+      "online_distribution_status": "eligible",
+      "payload": {
+        "automatic_plan_allowed": true,
+        "derived_constraint_codes": [
+          "avoid_compensatory_volume"
+        ],
+        "id": "sedentary_beginner",
+        "progression_mode": "conservative",
+        "progression_rule_codes": [
+          "one_variable_per_week"
+        ],
+        "schedule_modifier": null,
+        "screening_extension_codes": [
+          "adult_low_risk"
+        ],
+        "session_structure_codes": [
+          "strength_easy_mobility"
+        ],
+        "title": "久坐办公初学者"
+      },
+      "resource_key": "population_template:sedentary_beginner",
+      "resource_type": "population_template",
+      "review_receipt": {
+        "catalog_version": "2026.08.02-v2"
+      },
+      "runtime_status": "active",
+      "schema_version": 1,
+      "source_receipts": [
+        "backend_knowledge_seed"
+      ]
+    },
+    {
+      "catalog_status": "approved",
+      "id": "shift_worker_flexible",
+      "license_status": "internal_owned",
+      "online_distribution_status": "eligible",
+      "payload": {
+        "automatic_plan_allowed": true,
+        "derived_constraint_codes": [
+          "avoid_makeup_volume"
+        ],
+        "id": "shift_worker_flexible",
+        "progression_mode": "conservative",
+        "progression_rule_codes": [
+          "consistency_before_load"
+        ],
+        "schedule_modifier": "flexible_anchor_days",
+        "screening_extension_codes": [
+          "sleep_and_schedule_check"
+        ],
+        "session_structure_codes": [
+          "anchor_flexible_recovery"
+        ],
+        "title": "轮班人群弹性日程"
+      },
+      "resource_key": "population_template:shift_worker_flexible",
+      "resource_type": "population_template",
+      "review_receipt": {
+        "catalog_version": "2026.08.02-v2"
+      },
+      "runtime_status": "active",
+      "schema_version": 1,
+      "source_receipts": [
+        "backend_knowledge_seed"
+      ]
+    },
+    {
+      "catalog_status": "approved",
+      "id": "strength_progression",
+      "license_status": "internal_owned",
+      "online_distribution_status": "eligible",
+      "payload": {
+        "automatic_plan_allowed": true,
+        "derived_constraint_codes": [
+          "preserve_recovery_spacing"
+        ],
+        "id": "strength_progression",
+        "progression_mode": "balanced",
+        "progression_rule_codes": [
+          "balanced_single_variable"
+        ],
+        "schedule_modifier": null,
+        "screening_extension_codes": [
+          "movement_quality_check"
+        ],
+        "session_structure_codes": [
+          "push_pull_squat_hinge_core"
+        ],
+        "title": "力量与增肌进阶"
+      },
+      "resource_key": "population_template:strength_progression",
+      "resource_type": "population_template",
+      "review_receipt": {
+        "catalog_version": "2026.08.02-v2"
+      },
+      "runtime_status": "active",
+      "schema_version": 1,
+      "source_receipts": [
+        "backend_knowledge_seed"
+      ]
+    }
+  ]
+}

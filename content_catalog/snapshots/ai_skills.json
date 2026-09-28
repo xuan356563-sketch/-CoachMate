@@ -1,0 +1,1372 @@
+{
+  "catalog_version": "2026.09.12-v1",
+  "content_hash": "ead6c3e8f965e971ec4c0c16a05140d42cd0403f74c0ffc253055ede3ab319f3",
+  "contract_version": 1,
+  "resource_count": 52,
+  "resources": [
+    {
+      "catalog_status": "approved",
+      "id": "training-plan-builder",
+      "license_status": "internal_owned",
+      "online_distribution_status": "eligible",
+      "payload": {
+        "capability": "trainer_plan",
+        "display_name": "训练计划制定助手",
+        "fragment_sha256": {
+          "hyrox": "182e97cd4d8966aed8a4e071d464df392ef60f50a965776ed3f82ab9a1368fc3",
+          "marathon": "6b21f7ca48fb3c58fe0130c022ad827062981c2a6d5db5ca486efbba96b12897",
+          "strength": "21b383d13f43007a9426d6dd5b28fc04b07cdebc3377b0aa4a819a76ce71ff0b",
+          "trail_running": "37a8017bd096a8d82ccdc0688be29d81ee38923af782219e63ec53c945d4346c"
+        },
+        "id": "training-plan-builder",
+        "priority": 100,
+        "reviewed": true,
+        "runtime_file": "RUNTIME.md",
+        "runtime_sha256": "dcf6a3b333437429c3cd925dc263d6e08b02b0374ed620500cc1ac29b29d70b6",
+        "schema_version": 2,
+        "source_catalog_file": "source-catalog.json",
+        "source_catalog_sha256": "ef31d2ae366a7e197100979416f2f01189aabaaee153eb2b7b52d584d85f059e",
+        "source_file": "SKILL.md",
+        "source_sha256": "6c3da3d229ba09a503428747bdfb95cd9a1fe70013f94f5b2cffda4a874a603d",
+        "sport_fragments": {
+          "hyrox": "RUNTIME-HYROX.md",
+          "marathon": "RUNTIME-MARATHON.md",
+          "strength": "RUNTIME-STRENGTH.md",
+          "trail_running": "RUNTIME-TRAIL-RUNNING.md"
+        },
+        "sports": [
+          "general_fitness",
+          "strength",
+          "fat_loss",
+          "marathon",
+          "trail_running",
+          "hyrox"
+        ],
+        "version": "1.3.0"
+      },
+      "resource_key": "ai_skill:training-plan-builder",
+      "resource_type": "ai_skill",
+      "review_receipt": {
+        "manifest_version": "1.3.0"
+      },
+      "runtime_status": "active",
+      "schema_version": 1,
+      "source_receipts": [
+        "ai_skill_manifest"
+      ]
+    },
+    {
+      "catalog_status": "approved",
+      "id": "xiaosun-abc-cycle",
+      "license_status": "unverified",
+      "online_distribution_status": "ineligible",
+      "payload": {
+        "audit_level": "unverified",
+        "id": "xiaosun-abc-cycle",
+        "license_status": "unverified",
+        "raw_source_packaged": false,
+        "reason_code": "approved_for_strength_fragment",
+        "runtime_targets": [
+          "strength"
+        ],
+        "source_filename": "训练处方Skill_ABC循环渐进法_20260718.md",
+        "source_sha256": "d1e203b0fd1f1709e43e4d589a83d55063157fdea2143a7917eacc23142857ee",
+        "status": "runtime_approved"
+      },
+      "resource_key": "ai_skill_external_source:xiaosun-abc-cycle",
+      "resource_type": "ai_skill_external_source",
+      "review_receipt": {
+        "review_scope": "contract_and_safety_only"
+      },
+      "runtime_status": "active",
+      "schema_version": 1,
+      "source_receipts": [
+        "ai_skill_source_catalog"
+      ]
+    },
+    {
+      "catalog_status": "registered",
+      "id": "acute-variables-config",
+      "license_status": "unverified",
+      "online_distribution_status": "ineligible",
+      "payload": {
+        "archive_path": "nasm-cpt/acute-variables-config/SKILL.md",
+        "audit_level": "author_self_tested",
+        "group": "nasm-cpt",
+        "id": "acute-variables-config",
+        "reason_code": "sets_reps_load_owned_by_local_templates",
+        "runtime_targets": [],
+        "source_sha256": "52a08776cd80a9d2a883b61c4f77f995fae1a038db1a0ece5a25bd6f5b19efda",
+        "status": "catalog_only"
+      },
+      "resource_key": "ai_skill_module:acute-variables-config",
+      "resource_type": "ai_skill_module",
+      "review_receipt": null,
+      "runtime_status": "catalog_only",
+      "schema_version": 1,
+      "source_receipts": [
+        "ai_skill_source_catalog"
+      ]
+    },
+    {
+      "catalog_status": "registered",
+      "id": "bdmt-conditioning",
+      "license_status": "unverified",
+      "online_distribution_status": "ineligible",
+      "payload": {
+        "archive_path": "badminton/bdmt-conditioning/SKILL.md",
+        "audit_level": "unverified",
+        "group": "badminton",
+        "id": "bdmt-conditioning",
+        "reason_code": "unsupported_sport_and_template",
+        "runtime_targets": [],
+        "source_sha256": "06f09f13531ed943ba6e152a6bc873c8f428e1ecdeaad31602060184639a6461",
+        "status": "catalog_only"
+      },
+      "resource_key": "ai_skill_module:bdmt-conditioning",
+      "resource_type": "ai_skill_module",
+      "review_receipt": null,
+      "runtime_status": "catalog_only",
+      "schema_version": 1,
+      "source_receipts": [
+        "ai_skill_source_catalog"
+      ]
+    },
+    {
+      "catalog_status": "registered",
+      "id": "bdmt-footwork",
+      "license_status": "unverified",
+      "online_distribution_status": "ineligible",
+      "payload": {
+        "archive_path": "badminton/bdmt-footwork/SKILL.md",
+        "audit_level": "unverified",
+        "group": "badminton",
+        "id": "bdmt-footwork",
+        "reason_code": "unsupported_sport_and_template",
+        "runtime_targets": [],
+        "source_sha256": "4844e9f4f80cd48fec327f5cfa8a5f108a079b9d620ac04d563bd74f2a85cb22",
+        "status": "catalog_only"
+      },
+      "resource_key": "ai_skill_module:bdmt-footwork",
+      "resource_type": "ai_skill_module",
+      "review_receipt": null,
+      "runtime_status": "catalog_only",
+      "schema_version": 1,
+      "source_receipts": [
+        "ai_skill_source_catalog"
+      ]
+    },
+    {
+      "catalog_status": "registered",
+      "id": "bdmt-strokes",
+      "license_status": "unverified",
+      "online_distribution_status": "ineligible",
+      "payload": {
+        "archive_path": "badminton/bdmt-strokes/SKILL.md",
+        "audit_level": "unverified",
+        "group": "badminton",
+        "id": "bdmt-strokes",
+        "reason_code": "technique_or_tactics_outside_prescription",
+        "runtime_targets": [],
+        "source_sha256": "ef1a1c7e426cf7252af1c29a48ecdcadb16d1931a88be5cf7061f68887a563a9",
+        "status": "catalog_only"
+      },
+      "resource_key": "ai_skill_module:bdmt-strokes",
+      "resource_type": "ai_skill_module",
+      "review_receipt": null,
+      "runtime_status": "catalog_only",
+      "schema_version": 1,
+      "source_receipts": [
+        "ai_skill_source_catalog"
+      ]
+    },
+    {
+      "catalog_status": "registered",
+      "id": "bdmt-tactics",
+      "license_status": "unverified",
+      "online_distribution_status": "ineligible",
+      "payload": {
+        "archive_path": "badminton/bdmt-tactics/SKILL.md",
+        "audit_level": "unverified",
+        "group": "badminton",
+        "id": "bdmt-tactics",
+        "reason_code": "technique_or_tactics_outside_prescription",
+        "runtime_targets": [],
+        "source_sha256": "0b9bcbae8f9a134c092f4ade5a5a02b102b77854b8edb306900bb58cbd09da32",
+        "status": "catalog_only"
+      },
+      "resource_key": "ai_skill_module:bdmt-tactics",
+      "resource_type": "ai_skill_module",
+      "review_receipt": null,
+      "runtime_status": "catalog_only",
+      "schema_version": 1,
+      "source_receipts": [
+        "ai_skill_source_catalog"
+      ]
+    },
+    {
+      "catalog_status": "registered",
+      "id": "behavior-change-coaching",
+      "license_status": "unverified",
+      "online_distribution_status": "ineligible",
+      "payload": {
+        "archive_path": "nasm-cpt/behavior-change-coaching/SKILL.md",
+        "audit_level": "author_self_tested",
+        "group": "nasm-cpt",
+        "id": "behavior-change-coaching",
+        "reason_code": "outside_initial_plan_prescription",
+        "runtime_targets": [],
+        "source_sha256": "dc9bc5ab1e437c8f95194c4bdff8dc8c7ba1665636e61f21041360ca4229ab7a",
+        "status": "catalog_only"
+      },
+      "resource_key": "ai_skill_module:behavior-change-coaching",
+      "resource_type": "ai_skill_module",
+      "review_receipt": null,
+      "runtime_status": "catalog_only",
+      "schema_version": 1,
+      "source_receipts": [
+        "ai_skill_source_catalog"
+      ]
+    },
+    {
+      "catalog_status": "registered",
+      "id": "cardio-hr-zones",
+      "license_status": "unverified",
+      "online_distribution_status": "ineligible",
+      "payload": {
+        "archive_path": "nasm-cpt/cardio-hr-zones/SKILL.md",
+        "audit_level": "author_self_tested",
+        "group": "nasm-cpt",
+        "id": "cardio-hr-zones",
+        "reason_code": "heart_rate_data_out_of_contract",
+        "runtime_targets": [],
+        "source_sha256": "416f674e6e98ec445b360de7d72dd1d04e5e33db2f9a9bbe11a208164c85e166",
+        "status": "catalog_only"
+      },
+      "resource_key": "ai_skill_module:cardio-hr-zones",
+      "resource_type": "ai_skill_module",
+      "review_receipt": null,
+      "runtime_status": "catalog_only",
+      "schema_version": 1,
+      "source_receipts": [
+        "ai_skill_source_catalog"
+      ]
+    },
+    {
+      "catalog_status": "blocked",
+      "id": "corrective-exercise-continuum",
+      "license_status": "unverified",
+      "online_distribution_status": "ineligible",
+      "payload": {
+        "archive_path": "nasm-cpt/corrective-exercise-continuum/SKILL.md",
+        "audit_level": "author_self_tested",
+        "group": "nasm-cpt",
+        "id": "corrective-exercise-continuum",
+        "reason_code": "rehabilitation_out_of_scope",
+        "runtime_targets": [],
+        "source_sha256": "1986850179c96d9e5291c4201446d2ed31c1ef13abe55b62e044966666f36d68",
+        "status": "blocked"
+      },
+      "resource_key": "ai_skill_module:corrective-exercise-continuum",
+      "resource_type": "ai_skill_module",
+      "review_receipt": null,
+      "runtime_status": "blocked",
+      "schema_version": 1,
+      "source_receipts": [
+        "ai_skill_source_catalog"
+      ]
+    },
+    {
+      "catalog_status": "approved",
+      "id": "endsc-interference-effect",
+      "license_status": "unverified",
+      "online_distribution_status": "ineligible",
+      "payload": {
+        "archive_path": "nailipao-sc/endsc-interference-effect/SKILL.md",
+        "audit_level": "self_declared",
+        "group": "nailipao-sc",
+        "id": "endsc-interference-effect",
+        "reason_code": "approved_for_marathon_fragment",
+        "runtime_targets": [
+          "marathon"
+        ],
+        "source_sha256": "4f1dae1d833709757f9de9ee9b137495536f344eaabec614d76b551262d15edf",
+        "status": "runtime_approved"
+      },
+      "resource_key": "ai_skill_module:endsc-interference-effect",
+      "resource_type": "ai_skill_module",
+      "review_receipt": {
+        "review_scope": "contract_and_safety_only"
+      },
+      "runtime_status": "active",
+      "schema_version": 1,
+      "source_receipts": [
+        "ai_skill_source_catalog"
+      ]
+    },
+    {
+      "catalog_status": "approved",
+      "id": "endsc-season-periodization",
+      "license_status": "unverified",
+      "online_distribution_status": "ineligible",
+      "payload": {
+        "archive_path": "nailipao-sc/endsc-season-periodization/SKILL.md",
+        "audit_level": "self_declared",
+        "group": "nailipao-sc",
+        "id": "endsc-season-periodization",
+        "reason_code": "approved_for_marathon_fragment",
+        "runtime_targets": [
+          "marathon"
+        ],
+        "source_sha256": "2eb733b329ecd39a5bd4e1762392a63af85080d81b4d4503287bd16e6e60eb4a",
+        "status": "runtime_approved"
+      },
+      "resource_key": "ai_skill_module:endsc-season-periodization",
+      "resource_type": "ai_skill_module",
+      "review_receipt": {
+        "review_scope": "contract_and_safety_only"
+      },
+      "runtime_status": "active",
+      "schema_version": 1,
+      "source_receipts": [
+        "ai_skill_source_catalog"
+      ]
+    },
+    {
+      "catalog_status": "approved",
+      "id": "endsc-session-sequencing",
+      "license_status": "unverified",
+      "online_distribution_status": "ineligible",
+      "payload": {
+        "archive_path": "nailipao-sc/endsc-session-sequencing/SKILL.md",
+        "audit_level": "self_declared",
+        "group": "nailipao-sc",
+        "id": "endsc-session-sequencing",
+        "reason_code": "approved_for_marathon_fragment",
+        "runtime_targets": [
+          "marathon"
+        ],
+        "source_sha256": "77f5c79701c860030007aeedb29d0a447d5766ca0286a41896649ebd65f295d9",
+        "status": "runtime_approved"
+      },
+      "resource_key": "ai_skill_module:endsc-session-sequencing",
+      "resource_type": "ai_skill_module",
+      "review_receipt": {
+        "review_scope": "contract_and_safety_only"
+      },
+      "runtime_status": "active",
+      "schema_version": 1,
+      "source_receipts": [
+        "ai_skill_source_catalog"
+      ]
+    },
+    {
+      "catalog_status": "approved",
+      "id": "endsc-strength-running-economy",
+      "license_status": "unverified",
+      "online_distribution_status": "ineligible",
+      "payload": {
+        "archive_path": "nailipao-sc/endsc-strength-running-economy/SKILL.md",
+        "audit_level": "self_declared",
+        "group": "nailipao-sc",
+        "id": "endsc-strength-running-economy",
+        "reason_code": "approved_for_marathon_fragment",
+        "runtime_targets": [
+          "marathon"
+        ],
+        "source_sha256": "3bb5bcf935fcbffa5398c9da2a7a498da69097eee07d21bdb38a4cfe0cb488b8",
+        "status": "runtime_approved"
+      },
+      "resource_key": "ai_skill_module:endsc-strength-running-economy",
+      "resource_type": "ai_skill_module",
+      "review_receipt": {
+        "review_scope": "contract_and_safety_only"
+      },
+      "runtime_status": "active",
+      "schema_version": 1,
+      "source_receipts": [
+        "ai_skill_source_catalog"
+      ]
+    },
+    {
+      "catalog_status": "blocked",
+      "id": "kinetic-chain-selection",
+      "license_status": "unverified",
+      "online_distribution_status": "ineligible",
+      "payload": {
+        "archive_path": "jichu-jidonglixue/kinetic-chain-selection/SKILL.md",
+        "audit_level": "author_self_tested",
+        "group": "jichu-jidonglixue",
+        "id": "kinetic-chain-selection",
+        "reason_code": "rehabilitation_out_of_scope",
+        "runtime_targets": [],
+        "source_sha256": "606c8bebb02059e512d64aff28ed318827c24c16849cdf14823dffc7e92afbc4",
+        "status": "blocked"
+      },
+      "resource_key": "ai_skill_module:kinetic-chain-selection",
+      "resource_type": "ai_skill_module",
+      "review_receipt": null,
+      "runtime_status": "blocked",
+      "schema_version": 1,
+      "source_receipts": [
+        "ai_skill_source_catalog"
+      ]
+    },
+    {
+      "catalog_status": "blocked",
+      "id": "ldstr-bone-stress",
+      "license_status": "unverified",
+      "online_distribution_status": "ineligible",
+      "payload": {
+        "archive_path": "changpao-liliang/ldstr-bone-stress/SKILL.md",
+        "audit_level": "self_declared",
+        "group": "changpao-liliang",
+        "id": "ldstr-bone-stress",
+        "reason_code": "injury_or_medical_out_of_scope",
+        "runtime_targets": [],
+        "source_sha256": "e307e825e110611d9f338e696315e866b6a5cc69d7d76a0bca8e4871aeb87605",
+        "status": "blocked"
+      },
+      "resource_key": "ai_skill_module:ldstr-bone-stress",
+      "resource_type": "ai_skill_module",
+      "review_receipt": null,
+      "runtime_status": "blocked",
+      "schema_version": 1,
+      "source_receipts": [
+        "ai_skill_source_catalog"
+      ]
+    },
+    {
+      "catalog_status": "blocked",
+      "id": "ldstr-injury-prevention",
+      "license_status": "unverified",
+      "online_distribution_status": "ineligible",
+      "payload": {
+        "archive_path": "changpao-liliang/ldstr-injury-prevention/SKILL.md",
+        "audit_level": "self_declared",
+        "group": "changpao-liliang",
+        "id": "ldstr-injury-prevention",
+        "reason_code": "injury_or_medical_out_of_scope",
+        "runtime_targets": [],
+        "source_sha256": "ccb09ab41b40259b2c5dff04fd76ed603deb5f08a5dfd2c71c0609f8a6d8e6af",
+        "status": "blocked"
+      },
+      "resource_key": "ai_skill_module:ldstr-injury-prevention",
+      "resource_type": "ai_skill_module",
+      "review_receipt": null,
+      "runtime_status": "blocked",
+      "schema_version": 1,
+      "source_receipts": [
+        "ai_skill_source_catalog"
+      ]
+    },
+    {
+      "catalog_status": "registered",
+      "id": "ldstr-load-management",
+      "license_status": "unverified",
+      "online_distribution_status": "ineligible",
+      "payload": {
+        "archive_path": "changpao-liliang/ldstr-load-management/SKILL.md",
+        "audit_level": "self_declared",
+        "group": "changpao-liliang",
+        "id": "ldstr-load-management",
+        "reason_code": "health_load_metrics_out_of_contract",
+        "runtime_targets": [],
+        "source_sha256": "17f357b16abd352eae3b15caba901864352b2a076c6d1c2bac4369ef86108bcd",
+        "status": "catalog_only"
+      },
+      "resource_key": "ai_skill_module:ldstr-load-management",
+      "resource_type": "ai_skill_module",
+      "review_receipt": null,
+      "runtime_status": "catalog_only",
+      "schema_version": 1,
+      "source_receipts": [
+        "ai_skill_source_catalog"
+      ]
+    },
+    {
+      "catalog_status": "approved",
+      "id": "ldstr-running-durability",
+      "license_status": "unverified",
+      "online_distribution_status": "ineligible",
+      "payload": {
+        "archive_path": "changpao-liliang/ldstr-running-durability/SKILL.md",
+        "audit_level": "self_declared",
+        "group": "changpao-liliang",
+        "id": "ldstr-running-durability",
+        "reason_code": "approved_for_marathon_fragment",
+        "runtime_targets": [
+          "marathon"
+        ],
+        "source_sha256": "642f65b6e79f73a0dfdd6d9ff0c78912d15a1baffde73733a1f51b3396f77480",
+        "status": "runtime_approved"
+      },
+      "resource_key": "ai_skill_module:ldstr-running-durability",
+      "resource_type": "ai_skill_module",
+      "review_receipt": {
+        "review_scope": "contract_and_safety_only"
+      },
+      "runtime_status": "active",
+      "schema_version": 1,
+      "source_receipts": [
+        "ai_skill_source_catalog"
+      ]
+    },
+    {
+      "catalog_status": "registered",
+      "id": "length-tension-force-couple",
+      "license_status": "unverified",
+      "online_distribution_status": "ineligible",
+      "payload": {
+        "archive_path": "jichu-jidonglixue/length-tension-force-couple/SKILL.md",
+        "audit_level": "author_self_tested",
+        "group": "jichu-jidonglixue",
+        "id": "length-tension-force-couple",
+        "reason_code": "local_exercise_catalog_owned",
+        "runtime_targets": [],
+        "source_sha256": "8a21827d8193978c09cb8e466a4168b2e8afcfd6d81aedebe687a4dfca340727",
+        "status": "catalog_only"
+      },
+      "resource_key": "ai_skill_module:length-tension-force-couple",
+      "resource_type": "ai_skill_module",
+      "review_receipt": null,
+      "runtime_status": "catalog_only",
+      "schema_version": 1,
+      "source_receipts": [
+        "ai_skill_source_catalog"
+      ]
+    },
+    {
+      "catalog_status": "registered",
+      "id": "lever-systems",
+      "license_status": "unverified",
+      "online_distribution_status": "ineligible",
+      "payload": {
+        "archive_path": "jichu-jidonglixue/lever-systems/SKILL.md",
+        "audit_level": "author_self_tested",
+        "group": "jichu-jidonglixue",
+        "id": "lever-systems",
+        "reason_code": "local_exercise_catalog_owned",
+        "runtime_targets": [],
+        "source_sha256": "16070f3e3f5cf16d5110f358bd78cfb19c631d73f47e8c89cc6e30bf235dda62",
+        "status": "catalog_only"
+      },
+      "resource_key": "ai_skill_module:lever-systems",
+      "resource_type": "ai_skill_module",
+      "review_receipt": null,
+      "runtime_status": "catalog_only",
+      "schema_version": 1,
+      "source_receipts": [
+        "ai_skill_source_catalog"
+      ]
+    },
+    {
+      "catalog_status": "registered",
+      "id": "muscle-contraction-types",
+      "license_status": "unverified",
+      "online_distribution_status": "ineligible",
+      "payload": {
+        "archive_path": "jichu-jidonglixue/muscle-contraction-types/SKILL.md",
+        "audit_level": "author_self_tested",
+        "group": "jichu-jidonglixue",
+        "id": "muscle-contraction-types",
+        "reason_code": "local_exercise_catalog_owned",
+        "runtime_targets": [],
+        "source_sha256": "1f192da99abfd5fe699f09895bcd603978e0e2ec85ba3ca4fa2fa9f2054dd17d",
+        "status": "catalog_only"
+      },
+      "resource_key": "ai_skill_module:muscle-contraction-types",
+      "resource_type": "ai_skill_module",
+      "review_receipt": null,
+      "runtime_status": "catalog_only",
+      "schema_version": 1,
+      "source_receipts": [
+        "ai_skill_source_catalog"
+      ]
+    },
+    {
+      "catalog_status": "registered",
+      "id": "muscle-functional-roles",
+      "license_status": "unverified",
+      "online_distribution_status": "ineligible",
+      "payload": {
+        "archive_path": "jichu-jidonglixue/muscle-functional-roles/SKILL.md",
+        "audit_level": "author_self_tested",
+        "group": "jichu-jidonglixue",
+        "id": "muscle-functional-roles",
+        "reason_code": "local_exercise_catalog_owned",
+        "runtime_targets": [],
+        "source_sha256": "6746b2bc1f17942f82d9abc305b59a3ee91b787a2c6071564ae09012023e31db",
+        "status": "catalog_only"
+      },
+      "resource_key": "ai_skill_module:muscle-functional-roles",
+      "resource_type": "ai_skill_module",
+      "review_receipt": null,
+      "runtime_status": "catalog_only",
+      "schema_version": 1,
+      "source_receipts": [
+        "ai_skill_source_catalog"
+      ]
+    },
+    {
+      "catalog_status": "approved",
+      "id": "opt-model-phase-select",
+      "license_status": "unverified",
+      "online_distribution_status": "ineligible",
+      "payload": {
+        "archive_path": "nasm-cpt/opt-model-phase-select/SKILL.md",
+        "audit_level": "author_self_tested",
+        "group": "nasm-cpt",
+        "id": "opt-model-phase-select",
+        "reason_code": "approved_for_base_runtime",
+        "runtime_targets": [
+          "base"
+        ],
+        "source_sha256": "1f34ec587a353e0e78ab493e8c608a0d010d73840321c37daacca1943d445a1f",
+        "status": "runtime_approved"
+      },
+      "resource_key": "ai_skill_module:opt-model-phase-select",
+      "resource_type": "ai_skill_module",
+      "review_receipt": {
+        "review_scope": "contract_and_safety_only"
+      },
+      "runtime_status": "active",
+      "schema_version": 1,
+      "source_receipts": [
+        "ai_skill_source_catalog"
+      ]
+    },
+    {
+      "catalog_status": "blocked",
+      "id": "overhead-squat-assessment",
+      "license_status": "unverified",
+      "online_distribution_status": "ineligible",
+      "payload": {
+        "archive_path": "nasm-cpt/overhead-squat-assessment/SKILL.md",
+        "audit_level": "author_self_tested",
+        "group": "nasm-cpt",
+        "id": "overhead-squat-assessment",
+        "reason_code": "health_assessment_out_of_scope",
+        "runtime_targets": [],
+        "source_sha256": "f5043cf16a35e41d5d8272ed542bd0025a670707946e75b3875c82601ad4d64a",
+        "status": "blocked"
+      },
+      "resource_key": "ai_skill_module:overhead-squat-assessment",
+      "resource_type": "ai_skill_module",
+      "review_receipt": null,
+      "runtime_status": "blocked",
+      "schema_version": 1,
+      "source_receipts": [
+        "ai_skill_source_catalog"
+      ]
+    },
+    {
+      "catalog_status": "approved",
+      "id": "pc-energy-systems",
+      "license_status": "unverified",
+      "online_distribution_status": "ineligible",
+      "payload": {
+        "archive_path": "ti-neng-xunlian/pc-energy-systems/SKILL.md",
+        "audit_level": "unverified",
+        "group": "ti-neng-xunlian",
+        "id": "pc-energy-systems",
+        "reason_code": "approved_for_base_runtime",
+        "runtime_targets": [
+          "base"
+        ],
+        "source_sha256": "4bbb6945dc3304cbd38871ebfe3e6a50a9a6102ec7371f72683d4df1b65dff80",
+        "status": "runtime_approved"
+      },
+      "resource_key": "ai_skill_module:pc-energy-systems",
+      "resource_type": "ai_skill_module",
+      "review_receipt": {
+        "review_scope": "contract_and_safety_only"
+      },
+      "runtime_status": "active",
+      "schema_version": 1,
+      "source_receipts": [
+        "ai_skill_source_catalog"
+      ]
+    },
+    {
+      "catalog_status": "approved",
+      "id": "pc-gpp-work-capacity",
+      "license_status": "unverified",
+      "online_distribution_status": "ineligible",
+      "payload": {
+        "archive_path": "ti-neng-xunlian/pc-gpp-work-capacity/SKILL.md",
+        "audit_level": "unverified",
+        "group": "ti-neng-xunlian",
+        "id": "pc-gpp-work-capacity",
+        "reason_code": "approved_for_base_runtime",
+        "runtime_targets": [
+          "base"
+        ],
+        "source_sha256": "4df108ee7bf90a83581096bbb167da70e627338c0e62389393db342d90eace83",
+        "status": "runtime_approved"
+      },
+      "resource_key": "ai_skill_module:pc-gpp-work-capacity",
+      "resource_type": "ai_skill_module",
+      "review_receipt": {
+        "review_scope": "contract_and_safety_only"
+      },
+      "runtime_status": "active",
+      "schema_version": 1,
+      "source_receipts": [
+        "ai_skill_source_catalog"
+      ]
+    },
+    {
+      "catalog_status": "registered",
+      "id": "pc-ramp-warmup",
+      "license_status": "unverified",
+      "online_distribution_status": "ineligible",
+      "payload": {
+        "archive_path": "ti-neng-xunlian/pc-ramp-warmup/SKILL.md",
+        "audit_level": "unverified",
+        "group": "ti-neng-xunlian",
+        "id": "pc-ramp-warmup",
+        "reason_code": "warmup_actions_owned_by_local_templates",
+        "runtime_targets": [],
+        "source_sha256": "36d7cfe86ade13ed90cb4f83995776d735deb0082436948b3847d4944c99adba",
+        "status": "catalog_only"
+      },
+      "resource_key": "ai_skill_module:pc-ramp-warmup",
+      "resource_type": "ai_skill_module",
+      "review_receipt": null,
+      "runtime_status": "catalog_only",
+      "schema_version": 1,
+      "source_receipts": [
+        "ai_skill_source_catalog"
+      ]
+    },
+    {
+      "catalog_status": "registered",
+      "id": "pc-saq-training",
+      "license_status": "unverified",
+      "online_distribution_status": "ineligible",
+      "payload": {
+        "archive_path": "ti-neng-xunlian/pc-saq-training/SKILL.md",
+        "audit_level": "unverified",
+        "group": "ti-neng-xunlian",
+        "id": "pc-saq-training",
+        "reason_code": "requires_local_saq_template",
+        "runtime_targets": [],
+        "source_sha256": "b19168c0504a81fc1538057752dabbac8f2f8167b542bf87183330a9cb12c0ea",
+        "status": "catalog_only"
+      },
+      "resource_key": "ai_skill_module:pc-saq-training",
+      "resource_type": "ai_skill_module",
+      "review_receipt": null,
+      "runtime_status": "catalog_only",
+      "schema_version": 1,
+      "source_receipts": [
+        "ai_skill_source_catalog"
+      ]
+    },
+    {
+      "catalog_status": "approved",
+      "id": "periodization-models",
+      "license_status": "unverified",
+      "online_distribution_status": "ineligible",
+      "payload": {
+        "archive_path": "liliang-xunlian-jichu/periodization-models/SKILL.md",
+        "audit_level": "author_self_tested",
+        "group": "liliang-xunlian-jichu",
+        "id": "periodization-models",
+        "reason_code": "approved_for_base_runtime",
+        "runtime_targets": [
+          "base"
+        ],
+        "source_sha256": "b59ac75e92691fd3da76f3adf8226b304fbd4d943aa07b8130d1fde09c9a4639",
+        "status": "runtime_approved"
+      },
+      "resource_key": "ai_skill_module:periodization-models",
+      "resource_type": "ai_skill_module",
+      "review_receipt": {
+        "review_scope": "contract_and_safety_only"
+      },
+      "runtime_status": "active",
+      "schema_version": 1,
+      "source_receipts": [
+        "ai_skill_source_catalog"
+      ]
+    },
+    {
+      "catalog_status": "registered",
+      "id": "planes-of-motion",
+      "license_status": "unverified",
+      "online_distribution_status": "ineligible",
+      "payload": {
+        "archive_path": "jichu-jidonglixue/planes-of-motion/SKILL.md",
+        "audit_level": "author_self_tested",
+        "group": "jichu-jidonglixue",
+        "id": "planes-of-motion",
+        "reason_code": "local_exercise_catalog_owned",
+        "runtime_targets": [],
+        "source_sha256": "eb21ab47ce8dbb5c124544a08982fa0d7a878bf3e2bd0b9f9cf5cc8943f61bc8",
+        "status": "catalog_only"
+      },
+      "resource_key": "ai_skill_module:planes-of-motion",
+      "resource_type": "ai_skill_module",
+      "review_receipt": null,
+      "runtime_status": "catalog_only",
+      "schema_version": 1,
+      "source_receipts": [
+        "ai_skill_source_catalog"
+      ]
+    },
+    {
+      "catalog_status": "approved",
+      "id": "progressive-overload",
+      "license_status": "unverified",
+      "online_distribution_status": "ineligible",
+      "payload": {
+        "archive_path": "liliang-xunlian-jichu/progressive-overload/SKILL.md",
+        "audit_level": "author_self_tested",
+        "group": "liliang-xunlian-jichu",
+        "id": "progressive-overload",
+        "reason_code": "approved_for_base_runtime",
+        "runtime_targets": [
+          "base"
+        ],
+        "source_sha256": "50e9100d4f2e09132455efce38c78fc532b1d6f0db9373367d6c3a8e9dda8b3b",
+        "status": "runtime_approved"
+      },
+      "resource_key": "ai_skill_module:progressive-overload",
+      "resource_type": "ai_skill_module",
+      "review_receipt": {
+        "review_scope": "contract_and_safety_only"
+      },
+      "runtime_status": "active",
+      "schema_version": 1,
+      "source_receipts": [
+        "ai_skill_source_catalog"
+      ]
+    },
+    {
+      "catalog_status": "approved",
+      "id": "recovery-supercompensation",
+      "license_status": "unverified",
+      "online_distribution_status": "ineligible",
+      "payload": {
+        "archive_path": "liliang-xunlian-jichu/recovery-supercompensation/SKILL.md",
+        "audit_level": "author_self_tested",
+        "group": "liliang-xunlian-jichu",
+        "id": "recovery-supercompensation",
+        "reason_code": "approved_for_base_runtime",
+        "runtime_targets": [
+          "base"
+        ],
+        "source_sha256": "5e2c3e9795e824d9fc3436622f6e0dfe97385d532b25b75375efb515e6d13db5",
+        "status": "runtime_approved"
+      },
+      "resource_key": "ai_skill_module:recovery-supercompensation",
+      "resource_type": "ai_skill_module",
+      "review_receipt": {
+        "review_scope": "contract_and_safety_only"
+      },
+      "runtime_status": "active",
+      "schema_version": 1,
+      "source_receipts": [
+        "ai_skill_source_catalog"
+      ]
+    },
+    {
+      "catalog_status": "registered",
+      "id": "rpe-rir-autoregulation",
+      "license_status": "unverified",
+      "online_distribution_status": "ineligible",
+      "payload": {
+        "archive_path": "liliang-xunlian-jichu/rpe-rir-autoregulation/SKILL.md",
+        "audit_level": "author_self_tested",
+        "group": "liliang-xunlian-jichu",
+        "id": "rpe-rir-autoregulation",
+        "reason_code": "rpe_rir_output_owned_by_local_compiler",
+        "runtime_targets": [],
+        "source_sha256": "80e68505682067b191db4955beb43062f7fc1bcc54f29d741eee5ade939b7f0d",
+        "status": "catalog_only"
+      },
+      "resource_key": "ai_skill_module:rpe-rir-autoregulation",
+      "resource_type": "ai_skill_module",
+      "review_receipt": null,
+      "runtime_status": "catalog_only",
+      "schema_version": 1,
+      "source_receipts": [
+        "ai_skill_source_catalog"
+      ]
+    },
+    {
+      "catalog_status": "registered",
+      "id": "runstr-plyometrics",
+      "license_status": "unverified",
+      "online_distribution_status": "ineligible",
+      "payload": {
+        "archive_path": "paobu-liliang/runstr-plyometrics/SKILL.md",
+        "audit_level": "self_declared",
+        "group": "paobu-liliang",
+        "id": "runstr-plyometrics",
+        "reason_code": "requires_high_impact_template_and_gate",
+        "runtime_targets": [],
+        "source_sha256": "2dba07e4208091f5a5eead4b7fb0bf2fbad640060efb5790731b0eeb6a04f3eb",
+        "status": "catalog_only"
+      },
+      "resource_key": "ai_skill_module:runstr-plyometrics",
+      "resource_type": "ai_skill_module",
+      "review_receipt": null,
+      "runtime_status": "catalog_only",
+      "schema_version": 1,
+      "source_receipts": [
+        "ai_skill_source_catalog"
+      ]
+    },
+    {
+      "catalog_status": "approved",
+      "id": "runstr-running-economy",
+      "license_status": "unverified",
+      "online_distribution_status": "ineligible",
+      "payload": {
+        "archive_path": "paobu-liliang/runstr-running-economy/SKILL.md",
+        "audit_level": "self_declared",
+        "group": "paobu-liliang",
+        "id": "runstr-running-economy",
+        "reason_code": "approved_for_marathon_fragment",
+        "runtime_targets": [
+          "marathon"
+        ],
+        "source_sha256": "74832d96d9440aa20f151f48451e630b444951547558db660133714ac83102b3",
+        "status": "runtime_approved"
+      },
+      "resource_key": "ai_skill_module:runstr-running-economy",
+      "resource_type": "ai_skill_module",
+      "review_receipt": {
+        "review_scope": "contract_and_safety_only"
+      },
+      "runtime_status": "active",
+      "schema_version": 1,
+      "source_receipts": [
+        "ai_skill_source_catalog"
+      ]
+    },
+    {
+      "catalog_status": "registered",
+      "id": "runstr-single-leg-stability",
+      "license_status": "unverified",
+      "online_distribution_status": "ineligible",
+      "payload": {
+        "archive_path": "paobu-liliang/runstr-single-leg-stability/SKILL.md",
+        "audit_level": "self_declared",
+        "group": "paobu-liliang",
+        "id": "runstr-single-leg-stability",
+        "reason_code": "exercise_selection_owned_by_local_templates",
+        "runtime_targets": [],
+        "source_sha256": "03438d84f185337cbced35de195025e7a5bf7e2a8bb69b11f26151f3d1860ac0",
+        "status": "catalog_only"
+      },
+      "resource_key": "ai_skill_module:runstr-single-leg-stability",
+      "resource_type": "ai_skill_module",
+      "review_receipt": null,
+      "runtime_status": "catalog_only",
+      "schema_version": 1,
+      "source_receipts": [
+        "ai_skill_source_catalog"
+      ]
+    },
+    {
+      "catalog_status": "registered",
+      "id": "runstr-tendon-elasticity",
+      "license_status": "unverified",
+      "online_distribution_status": "ineligible",
+      "payload": {
+        "archive_path": "paobu-liliang/runstr-tendon-elasticity/SKILL.md",
+        "audit_level": "self_declared",
+        "group": "paobu-liliang",
+        "id": "runstr-tendon-elasticity",
+        "reason_code": "requires_high_impact_template_and_gate",
+        "runtime_targets": [],
+        "source_sha256": "ecf43d404fe74ce6a901fc3368014624879dbfc3eb7c93c230e789f92babe3e6",
+        "status": "catalog_only"
+      },
+      "resource_key": "ai_skill_module:runstr-tendon-elasticity",
+      "resource_type": "ai_skill_module",
+      "review_receipt": null,
+      "runtime_status": "catalog_only",
+      "schema_version": 1,
+      "source_receipts": [
+        "ai_skill_source_catalog"
+      ]
+    },
+    {
+      "catalog_status": "approved",
+      "id": "specificity-said",
+      "license_status": "unverified",
+      "online_distribution_status": "ineligible",
+      "payload": {
+        "archive_path": "liliang-xunlian-jichu/specificity-said/SKILL.md",
+        "audit_level": "author_self_tested",
+        "group": "liliang-xunlian-jichu",
+        "id": "specificity-said",
+        "reason_code": "approved_for_base_runtime",
+        "runtime_targets": [
+          "base"
+        ],
+        "source_sha256": "b887c2c76beaf9054234725e8c4db39fcedf7a1132059cd35ea856c79015879a",
+        "status": "runtime_approved"
+      },
+      "resource_key": "ai_skill_module:specificity-said",
+      "resource_type": "ai_skill_module",
+      "review_receipt": {
+        "review_scope": "contract_and_safety_only"
+      },
+      "runtime_status": "active",
+      "schema_version": 1,
+      "source_receipts": [
+        "ai_skill_source_catalog"
+      ]
+    },
+    {
+      "catalog_status": "approved",
+      "id": "trailguide-terrain-endurance",
+      "license_status": "unverified",
+      "online_distribution_status": "ineligible",
+      "payload": {
+        "archive_path": "yueyepao-zhinan/trailguide-terrain-endurance/SKILL.md",
+        "audit_level": "self_declared",
+        "group": "yueyepao-zhinan",
+        "id": "trailguide-terrain-endurance",
+        "reason_code": "approved_for_trail_fragment",
+        "runtime_targets": [
+          "trail_running"
+        ],
+        "source_sha256": "e58975bf7e025e696fb15d83bd4450fd55d0c3c4fbafe2663fbf3b34bf8ce5af",
+        "status": "runtime_approved"
+      },
+      "resource_key": "ai_skill_module:trailguide-terrain-endurance",
+      "resource_type": "ai_skill_module",
+      "review_receipt": {
+        "review_scope": "contract_and_safety_only"
+      },
+      "runtime_status": "active",
+      "schema_version": 1,
+      "source_receipts": [
+        "ai_skill_source_catalog"
+      ]
+    },
+    {
+      "catalog_status": "approved",
+      "id": "trailguide-uphill-conditioning",
+      "license_status": "unverified",
+      "online_distribution_status": "ineligible",
+      "payload": {
+        "archive_path": "yueyepao-zhinan/trailguide-uphill-conditioning/SKILL.md",
+        "audit_level": "self_declared",
+        "group": "yueyepao-zhinan",
+        "id": "trailguide-uphill-conditioning",
+        "reason_code": "approved_for_trail_fragment",
+        "runtime_targets": [
+          "trail_running"
+        ],
+        "source_sha256": "35475f0ae72870167bb86e59726eeceb591c4bc2ef89b8b7cf5bec314d4ec83e",
+        "status": "runtime_approved"
+      },
+      "resource_key": "ai_skill_module:trailguide-uphill-conditioning",
+      "resource_type": "ai_skill_module",
+      "review_receipt": {
+        "review_scope": "contract_and_safety_only"
+      },
+      "runtime_status": "active",
+      "schema_version": 1,
+      "source_receipts": [
+        "ai_skill_source_catalog"
+      ]
+    },
+    {
+      "catalog_status": "approved",
+      "id": "trailguide-vert-periodization",
+      "license_status": "unverified",
+      "online_distribution_status": "ineligible",
+      "payload": {
+        "archive_path": "yueyepao-zhinan/trailguide-vert-periodization/SKILL.md",
+        "audit_level": "self_declared",
+        "group": "yueyepao-zhinan",
+        "id": "trailguide-vert-periodization",
+        "reason_code": "approved_for_trail_fragment",
+        "runtime_targets": [
+          "trail_running"
+        ],
+        "source_sha256": "d2ae2fa0f6f056a433c0f275cbf1385c82960c77f0941955ecd870e4dea30d92",
+        "status": "runtime_approved"
+      },
+      "resource_key": "ai_skill_module:trailguide-vert-periodization",
+      "resource_type": "ai_skill_module",
+      "review_receipt": {
+        "review_scope": "contract_and_safety_only"
+      },
+      "runtime_status": "active",
+      "schema_version": 1,
+      "source_receipts": [
+        "ai_skill_source_catalog"
+      ]
+    },
+    {
+      "catalog_status": "approved",
+      "id": "trailguide-vertical-training",
+      "license_status": "unverified",
+      "online_distribution_status": "ineligible",
+      "payload": {
+        "archive_path": "yueyepao-zhinan/trailguide-vertical-training/SKILL.md",
+        "audit_level": "self_declared",
+        "group": "yueyepao-zhinan",
+        "id": "trailguide-vertical-training",
+        "reason_code": "approved_for_trail_fragment",
+        "runtime_targets": [
+          "trail_running"
+        ],
+        "source_sha256": "8f6c3cf641a1333a7051a54419fbbbcb44dbe7007e2b2022633e2c18b01b89bb",
+        "status": "runtime_approved"
+      },
+      "resource_key": "ai_skill_module:trailguide-vertical-training",
+      "resource_type": "ai_skill_module",
+      "review_receipt": {
+        "review_scope": "contract_and_safety_only"
+      },
+      "runtime_status": "active",
+      "schema_version": 1,
+      "source_receipts": [
+        "ai_skill_source_catalog"
+      ]
+    },
+    {
+      "catalog_status": "registered",
+      "id": "trailrun-race-pacing",
+      "license_status": "unverified",
+      "online_distribution_status": "ineligible",
+      "payload": {
+        "archive_path": "yueyepao-zhe/trailrun-race-pacing/SKILL.md",
+        "audit_level": "self_declared",
+        "group": "yueyepao-zhe",
+        "id": "trailrun-race-pacing",
+        "reason_code": "race_operations_outside_prescription",
+        "runtime_targets": [],
+        "source_sha256": "843abbdbde91ac6edab2d95a0347d5463ad1b8ae2558f1bb824ca476a4849107",
+        "status": "catalog_only"
+      },
+      "resource_key": "ai_skill_module:trailrun-race-pacing",
+      "resource_type": "ai_skill_module",
+      "review_receipt": null,
+      "runtime_status": "catalog_only",
+      "schema_version": 1,
+      "source_receipts": [
+        "ai_skill_source_catalog"
+      ]
+    },
+    {
+      "catalog_status": "registered",
+      "id": "trailrun-race-prep",
+      "license_status": "unverified",
+      "online_distribution_status": "ineligible",
+      "payload": {
+        "archive_path": "yueyepao-zhe/trailrun-race-prep/SKILL.md",
+        "audit_level": "self_declared",
+        "group": "yueyepao-zhe",
+        "id": "trailrun-race-prep",
+        "reason_code": "race_operations_outside_prescription",
+        "runtime_targets": [],
+        "source_sha256": "05c7613adc4524fadd1d37badf5d7ecdfa51297cbe82b62be8570705be28fc45",
+        "status": "catalog_only"
+      },
+      "resource_key": "ai_skill_module:trailrun-race-prep",
+      "resource_type": "ai_skill_module",
+      "review_receipt": null,
+      "runtime_status": "catalog_only",
+      "schema_version": 1,
+      "source_receipts": [
+        "ai_skill_source_catalog"
+      ]
+    },
+    {
+      "catalog_status": "approved",
+      "id": "trailrun-road-to-trail",
+      "license_status": "unverified",
+      "online_distribution_status": "ineligible",
+      "payload": {
+        "archive_path": "yueyepao-zhe/trailrun-road-to-trail/SKILL.md",
+        "audit_level": "self_declared",
+        "group": "yueyepao-zhe",
+        "id": "trailrun-road-to-trail",
+        "reason_code": "approved_for_trail_fragment",
+        "runtime_targets": [
+          "trail_running"
+        ],
+        "source_sha256": "b1491fe0900ee04ef16f45f172566cc5c4ec0d6fb90a685fc829dda4a77c6a20",
+        "status": "runtime_approved"
+      },
+      "resource_key": "ai_skill_module:trailrun-road-to-trail",
+      "resource_type": "ai_skill_module",
+      "review_receipt": {
+        "review_scope": "contract_and_safety_only"
+      },
+      "runtime_status": "active",
+      "schema_version": 1,
+      "source_receipts": [
+        "ai_skill_source_catalog"
+      ]
+    },
+    {
+      "catalog_status": "approved",
+      "id": "trailrun-run-walk-strategy",
+      "license_status": "unverified",
+      "online_distribution_status": "ineligible",
+      "payload": {
+        "archive_path": "yueyepao-zhe/trailrun-run-walk-strategy/SKILL.md",
+        "audit_level": "self_declared",
+        "group": "yueyepao-zhe",
+        "id": "trailrun-run-walk-strategy",
+        "reason_code": "approved_for_trail_fragment",
+        "runtime_targets": [
+          "trail_running"
+        ],
+        "source_sha256": "d67ca30a019662f330c64ff902b3c37531eff00ddb325e7968fccfb72bd8b07e",
+        "status": "runtime_approved"
+      },
+      "resource_key": "ai_skill_module:trailrun-run-walk-strategy",
+      "resource_type": "ai_skill_module",
+      "review_receipt": {
+        "review_scope": "contract_and_safety_only"
+      },
+      "runtime_status": "active",
+      "schema_version": 1,
+      "source_receipts": [
+        "ai_skill_source_catalog"
+      ]
+    },
+    {
+      "catalog_status": "registered",
+      "id": "ultratrail-downhill-technique",
+      "license_status": "unverified",
+      "online_distribution_status": "ineligible",
+      "payload": {
+        "archive_path": "zhongji-yueye/ultratrail-downhill-technique/SKILL.md",
+        "audit_level": "self_declared",
+        "group": "zhongji-yueye",
+        "id": "ultratrail-downhill-technique",
+        "reason_code": "requires_local_technique_template",
+        "runtime_targets": [],
+        "source_sha256": "b95eeea54614966e4669188fccb50828435c6a4b6c29e506bd738b5af4c16da9",
+        "status": "catalog_only"
+      },
+      "resource_key": "ai_skill_module:ultratrail-downhill-technique",
+      "resource_type": "ai_skill_module",
+      "review_receipt": null,
+      "runtime_status": "catalog_only",
+      "schema_version": 1,
+      "source_receipts": [
+        "ai_skill_source_catalog"
+      ]
+    },
+    {
+      "catalog_status": "blocked",
+      "id": "ultratrail-fueling-hydration",
+      "license_status": "unverified",
+      "online_distribution_status": "ineligible",
+      "payload": {
+        "archive_path": "zhongji-yueye/ultratrail-fueling-hydration/SKILL.md",
+        "audit_level": "self_declared",
+        "group": "zhongji-yueye",
+        "id": "ultratrail-fueling-hydration",
+        "reason_code": "nutrition_out_of_scope",
+        "runtime_targets": [],
+        "source_sha256": "cb6f4aec6cc1c647ae69a59e7f92344c2353a82aa4ff73bbb259176304a8814b",
+        "status": "blocked"
+      },
+      "resource_key": "ai_skill_module:ultratrail-fueling-hydration",
+      "resource_type": "ai_skill_module",
+      "review_receipt": null,
+      "runtime_status": "blocked",
+      "schema_version": 1,
+      "source_receipts": [
+        "ai_skill_source_catalog"
+      ]
+    },
+    {
+      "catalog_status": "registered",
+      "id": "ultratrail-technical-footwork",
+      "license_status": "unverified",
+      "online_distribution_status": "ineligible",
+      "payload": {
+        "archive_path": "zhongji-yueye/ultratrail-technical-footwork/SKILL.md",
+        "audit_level": "self_declared",
+        "group": "zhongji-yueye",
+        "id": "ultratrail-technical-footwork",
+        "reason_code": "requires_local_technique_template",
+        "runtime_targets": [],
+        "source_sha256": "a79a6ffb1a742a6e38e1cb3974460fef4b4c59cc9874458bc4fab10afe6cacf0",
+        "status": "catalog_only"
+      },
+      "resource_key": "ai_skill_module:ultratrail-technical-footwork",
+      "resource_type": "ai_skill_module",
+      "review_receipt": null,
+      "runtime_status": "catalog_only",
+      "schema_version": 1,
+      "source_receipts": [
+        "ai_skill_source_catalog"
+      ]
+    },
+    {
+      "catalog_status": "approved",
+      "id": "ultratrail-uphill-hiking",
+      "license_status": "unverified",
+      "online_distribution_status": "ineligible",
+      "payload": {
+        "archive_path": "zhongji-yueye/ultratrail-uphill-hiking/SKILL.md",
+        "audit_level": "self_declared",
+        "group": "zhongji-yueye",
+        "id": "ultratrail-uphill-hiking",
+        "reason_code": "approved_for_trail_fragment",
+        "runtime_targets": [
+          "trail_running"
+        ],
+        "source_sha256": "61af75be9c4ffc9a50944cc9834da416b1f5cbacf5b41b5352f784a1740750d0",
+        "status": "runtime_approved"
+      },
+      "resource_key": "ai_skill_module:ultratrail-uphill-hiking",
+      "resource_type": "ai_skill_module",
+      "review_receipt": {
+        "review_scope": "contract_and_safety_only"
+      },
+      "runtime_status": "active",
+      "schema_version": 1,
+      "source_receipts": [
+        "ai_skill_source_catalog"
+      ]
+    },
+    {
+      "catalog_status": "approved",
+      "id": "volume-landmarks",
+      "license_status": "unverified",
+      "online_distribution_status": "ineligible",
+      "payload": {
+        "archive_path": "liliang-xunlian-jichu/volume-landmarks/SKILL.md",
+        "audit_level": "author_self_tested",
+        "group": "liliang-xunlian-jichu",
+        "id": "volume-landmarks",
+        "reason_code": "approved_for_base_runtime",
+        "runtime_targets": [
+          "base"
+        ],
+        "source_sha256": "f83f71a62598b1be7045f08cd23e204cce88e917b57b3f670092a7e1cac9bde6",
+        "status": "runtime_approved"
+      },
+      "resource_key": "ai_skill_module:volume-landmarks",
+      "resource_type": "ai_skill_module",
+      "review_receipt": {
+        "review_scope": "contract_and_safety_only"
+      },
+      "runtime_status": "active",
+      "schema_version": 1,
+      "source_receipts": [
+        "ai_skill_source_catalog"
+      ]
+    }
+  ]
+}

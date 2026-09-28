@@ -89,6 +89,16 @@ void main() {
       find.byKey(const ValueKey<String>('trainmate-status-strip')),
       findsOneWidget,
     );
+    expect(
+      find.byKey(const ValueKey<String>('today-health-overview')),
+      findsOneWidget,
+    );
+    expect(find.text('习惯追踪'), findsOneWidget);
+    expect(find.text('健康概览'), findsOneWidget);
+    expect(
+      find.byKey(const ValueKey<String>('today-health-steps-card')),
+      findsOneWidget,
+    );
     expect(find.text('开始'), findsOneWidget);
     expect(
       tester
@@ -160,7 +170,7 @@ void main() {
     expect(find.byTooltip('照吃卡'), findsNothing);
     expect(find.byTooltip('记录疼痛'), findsNothing);
 
-    expect(find.text('训练状态趋势'), findsNothing);
+    expect(find.text('训练负荷工程估算'), findsNothing);
     expect(find.text('30 天渐进引导'), findsNothing);
     expect(find.text('康复记录：记录疼痛后今日训练会自动降级'), findsNothing);
     expect(find.text('身体数据'), findsNothing);
@@ -169,7 +179,7 @@ void main() {
     expect(find.text('比赛备战'), findsNothing);
     expect(find.text('晨间报告'), findsNothing);
     expect(find.text('昨晚睡眠'), findsNothing);
-    expect(find.text('HRV'), findsNothing);
+    expect(find.text('HRV'), findsOneWidget);
     expect(find.text('恢复倒计时'), findsNothing);
     expect(find.text('训练准备度'), findsOneWidget);
   });
@@ -291,7 +301,7 @@ void main() {
     );
   });
 
-  testWidgets('393 × 852 默认态滚动长度比实施前缩短', (tester) async {
+  testWidgets('393 × 852 默认态保留纸白数据区与深紫行动区', (tester) async {
     final TestHarness harness = TestHarness();
     await pumpPage(
       tester,
@@ -302,17 +312,18 @@ void main() {
     final ScrollableState scrollable =
         tester.state<ScrollableState>(find.byType(Scrollable).first);
     final double maxScrollExtent = scrollable.position.maxScrollExtent;
-    const double beforeOptimization = 3571.4;
-    final double reduction =
-        (beforeOptimization - maxScrollExtent) / beforeOptimization;
-
-    debugPrint(
-      '今日成长页 393×852 默认态 maxScrollExtent：'
-      '${beforeOptimization.toStringAsFixed(1)} → '
-      '${maxScrollExtent.toStringAsFixed(1)}，'
-      '缩短 ${(reduction * 100).toStringAsFixed(1)}%',
+    expect(maxScrollExtent, greaterThan(0));
+    await tester.scrollUntilVisible(
+      find.text('继续今日训练'),
+      360,
+      scrollable: find.byType(Scrollable).first,
     );
-    expect(maxScrollExtent, lessThan(beforeOptimization));
+    await tester.pumpAndSettle();
+    expect(
+      find.byKey(const ValueKey<String>('trainmate-wave-action-section')),
+      findsOneWidget,
+    );
+    expect(find.text('继续今日训练'), findsOneWidget);
   });
 
   testWidgets('393 × 852 手机尺寸下四个分区不被底部导航遮挡', (tester) async {

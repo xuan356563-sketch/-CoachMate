@@ -1,3 +1,8 @@
+import '../../../plugins/application/feature_controller_binding.dart';
+import '../../../plugins/application/feature_access.dart';
+import '../../../plugins/application/plugin_runtime_provider.dart';
+import '../../../plugins/core/plugin_ref.dart';
+import '../../../plugins/sports/sport_capability_directory.dart';
 import 'dart:convert';
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -25,6 +30,22 @@ import '../../profile/application/user_profile_controller.dart';
 import '../../first_run_onboarding/application/first_run_onboarding_controller.dart';
 import '../../first_run_onboarding/application/membership_controller.dart';
 import 'pre_exercise_clearance_controller.dart';
+
+/// 新生成使用可用运动目录；历史与安全回退保持独立可读。
+final sportCapabilityDirectoryProvider = Provider<SportCapabilityDirectory>(
+    (Ref ref) => SportCapabilityDirectory.builtIn());
+
+/// 宿主可组合实际参与的功能来源；不应返回全部启用插件。
+typedef PlanPluginSourceResolver = List<PluginRef>? Function(
+    List<PluginRef>? refs);
+final planPluginSourceResolverProvider = Provider<PlanPluginSourceResolver>(
+    (Ref ref) => ref.watch(sportCapabilityDirectoryProvider).resolveRefs);
+
+/// 发行宿主只加入真正参与编译的功能来源，独立策略测试保持原默认。
+final planPluginSourceDecoratorProvider =
+    Provider<List<PluginRef> Function(List<PluginRef>)>(
+  (ref) => (sources) => sources,
+);
 
 final fourWeekPlanNowProvider = Provider<DateTime>((Ref ref) => DateTime.now());
 
@@ -106,12 +127,17 @@ class FourWeekPlanController extends Notifier<FourWeekPlanState> {
   final PlanContextDigestService _digestService =
       const PlanContextDigestService();
   _DiscoveredSkillVersion? _discoveredSkill;
+  void Function()? _pendingSourceListener;
 
   @override
   FourWeekPlanState build() {
+    bindFeatureController(ref, 'feature.training_plan', 'fourWeek', this);
+    ref.watch(planPluginSourceResolverProvider);
     final UserProfileState profileState =
         ref.watch(userProfileControllerProvider);
     final LocalStorageService storage = ref.watch(localStorageServiceProvider);
+    _listenDraftSources(
+        GeneratedTrainingPlanRepository(storage).getDraft(), storage);
     final DateTime now = ref.watch(fourWeekPlanNowProvider);
     final PreExerciseClearance? clearance =
         ref.watch(preExerciseClearanceControllerProvider).value?.clearance;
@@ -123,11 +149,17 @@ class FourWeekPlanController extends Notifier<FourWeekPlanState> {
     );
   }
 
-  PlanGenerationDraft createDraft({
+  Future<PlanGenerationDraft> createDraft({
     required AiTrainingPrescription prescription,
     required AiArtifact artifact,
     String? populationTemplateId,
-  }) {
+    FeatureOperation? sourceOperation,
+  }) async {
+    final FeatureOperation operation = sourceOperation ??
+        ref.read(featureAccessProvider).beginOperation(
+          'feature.training_plan',
+          dependencies: const <String>['feature.ai_center'],
+        );
     final UserProfileState profileState =
         ref.read(userProfileControllerProvider);
     final LocalStorageService storage = ref.read(localStorageServiceProvider);
@@ -145,12 +177,14 @@ class FourWeekPlanController extends Notifier<FourWeekPlanState> {
     final GeneratedTrainingPlanHistory history = repository.getHistory();
     final PlanGenerationContextSnapshot? previousContext =
         history.activeVersion?.generationContextSnapshot;
-    final String localFingerprint = _digestService.buildLocalFingerprint(
+    final String businessFingerprint = _digestService.buildLocalFingerprint(
       profile: profileState.profile,
       startsOn: startsOn,
       race: activeRace,
     );
-    final FourWeekPlanGeneration generation = _generator.generate(
+    final FourWeekPlanGeneration generation = FourWeekPlanGenerator(
+      sportDirectory: ref.read(sportCapabilityDirectoryProvider),
+    ).generate(
       profile: profileState.profile,
       startsOn: startsOn,
       race: activeRace,
@@ -159,6 +193,9 @@ class FourWeekPlanController extends Notifier<FourWeekPlanState> {
         generationId: artifact.id,
       ),
     );
+    final compiledSources =
+        ref.read(planPluginSourceDecoratorProvider)(generation.pluginRefs);
+    operation.includeDependencies(compiledSources.map((source) => source.id));
     final TrainingRuleAuditReport ruleReport = _ruleAudit.buildReport(
       generation.plan,
       exercises: seedExercises,
@@ -211,7 +248,14 @@ class FourWeekPlanController extends Notifier<FourWeekPlanState> {
       createdAt: now,
       baseVersionId: history.activeVersionId,
       contextDigest: prescription.generationMeta.clientContextDigest,
-      localContextFingerprint: localFingerprint,
+      pluginRefs: compiledSources,
+      businessContextFingerprint: businessFingerprint,
+      localContextFingerprint: _digestService.buildLocalFingerprint(
+        profile: profileState.profile,
+        startsOn: startsOn,
+        race: activeRace,
+        pluginRefs: compiledSources,
+      ),
       auditSummary: PlanAuditSummary(
         passCount: ruleReport.passCount +
             (prescriptionReport.canActivate ? 1 : 0) +
@@ -237,7 +281,11 @@ class FourWeekPlanController extends Notifier<FourWeekPlanState> {
                   racePhaseCode: activeRace?.currentPhase,
                 ),
     );
-    repository.saveDraft(draft);
+    await operation.commit(() async {
+      repository.saveDraft(draft);
+      await storage.flush();
+    });
+    _listenDraftSources(draft, storage);
     state = _buildState(
       profileState: profileState,
       storage: storage,
@@ -248,12 +296,16 @@ class FourWeekPlanController extends Notifier<FourWeekPlanState> {
   }
 
   Future<bool> activateDraft({required String artifactId}) async {
+    final operation = ref.read(featureAccessProvider).beginOperation(
+        'feature.training_plan',
+        dependencies: ['feature.ai_center']);
     final UserProfileState profileState =
         ref.read(userProfileControllerProvider);
     final LocalStorageService storage = ref.read(localStorageServiceProvider);
     final DateTime now = ref.read(fourWeekPlanNowProvider);
     final PreExerciseClearanceState clearanceState =
         await ref.read(preExerciseClearanceControllerProvider.future);
+    operation.checkActive();
     final DateTime clearanceNow =
         ref.read(preExerciseClearanceRealtimeClockProvider)();
     final GeneratedTrainingPlanRepository repository =
@@ -284,14 +336,59 @@ class FourWeekPlanController extends Notifier<FourWeekPlanState> {
         break;
       }
     }
-    if (existingVersion != null &&
-        persistedHistory.activeVersionId == existingVersion.id) {
+    operation.includeDependencies(
+        draft.pluginRefs?.map((source) => source.id) ?? []);
+    return operation.commit(() async {
+      if (existingVersion != null &&
+          persistedHistory.activeVersionId == existingVersion.id) {
+        try {
+          repository.savePlan(existingVersion.plan);
+          repository.clearDraft();
+          await storage.flush();
+        } on Object {
+          // 版本单键已是权威激活状态，镜像失败不回滚激活事实。
+        }
+        state = _buildState(
+          profileState: profileState,
+          storage: storage,
+          now: now,
+          clearance: clearanceState.clearance,
+        );
+        return true;
+      }
+      if (!state.canActivateDraft) {
+        state = state.copyWithStatus('草稿已陈旧或未通过安全审计，当前计划未替换。');
+        return false;
+      }
+      final FourWeekPlanState previousState = state;
+      final GeneratedTrainingPlanHistory previousHistory =
+          repository.getHistory();
+      late final GeneratedPlanVersion committedVersion;
       try {
-        repository.savePlan(existingVersion.plan);
+        committedVersion = repository.commitDraftVersion(
+          draft,
+          activatedAt: now,
+        );
+        await storage.flush();
+      } on Object {
+        repository.restoreHistory(previousHistory);
+        try {
+          await storage.flush();
+        } on Object {
+          // 恢复写入仍失败时保留页面旧状态，不宣称激活。
+        }
+        state = previousState.copyWithStatus(
+          '服务端已确认，但本地版本尚未完成持久化，可使用同一产物重试。',
+        );
+        return false;
+      }
+      String? mirrorWarning;
+      try {
+        repository.savePlan(committedVersion.plan);
         repository.clearDraft();
         await storage.flush();
       } on Object {
-        // 版本单键已是权威激活状态，镜像失败不回滚激活事实。
+        mirrorWarning = '计划已激活，但旧版兼容镜像尚未刷新，不影响当前版本。';
       }
       state = _buildState(
         profileState: profileState,
@@ -299,55 +396,40 @@ class FourWeekPlanController extends Notifier<FourWeekPlanState> {
         now: now,
         clearance: clearanceState.clearance,
       );
+      if (mirrorWarning != null) state = state.copyWithStatus(mirrorWarning);
       return true;
+    });
+  }
+
+  Future<void> rejectDraft({
+    required String artifactId,
+    FeatureOperation? sourceOperation,
+  }) async {
+    final FeatureOperation operation = sourceOperation ??
+        ref.read(featureAccessProvider).beginOperation('feature.training_plan');
+    final LocalStorageService storage = ref.read(localStorageServiceProvider);
+    final GeneratedTrainingPlanRepository repository =
+        GeneratedTrainingPlanRepository(storage);
+    final PlanGenerationDraft? draft = repository.getDraft();
+    if (draft == null || draft.artifactId != artifactId) {
+      throw StateError('待拒绝草稿已经变化，未删除任何本地草稿。');
     }
-    if (!state.canActivateDraft) {
-      state = state.copyWithStatus('草稿已陈旧或未通过安全审计，当前计划未替换。');
-      return false;
-    }
-    final FourWeekPlanState previousState = state;
-    final GeneratedTrainingPlanHistory previousHistory =
-        repository.getHistory();
-    late final GeneratedPlanVersion committedVersion;
-    try {
-      committedVersion = repository.commitDraftVersion(
-        draft,
-        activatedAt: now,
-      );
-      await storage.flush();
-    } on Object {
-      repository.restoreHistory(previousHistory);
+    await operation.commit(() async {
+      repository.clearDraft();
       try {
         await storage.flush();
       } on Object {
-        // 恢复写入仍失败时保留页面旧状态，不宣称激活。
+        repository.saveDraft(draft);
+        try {
+          await storage.flush();
+        } on Object {
+          throw StateError(
+            '草稿删除落盘失败，恢复写入也失败；内存中的原草稿仍保留，请不要关闭应用并重试。',
+          );
+        }
+        throw StateError('草稿删除未完成，已恢复原草稿，请重试。');
       }
-      state = previousState.copyWithStatus(
-        '服务端已确认，但本地版本尚未完成持久化，可使用同一产物重试。',
-      );
-      return false;
-    }
-    String? mirrorWarning;
-    try {
-      repository.savePlan(committedVersion.plan);
-      repository.clearDraft();
-      await storage.flush();
-    } on Object {
-      mirrorWarning = '计划已激活，但旧版兼容镜像尚未刷新，不影响当前版本。';
-    }
-    state = _buildState(
-      profileState: profileState,
-      storage: storage,
-      now: now,
-      clearance: clearanceState.clearance,
-    );
-    if (mirrorWarning != null) state = state.copyWithStatus(mirrorWarning);
-    return true;
-  }
-
-  void rejectDraft() {
-    final LocalStorageService storage = ref.read(localStorageServiceProvider);
-    GeneratedTrainingPlanRepository(storage).clearDraft();
+    });
     state = _buildState(
       profileState: ref.read(userProfileControllerProvider),
       storage: storage,
@@ -358,12 +440,15 @@ class FourWeekPlanController extends Notifier<FourWeekPlanState> {
   }
 
   Future<bool> rollbackToVersion(String versionId) async {
+    final operation =
+        ref.read(featureAccessProvider).beginOperation('feature.training_plan');
     final UserProfileState profileState =
         ref.read(userProfileControllerProvider);
     final LocalStorageService storage = ref.read(localStorageServiceProvider);
     final DateTime now = ref.read(fourWeekPlanNowProvider);
     final PreExerciseClearanceState clearanceState =
         await ref.read(preExerciseClearanceControllerProvider.future);
+    operation.checkActive();
     final DateTime clearanceNow =
         ref.read(preExerciseClearanceRealtimeClockProvider)();
     final GeneratedTrainingPlanRepository repository =
@@ -394,6 +479,10 @@ class FourWeekPlanController extends Notifier<FourWeekPlanState> {
         return false;
       }
     }
+    if (target.requiresClearance && !clearanceState.clearance.isValidAt(clearanceNow)) {
+      state = state.copyWithStatus(clearanceState.clearance.blockingReasonAt(clearanceNow));
+      return false;
+    }
     final TrainingRuleAuditReport ruleReport = _ruleAudit.buildReport(
       target.plan,
       exercises: seedExercises,
@@ -416,45 +505,50 @@ class FourWeekPlanController extends Notifier<FourWeekPlanState> {
       state = state.copyWithStatus('旧版本未通过当前安全复核，未执行回退。');
       return false;
     }
-    final FourWeekPlanState previousState = state;
-    final GeneratedTrainingPlanHistory previousHistory =
-        repository.getHistory();
-    late final GeneratedPlanVersion selected;
-    try {
-      selected = repository.activateVersion(
-        versionId,
-        activatedAt: now,
-        historyOnly: true,
-      )!;
-      await storage.flush();
-    } on Object {
-      repository.restoreHistory(previousHistory);
+    operation.includeDependencies(
+        target.pluginRefs?.map((source) => source.id) ?? []);
+    return operation.commit(() async {
+      final FourWeekPlanState previousState = state;
+      final GeneratedTrainingPlanHistory previousHistory =
+          repository.getHistory();
+      late final GeneratedPlanVersion selected;
       try {
+        selected = repository.activateVersion(
+          versionId,
+          activatedAt: now,
+          historyOnly: true,
+        )!;
         await storage.flush();
       } on Object {
-        // 权威指针恢复失败时仍保留页面原状态。
+        repository.restoreHistory(previousHistory);
+        try {
+          await storage.flush();
+        } on Object {
+          // 权威指针恢复失败时仍保留页面原状态。
+        }
+        state = previousState.copyWithStatus('回退版本未完成持久化，当前页面仍保留原计划。');
+        return false;
       }
-      state = previousState.copyWithStatus('回退版本未完成持久化，当前页面仍保留原计划。');
-      return false;
-    }
-    String? mirrorWarning;
-    try {
-      repository.savePlan(selected.plan);
-      await storage.flush();
-    } on Object {
-      mirrorWarning = '已回退到目标版本，但旧版兼容镜像稍后再刷新。';
-    }
-    state = _buildState(
-      profileState: profileState,
-      storage: storage,
-      now: now,
-      clearance: clearanceState.clearance,
-    );
-    if (mirrorWarning != null) state = state.copyWithStatus(mirrorWarning);
-    return true;
+      String? mirrorWarning;
+      try {
+        repository.savePlan(selected.plan);
+        await storage.flush();
+      } on Object {
+        mirrorWarning = '已回退到目标版本，但旧版兼容镜像稍后再刷新。';
+      }
+      state = _buildState(
+        profileState: profileState,
+        storage: storage,
+        now: now,
+        clearance: clearanceState.clearance,
+      );
+      if (mirrorWarning != null) state = state.copyWithStatus(mirrorWarning);
+      return true;
+    });
   }
 
   void regenerate() {
+    ref.read(featureAccessProvider).requireEnabled('feature.training_plan');
     if (paidPlanGenerationGateEnabled &&
         ref
                 .read(membershipControllerProvider)
@@ -475,6 +569,7 @@ class FourWeekPlanController extends Notifier<FourWeekPlanState> {
     String? sourceHash,
     Map<String, String> fragmentHashes = const <String, String>{},
   }) {
+    ref.read(featureAccessProvider).requireEnabled('feature.training_plan');
     if (id.isEmpty ||
         version.isEmpty ||
         !RegExp(r'^[a-f0-9]{64}$').hasMatch(runtimeHash) ||
@@ -501,6 +596,106 @@ class FourWeekPlanController extends Notifier<FourWeekPlanState> {
     );
   }
 
+  void _listenDraftSources(
+      PlanGenerationDraft? draft, LocalStorageService storage) {
+    _pendingSourceListener?.call();
+    _pendingSourceListener = null;
+    if (draft == null) return;
+    final runtime = ref.read(pluginRuntimeProvider);
+    final ids = {
+      ...?draft.pluginRefs?.map((source) => source.id),
+      'feature.ai_center',
+      'feature.training_plan'
+    };
+    String availability() =>
+        ids.map((id) => '$id:${runtime.isEnabled(id)}').join('|');
+    var previous = availability();
+    void changed() {
+      final next = availability();
+      if (next == previous || !ref.mounted) return;
+      previous = next;
+      state = _buildState(
+          profileState: ref.read(userProfileControllerProvider),
+          storage: storage,
+          now: ref.read(fourWeekPlanNowProvider),
+          clearance: ref
+              .read(preExerciseClearanceControllerProvider)
+              .value
+              ?.clearance);
+    }
+
+    runtime.addListener(changed);
+    _pendingSourceListener = () => runtime.removeListener(changed);
+    ref.onDispose(() => runtime.removeListener(changed));
+  }
+
+  /// 活跃工作台的显式初始化；历史读取和停用状态不会执行补写。
+  Future<void> initializeDefaultPlan() async {
+    final FeatureOperation operation =
+        ref.read(featureAccessProvider).beginOperation('feature.training_plan');
+    final UserProfileState profileState =
+        ref.read(userProfileControllerProvider);
+    final LocalStorageService storage = ref.read(localStorageServiceProvider);
+    final DateTime now = ref.read(fourWeekPlanNowProvider);
+    await operation.commit(() async {
+      final bool changed = _initializeStoredPlan(
+        profileState: profileState,
+        storage: storage,
+        now: now,
+      );
+      if (changed) await storage.flush();
+    });
+    state = _buildState(
+      profileState: profileState,
+      storage: storage,
+      now: now,
+      clearance:
+          ref.read(preExerciseClearanceControllerProvider).value?.clearance,
+    );
+  }
+
+  bool _initializeStoredPlan(
+      {required UserProfileState profileState,
+      required LocalStorageService storage,
+      required DateTime now}) {
+    ref.read(featureAccessProvider).requireEnabled('feature.training_plan');
+    final repository = GeneratedTrainingPlanRepository(storage);
+    if (repository.getDraft() != null) return false;
+    final activeVersion = repository.getHistory().activeVersion;
+    if (activeVersion != null) {
+      if (jsonEncode(repository.getPlan()?.toJson()) !=
+          jsonEncode(activeVersion.plan.toJson())) {
+        repository.savePlan(activeVersion.plan);
+        return true;
+      }
+      return false;
+    }
+    final activeRace = _selectActiveRace(
+        races: PersistedRaceRepository(storage).listRaces(),
+        profile: profileState.profile,
+        now: now);
+    final fallback = FourWeekPlanGenerator(
+      sportDirectory: ref.read(sportCapabilityDirectoryProvider),
+    ).generate(
+        profile: profileState.profile,
+        startsOn: _mondayOf(now),
+        race: activeRace);
+    if (activeVersion == null) {
+      final TrainingPlan? savedPlan = repository.getPlan();
+      if (savedPlan == null) {
+        repository.savePlan(fallback.plan, isAutoFallback: true);
+        return true;
+      } else if (repository.isAutoFallbackPlan()) {
+        if (jsonEncode(savedPlan.toJson()) !=
+            jsonEncode(fallback.plan.toJson())) {
+          repository.savePlan(fallback.plan, isAutoFallback: true);
+          return true;
+        }
+      }
+    }
+    return false;
+  }
+
   FourWeekPlanState _buildState({
     required UserProfileState profileState,
     required LocalStorageService storage,
@@ -522,27 +717,10 @@ class FourWeekPlanController extends Notifier<FourWeekPlanState> {
         GeneratedTrainingPlanRepository(storage);
     final GeneratedTrainingPlanHistory versionHistory = repository.getHistory();
     final GeneratedPlanVersion? activeVersion = versionHistory.activeVersion;
-    TrainingPlan? unversionedLegacyPlan;
-    if (activeVersion == null) {
-      final TrainingPlan? savedPlan = repository.getPlan();
-      if (savedPlan == null) {
-        repository.savePlan(fallback.plan, isAutoFallback: true);
-      } else if (repository.isAutoFallbackPlan()) {
-        if (jsonEncode(savedPlan.toJson()) !=
-            jsonEncode(fallback.plan.toJson())) {
-          repository.savePlan(fallback.plan, isAutoFallback: true);
-        }
-      } else {
-        unversionedLegacyPlan = savedPlan;
-      }
-    } else {
-      final TrainingPlan? legacyMirror = repository.getPlan();
-      if (legacyMirror == null ||
-          jsonEncode(legacyMirror.toJson()) !=
-              jsonEncode(activeVersion.plan.toJson())) {
-        repository.savePlan(activeVersion.plan);
-      }
-    }
+    final TrainingPlan? unversionedLegacyPlan =
+        activeVersion == null && !repository.isAutoFallbackPlan()
+            ? repository.getPlan()
+            : null;
     final DateTime clearanceNow =
         ref.read(preExerciseClearanceRealtimeClockProvider)();
     final String? profileEligibilityBlockingReason =
@@ -550,7 +728,7 @@ class FourWeekPlanController extends Notifier<FourWeekPlanState> {
     final bool profileEligibilityInvalid =
         activeVersion?.isSkillGenerated == true &&
             profileEligibilityBlockingReason != null;
-    final bool clearanceInvalid = activeVersion?.isSkillGenerated == true &&
+    final bool clearanceInvalid = activeVersion?.requiresClearance == true &&
         (clearance == null || !clearance.isValidAt(clearanceNow));
     final bool executionLocked = profileEligibilityInvalid || clearanceInvalid;
     final String? clearanceBlockingReason = executionLocked
@@ -580,18 +758,24 @@ class FourWeekPlanController extends Notifier<FourWeekPlanState> {
       startsOn: activeVersion?.plan.createdAt ?? startsOn,
       race: activeRace,
     );
-    final String draftFingerprint = currentFingerprint;
     final PlanGenerationDraft? storedDraft = repository.getDraft();
-    if (storedDraft != null &&
-        activeVersion?.artifactId == storedDraft.artifactId) {
-      repository.clearDraft();
-    }
     final PlanGenerationDraft? draft = storedDraft != null &&
             activeVersion?.artifactId == storedDraft.artifactId
         ? null
         : storedDraft;
+    final List<PluginRef>? currentDraftRefs =
+        ref.read(planPluginSourceResolverProvider)(draft?.pluginRefs);
+    final String draftFingerprint = _digestService.buildLocalFingerprint(
+      profile: profileState.profile,
+      startsOn: startsOn,
+      race: activeRace,
+      pluginRefs: currentDraftRefs,
+    );
     final bool draftStale = draft != null &&
-        (draft.localContextFingerprint != draftFingerprint ||
+        (!draft.canActivate ||
+            currentDraftRefs == null ||
+            currentDraftRefs.isEmpty ||
+            draft.localContextFingerprint != draftFingerprint ||
             draft.baseVersionId != versionHistory.activeVersionId);
     final bool activeStale = activeVersion != null &&
         activeVersion.inputDigest.isNotEmpty &&
@@ -629,13 +813,16 @@ class FourWeekPlanController extends Notifier<FourWeekPlanState> {
     }
     final bool clearanceValid =
         clearance != null && clearance.isValidAt(clearanceNow);
-    final bool canActivateDraft = draft != null &&
-        !draftStale &&
-        clearanceValid &&
-        draft.canActivate &&
-        ruleReport?.failCount == 0 &&
-        prescriptionReport?.canActivate == true &&
-        compiledReport?.canActivate == true;
+    final bool canActivateDraft =
+        ref.read(featureAccessProvider).isWritable('feature.training_plan') &&
+            ref.read(featureAccessProvider).isWritable('feature.ai_center') &&
+            draft != null &&
+            !draftStale &&
+            clearanceValid &&
+            draft.canActivate &&
+            ruleReport?.failCount == 0 &&
+            prescriptionReport?.canActivate == true &&
+            compiledReport?.canActivate == true;
     final bool draftSkillChanged = draft != null &&
         activeVersion?.skillRef != null &&
         (activeVersion!.skillRef!.version != draft.skillRef.version ||
@@ -717,6 +904,7 @@ class FourWeekPlanController extends Notifier<FourWeekPlanState> {
       fallback,
       activeRace,
       weekPhases: version.weekPhases,
+      pluginRefs: version.pluginRefs,
     );
   }
 
@@ -725,6 +913,7 @@ class FourWeekPlanController extends Notifier<FourWeekPlanState> {
     FourWeekPlanGeneration fallback,
     RacePlan? activeRace, {
     List<String> weekPhases = const <String>[],
+    List<PluginRef>? pluginRefs,
   }) {
     final List<GeneratedPlanWeek> weeks = <GeneratedPlanWeek>[];
     for (int weekIndex = 1; weekIndex <= 4; weekIndex += 1) {
@@ -748,6 +937,7 @@ class FourWeekPlanController extends Notifier<FourWeekPlanState> {
     return FourWeekPlanGeneration(
       plan: plan,
       weeks: List<GeneratedPlanWeek>.unmodifiable(weeks),
+      pluginRefs: pluginRefs ?? const [],
       primarySport: plan.sportType,
       secondarySport: fallback.secondarySport,
       appliedRace: activeRace,

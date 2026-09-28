@@ -204,6 +204,9 @@ class MotionCheckRule {
   }
 }
 
+/// 来源由实际采集入口登记；旧记录和手动导入不能推定为真实观测。
+enum MotionEvidenceKind { unknown, demonstration, confirmedCloud }
+
 class MotionAnalysisResult {
   final String id;
   final String sourceRuleId;
@@ -220,6 +223,7 @@ class MotionAnalysisResult {
   final List<String> replacementActions;
   final List<EvidenceSource> evidenceSources;
   final String analysisSource;
+  final MotionEvidenceKind evidenceKind;
   final double analysisConfidence;
   final List<String> angleMetrics;
   final MotionPoseFrame? poseFrame;
@@ -240,10 +244,18 @@ class MotionAnalysisResult {
     required this.replacementActions,
     required this.evidenceSources,
     this.analysisSource = '本地规则 Mock',
+    this.evidenceKind = MotionEvidenceKind.unknown,
     this.analysisConfidence = 0,
     this.angleMetrics = const [],
     this.poseFrame,
   });
+
+  /// 当前照片几何尚未完成效果验收，仅明确确认且内容完整的云端结果参与建议。
+  bool get usableForDecision =>
+      evidenceKind == MotionEvidenceKind.confirmedCloud &&
+      analysisConfidence.isFinite && analysisConfidence > 0 &&
+      analysisConfidence <= 1 && detectedErrors.isNotEmpty &&
+      angleMetrics.isNotEmpty && replacementActions.isNotEmpty;
 
   String get capturedDateLabel {
     return '${capturedAt.year}-${capturedAt.month.toString().padLeft(2, '0')}-${capturedAt.day.toString().padLeft(2, '0')}';
@@ -256,6 +268,7 @@ class MotionAnalysisResult {
     return MotionAnalysisResult(
       id: json['id'] as String? ?? '',
       sourceRuleId: json['sourceRuleId'] as String? ?? '',
+      evidenceKind: MotionEvidenceKind.values.where((v) => v.name == json['evidenceKind']).firstOrNull ?? MotionEvidenceKind.unknown,
       type: motionCheckTypeFromJson(json['type'] as String?),
       title: json['title'] as String? ?? '',
       score: (json['score'] as num?)?.toInt() ?? 0,
@@ -304,6 +317,7 @@ class MotionAnalysisResult {
       'suggestedImpact': suggestedImpact.jsonValue,
       'replacementActions': replacementActions,
       'analysisSource': analysisSource,
+      'evidenceKind': evidenceKind.name,
       'analysisConfidence': analysisConfidence,
       'angleMetrics': angleMetrics,
       'poseFrame': poseFrame?.toJson(),

@@ -1,10 +1,12 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:timezone/timezone.dart' as timezone;
 
 import 'package:trainflow_ai/data/models/training_reminder.dart';
 import 'package:trainflow_ai/features/dashboard/training_mvp_controller.dart';
 import 'package:trainflow_ai/features/reminders/application/reminder_settings_controller.dart';
 import 'package:trainflow_ai/services/local_storage_service.dart';
+import 'package:trainflow_ai/services/system_training_notification_service.dart';
 
 void main() {
   test('提醒设置控制器同步旧训练状态和提醒列表并保留跟练会话', () async {
@@ -12,6 +14,9 @@ void main() {
     final ProviderContainer container = ProviderContainer(
       overrides: [
         localStorageServiceProvider.overrideWithValue(storage),
+        trainingNotificationSchedulerProvider.overrideWithValue(
+          TrainingNotificationScheduler(_NoopTrainingNotificationGateway()),
+        ),
       ],
     );
     addTearDown(container.dispose);
@@ -19,14 +24,14 @@ void main() {
     final TrainingMvpController trainingController =
         container.read(trainingMvpProvider.notifier);
     trainingController.startWorkoutPlayer(workoutDayId: 'workout-week1-day2');
-    trainingController.completeWorkoutPlayerStep();
+    await trainingController.completeWorkoutPlayerStep();
     trainingController.setKnowledgeSearchQuery('跑步');
     final TrainingMvpState sessionState = container.read(trainingMvpProvider);
     final ReminderSettingsController reminderController =
         container.read(reminderSettingsControllerProvider.notifier);
 
-    reminderController.setReminderTimeLabel('07:30');
-    reminderController.toggleTrainingReminders();
+    await reminderController.setReminderTimeLabelAsync('07:30');
+    await reminderController.toggleTrainingRemindersAsync();
     await Future<void>.delayed(Duration.zero);
 
     final TrainingMvpState state = container.read(trainingMvpProvider);
@@ -52,4 +57,19 @@ void main() {
     expect(state.logs, sessionState.logs);
     expect(state.knowledgeSearchQuery, sessionState.knowledgeSearchQuery);
   });
+}
+
+class _NoopTrainingNotificationGateway implements TrainingNotificationGateway {
+  @override
+  Future<void> cancelTrainingNotifications() async {}
+
+  @override
+  Future<timezone.Location> loadLocalLocation() async =>
+      throw UnsupportedError('测试不读取时区');
+
+  @override
+  Future<bool> requestPermission() async => true;
+
+  @override
+  Future<void> schedule(TrainingNotificationRequest request) async {}
 }

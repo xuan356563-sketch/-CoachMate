@@ -11,7 +11,7 @@ class StarterGraduationReport {
   final String subjectiveTrendLabel;
   final String subjectiveTrendDetail;
   final String readinessLabel;
-  final int readinessScore;
+  final int? readinessScore;
   final String recommendedNextPlan;
   final String transitionSummary;
   final bool readyForFormalPlan;

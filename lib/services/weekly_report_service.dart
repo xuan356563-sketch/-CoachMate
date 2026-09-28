@@ -12,7 +12,7 @@ class WeeklyReportService {
     required WorkoutDay todayWorkout,
     required List<TrainingLog> logs,
     required List<BodyMetric> bodyMetrics,
-    required int readinessScore,
+    required int? readinessScore,
     required String trainingStatusLabel,
     required String trainingStatusReason,
     required String recoveryCountdownLabel,
@@ -20,13 +20,17 @@ class WeeklyReportService {
     required String achievementSummaryLabel,
     WeeklyPsychCheckIn? psychCheckIn,
     List<WorkoutDay> plannedWorkoutsForWeek = const <WorkoutDay>[],
+    DateTime? evaluatedAt,
   }) {
-    final DateTime now = DateTime.now();
+    final DateTime now = evaluatedAt ?? DateTime.now();
+    final DateTime observationStart = now.subtract(const Duration(days: 7));
+    bodyMetrics = bodyMetrics.where((m) => m.sourceVerified && !m.measuredAt.isAfter(now) && now.difference(m.measuredAt) < const Duration(days: 7)).toList();
     final DateTime weekStart = now.subtract(Duration(days: now.weekday - 1));
     final List<TrainingLog> recentLogs = logs
         .where(
           (TrainingLog log) =>
-              log.isSessionRecord && now.difference(log.createdAt).inDays < 7,
+              log.isSessionRecord && !log.createdAt.isAfter(now) &&
+              !log.date.isAfter(now) && log.date.isAfter(observationStart),
         )
         .toList();
     final int plannedWorkouts = profile.weeklyTrainingDays.clamp(1, 7).toInt();
@@ -63,10 +67,10 @@ class WeeklyReportService {
       completedWorkouts: completedWorkouts,
       plannedWorkouts: plannedWorkouts,
       completionRate: completionRate,
-      loadTrendLabel: loadTrendLabel,
+      loadTrendLabel: recentLogs.isEmpty ? '无法评估：没有本期训练记录' : loadTrendLabel,
       decisionReview:
           '本周主判断为${todayWorkout.decisionType.label}：$trainingStatusReason',
-      recoverySummary: '$recoveryCountdownLabel。$recoveryAdvice',
+      recoverySummary: readinessScore == null ? '无法评估当日恢复状态；缺少当日确认或有效身体记录。' : '$recoveryCountdownLabel。$recoveryAdvice',
       highlights: _highlights(
         recentLogs: recentLogs,
         bodyMetrics: bodyMetrics,
@@ -79,14 +83,18 @@ class WeeklyReportService {
         todayWorkout: todayWorkout,
       ),
       goalSummary: '本周过程目标：完成计划中的 $plannedWorkouts 次训练或计划恢复。',
-      realityObservation: '本周记录 $completedWorkouts/$plannedWorkouts 次完成单位，'
-          '完成率 ${(completionRate * 100).round()}%。',
+      realityObservation: '观察窗口：${observationStart.toIso8601String()} 至 ${now.toIso8601String()}，按训练日期统计近 7 天，非自然周累计。训练会话记录 ${recentLogs.length} 条；计划目标 $plannedWorkouts 次。'
+          '按记录完成比例折算 ${completedWorkoutUnits.toStringAsFixed(2)}/$plannedWorkouts 次完成单位，完成率 ${(completionRate * 100).round()}%（上限 100%）。'
+          '记录类型：${_logSourceSummary(recentLogs)}。维度依据已完成动作记录；无动作明细时，仅整课 100% 完成记录沿用课程维度，不代表动作质量或能力进步。',
       options: options,
       reflectionQuestion: psychCheckIn?.weekNote?.trim().isNotEmpty == true
           ? '你记录的“${psychCheckIn!.weekNote!.trim()}”，下周想保留哪一部分？'
           : '这周哪一次训练或恢复最符合你的状态？',
       psychCheckIn: psychCheckIn,
       psychRiskLevel: psychRiskLevel,
+      recoveryEvidenceAvailable: readinessScore != null ||
+          [psychCheckIn?.motivation, psychCheckIn?.perceivedStress,
+            psychCheckIn?.recoveryFeel].any((value) => value != null && value >= 1 && value <= 5),
       dimensionExposure: _dimensionExposure(
         recentLogs: recentLogs,
         plannedWorkouts: plannedWorkoutsForWeek.isEmpty &&
@@ -95,6 +103,20 @@ class WeeklyReportService {
             : plannedWorkoutsForWeek,
       ),
     );
+  }
+
+  String _logSourceSummary(List<TrainingLog> logs) {
+    const labels = {
+      TrainingLogKind.manual: '手动记录',
+      TrainingLogKind.sessionReview: '跟练后手动反馈',
+      TrainingLogKind.guidedWorkout: '引导训练',
+      TrainingLogKind.activityImport: '活动导入',
+    };
+    return logs.isEmpty ? '无' : [
+      for (final item in labels.entries)
+        if (logs.any((log) => log.kind == item.key))
+          '${item.value} ${logs.where((log) => log.kind == item.key).length} 条',
+    ].join('、');
   }
 
   List<TrainingDimensionExposure> _dimensionExposure({
@@ -112,12 +134,16 @@ class WeeklyReportService {
       }
     }
     for (final TrainingLog log in recentLogs) {
+      if (log.normalizedCompletionPercentage <= 0) continue;
       final Set<TrainingDimension> dimensions = <TrainingDimension>{};
       final WorkoutDay? workout = workoutsById[log.workoutDayId];
-      if (workout != null) {
+      // 有逐动作事实时优先使用；部分完成不能推断课程的所有维度均已执行。
+      if (log.exerciseRecords.isEmpty &&
+          log.normalizedCompletionPercentage == 100 && workout != null) {
         dimensions.addAll(workout.dimensionFocus.all);
       } else {
         for (final ExerciseExecutionRecord record in log.exerciseRecords) {
+          if (record.completedSetCount <= 0) continue;
           final String? exerciseId = record.exerciseId;
           if (exerciseId != null) {
             dimensions.addAll(
@@ -143,11 +169,11 @@ class WeeklyReportService {
 
   PsychRiskLevel _psychRiskLevel({
     required String trainingStatusLabel,
-    required int readinessScore,
+    required int? readinessScore,
     required List<TrainingLog> recentLogs,
     required WeeklyPsychCheckIn? psychCheckIn,
   }) {
-    if (trainingStatusLabel == '过度风险' || readinessScore < 50) {
+    if (trainingStatusLabel == '过度风险' || (readinessScore != null && readinessScore < 50)) {
       return PsychRiskLevel.protect;
     }
     int signalCount = 0;
@@ -159,7 +185,7 @@ class WeeklyReportService {
     if ((psychCheckIn?.motivation ?? 5) <= 2) signalCount += 1;
     if ((psychCheckIn?.perceivedStress ?? 1) >= 4) signalCount += 1;
     if ((psychCheckIn?.recoveryFeel ?? 5) <= 2) signalCount += 1;
-    if (readinessScore < 60) signalCount += 1;
+    if ((readinessScore != null && readinessScore < 60)) signalCount += 1;
     if (signalCount >= 2) return PsychRiskLevel.advise;
     if (signalCount == 1) return PsychRiskLevel.observe;
     return PsychRiskLevel.normal;
@@ -214,7 +240,7 @@ class WeeklyReportService {
     final bool hasHardLog = recentLogs.any((TrainingLog log) => log.rpe >= 8);
     final bool fatigueHigh = bodyMetrics
         .take(3)
-        .any((BodyMetric metric) => metric.fatigueLevel >= 6);
+        .any((BodyMetric metric) => metric.hasValue('fatigueLevel') && metric.fatigueLevel >= 6);
 
     if (statusLabel == '过度风险' || hasHardLog || fatigueHigh) {
       return '负荷偏高';
@@ -235,7 +261,7 @@ class WeeklyReportService {
   }) {
     final List<String> items = [
       achievementSummaryLabel,
-      '身体数据已有 ${bodyMetrics.length} 条，可支撑 7 日趋势判断。',
+      '本期有效身体记录 ${bodyMetrics.length} 条；各指标缺失时不能推断趋势。',
     ];
 
     if (recentLogs.isEmpty) {
@@ -244,7 +270,7 @@ class WeeklyReportService {
       items.add('本周记录了 ${recentLogs.length} 条训练会话。');
       if (recentLogs
           .any((TrainingLog log) => log.userNote?.contains('太累了') ?? false)) {
-        items.add('练中出现疲劳反馈时已触发降级，安全优先。');
+        items.add('训练记录中包含疲劳反馈；是否调整课程需查看独立的确认记录。');
       }
     }
 
@@ -253,10 +279,11 @@ class WeeklyReportService {
 
   List<String> _nextWeekFocus({
     required String statusLabel,
-    required int readinessScore,
+    required int? readinessScore,
     required double completionRate,
     required WorkoutDay todayWorkout,
   }) {
+    if (readinessScore == null) return ['先补充并确认今日状态，再查看可执行调整；当前计划保持不变。'];
     if (statusLabel == '过度风险' || readinessScore < 60) {
       return [
         '建议预览：可将下周一项高强度训练降低一级；确认后才会调整计划。',
@@ -274,7 +301,7 @@ class WeeklyReportService {
     }
 
     return [
-      '保持当前节奏，下周只增加一个变量：时长、组数或动作难度三选一。',
+      '先复核计划与实际完成差异；是否改变下一周课程须预览审核并由你确认。',
       '高强度课前先看恢复倒计时，未恢复时改为技术或恢复课。',
       '继续让跟练记录进入日志，为用户画像积累信号。',
     ];

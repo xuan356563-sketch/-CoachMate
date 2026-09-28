@@ -1,3 +1,6 @@
+import '../../../plugins/application/feature_access.dart';
+import '../../../plugins/application/feature_controller_binding.dart';
+import '../../../plugins/application/plugin_runtime_provider.dart';
 import 'dart:async';
 
 import 'package:flutter/material.dart';
@@ -43,7 +46,14 @@ class _GuidedWorkoutPlayerPageState
   GuidedWorkoutEngine? _engine;
   Timer? _refreshTimer;
   bool _initializing = false;
+  bool _resourceReleased = false;
+  final List<void Function()> _unregisterLocks = [];
+  void Function()? _unregisterCleanup;
+  void Function()? _unbindEngine;
+  ProviderSubscription<bool>? _featureSubscription;
+  FeatureOperation? _sessionOperation;
   bool _saved = false;
+  Future<bool>? _saving;
   bool _exitDialogVisible = false;
   late final WorkoutPlayerAssistController _assistController;
   late final String _sessionId =
@@ -56,6 +66,28 @@ class _GuidedWorkoutPlayerPageState
   void initState() {
     super.initState();
     WidgetsBinding.instance.addObserver(this);
+    final access = ref.read(featureAccessProvider);
+    for (final id in [
+      'feature.guided_workout',
+      'feature.training_log',
+      'feature.training_plan'
+    ]) {
+      _unregisterLocks.add(access.registerDisableLock(id, () {
+        final engine = _engine;
+        return engine != null &&
+                !_saved &&
+                engine.state.status != GuidedWorkoutStatus.completed
+            ? '跳绳跟练尚未结束，请先结束或放弃本次训练。'
+            : null;
+      }));
+    }
+    _featureSubscription = ref.listenManual<bool>(
+        featureEnabledProvider('feature.guided_workout'), (_, enabled) {
+      if (enabled && mounted) {
+        _resourceReleased = false;
+        setState(() {});
+      }
+    });
     _assistController = ref.read(
       workoutPlayerAssistControllerProvider.notifier,
     );
@@ -64,19 +96,30 @@ class _GuidedWorkoutPlayerPageState
   @override
   void dispose() {
     WidgetsBinding.instance.removeObserver(this);
+    _featureSubscription?.close();
+    for (final unregister in _unregisterLocks) {
+      unregister();
+    }
+    _unregisterCleanup?.call();
+    if (!_resourceReleased) {
+      unawaited(Future<void>.delayed(Duration.zero, _releaseResources));
+    }
+    super.dispose();
+  }
+
+  Future<void> _releaseResources() async {
+    if (_resourceReleased) return;
+    _resourceReleased = true;
+    _initializing = false;
     _refreshTimer?.cancel();
+    _refreshTimer = null;
     _engine?.removeListener(_onEngineChanged);
     _engine?.dispose();
-    unawaited(
-      Future<void>.microtask(
-        () => _assistController.setScreenAwake(
-          false,
-          enabledMessage: '训练进行中，屏幕保持常亮。',
-          disabledMessage: '已释放屏幕常亮。',
-        ),
-      ),
-    );
-    super.dispose();
+    _engine = null;
+    _unbindEngine?.call();
+    _unbindEngine = null;
+    _sessionOperation = null;
+    await _assistController.releaseResources();
   }
 
   @override
@@ -98,6 +141,13 @@ class _GuidedWorkoutPlayerPageState
 
   @override
   Widget build(BuildContext context) {
+    final enabled = ref.watch(featureEnabledProvider('feature.guided_workout'));
+    if (!enabled || _resourceReleased) {
+      return _PlayerLoadingPage(
+          courseId: widget.courseId,
+          fallbackRoute: _detailRoute,
+          message: '跟练已停止，已有记录可以从历史记录查看。');
+    }
     final AsyncValue<GuidedWorkoutCatalog> catalog =
         ref.watch(guidedWorkoutCatalogProvider);
     final AsyncValue<PreExerciseClearanceState> clearance =
@@ -375,10 +425,25 @@ class _GuidedWorkoutPlayerPageState
   }
 
   void _ensureInitialized(GuidedWorkoutCourse course) {
-    if (_engine != null || _initializing) return;
+    if (_engine != null ||
+        _initializing ||
+        _resourceReleased ||
+        !ref.read(featureAccessProvider).isWritable('feature.guided_workout')) {
+      return;
+    }
     _initializing = true;
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (!mounted || _engine != null) return;
+      if (!mounted ||
+          _engine != null ||
+          _resourceReleased ||
+          !ref
+              .read(featureAccessProvider)
+              .isWritable('feature.guided_workout')) {
+        return;
+      }
+      _sessionOperation = ref
+          .read(featureAccessProvider)
+          .beginOperation('feature.guided_workout');
       final GuidedWorkoutEngine engine = GuidedWorkoutEngine(
         course: course,
         selectedRounds: widget.selectedRounds,
@@ -386,6 +451,14 @@ class _GuidedWorkoutPlayerPageState
       engine.addListener(_onEngineChanged);
       engine.start();
       _engine = engine;
+      final runtime = ref.read(pluginRuntimeProvider);
+      _unbindEngine =
+          runtime.service('feature.guided_workout')?.bind('engine', engine);
+      _unregisterCleanup?.call();
+      _unregisterCleanup = runtime.registerCleanup(
+          'feature.guided_workout', _releaseResources, onRestore: () {
+        _resourceReleased = false;
+      });
       if (course.kind == GuidedWorkoutCourseKind.timedCourse) {
         _refreshTimer = Timer.periodic(
           const Duration(milliseconds: 200),
@@ -411,7 +484,7 @@ class _GuidedWorkoutPlayerPageState
     _drainVoiceEvents();
     if (engine.state.status == GuidedWorkoutStatus.completed) {
       _refreshTimer?.cancel();
-      _saveSession(completedFlow: true);
+      unawaited(_saveSession(completedFlow: true));
       ref.read(workoutPlayerAssistControllerProvider.notifier).setScreenAwake(
             false,
             enabledMessage: '训练进行中，屏幕保持常亮。',
@@ -457,10 +530,15 @@ class _GuidedWorkoutPlayerPageState
     _drainVoiceEvents();
   }
 
-  void _saveSession({required bool completedFlow}) {
-    if (_saved) return;
+  Future<bool> _saveSession({required bool completedFlow}) async {
+    if (_saved) return true;
+    final Future<bool>? saving = _saving;
+    if (saving != null) return saving;
+    final FeatureOperation? operation = _sessionOperation;
+    if (operation == null) return false;
+    operation.checkActive();
     final GuidedWorkoutEngine? engine = _engine;
-    if (engine == null) return;
+    if (engine == null) return false;
     final GuidedWorkoutState state = engine.state;
     final DateTime now = DateTime.now();
     final TrainingLog log = buildGuidedWorkoutTrainingLog(
@@ -470,15 +548,48 @@ class _GuidedWorkoutPlayerPageState
       now: now,
       completedFlow: completedFlow,
     );
-    ref.read(trainingLogControllerProvider.notifier).save(log);
-    _saved = true;
+    final Future<bool> result = () async {
+      try {
+        await readFeatureControllerFromWidgetRef<TrainingLogController>(
+          ref,
+          'feature.training_log',
+          'controller',
+          () => ref.read(trainingLogControllerProvider.notifier),
+        ).save(log, sourceOperation: operation);
+        _saved = true;
+        return true;
+      } on Object catch (error) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text('训练记录保存失败：$error，请重试。')),
+          );
+        }
+        return false;
+      }
+    }();
+    _saving = result;
+    try {
+      return await result;
+    } finally {
+      if (identical(_saving, result)) _saving = null;
+    }
   }
 
   Future<void> _requestExit() async {
     if (_exitDialogVisible || !mounted) return;
     final GuidedWorkoutEngine? engine = _engine;
-    if (engine == null ||
-        engine.state.status == GuidedWorkoutStatus.completed) {
+    if (engine == null) {
+      if (context.canPop()) {
+        context.pop();
+      } else {
+        context.go(_detailRoute);
+      }
+      return;
+    }
+    if (engine.state.status == GuidedWorkoutStatus.completed) {
+      if (!await _saveSession(completedFlow: true) || !mounted) return;
+      await _releaseResources();
+      if (!mounted) return;
       if (context.canPop()) {
         context.pop();
       } else {
@@ -506,7 +617,9 @@ class _GuidedWorkoutPlayerPageState
     );
     _exitDialogVisible = false;
     if (save == null || !mounted) return;
-    if (save) _saveSession(completedFlow: false);
+    if (save && !await _saveSession(completedFlow: false)) return;
+    await _releaseResources();
+    if (!mounted) return;
     if (context.canPop()) {
       context.pop();
     } else {
@@ -640,7 +753,8 @@ class _LinkedExerciseMedia extends StatelessWidget {
       }
     }
     if (exercise == null) return const SizedBox.shrink();
-    return TrainFlowCard(child: ExerciseMedia(exercise: exercise, compact: true));
+    return TrainFlowCard(
+        child: ExerciseMedia(exercise: exercise, compact: true));
   }
 }
 

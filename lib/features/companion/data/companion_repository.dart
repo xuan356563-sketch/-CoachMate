@@ -1,6 +1,7 @@
 import 'dart:convert';
 
 import 'package:trainflow_ai/data/local/companion_database_gateway.dart';
+import 'package:trainflow_ai/data/models/pet.dart';
 import 'package:trainflow_ai/features/companion/domain/coach_contracts.dart';
 import 'package:trainflow_ai/features/companion/domain/companion_models.dart';
 
@@ -28,7 +29,7 @@ class CompanionRepository {
         await loadRelationship(athleteProfileId);
     if (existing != null) return existing;
     if (fallbackCompanionName.trim().isEmpty) {
-      throw ArgumentError('衡衡狸名称不能为空');
+      throw ArgumentError('伙伴名称不能为空');
     }
     final DateTime now = _clock().toUtc();
     final CompanionRelationship relationship = CompanionRelationship(
@@ -46,7 +47,9 @@ class CompanionRepository {
     String existingPetName,
   ) {
     final String? localName = relationship.companionName?.trim();
-    return localName?.isNotEmpty == true ? localName! : existingPetName;
+    return normalizeBalanceRaccoonDisplayName(
+      localName?.isNotEmpty == true ? localName! : existingPetName,
+    );
   }
 
   Future<void> saveRelationship(CompanionRelationship relationship) {

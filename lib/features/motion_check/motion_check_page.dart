@@ -18,6 +18,7 @@ import '../../services/motion_pose_analysis_service.dart';
 import '../dashboard/training_mvp_controller.dart';
 import '../ai_center/application/ai_artifact_controller.dart';
 import 'application/motion_image_analysis_controller.dart';
+import 'running/running_video_pose_gateway.dart';
 
 class MotionCheckPage extends ConsumerStatefulWidget {
   const MotionCheckPage({super.key});
@@ -45,6 +46,9 @@ class _MotionCheckPageState extends ConsumerState<MotionCheckPage> {
         backgroundColor: AppColors.primary,
       ),
       children: [
+        if (runningVideoPreviewEnabled)
+          OutlinedButton.icon(onPressed: () => context.push('/motion-check/running'),
+            icon: const Icon(Icons.directions_run), label: const Text('跑姿视频分析 · 验收版')),
         SegmentedButton<int>(
           segments: const [
             ButtonSegment(
@@ -81,6 +85,8 @@ class _MotionCheckPageState extends ConsumerState<MotionCheckPage> {
                   InfoRow(label: '评分', value: '${result.score} 分'),
                   InfoRow(label: '风险', value: result.riskLevel.label),
                   InfoRow(label: '来源', value: result.analysisSource),
+                  if (!result.usableForDecision)
+                    const InfoRow(label: '使用范围', value: '仅供查看，未作为训练调整依据'),
                 ],
               ),
             ),
@@ -544,7 +550,7 @@ class _MotionPipelineCard extends StatelessWidget {
                 Expanded(
                   child: MetricPill(
                     label: '决策影响',
-                    value: result.suggestedImpact.label,
+                    value: result.usableForDecision ? result.suggestedImpact.label : '仅供查看',
                     color: _riskColor(result.riskLevel),
                   ),
                 ),
@@ -554,6 +560,8 @@ class _MotionPipelineCard extends StatelessWidget {
             InfoRow(label: 'Body Engine', value: result.bodyEngineSummary),
             InfoRow(label: '动作质量风险', value: result.decisionImpact),
             InfoRow(label: '分析来源', value: result.analysisSource),
+            if (!result.usableForDecision)
+              const InfoRow(label: '使用范围', value: '来源未验证或内容不足，不参与训练调整'),
             if (result.analysisConfidence > 0)
               InfoRow(
                 label: '计算置信度',

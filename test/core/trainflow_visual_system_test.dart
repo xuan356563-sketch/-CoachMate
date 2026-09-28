@@ -19,7 +19,7 @@ void main() {
     expect(AppColors.background, const Color(0xFFF6F6F4));
   });
 
-  test('浅色深紫令牌锁定白/暖灰底 + 深紫主色 + 多色功能强调', () {
+  test('参考图令牌锁定纸白底、深紫行动区与多色功能强调', () {
     expect(TrainFlowTokens.accent, const Color(0xFF6C3DF4));
     expect(TrainFlowTokens.onAccent, const Color(0xFFFFFFFF));
     expect(TrainFlowTokens.brandDark, const Color(0xFF191331));
@@ -33,19 +33,79 @@ void main() {
     expect(TrainFlowTokens.mint, const Color(0xFF67E6B1));
     expect(TrainFlowTokens.lightCompanionSurface, const Color(0xFFF6F6F4));
     expect(TrainFlowTokens.lightCompanionCard, const Color(0xFFFFFFFF));
-    expect(TrainFlowTokens.mainTabCardRadius, 16);
+    expect(TrainFlowTokens.mainTabCardRadius, 24);
     expect(TrainFlowTokens.mainTabPageGutter, 20);
     expect(TrainFlowTokens.mainTabCardGap, 12);
     expect(TrainFlowTokens.mainTabCardPadding, 16);
   });
 
+  test('主标签字号令牌保持清晰的信息层级', () {
+    expect(TrainFlowTokens.mainTabPageTitleSize, 28);
+    expect(TrainFlowTokens.mainTabSectionTitleSize, 21);
+    expect(TrainFlowTokens.mainTabMetricValueSize, 36);
+    expect(TrainFlowTokens.mainTabBodySize, 15);
+    expect(TrainFlowTokens.mainTabSupportingSize, 12);
+  });
+
+  test('五个页面强调色与参考图设计契约保持一致', () {
+    expect(TrainMatePageAccent.plan.color, TrainFlowTokens.yellow);
+    expect(TrainMatePageAccent.today.color, TrainFlowTokens.purple);
+    expect(TrainMatePageAccent.companion.color, TrainFlowTokens.coral);
+    expect(TrainMatePageAccent.exercises.color, TrainFlowTokens.blue);
+    expect(TrainMatePageAccent.profile.color, TrainFlowTokens.showcasePaper);
+    expect(TrainFlowTokens.mainTabPrimaryButtonHeight, 56);
+    expect(TrainFlowTokens.mainTabIconButtonSize, 48);
+    expect(TrainFlowTokens.mainTabCarouselPeek, 16);
+  });
+
+  testWidgets('状态条实际绘制每项强调色并允许横向到达末项', (tester) async {
+    const Color statusColor = Color(0xFF438CF5);
+    await tester.pumpWidget(
+      MaterialApp(
+        home: Scaffold(
+          body: TrainMateStatusStrip(
+            metrics: const <TrainMateStatusMetric>[
+              TrainMateStatusMetric(
+                label: '第一项',
+                value: '1',
+                icon: Icons.looks_one_outlined,
+                color: statusColor,
+              ),
+              TrainMateStatusMetric(
+                label: '第二项',
+                value: '2',
+                icon: Icons.looks_two_outlined,
+              ),
+              TrainMateStatusMetric(
+                label: '最后一项',
+                value: '3',
+                icon: Icons.looks_3_outlined,
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+
+    expect(tester.widget<Icon>(find.byIcon(Icons.looks_one_outlined)).color,
+        statusColor);
+    await tester.drag(
+      find.byKey(const ValueKey<String>('trainmate-status-strip')),
+      const Offset(-240, 0),
+    );
+    await tester.pumpAndSettle();
+    expect(find.text('最后一项 3'), findsOneWidget);
+    expect(tester.takeException(), isNull);
+  });
+
   test('白字在深紫主色上的文字对比满足 AA', () {
-    final double contrast = (TrainFlowTokens.onAccent.computeLuminance() + .05) /
-        (TrainFlowTokens.accent.computeLuminance() + .05);
+    final double contrast =
+        (TrainFlowTokens.onAccent.computeLuminance() + .05) /
+            (TrainFlowTokens.accent.computeLuminance() + .05);
     expect(contrast, greaterThanOrEqualTo(4.5));
   });
 
-  testWidgets('主标签暖黑作用域应用 14dp 卡片层级', (tester) async {
+  testWidgets('主标签作用域应用 24dp 普通卡片层级', (tester) async {
     await tester.pumpWidget(
       MaterialApp(
         home: const TrainMateVisualScope(
@@ -100,6 +160,48 @@ void main() {
     );
     expect(canvasSize.width, TrainFlowTokens.pageMaxWidth);
     expect(tester.takeException(), isNull);
+  });
+
+  testWidgets('核心详情页继承所属主标签强调色与大圆角承接面', (tester) async {
+    await tester.pumpWidget(
+      const MaterialApp(
+        home: TrainMatePageStyleScope(
+          accent: TrainMatePageAccent.exercises,
+          child: Scaffold(
+            body: TrainFlowPage(
+              title: '动作详情',
+              includeDisclaimer: false,
+              children: <Widget>[Text('动作内容')],
+            ),
+          ),
+        ),
+      ),
+    );
+
+    final Finder header =
+        find.byKey(const ValueKey<String>('trainflow-organic-header'));
+    final Finder headerColor = find.descendant(
+      of: header,
+      matching: find.byWidgetPredicate(
+        (Widget widget) =>
+            widget is ColoredBox && widget.color == TrainFlowTokens.blue,
+      ),
+    );
+    final DecoratedBox contentSurface = tester.widget<DecoratedBox>(
+      find.byKey(
+        const ValueKey<String>('trainflow-page-content-surface'),
+      ),
+    );
+    final BoxDecoration decoration = contentSurface.decoration as BoxDecoration;
+
+    expect(headerColor, findsOneWidget);
+    expect(decoration.color, TrainFlowTokens.showcasePaper);
+    expect(
+      decoration.borderRadius,
+      const BorderRadius.vertical(
+        top: Radius.circular(TrainFlowTokens.mainTabShowcaseRadius),
+      ),
+    );
   });
 
   testWidgets('减少动态效果时内容直接显示最终状态', (tester) async {
@@ -169,6 +271,158 @@ void main() {
     expect(tester.widget<Opacity>(opacity).opacity, 1);
     expect(find.text('参考首屏内容'), findsOneWidget);
     expect(tester.hasRunningAnimations, isFalse);
+  });
+
+  testWidgets('参考主标签按纸白概览、波浪和深紫行动内容连续分区', (tester) async {
+    await tester.pumpWidget(
+      MaterialApp(
+        theme: TDesignTheme.lightTheme,
+        home: Scaffold(
+          body: TrainMateImmersiveHubPage(
+            mode: TrainMateVisualMode.referenceShowcase,
+            includeDisclaimer: false,
+            hero: const SizedBox(
+              key: ValueKey<String>('reference-test-hero'),
+              height: 120,
+            ),
+            storyChildren: <Widget>[
+              TrainMateShowcaseActionCard(
+                key: const ValueKey<String>('reference-test-action-card'),
+                title: '继续训练',
+                subtitle: '进入今天的行动任务',
+                icon: Icons.directions_run_rounded,
+                color: TrainFlowTokens.showcaseActionRaised,
+                onTap: _noop,
+              ),
+            ],
+            paperOverviewChildren: const <Widget>[
+              SizedBox(
+                key: ValueKey<String>('reference-test-overview'),
+                height: 72,
+                child: Text('纸白概览'),
+              ),
+            ],
+            deepActionChildren: const <Widget>[
+              KeyedSubtree(
+                key: ValueKey<String>('reference-test-detail'),
+                child: SectionTitle(title: '行动区剩余详情'),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+
+    final Finder paperOverview = find.byKey(
+      const ValueKey<String>('trainmate-showcase-paper-overview'),
+    );
+    final Finder waveSection = find.byKey(
+      const ValueKey<String>('trainmate-wave-action-section'),
+    );
+    final Finder actionContent = find.byKey(
+      const ValueKey<String>('trainmate-showcase-action-content'),
+    );
+    final Finder overview = find.byKey(
+      const ValueKey<String>('reference-test-overview'),
+    );
+    final Finder actionCard = find.byKey(
+      const ValueKey<String>('reference-test-action-card'),
+    );
+    final Finder detail = find.byKey(
+      const ValueKey<String>('reference-test-detail'),
+    );
+
+    expect(
+      find.descendant(of: paperOverview, matching: overview),
+      findsOneWidget,
+    );
+    expect(
+      find.descendant(of: actionContent, matching: actionCard),
+      findsOneWidget,
+    );
+    expect(
+      find.descendant(of: actionContent, matching: detail),
+      findsOneWidget,
+    );
+    expect(
+      find.descendant(of: paperOverview, matching: detail),
+      findsNothing,
+    );
+    expect(
+      tester.getRect(waveSection).top,
+      closeTo(tester.getRect(paperOverview).bottom, 0.01),
+    );
+
+    final Text actionTitle = tester.widget<Text>(
+      find.descendant(of: detail, matching: find.text('行动区剩余详情')),
+    );
+    expect(actionTitle.style?.color, TrainFlowTokens.paper);
+
+    final DecoratedBox actionIndicator = tester
+        .widgetList<DecoratedBox>(
+          find.descendant(of: detail, matching: find.byType(DecoratedBox)),
+        )
+        .firstWhere(
+          (DecoratedBox item) =>
+              (item.decoration as BoxDecoration).color ==
+              TrainFlowTokens.yellow,
+        );
+    expect(
+      (actionIndicator.decoration as BoxDecoration).color,
+      TrainFlowTokens.yellow,
+    );
+    expect(tester.takeException(), isNull);
+  });
+
+  testWidgets('参考主标签在 320×568 与两倍文字下不溢出', (tester) async {
+    tester.view.physicalSize = const Size(320, 568);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
+
+    await tester.pumpWidget(
+      MaterialApp(
+        theme: TDesignTheme.lightTheme,
+        home: const MediaQuery(
+          data: MediaQueryData(
+            size: Size(320, 568),
+            textScaler: TextScaler.linear(2),
+            disableAnimations: true,
+          ),
+          child: Scaffold(
+            body: TrainMateImmersiveHubPage(
+              mode: TrainMateVisualMode.referenceShowcase,
+              includeDisclaimer: false,
+              showcaseOverviewChildCount: 1,
+              hero: SizedBox(height: 120),
+              storyChildren: <Widget>[
+                TrainMateShowcaseActionCard(
+                  title: '继续完成今天的训练任务',
+                  subtitle: '保持真实状态与操作入口完整可见',
+                  icon: Icons.directions_run_rounded,
+                  color: TrainFlowTokens.showcaseActionRaised,
+                  onTap: _noop,
+                ),
+              ],
+              children: <Widget>[
+                Text('纸白概览信息'),
+                SectionTitle(title: '行动区剩余详细内容'),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+
+    expect(
+      find.byKey(const ValueKey<String>('trainmate-showcase-paper-overview')),
+      findsOneWidget,
+    );
+    expect(
+      find.byKey(const ValueKey<String>('trainmate-showcase-action-content')),
+      findsOneWidget,
+    );
+    expect(tester.takeException(), isNull);
   });
 
   testWidgets('TrainFlowPage 默认不创建分区入场动画', (tester) async {

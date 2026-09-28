@@ -469,10 +469,11 @@ class AccountSwitchPage extends ConsumerWidget {
       AsyncData<AuthState>(:final value) => value,
       _ => null,
     };
+    final bool scopeReplaced = state?.accountScopeReplaced == true;
     return TrainFlowPage(
       title: '确认切换账号',
       layout: TrainFlowPageLayout.form,
-      subtitle: '当前设备已经绑定过其他账号。',
+      subtitle: scopeReplaced ? '本地账号数据已切换，正在恢复新账号功能。' : '当前设备已经绑定过其他账号。',
       eyebrow: '本地数据保护',
       artwork: const TrainMateIllustration(
         assetPath: 'assets/images/trainmate_data_shield.png',
@@ -499,9 +500,15 @@ class AccountSwitchPage extends ConsumerWidget {
                     ?.copyWith(fontWeight: FontWeight.w700),
               ),
               const SizedBox(height: 8),
-              const Text(
-                '继续会清除当前设备上的训练资料、日志和比赛数据，再绑定新账号。取消会退出新会话并完整保留原数据。',
+              Text(
+                scopeReplaced
+                    ? '旧账号本地业务数据已经清理，新账号也已完成绑定。继续只会重试功能装配，不会再次清理数据。若暂时无法恢复，请重启应用后再次登录。'
+                    : '继续会清除当前设备上的训练资料、日志和比赛数据，再绑定新账号。取消会退出新会话并完整保留原数据。',
               ),
+              if (state?.message != null) ...[
+                const SizedBox(height: 10),
+                Text(state!.message!),
+              ],
               const SizedBox(height: 18),
               SizedBox(
                 width: double.infinity,
@@ -515,32 +522,39 @@ class AccountSwitchPage extends ConsumerWidget {
                                 .confirm();
                           } catch (_) {
                             if (!context.mounted) return;
+                            final AuthState? latest =
+                                switch (ref.read(authControllerProvider)) {
+                              AsyncData<AuthState>(:final value) => value,
+                              _ => null,
+                            };
                             ScaffoldMessenger.of(context).showSnackBar(
-                              const SnackBar(
+                              SnackBar(
                                 content: Text(
-                                  '本地数据未能安全清理，账号尚未切换，请重试。',
+                                  latest?.message ?? '账号切换未完成，请重试。',
                                 ),
                               ),
                             );
                           }
                         },
                   icon: const Icon(Icons.swap_horiz),
-                  label: const Text('清除本地业务数据并切换'),
+                  label: Text(scopeReplaced ? '重试恢复新账号功能' : '清除本地业务数据并切换'),
                 ),
               ),
-              const SizedBox(height: 10),
-              SizedBox(
-                width: double.infinity,
-                child: OutlinedButton.icon(
-                  onPressed: state?.isBusy == true
-                      ? null
-                      : () => ref
-                          .read(authControllerProvider.notifier)
-                          .cancelAccountSwitch(),
-                  icon: const Icon(Icons.close),
-                  label: const Text('取消并保留原数据'),
+              if (!scopeReplaced) ...[
+                const SizedBox(height: 10),
+                SizedBox(
+                  width: double.infinity,
+                  child: OutlinedButton.icon(
+                    onPressed: state?.isBusy == true
+                        ? null
+                        : () => ref
+                            .read(authControllerProvider.notifier)
+                            .cancelAccountSwitch(),
+                    icon: const Icon(Icons.close),
+                    label: const Text('取消并保留原数据'),
+                  ),
                 ),
-              ),
+              ],
             ],
           ),
         ),

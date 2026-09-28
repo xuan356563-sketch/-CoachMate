@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:convert';
 
 import 'package:flutter/material.dart';
@@ -10,6 +11,7 @@ import 'package:http/testing.dart';
 import 'package:trainflow_ai/app/router/app_router.dart';
 import 'package:trainflow_ai/app/router/app_routes.dart';
 import 'package:trainflow_ai/app/trainflow_app.dart';
+import 'package:trainflow_ai/core/constants/app_brand.dart';
 import 'package:trainflow_ai/data/models/pre_exercise_clearance.dart';
 import 'package:trainflow_ai/data/repositories/pre_exercise_clearance_repository.dart';
 import 'package:trainflow_ai/features/auth/application/auth_controller.dart';
@@ -18,6 +20,12 @@ import 'package:trainflow_ai/features/auth/data/auth_api.dart';
 import 'package:trainflow_ai/features/auth/data/authenticated_api_client.dart';
 import 'package:trainflow_ai/features/auth/data/session_token_store.dart';
 import 'package:trainflow_ai/features/auth/presentation/auth_pages.dart';
+import 'package:trainflow_ai/plugins/application/plugin_runtime.dart';
+import 'package:trainflow_ai/plugins/application/plugin_runtime_provider.dart';
+import 'package:trainflow_ai/plugins/assembly/built_in_distribution.dart';
+import 'package:trainflow_ai/plugins/core/plugin_core.dart';
+import 'package:trainflow_ai/plugins/settings/plugin_settings.dart';
+import 'package:trainflow_ai/plugins/settings/plugin_settings_controller.dart';
 import 'package:trainflow_ai/services/local_storage_service.dart';
 
 const String _agreementVersion = 'internal-test-2026-07-13.1';
@@ -297,6 +305,10 @@ void main() {
     storage.saveJson('trainflow.user_profile.v1', <String, dynamic>{
       'profileCompleted': true,
     });
+    storage.saveJson(pluginSettingsStorageKey, <String, dynamic>{
+      'version': 1,
+      'enabledOverrides': <String, bool>{'feature.motion_check': false},
+    });
     final ProviderContainer container = _containerWith(
       client: _authMockClient(),
       tokenStore: MemorySessionTokenStore(),
@@ -305,6 +317,8 @@ void main() {
     );
     addTearDown(container.dispose);
     await container.read(authControllerProvider.future);
+    final PluginSettingsController oldSettings =
+        container.read(pluginSettingsControllerProvider);
 
     final EmailChallenge? challenge = await container
         .read(authControllerProvider.notifier)
@@ -343,6 +357,11 @@ void main() {
       'new-user',
     );
     expect(clearanceRepository.clearCount, 1);
+    final PluginSettingsController rebuiltSettings =
+        container.read(pluginSettingsControllerProvider);
+    expect(identical(rebuiltSettings, oldSettings), isFalse);
+    expect(rebuiltSettings.state.rawDocument, isNull);
+    expect(rebuiltSettings.state.settings.enabledOverrides, isEmpty);
   });
 
   test('账号数据原子清理失败时不得进入已登录状态', () async {
@@ -378,6 +397,101 @@ void main() {
     expect(state.status, AuthStatus.accountConflict);
     expect(state.message, contains('未切换'));
     expect(storage.readJson('trainflow.user_profile.v1'), isNotNull);
+  });
+
+  test('换绑已完成但功能装配失败时准确提示且重试不重复清理', () async {
+    final _CountingAtomicStorage storage = _CountingAtomicStorage()
+      ..saveJson(AccountBindingService.installationIdKey,
+          <String, dynamic>{'value': 'device'})
+      ..saveJson(AccountBindingService.accountBindingKey,
+          <String, dynamic>{'userId': 'old-user'});
+    final PluginRuntime runtime = PluginRuntime(
+      PluginRegistry(plugins: builtInDistribution()),
+    );
+    final MemorySessionTokenStore tokenStore = MemorySessionTokenStore();
+    final _FailOnceScopeSettingsController settings =
+        _FailOnceScopeSettingsController(runtime: runtime, storage: storage);
+    final ProviderContainer container = _containerWith(
+      client: _authMockClient(),
+      tokenStore: tokenStore,
+      storage: storage,
+      settingsController: settings,
+      runtime: runtime,
+    );
+    addTearDown(container.dispose);
+    await container.read(authControllerProvider.future);
+    final EmailChallenge challenge = (await container
+        .read(authControllerProvider.notifier)
+        .requestEmailCode('test@example.com'))!;
+    await container.read(authControllerProvider.notifier).login(
+          email: 'test@example.com',
+          challengeId: challenge.challengeId,
+          code: '246810',
+        );
+
+    expect(
+      await container
+          .read(authControllerProvider.notifier)
+          .confirmAccountSwitch(),
+      isFalse,
+    );
+    AuthState state = container.read(authControllerProvider).requireValue;
+    expect(state.accountScopeReplaced, isTrue);
+    expect(state.message, contains('功能装配待恢复'));
+    expect(storage.atomicReplacementCount, 1);
+    expect(
+      storage.readJson(AccountBindingService.accountBindingKey)?['userId'],
+      'new-user',
+    );
+    expect(runtime.recoveryFailures['core.identity'], isNotNull);
+
+    final _FailOnceScopeSettingsController recreatedSettings =
+        _FailOnceScopeSettingsController(runtime: runtime, storage: storage)
+          ..attempts = 1;
+    final ProviderContainer recreated = _containerWith(
+      client: _authMockClient(),
+      tokenStore: tokenStore,
+      storage: storage,
+      settingsController: recreatedSettings,
+      runtime: runtime,
+    );
+    addTearDown(recreated.dispose);
+    state = await recreated.read(authControllerProvider.future);
+    expect(state.status, AuthStatus.accountConflict);
+    expect(state.accountScopeReplaced, isTrue);
+    expect(state.message, contains('功能装配待恢复'));
+
+    await recreated.read(authControllerProvider.notifier).cancelAccountSwitch();
+    state = recreated.read(authControllerProvider).requireValue;
+    expect(state.status, AuthStatus.accountConflict);
+    expect(state.message, contains('重启应用'));
+
+    expect(
+      await recreated
+          .read(authControllerProvider.notifier)
+          .confirmAccountSwitch(),
+      isTrue,
+    );
+    expect(storage.atomicReplacementCount, 1);
+    expect(
+      recreated.read(authControllerProvider).requireValue.status,
+      AuthStatus.authenticated,
+    );
+  });
+
+  testWidgets('换绑已完成的恢复页只提供装配重试和重启说明', (WidgetTester tester) async {
+    await tester.pumpWidget(ProviderScope(
+      overrides: [
+        authControllerProvider.overrideWith(_ScopeReplacedAuthController.new),
+      ],
+      child: const MaterialApp(home: AccountSwitchPage()),
+    ));
+    await tester.pumpAndSettle();
+
+    expect(find.textContaining('旧账号本地业务数据已经清理'), findsOneWidget);
+    expect(find.text('重试恢复新账号功能'), findsOneWidget);
+    expect(find.textContaining('重启应用后再次登录'), findsOneWidget);
+    expect(find.text('取消并保留原数据'), findsNothing);
   });
 
   test('Web 会话只存在于当前令牌存储实例', () async {
@@ -420,15 +534,32 @@ void main() {
       router.routeInformationProvider.value.uri.path,
       AppRoutes.login,
     );
-    expect(find.text('登录智练 TrainMate'), findsOneWidget);
-    expect(find.text('登录并进入智练 TrainMate'), findsOneWidget);
+    expect(find.text('登录 练搭 CoachMate'), findsOneWidget);
+    expect(find.text('登录并进入练搭 CoachMate'), findsOneWidget);
+    expect(
+      tester.widget<MaterialApp>(find.byType(MaterialApp)).title,
+      AppBrand.displayName,
+    );
     expect(
       find.byKey(const ValueKey<String>('trainmate-brand-lockup')),
       findsOneWidget,
     );
     expect(
-      find.byKey(const ValueKey<String>('trainmate-brandmark')),
+      find.descendant(
+        of: find.byKey(const ValueKey<String>('trainmate-brand-lockup')),
+        matching: find.byKey(
+          const ValueKey<String>('trainmate-brand-lockup-image'),
+        ),
+      ),
       findsOneWidget,
+    );
+    expect(
+      tester
+          .getSize(
+            find.byKey(const ValueKey<String>('trainmate-brand-lockup')),
+          )
+          .height,
+      168,
     );
 
     router.go(AppRoutes.terms);
@@ -633,12 +764,68 @@ class _TrackingClearanceRepository implements PreExerciseClearanceRepository {
   }) async {}
 }
 
+class _CountingAtomicStorage extends InMemoryLocalStorageService {
+  int atomicReplacementCount = 0;
+
+  @override
+  Future<void> replaceBusinessDataAtomically({
+    Set<String> preservedKeys = const <String>{},
+    Map<String, Map<String, dynamic>> replacementDocuments =
+        const <String, Map<String, dynamic>>{},
+  }) async {
+    atomicReplacementCount++;
+    await super.replaceBusinessDataAtomically(
+      preservedKeys: preservedKeys,
+      replacementDocuments: replacementDocuments,
+    );
+  }
+}
+
+class _FailOnceScopeSettingsController extends PluginSettingsController {
+  _FailOnceScopeSettingsController({
+    required super.runtime,
+    required super.storage,
+  });
+
+  int attempts = 0;
+
+  @override
+  Future<void> changeAccountScope({
+    required bool scopeAlreadyReplaced,
+    required FutureOr<void> Function() replaceScope,
+  }) async {
+    attempts++;
+    await runtime.changeAccountScope(replaceScope: () async {
+      if (!scopeAlreadyReplaced) await replaceScope();
+      if (attempts == 1) throw StateError('模拟新账号功能装配失败');
+    });
+  }
+}
+
+class _ScopeReplacedAuthController extends AuthController {
+  @override
+  Future<AuthState> build() async => const AuthState(
+        status: AuthStatus.accountConflict,
+        user: AuthUser(
+          userId: 'new-user',
+          sessionId: 'session',
+          accountType: 'email',
+          maskedEmail: 'n***@example.com',
+          hasRequiredConsents: true,
+        ),
+        accountScopeReplaced: true,
+        message: '本地账号数据已切换，新账号功能装配待恢复。',
+      );
+}
+
 ProviderContainer _containerWith({
   required http.Client client,
   required SessionTokenStore tokenStore,
   InMemoryLocalStorageService? storage,
   bool? localPreviewEnabled,
   PreExerciseClearanceRepository? clearanceRepository,
+  PluginSettingsController? settingsController,
+  PluginRuntime? runtime,
 }) {
   return ProviderContainer(
     overrides: [
@@ -651,6 +838,11 @@ ProviderContainer _containerWith({
         preExerciseClearanceRepositoryProvider.overrideWithValue(
           clearanceRepository,
         ),
+      if (settingsController != null)
+        pluginSettingsControllerProvider.overrideWith(
+          (ref) => settingsController,
+        ),
+      if (runtime != null) pluginRuntimeProvider.overrideWith((ref) => runtime),
       if (localPreviewEnabled != null)
         localPreviewEnabledProvider.overrideWithValue(localPreviewEnabled),
     ],

@@ -1,32 +1,32 @@
 {
-    "name": "智练 TrainMate",
-    "short_name": "智练 TrainMate",
+    "name": "练搭 CoachMate",
+    "short_name": "练搭",
     "start_url": ".",
     "display": "standalone",
     "background_color": "#FFFDFC",
     "theme_color": "#19172C",
-    "description": "智练 TrainMate AI 智能训练计划",
+    "description": "练搭 CoachMate：本地优先的 AI Coach agent 与运动搭子，陪你长期训练。",
     "orientation": "portrait-primary",
     "prefer_related_applications": false,
     "icons": [
         {
-            "src": "icons/official-flow/Icon-192.png",
+            "src": "icons/coachmate-official/Icon-192.png",
             "sizes": "192x192",
             "type": "image/png"
         },
         {
-            "src": "icons/official-flow/Icon-512.png",
+            "src": "icons/coachmate-official/Icon-512.png",
             "sizes": "512x512",
             "type": "image/png"
         },
         {
-            "src": "icons/official-flow/Icon-maskable-192.png",
+            "src": "icons/coachmate-official/Icon-maskable-192.png",
             "sizes": "192x192",
             "type": "image/png",
             "purpose": "maskable"
         },
         {
-            "src": "icons/official-flow/Icon-maskable-512.png",
+            "src": "icons/coachmate-official/Icon-maskable-512.png",
             "sizes": "512x512",
             "type": "image/png",
             "purpose": "maskable"

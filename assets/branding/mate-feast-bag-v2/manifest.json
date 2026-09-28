@@ -1,0 +1,564 @@
+{
+  "version": "mate-feast-bag-v2",
+  "status": "pending-human-visual-review",
+  "generatedBy": "OpenAI image generation + deterministic runtime export",
+  "promptVersion": "mate-feast-c08-v2.0",
+  "palette": [
+    "#C1512E",
+    "#D6B489",
+    "#F5EBD8",
+    "#E8467F",
+    "#1A1512",
+    "#2438CE"
+  ],
+  "reference": {
+    "path": "assets/branding/mate-feast-bag-v2/source/mate-character-sheet-user-provided-v2.png",
+    "width": 1536,
+    "height": 1024,
+    "sha256": "a5c036d681f7b564411e711511f8007047db2c8e3e194f9d10aac788534a153d"
+  },
+  "actions": {
+    "01-pointing-guide": {
+      "masterPath": "assets/branding/mate-feast-bag-v2/source/action-masters/01-pointing-guide.png",
+      "masterSha256": "1a16b6355bace1b23169bc7ba626b76385a013c7961c2eda31a800e1914a8f3c",
+      "variants": {
+        "navy": {
+          "path": "assets/branding/mate-feast-bag-v2/action-characters/navy/01-pointing-guide.png",
+          "width": 512,
+          "height": 512,
+          "sha256": "b5b8ca14a5ca95d78a701e9453bce6a3f042596eeddfde0c6b9ca3e2be0fd553"
+        },
+        "peach-light": {
+          "path": "assets/branding/mate-feast-bag-v2/action-characters/peach-light/01-pointing-guide.png",
+          "width": 512,
+          "height": 512,
+          "sha256": "32ee9d98e8065e725299daa6fb51b95da4afa31c88390b91315d26651d11d785"
+        }
+      }
+    },
+    "02-running": {
+      "masterPath": "assets/branding/mate-feast-bag-v2/source/action-masters/02-running.png",
+      "masterSha256": "83ea6d2ba137a2eeb8433ac8760079739dfc9d6be0ed317d54403c3c6c6f8ec5",
+      "variants": {
+        "navy": {
+          "path": "assets/branding/mate-feast-bag-v2/action-characters/navy/02-running.png",
+          "width": 512,
+          "height": 512,
+          "sha256": "f647d2aab15a35516d2ccef546b74ee02dd9ef9e647917b87bebbce72f33953a"
+        },
+        "peach-light": {
+          "path": "assets/branding/mate-feast-bag-v2/action-characters/peach-light/02-running.png",
+          "width": 512,
+          "height": 512,
+          "sha256": "bb8060113b04b142be26e25684f196b722c68101606fd17e601e18a0bd7a836d"
+        }
+      }
+    },
+    "03-side-lunge-stretch": {
+      "masterPath": "assets/branding/mate-feast-bag-v2/source/action-masters/03-side-lunge-stretch.png",
+      "masterSha256": "d901db73180a256f8096bc4710e3acc5dc068b9da9c15aa720477ff326ea1a7c",
+      "variants": {
+        "navy": {
+          "path": "assets/branding/mate-feast-bag-v2/action-characters/navy/03-side-lunge-stretch.png",
+          "width": 512,
+          "height": 512,
+          "sha256": "0822c7a62344ab23f0b47f4f245f9ec5bc9984d03dc2d8042fdcd8fff1cc8003"
+        },
+        "peach-light": {
+          "path": "assets/branding/mate-feast-bag-v2/action-characters/peach-light/03-side-lunge-stretch.png",
+          "width": 512,
+          "height": 512,
+          "sha256": "6559de57ee516fcbf429af953ef374e8b47d6b057b338e94d27038e6a3bc3cef"
+        }
+      }
+    },
+    "04-seated-meditation": {
+      "masterPath": "assets/branding/mate-feast-bag-v2/source/action-masters/04-seated-meditation.png",
+      "masterSha256": "daf36d9088c6ff3be90295ccc9a5ba8bec687e38713c26df43b641216f324048",
+      "variants": {
+        "navy": {
+          "path": "assets/branding/mate-feast-bag-v2/action-characters/navy/04-seated-meditation.png",
+          "width": 512,
+          "height": 512,
+          "sha256": "b8922deb1ab1285a2806712ad82713af0ddf5765ddb61d1646352484b1d1f72e"
+        },
+        "peach-light": {
+          "path": "assets/branding/mate-feast-bag-v2/action-characters/peach-light/04-seated-meditation.png",
+          "width": 512,
+          "height": 512,
+          "sha256": "df0cddc32960a8c5ed2280d36dcc1e25f86c823b111dc752b087037b4df1928b"
+        }
+      }
+    },
+    "05-jumping-jack": {
+      "masterPath": "assets/branding/mate-feast-bag-v2/source/action-masters/05-jumping-jack.png",
+      "masterSha256": "76b2d60002acd00944f9b643e5509ebada9c3264e2e3a52920f791cc442c682b",
+      "variants": {
+        "navy": {
+          "path": "assets/branding/mate-feast-bag-v2/action-characters/navy/05-jumping-jack.png",
+          "width": 512,
+          "height": 512,
+          "sha256": "bb01bc482a0fab11470a7023f4d0680e1fbf797ff12a1ff19fa5a270c4443b38"
+        },
+        "peach-light": {
+          "path": "assets/branding/mate-feast-bag-v2/action-characters/peach-light/05-jumping-jack.png",
+          "width": 512,
+          "height": 512,
+          "sha256": "6a1da4c7a55514d4b8d0abe806c20d679253c2f97ff7853a796f000dca479050"
+        }
+      }
+    },
+    "06-high-knees": {
+      "masterPath": "assets/branding/mate-feast-bag-v2/source/action-masters/06-high-knees.png",
+      "masterSha256": "4ebea3d4ad4ba2f1aadb5f5b8b06c274297bf8ceeb970ce539c0c0e197cb3b68",
+      "variants": {
+        "navy": {
+          "path": "assets/branding/mate-feast-bag-v2/action-characters/navy/06-high-knees.png",
+          "width": 512,
+          "height": 512,
+          "sha256": "c3793bd237cbebddd8035dd0e0662a57e6a248515ee15f574f64638350877de5"
+        },
+        "peach-light": {
+          "path": "assets/branding/mate-feast-bag-v2/action-characters/peach-light/06-high-knees.png",
+          "width": 512,
+          "height": 512,
+          "sha256": "c59ef7beb5feea7280081253759acd56bc8b18acac18f4dba03e45e1040ba841"
+        }
+      }
+    },
+    "07-sprint": {
+      "masterPath": "assets/branding/mate-feast-bag-v2/source/action-masters/07-sprint.png",
+      "masterSha256": "f140d75ac9ec509fd3975ad124b90897b4cae8337da8b583e3aae2b9284353f8",
+      "variants": {
+        "navy": {
+          "path": "assets/branding/mate-feast-bag-v2/action-characters/navy/07-sprint.png",
+          "width": 512,
+          "height": 512,
+          "sha256": "f463931a8990e38c023b0dd9feb1f7e77d15b425e54210744b081a919e5151e6"
+        },
+        "peach-light": {
+          "path": "assets/branding/mate-feast-bag-v2/action-characters/peach-light/07-sprint.png",
+          "width": 512,
+          "height": 512,
+          "sha256": "9b99ed90bef07556aa776c69749d6d2367a157354bcfa0cc68b673430cbf43e2"
+        }
+      }
+    },
+    "08-jump-rope": {
+      "masterPath": "assets/branding/mate-feast-bag-v2/source/action-masters/08-jump-rope.png",
+      "masterSha256": "3a038e23b9ef3cd5dc7920be8957a010486fc963764e232f8c2863de8f10e9e7",
+      "variants": {
+        "navy": {
+          "path": "assets/branding/mate-feast-bag-v2/action-characters/navy/08-jump-rope.png",
+          "width": 512,
+          "height": 512,
+          "sha256": "101b5d1beb483af19645a8b137312cc23da5af1af9d055790347f09590b444a9"
+        },
+        "peach-light": {
+          "path": "assets/branding/mate-feast-bag-v2/action-characters/peach-light/08-jump-rope.png",
+          "width": 512,
+          "height": 512,
+          "sha256": "46e5526e9638d0df6758c1cbe8192fbb64281a8012e138b148e60d5057df9f76"
+        }
+      }
+    },
+    "09-burpee": {
+      "masterPath": "assets/branding/mate-feast-bag-v2/source/action-masters/09-burpee.png",
+      "masterSha256": "297505cc50621cdcb2da919308d7ede74dceef948032ee6b3f6a76d7fb12787c",
+      "variants": {
+        "navy": {
+          "path": "assets/branding/mate-feast-bag-v2/action-characters/navy/09-burpee.png",
+          "width": 512,
+          "height": 512,
+          "sha256": "e3f685262f817e7a5cdfae3586fc2383056ca20a53e9bdf9100851efb471ace7"
+        },
+        "peach-light": {
+          "path": "assets/branding/mate-feast-bag-v2/action-characters/peach-light/09-burpee.png",
+          "width": 512,
+          "height": 512,
+          "sha256": "94ac28c4f210376dd0f9e989151aca8bb6cbb66c56a449ef971ad53a0bbd6b90"
+        }
+      }
+    },
+    "10-squat": {
+      "masterPath": "assets/branding/mate-feast-bag-v2/source/action-masters/10-squat.png",
+      "masterSha256": "72b37239c67c41116eb63bbf519cb648c6809fd6207645cc41658fb7458e1c9d",
+      "variants": {
+        "navy": {
+          "path": "assets/branding/mate-feast-bag-v2/action-characters/navy/10-squat.png",
+          "width": 512,
+          "height": 512,
+          "sha256": "092a759a40dd3bd25edba8c4099c5eb837dbfd7aba2f78d7ca2f31ed3c6c1cee"
+        },
+        "peach-light": {
+          "path": "assets/branding/mate-feast-bag-v2/action-characters/peach-light/10-squat.png",
+          "width": 512,
+          "height": 512,
+          "sha256": "57b9593c2ef824513f120a2cd7e93ad9240751d3952cc5efd05d8490a9a5f22e"
+        }
+      }
+    },
+    "11-forward-lunge": {
+      "masterPath": "assets/branding/mate-feast-bag-v2/source/action-masters/11-forward-lunge.png",
+      "masterSha256": "721373c5e152f6e758fb636be33dc097dc6f9f46c6c8ae4675f4dd8e67456e14",
+      "variants": {
+        "navy": {
+          "path": "assets/branding/mate-feast-bag-v2/action-characters/navy/11-forward-lunge.png",
+          "width": 512,
+          "height": 512,
+          "sha256": "84f79c18e3696657450354511e38791ef79f137c0d616641b1560ae4d7dbb22d"
+        },
+        "peach-light": {
+          "path": "assets/branding/mate-feast-bag-v2/action-characters/peach-light/11-forward-lunge.png",
+          "width": 512,
+          "height": 512,
+          "sha256": "aa6bfe704f4384ba595a34fffee277573117ab664f4c249655eec5aa7f8b68ba"
+        }
+      }
+    },
+    "12-push-up": {
+      "masterPath": "assets/branding/mate-feast-bag-v2/source/action-masters/12-push-up.png",
+      "masterSha256": "1baacf93fd3ed476730a0723ff4467cac865dabaf93cf42e84e5068603719086",
+      "variants": {
+        "navy": {
+          "path": "assets/branding/mate-feast-bag-v2/action-characters/navy/12-push-up.png",
+          "width": 512,
+          "height": 512,
+          "sha256": "e1e2268ab1b2e8e2e507b0c7246b7ff3df7c858178faf9799d913adc661715ee"
+        },
+        "peach-light": {
+          "path": "assets/branding/mate-feast-bag-v2/action-characters/peach-light/12-push-up.png",
+          "width": 512,
+          "height": 512,
+          "sha256": "792aa18526e73034b4d4b940ad573d494a44e764220c7628440e6e18bf82f4b3"
+        }
+      }
+    },
+    "13-plank": {
+      "masterPath": "assets/branding/mate-feast-bag-v2/source/action-masters/13-plank.png",
+      "masterSha256": "01b237b848d6950740f9872fe0b828ab13e765b787b267e9f69f82474af28de7",
+      "variants": {
+        "navy": {
+          "path": "assets/branding/mate-feast-bag-v2/action-characters/navy/13-plank.png",
+          "width": 512,
+          "height": 512,
+          "sha256": "719143f67f3f328248d6abbecf093d80e246c58aecc4afa5ea4254b35d668f30"
+        },
+        "peach-light": {
+          "path": "assets/branding/mate-feast-bag-v2/action-characters/peach-light/13-plank.png",
+          "width": 512,
+          "height": 512,
+          "sha256": "bbfafb9930686a20059b83d83d34a836f0fda7088bb8f827449fc9147bf9ec19"
+        }
+      }
+    },
+    "14-mountain-climber": {
+      "masterPath": "assets/branding/mate-feast-bag-v2/source/action-masters/14-mountain-climber.png",
+      "masterSha256": "bf65d53ea018907c3de19017ab2bebb1de9b5f565fccc48695cc6f8ebcc964b3",
+      "variants": {
+        "navy": {
+          "path": "assets/branding/mate-feast-bag-v2/action-characters/navy/14-mountain-climber.png",
+          "width": 512,
+          "height": 512,
+          "sha256": "d98eb6f008ae4ec939767ab39a75c143606b44d0e9d2941a5b49cf1490830aa7"
+        },
+        "peach-light": {
+          "path": "assets/branding/mate-feast-bag-v2/action-characters/peach-light/14-mountain-climber.png",
+          "width": 512,
+          "height": 512,
+          "sha256": "07223a8479d16d61e360f92110ba0ef7343484f19c85c72321ecf4f1efad795c"
+        }
+      }
+    },
+    "15-sit-up-crunch": {
+      "masterPath": "assets/branding/mate-feast-bag-v2/source/action-masters/15-sit-up-crunch.png",
+      "masterSha256": "a7dd6af3c4f81ad299b064c2089250b8de59cafd85735463b4d323338bc0957a",
+      "variants": {
+        "navy": {
+          "path": "assets/branding/mate-feast-bag-v2/action-characters/navy/15-sit-up-crunch.png",
+          "width": 512,
+          "height": 512,
+          "sha256": "e6137f454a7c9a23360ade924c8f1a3391d9706e64a09a463a92cd8881d9604a"
+        },
+        "peach-light": {
+          "path": "assets/branding/mate-feast-bag-v2/action-characters/peach-light/15-sit-up-crunch.png",
+          "width": 512,
+          "height": 512,
+          "sha256": "bc1f30cc72f8785e91c1363efe109863c94ceef1534ba481f8dc5737634d0cc3"
+        }
+      }
+    },
+    "16-dumbbell-curl": {
+      "masterPath": "assets/branding/mate-feast-bag-v2/source/action-masters/16-dumbbell-curl.png",
+      "masterSha256": "fde82ac6eec9d4200e6adf9554f9c28755766287bce273a07176a3cdfe699f89",
+      "variants": {
+        "navy": {
+          "path": "assets/branding/mate-feast-bag-v2/action-characters/navy/16-dumbbell-curl.png",
+          "width": 512,
+          "height": 512,
+          "sha256": "e68de98039f151a6a33551ab430e9f2c258cf9db2e03aed4c2b81f2d5a6fabf8"
+        },
+        "peach-light": {
+          "path": "assets/branding/mate-feast-bag-v2/action-characters/peach-light/16-dumbbell-curl.png",
+          "width": 512,
+          "height": 512,
+          "sha256": "1f6e2371de0a55ee29cbd6fb5fd246c768f5713d98c9e82e5651b1c75e9eed69"
+        }
+      }
+    },
+    "17-dumbbell-overhead-press": {
+      "masterPath": "assets/branding/mate-feast-bag-v2/source/action-masters/17-dumbbell-overhead-press.png",
+      "masterSha256": "faa7b5a473aa0e0fb04615d3ebc7e7ca444156571229bf10f48f9e4681140759",
+      "variants": {
+        "navy": {
+          "path": "assets/branding/mate-feast-bag-v2/action-characters/navy/17-dumbbell-overhead-press.png",
+          "width": 512,
+          "height": 512,
+          "sha256": "3a480f4ec23b04b3eefcaa80dd64b37e38c33f43e80d0483a5cf4cee8d838f76"
+        },
+        "peach-light": {
+          "path": "assets/branding/mate-feast-bag-v2/action-characters/peach-light/17-dumbbell-overhead-press.png",
+          "width": 512,
+          "height": 512,
+          "sha256": "bc16ba5f8ecbb2ac6f57e09d907c71e0e7f0b49f1e94b263fb5a4faa79fb1f82"
+        }
+      }
+    },
+    "18-standing-side-stretch": {
+      "masterPath": "assets/branding/mate-feast-bag-v2/source/action-masters/18-standing-side-stretch.png",
+      "masterSha256": "3ffc8f973b55a80fcfe9fdadb3753a39819644705d10a57be72dd788f791767e",
+      "variants": {
+        "navy": {
+          "path": "assets/branding/mate-feast-bag-v2/action-characters/navy/18-standing-side-stretch.png",
+          "width": 512,
+          "height": 512,
+          "sha256": "c94bce77ce89074d92dfedc2ad60b8ba5040dac1e8a673767ff5e41ec28a034f"
+        },
+        "peach-light": {
+          "path": "assets/branding/mate-feast-bag-v2/action-characters/peach-light/18-standing-side-stretch.png",
+          "width": 512,
+          "height": 512,
+          "sha256": "9813aa898b4d1df3d9b4a271660ada94112687c4f26d3a5f34bbef0d54be2499"
+        }
+      }
+    },
+    "19-seated-forward-fold": {
+      "masterPath": "assets/branding/mate-feast-bag-v2/source/action-masters/19-seated-forward-fold.png",
+      "masterSha256": "2fc480dcaca3165f036e7bbf8b9fa1d387c9683078d242397742f2e1159c4862",
+      "variants": {
+        "navy": {
+          "path": "assets/branding/mate-feast-bag-v2/action-characters/navy/19-seated-forward-fold.png",
+          "width": 512,
+          "height": 512,
+          "sha256": "a407d691c45b792eaebbf32c8e04725cabd41dd5492297da2b9a61720c64ff5c"
+        },
+        "peach-light": {
+          "path": "assets/branding/mate-feast-bag-v2/action-characters/peach-light/19-seated-forward-fold.png",
+          "width": 512,
+          "height": 512,
+          "sha256": "bd1bce4bf80c2fd9658b237d78e5301f1e5699da575bbda41d29f9c1b30a9928"
+        }
+      }
+    },
+    "20-tree-pose-balance": {
+      "masterPath": "assets/branding/mate-feast-bag-v2/source/action-masters/20-tree-pose-balance.png",
+      "masterSha256": "a0a47da09a549b055a8d24b0b2d50005e1797dcae9ea0dc9a21a24f08e85b7cb",
+      "variants": {
+        "navy": {
+          "path": "assets/branding/mate-feast-bag-v2/action-characters/navy/20-tree-pose-balance.png",
+          "width": 512,
+          "height": 512,
+          "sha256": "5401680d37ef17218b9d0e1aa312b248910399f6d0d9d6896b6c0d31c0a12fd2"
+        },
+        "peach-light": {
+          "path": "assets/branding/mate-feast-bag-v2/action-characters/peach-light/20-tree-pose-balance.png",
+          "width": 512,
+          "height": 512,
+          "sha256": "5c2687f3a56aa8d50712df759e75e15b5086a3f29a513301f3a07e78599ad223"
+        }
+      }
+    }
+  },
+  "companionStates": {
+    "pattern_egg-excited": {
+      "path": "assets/branding/mate-feast-bag-v2/companion-states/pattern_egg-excited.png",
+      "width": 512,
+      "height": 512,
+      "sha256": "0eac88ba9ad249a38d91ff65d9c7648631c5a2efc00e987570fbb4bb5d6f32de"
+    },
+    "pattern_egg-happy": {
+      "path": "assets/branding/mate-feast-bag-v2/companion-states/pattern_egg-happy.png",
+      "width": 512,
+      "height": 512,
+      "sha256": "172014733f61d1f319caed70974c011c9d1f58e8849f33ad59f0b7a99640e937"
+    },
+    "pattern_egg-curious": {
+      "path": "assets/branding/mate-feast-bag-v2/companion-states/pattern_egg-curious.png",
+      "width": 512,
+      "height": 512,
+      "sha256": "654c794f650d17642963800a2f5ba275528958738b7a604ca1f542f609448d6b"
+    },
+    "pattern_egg-calm": {
+      "path": "assets/branding/mate-feast-bag-v2/companion-states/pattern_egg-calm.png",
+      "width": 512,
+      "height": 512,
+      "sha256": "4506e340c3c5c7cf94be9d554cee0d951d75b398887f8acaf2e88037594305d9"
+    },
+    "pattern_egg-waiting": {
+      "path": "assets/branding/mate-feast-bag-v2/companion-states/pattern_egg-waiting.png",
+      "width": 512,
+      "height": 512,
+      "sha256": "2311691d328e491fa33cd9f0765f58d3c27d57440e9fb1d3a265b8fcb7bcafca"
+    },
+    "sprout-excited": {
+      "path": "assets/branding/mate-feast-bag-v2/companion-states/sprout-excited.png",
+      "width": 512,
+      "height": 512,
+      "sha256": "4fc99700e5c00b29fd6b001b31d5e718a755ab675ac5b38334b967c98609951b"
+    },
+    "sprout-happy": {
+      "path": "assets/branding/mate-feast-bag-v2/companion-states/sprout-happy.png",
+      "width": 512,
+      "height": 512,
+      "sha256": "30cb54e171dbbaa05366ebf32160872403d885c1efaa209d7b20ce7759ca8b2b"
+    },
+    "sprout-curious": {
+      "path": "assets/branding/mate-feast-bag-v2/companion-states/sprout-curious.png",
+      "width": 512,
+      "height": 512,
+      "sha256": "26ac1dc84a006a05f76e76eb2a06c1bba9ec13eda7c8c6f05dc0f009614bf764"
+    },
+    "sprout-calm": {
+      "path": "assets/branding/mate-feast-bag-v2/companion-states/sprout-calm.png",
+      "width": 512,
+      "height": 512,
+      "sha256": "94025d45cff442614179594e7a8cd44e7d65b948daf10096c4899066eafd34eb"
+    },
+    "sprout-waiting": {
+      "path": "assets/branding/mate-feast-bag-v2/companion-states/sprout-waiting.png",
+      "width": 512,
+      "height": 512,
+      "sha256": "81b4728a87c25a18524bc2dfd50a4ad98e40be3f3657543c3f4352620a04c522"
+    },
+    "junior-excited": {
+      "path": "assets/branding/mate-feast-bag-v2/companion-states/junior-excited.png",
+      "width": 512,
+      "height": 512,
+      "sha256": "5b782694b4f40d67f85b431e81b06d77d85fc6a880e39420ef83b11c4e65255e"
+    },
+    "junior-happy": {
+      "path": "assets/branding/mate-feast-bag-v2/companion-states/junior-happy.png",
+      "width": 512,
+      "height": 512,
+      "sha256": "ca624a204677a1493a0d8caf5288cba3525eead93cd432a28a5b5ff86e26d4a6"
+    },
+    "junior-curious": {
+      "path": "assets/branding/mate-feast-bag-v2/companion-states/junior-curious.png",
+      "width": 512,
+      "height": 512,
+      "sha256": "2a6dfad875749482202a89c687dce1282858c2feeba0f6f7bf16c84954d208f4"
+    },
+    "junior-calm": {
+      "path": "assets/branding/mate-feast-bag-v2/companion-states/junior-calm.png",
+      "width": 512,
+      "height": 512,
+      "sha256": "9caabf26adba52413dd48c136685d8cbbd141350b5901a905bc3d74e04904b36"
+    },
+    "junior-waiting": {
+      "path": "assets/branding/mate-feast-bag-v2/companion-states/junior-waiting.png",
+      "width": 512,
+      "height": 512,
+      "sha256": "2771913c5db18810b47df887c9465e2f775b429e7013977723fea07d937acccd"
+    },
+    "advanced-excited": {
+      "path": "assets/branding/mate-feast-bag-v2/companion-states/advanced-excited.png",
+      "width": 512,
+      "height": 512,
+      "sha256": "273c8aa19a37d557238c9e0f0ef1962ee4ea142bae477f0a7174eebdad542a6e"
+    },
+    "advanced-happy": {
+      "path": "assets/branding/mate-feast-bag-v2/companion-states/advanced-happy.png",
+      "width": 512,
+      "height": 512,
+      "sha256": "12f9a2c99921e7b390507fa81fff2641b512cb026521a6fba528585a6443a6e7"
+    },
+    "advanced-curious": {
+      "path": "assets/branding/mate-feast-bag-v2/companion-states/advanced-curious.png",
+      "width": 512,
+      "height": 512,
+      "sha256": "db725c136b84662d568f963a85a57aa287667f28a12b60ae2e3ac4154f6c917b"
+    },
+    "advanced-calm": {
+      "path": "assets/branding/mate-feast-bag-v2/companion-states/advanced-calm.png",
+      "width": 512,
+      "height": 512,
+      "sha256": "3a9cf5f339cc33259d6381d170c8461e18b3ed9668e5f432c770226febf89367"
+    },
+    "advanced-waiting": {
+      "path": "assets/branding/mate-feast-bag-v2/companion-states/advanced-waiting.png",
+      "width": 512,
+      "height": 512,
+      "sha256": "b9ee0b9edb1e14880072db52440a0786caaeec30ce408405d473193a53bcf9dc"
+    },
+    "champion-excited": {
+      "path": "assets/branding/mate-feast-bag-v2/companion-states/champion-excited.png",
+      "width": 512,
+      "height": 512,
+      "sha256": "4bbbf1355faa12e4784490ae2b87741d7d593ba0e236c9049940d1bbba911aae"
+    },
+    "champion-happy": {
+      "path": "assets/branding/mate-feast-bag-v2/companion-states/champion-happy.png",
+      "width": 512,
+      "height": 512,
+      "sha256": "af7d925bc2b1a5922787c9c25436df7d35d6d4d2b5ac9677bf28d6640ce5d8a5"
+    },
+    "champion-curious": {
+      "path": "assets/branding/mate-feast-bag-v2/companion-states/champion-curious.png",
+      "width": 512,
+      "height": 512,
+      "sha256": "44aa5faeaffe2d4d0e2e4c68526ea0fcbf6f12af3b342f9e9fb69c460c4f3005"
+    },
+    "champion-calm": {
+      "path": "assets/branding/mate-feast-bag-v2/companion-states/champion-calm.png",
+      "width": 512,
+      "height": 512,
+      "sha256": "12ed8f648b21df12fd4301bea7c0c11add19bade5333174c3d10a795cdd7e782"
+    },
+    "champion-waiting": {
+      "path": "assets/branding/mate-feast-bag-v2/companion-states/champion-waiting.png",
+      "width": 512,
+      "height": 512,
+      "sha256": "96df562a0814698c5b7d8be9514183436bb524e56e63d722d269049714722feb"
+    }
+  },
+  "brandAssets": {
+    "character": {
+      "path": "assets/branding/mate-feast-bag-v2/exports/png/mate-feast-character-1024.png",
+      "width": 1024,
+      "height": 1024,
+      "sha256": "b57930748899f8e6faa45e97b8060bb8ad8f5b1c48cdd8d3d626dafda48ca221"
+    },
+    "brandmark": {
+      "path": "assets/branding/mate-feast-bag-v2/exports/png/mate-feast-brandmark-1024.png",
+      "width": 1024,
+      "height": 1024,
+      "sha256": "678197ee1bf272c9edbf2044eaa7df4544b4b5691d73d8ea8c077e9e08c8eb42"
+    },
+    "compactMark": {
+      "path": "assets/branding/mate-feast-bag-v2/exports/png/mate-feast-compact-mark-1024.png",
+      "width": 1024,
+      "height": 1024,
+      "sha256": "4f67c9d64af0156c543b8aa47e6b95e0a87ea88a603920612f89384a5f3ba548"
+    }
+  },
+  "reviewOverview": {
+    "path": "assets/branding/mate-feast-bag-v2/review/action-overview.png",
+    "width": 1600,
+    "height": 2200,
+    "sha256": "a71e0614043b67c0a634a7c63aded24806a4427ac4d45572c0ed835abf0a8bde"
+  },
+  "runtimeEligibility": {
+    "c08": "eligible-after-contract-checks",
+    "c07": "archive-only"
+  }
+}

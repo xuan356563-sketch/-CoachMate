@@ -126,6 +126,22 @@ class MethodChannelNativeHealthKitBridge implements NativeHealthKitBridge {
   }
 
   @override
+  Future<void> pauseBackgroundSync({required String athleteId}) {
+    return _channel.invokeMethod<void>(
+      'pauseBackgroundSync',
+      <String, Object?>{'athleteId': athleteId},
+    );
+  }
+
+  @override
+  Future<void> resumeBackgroundSync({required String athleteId}) {
+    return _channel.invokeMethod<void>(
+      'resumeBackgroundSync',
+      <String, Object?>{'athleteId': athleteId},
+    );
+  }
+
+  @override
   Future<List<HealthSyncBatch>> drainPendingBatches({int limit = 20}) async {
     if (!isSupported) return const <HealthSyncBatch>[];
     final List<Object?>? raw = await _channel.invokeListMethod<Object?>(

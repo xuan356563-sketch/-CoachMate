@@ -160,7 +160,7 @@ void main() {
     expect(progress.isUnlocked, isTrue);
   });
 
-  test('衡衡狸要求同一自然周四项各四天达 60% 且有两次训练或恢复', () {
+  test('袋小满要求同一自然周四项各四天达 60% 且有两次训练或恢复', () {
     final List<DailyActivitySummary> balancedDays = <DailyActivitySummary>[
       for (int day = 27; day <= 30; day += 1)
         _summary(

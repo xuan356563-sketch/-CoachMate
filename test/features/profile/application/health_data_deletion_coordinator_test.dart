@@ -9,7 +9,7 @@ void main() {
         HealthDataDeletionCoordinator(
       currentAthleteId: () => 'athlete-1',
       clearHealthFactsAndQueue: () async => calls.add('health'),
-      clearBodyMetrics: () => calls.add('body'),
+      clearBodyMetrics: () async => calls.add('body'),
       clearGrowthData: (String athleteId) async =>
           calls.add('growth:$athleteId'),
       clearHealthDerivedPlanAdjustments: () => calls.add('plan-adjustments'),
@@ -40,7 +40,7 @@ void main() {
         calls.add('health');
         throw StateError('结构化事务失败');
       },
-      clearBodyMetrics: () => calls.add('body'),
+      clearBodyMetrics: () async => calls.add('body'),
       clearGrowthData: (String athleteId) async => calls.add('growth'),
       clearHealthDerivedPlanAdjustments: () => calls.add('plan-adjustments'),
       clearCompatibilityReportsAndBadges: () => calls.add('compatibility'),
@@ -61,7 +61,9 @@ void main() {
         HealthDataDeletionCoordinator(
       currentAthleteId: () => '',
       clearHealthFactsAndQueue: () async => called = true,
-      clearBodyMetrics: () => called = true,
+      clearBodyMetrics: () async {
+        called = true;
+      },
       clearGrowthData: (String athleteId) async => called = true,
       clearHealthDerivedPlanAdjustments: () => called = true,
       clearCompatibilityReportsAndBadges: () => called = true,

@@ -8,6 +8,7 @@ import Vision
 @objc class AppDelegate: FlutterAppDelegate, FlutterImplicitEngineDelegate {
   private let voiceInputCoordinator = VoiceInputCoordinator()
   private let healthKitSyncCoordinator = HealthKitSyncCoordinator()
+  private let runningVideoCoordinator = RunningVideoPoseCoordinator()
   private let workoutAssistCoordinator = WorkoutAssistCoordinator()
 
   override func application(
@@ -23,6 +24,7 @@ import Vision
     healthKitSyncCoordinator.register(
       binaryMessenger: engineBridge.applicationRegistrar.messenger()
     )
+    runningVideoCoordinator.register(messenger: engineBridge.applicationRegistrar.messenger())
     let channel = FlutterMethodChannel(
       name: "trainflow.ai/vision_pose",
       binaryMessenger: engineBridge.applicationRegistrar.messenger()

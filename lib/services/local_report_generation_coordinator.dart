@@ -2,6 +2,7 @@ import '../data/models/monthly_summary.dart';
 import '../data/models/training_metrics.dart';
 import '../data/repositories/training_metrics_repository.dart';
 import '../features/growth/application/growth_metrics_controller.dart';
+import '../plugins/application/feature_access.dart';
 import 'growth_narrative_builder.dart';
 import 'training_metrics_pipeline.dart';
 
@@ -18,15 +19,18 @@ class LocalReportGenerationCoordinator {
     required TrainingMetricsRepository repository,
     TrainingMetricsPipeline? metricsPipeline,
     MonthlySummaryLoader? monthlySummaryLoader,
+    FeatureAccess? featureAccess,
     DateTime Function()? clock,
   })  : _repository = repository,
         _metricsPipeline = metricsPipeline,
         _monthlySummaryLoader = monthlySummaryLoader,
+        _featureAccess = featureAccess,
         _clock = clock ?? DateTime.now;
 
   final TrainingMetricsRepository _repository;
   final TrainingMetricsPipeline? _metricsPipeline;
   final MonthlySummaryLoader? _monthlySummaryLoader;
+  final FeatureAccess? _featureAccess;
   final DateTime Function() _clock;
 
   Future<int> ensureRecentlyClosedPeriods({
@@ -97,23 +101,35 @@ class LocalReportGenerationCoordinator {
     required MetricPeriod period,
     required DateTime periodStart,
   }) async {
+    final FeatureOperation? operation =
+        _featureAccess?.beginOperation('feature.weekly_report');
     List<MetricAggregate> metrics = await _repository.listAggregates(
       athleteProfileId: athleteProfileId,
       period: period,
       periodStart: periodStart,
     );
+    operation?.checkActive();
     final TrainingMetricsPipeline? metricsPipeline = _metricsPipeline;
     if (metrics.isEmpty && metricsPipeline != null) {
-      await metricsPipeline.aggregatePeriod(
-        athleteProfileId: athleteProfileId,
-        period: period,
-        periodStart: periodStart,
-      );
+      if (operation == null) {
+        await metricsPipeline.aggregatePeriod(
+          athleteProfileId: athleteProfileId,
+          period: period,
+          periodStart: periodStart,
+        );
+      } else {
+        await operation.commit(() => metricsPipeline.aggregatePeriod(
+              athleteProfileId: athleteProfileId,
+              period: period,
+              periodStart: periodStart,
+            ));
+      }
       metrics = await _repository.listAggregates(
         athleteProfileId: athleteProfileId,
         period: period,
         periodStart: periodStart,
       );
+      operation?.checkActive();
     }
     final List<MetricAggregate> usable = metrics
         .where(
@@ -126,6 +142,7 @@ class LocalReportGenerationCoordinator {
       period: period,
       periodStart: periodStart,
     );
+    operation?.checkActive();
     final MonthlySummary? monthlySummary =
         period == MetricPeriod.month && _monthlySummaryLoader != null
             ? await _monthlySummaryLoader!(
@@ -133,6 +150,7 @@ class LocalReportGenerationCoordinator {
                 monthStart: periodStart,
               )
             : null;
+    operation?.checkActive();
     if (_latestReportStillMatches(reports, usable, monthlySummary)) {
       return false;
     }
@@ -140,6 +158,7 @@ class LocalReportGenerationCoordinator {
     final GrowthMetricsController controller = GrowthMetricsController(
       repository: _repository,
       narrativeBuilder: const GrowthNarrativeBuilder(),
+      featureAccess: _featureAccess,
       clock: _clock,
     );
     await controller.loadPeriod(

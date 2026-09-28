@@ -44,7 +44,7 @@ class PetHomePage extends ConsumerWidget {
       data: (PetState value) => switch (value.status) {
         PetStateStatus.needsFirstEgg when archiveMode =>
           const _PetUnavailablePage(
-            message: '先选择衡衡狸后，才能查看成长档案。',
+            message: '先选择袋小满后，才能查看成长档案。',
             archiveMode: true,
           ),
         PetStateStatus.needsFirstEgg => const PetFirstEggPage(),
@@ -82,9 +82,10 @@ class _ReadyPetHome extends StatelessWidget {
           child: TrainMateHubHeader(
             title: archiveMode ? '成长档案' : '我的伙伴',
             subtitle: archiveMode
-                ? '查看衡衡狸的能量、活动和已记录的训练事实。'
+                ? '查看袋小满的能量、活动和已记录的训练事实。'
                 : '训练是主食，日常活动是零食，恢复日也会得到正向奖励。',
-            eyebrow: '${archiveMode ? '搭子档案' : 'M1'} · ${companion.nickname}',
+            eyebrow:
+                '${archiveMode ? '搭子档案' : 'M1'} · ${companion.displayName}',
             semanticLabel: '训练伙伴概览',
             backgroundColor: AppColors.petPaper,
             accentColor: AppColors.secondary,
@@ -93,7 +94,7 @@ class _ReadyPetHome extends StatelessWidget {
               stage: companion.stage,
               mood: companion.mood,
               size: 150,
-              semanticLabel: '${companion.nickname}的训练伙伴形象',
+              semanticLabel: '${companion.displayName}的训练伙伴形象',
             ),
             action: archiveMode
                 ? const Align(

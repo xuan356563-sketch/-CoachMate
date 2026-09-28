@@ -33,7 +33,7 @@ class TrainingLoadCard extends StatelessWidget {
               const SizedBox(width: 8),
               Expanded(
                 child: Text(
-                  '训练状态趋势',
+                  '训练负荷工程估算',
                   style: Theme.of(context)
                       .textTheme
                       .titleMedium
@@ -43,16 +43,20 @@ class TrainingLoadCard extends StatelessWidget {
               ToneBadge(label: state.trainingStatusLabel),
             ],
           ),
+          const SizedBox(height: 8),
+          const Text('沿用档案起始值，优先读取训练日志；无日志时，使用有效身体字段或当日计划估算。'
+              '身体字段缺失不计入，空日按旧公式以 0 输入，不代表测得负荷为零。'
+              '这些数值不代表实际训练量或已测得的体能。'),
           const SizedBox(height: 12),
           _LoadBar(
-            label: 'ATL 急性负荷',
+            label: 'ATL 急性负荷估算',
             value: acuteRatio / 1.4,
             score: acute.round(),
             color: TrainFlowTokens.darkTrainingOnSurface,
           ),
           const SizedBox(height: 10),
           _LoadBar(
-            label: 'CTL 慢性体能',
+            label: 'CTL 慢性负荷估算',
             value: chronicRatio,
             score: chronic.round(),
             color: TrainFlowTokens.accent,

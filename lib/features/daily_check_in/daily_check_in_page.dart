@@ -8,6 +8,7 @@ import '../../core/widgets/trainmate_branding.dart';
 import '../../core/widgets/trainmate_action_character.dart';
 import '../../core/widgets/trainflow_widgets.dart';
 import '../../data/models/daily_check_in.dart';
+import '../../plugins/application/plugin_runtime_provider.dart';
 import '../../data/models/daily_check_in_record.dart';
 import '../../data/models/training_schedule.dart';
 import '../../data/models/starter_program.dart';
@@ -49,6 +50,22 @@ class DailyCheckInPage extends ConsumerWidget {
         _DailyCheckInActionCard(summary: summary),
         const _TodayScheduleCard(),
         _IntegratedReminderCard(state: state),
+        if (ref.watch(featureAccessProvider).isEnabled('feature.reminders'))
+          TrainFlowCard(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text('恢复时间工程估算',
+                    style: Theme.of(context).textTheme.titleMedium),
+                const SizedBox(height: 8),
+                Text(state.recoveryCountdownLabel),
+                const SizedBox(height: 8),
+                Text(state.recoveryEvidenceSummary),
+                const SizedBox(height: 8),
+                Text(state.recoveryAdvice),
+              ],
+            ),
+          ),
         _NoFailTrainingDayCard(
           day: state.activeStarterProgramDay,
           state: state,
@@ -146,9 +163,14 @@ class _CheckInStreakCard extends ConsumerWidget {
             Align(
               alignment: Alignment.centerRight,
               child: FilledButton.icon(
-                onPressed: () => ref
-                    .read(bodyMetricControllerProvider.notifier)
-                    .markCheckInCelebrationSeen(celebration.id),
+                onPressed: state.isSavingBodyMetrics ? null : () async {
+                  await _runCheckInAction(
+                    context,
+                    () => ref
+                        .read(bodyMetricControllerProvider.notifier)
+                        .markCheckInCelebrationSeen(celebration.id),
+                  );
+                },
                 icon: const Icon(Icons.celebration_outlined),
                 label: const Text('收下成就'),
               ),
@@ -246,9 +268,14 @@ class _IntegratedReminderCard extends ConsumerWidget {
               ),
               Switch(
                 value: settings.enabled,
-                onChanged: (_) => ref
-                    .read(reminderSettingsControllerProvider.notifier)
-                    .toggleTrainingReminders(),
+                onChanged: (_) async {
+                  await _runReminderSettingsAction(
+                    context,
+                    ref
+                        .read(reminderSettingsControllerProvider.notifier)
+                        .toggleTrainingRemindersAsync(),
+                  );
+                },
               ),
             ],
           ),
@@ -259,9 +286,14 @@ class _IntegratedReminderCard extends ConsumerWidget {
               scheduled == null ? '无排期时使用固定时间' : '今日提醒时间 $reminderTime',
             ),
             value: settings.followSchedule,
-            onChanged: (bool value) => ref
-                .read(reminderSettingsControllerProvider.notifier)
-                .setFollowSchedule(value),
+            onChanged: (bool value) async {
+              await _runReminderSettingsAction(
+                context,
+                ref
+                    .read(reminderSettingsControllerProvider.notifier)
+                    .setFollowScheduleAsync(value),
+              );
+            },
           ),
           if (settings.followSchedule)
             SegmentedButton<int>(
@@ -271,9 +303,14 @@ class _IntegratedReminderCard extends ConsumerWidget {
                 ButtonSegment(value: 60, label: Text('提前 60 分')),
               ],
               selected: <int>{settings.leadMinutes},
-              onSelectionChanged: (Set<int> value) => ref
-                  .read(reminderSettingsControllerProvider.notifier)
-                  .setLeadMinutes(value.first),
+              onSelectionChanged: (Set<int> value) async {
+                await _runReminderSettingsAction(
+                  context,
+                  ref
+                      .read(reminderSettingsControllerProvider.notifier)
+                      .setLeadMinutesAsync(value.first),
+                );
+              },
             ),
           const SizedBox(height: 10),
           Text(settingsState.statusMessage),
@@ -291,6 +328,20 @@ class _IntegratedReminderCard extends ConsumerWidget {
             ),
         ],
       ),
+    );
+  }
+}
+
+Future<void> _runReminderSettingsAction(
+  BuildContext context,
+  Future<void> action,
+) async {
+  try {
+    await action;
+  } catch (error) {
+    if (!context.mounted) return;
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text('提醒设置操作失败：$error')),
     );
   }
 }
@@ -390,7 +441,8 @@ class _DailyCheckInSummaryCard extends StatelessWidget {
         children: [
           Row(
             children: [
-              const Icon(Icons.fact_check_outlined, color: TrainFlowTokens.accent),
+              const Icon(Icons.fact_check_outlined,
+                  color: TrainFlowTokens.accent),
               const SizedBox(width: 8),
               Expanded(
                 child: Text(
@@ -508,6 +560,7 @@ class _DailyCheckInActionCard extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final busy = ref.watch(bodyMetricControllerProvider).isSavingBodyMetrics;
     return TrainFlowCard(
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -521,20 +574,27 @@ class _DailyCheckInActionCard extends ConsumerWidget {
           ),
           const SizedBox(height: 8),
           Text(
-            '“和昨天一样”会沿用已保存值；恢复或暂停只保护连续成长，不生成训练完成、身体指标或训练 XP。',
+            '“和昨天一样”表示你确认今天沿用下列昨日数据，将保存为手动记录，并保留缺失字段；这不是重新测量。恢复或暂停只保护连续成长，不生成训练完成、身体指标或训练 XP。',
             style: Theme.of(context).textTheme.bodySmall?.copyWith(
                   color: TrainFlowTokens.darkTrainingMuted,
                 ),
           ),
           const SizedBox(height: 12),
+          Text(summary.yesterdayDescription),
+          const SizedBox(height: 12),
           SizedBox(
             width: double.infinity,
             child: FilledButton.icon(
-              onPressed: summary.canUseYesterday
-                  ? () {
-                      ref
-                          .read(bodyMetricControllerProvider.notifier)
-                          .confirmDailyCheckInSameAsYesterday();
+              onPressed: summary.canUseYesterday && !busy
+                  ? () async {
+                      await _runCheckInAction(
+                        context,
+                        () => ref
+                            .read(bodyMetricControllerProvider.notifier)
+                            .confirmDailyCheckInSameAsYesterday(
+                              expectedFingerprint: summary.yesterdayFingerprint,
+                            ),
+                      );
                     }
                   : null,
               icon: const Icon(Icons.repeat),
@@ -545,13 +605,22 @@ class _DailyCheckInActionCard extends ConsumerWidget {
           SizedBox(
             width: double.infinity,
             child: OutlinedButton.icon(
-              onPressed: () {
-                ref
-                    .read(bodyMetricControllerProvider.notifier)
-                    .recordTiredDailyCheckIn();
-                ref
-                    .read(dailyAdjustmentControllerProvider.notifier)
-                    .recordTiredCheckIn();
+              onPressed: busy ? null : () async {
+                await _runCheckInAction(context, () async {
+                  final operation = ref.read(featureAccessProvider)
+                      .beginOperation('feature.daily_check_in',
+                          dependencies: const ['feature.daily_adjustment']);
+                  final adjustment = ref.read(dailyAdjustmentControllerProvider.notifier);
+                  await ref.read(bodyMetricControllerProvider.notifier)
+                      .recordTiredDailyCheckIn();
+                  if (!context.mounted) return;
+                  try {
+                    operation.checkActive();
+                    await adjustment.recordTiredCheckIn();
+                  } catch (error) {
+                    throw StateError('签到已保存，偏累说明未更新；请重新查看调整建议。$error');
+                  }
+                });
               },
               icon: const Icon(Icons.battery_saver_outlined),
               label: const Text('今天偏累，建议轻松版'),
@@ -562,7 +631,7 @@ class _DailyCheckInActionCard extends ConsumerWidget {
             children: [
               Expanded(
                 child: OutlinedButton.icon(
-                  onPressed: () => _confirmContinuityDay(
+                  onPressed: busy ? null : () => _confirmContinuityDay(
                     context,
                     ref,
                     DailyContinuityKind.plannedRest,
@@ -574,7 +643,7 @@ class _DailyCheckInActionCard extends ConsumerWidget {
               const SizedBox(width: 8),
               Expanded(
                 child: OutlinedButton.icon(
-                  onPressed: () => _confirmContinuityDay(
+                  onPressed: busy ? null : () => _confirmContinuityDay(
                     context,
                     ref,
                     DailyContinuityKind.safetyPause,
@@ -596,31 +665,49 @@ Future<void> _confirmContinuityDay(
   WidgetRef ref,
   DailyContinuityKind continuityKind,
 ) async {
-  final bool? confirmed = await showDialog<bool>(
-    context: context,
-    builder: (BuildContext dialogContext) => AlertDialog(
-      title: Text(
-        continuityKind == DailyContinuityKind.plannedRest
-            ? '确认按计划恢复'
-            : '确认安全暂停',
-      ),
-      content: Text(
-        '${continuityKind.description}\n\n这会保护今天的连续成长，但不会生成训练完成、身体指标或训练 XP，也不能用于补签。',
-      ),
-      actions: [
-        TextButton(
-          onPressed: () => Navigator.of(dialogContext).pop(false),
-          child: const Text('取消'),
+  await _runCheckInAction(context, () async {
+    final operation = ref.read(featureAccessProvider)
+        .beginOperation('feature.daily_check_in');
+    final bool? confirmed = await showDialog<bool>(
+      context: context,
+      builder: (BuildContext dialogContext) => AlertDialog(
+        title: Text(
+          continuityKind == DailyContinuityKind.plannedRest
+              ? '确认按计划恢复'
+              : '确认安全暂停',
         ),
-        FilledButton(
-          onPressed: () => Navigator.of(dialogContext).pop(true),
-          child: const Text('确认记录'),
+        content: Text(
+          '${continuityKind.description}\n\n这会保护今天的连续成长，但不会生成训练完成、身体指标或训练 XP，也不能用于补签。',
         ),
-      ],
-    ),
-  );
-  if (confirmed != true) return;
-  ref
-      .read(bodyMetricControllerProvider.notifier)
-      .recordContinuityDay(continuityKind);
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(dialogContext).pop(false),
+            child: const Text('取消'),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.of(dialogContext).pop(true),
+            child: const Text('确认记录'),
+          ),
+        ],
+      ),
+    );
+    if (confirmed != true || !context.mounted) return;
+    operation.checkActive();
+    await ref.read(bodyMetricControllerProvider.notifier)
+        .recordContinuityDay(continuityKind);
+  });
+}
+
+Future<void> _runCheckInAction(
+  BuildContext context,
+  Future<void> Function() action,
+) async {
+  try {
+    await action();
+  } catch (error) {
+    if (!context.mounted) return;
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text('签到操作失败：$error')),
+    );
+  }
 }

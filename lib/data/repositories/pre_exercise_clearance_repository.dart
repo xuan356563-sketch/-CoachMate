@@ -10,8 +10,7 @@ final preExerciseClearanceRepositoryProvider =
   (Ref ref) => SecurePreExerciseClearanceRepository(
     const FlutterSecureStorage(
       aOptions: AndroidOptions(
-        encryptedSharedPreferences: true,
-        sharedPreferencesName: 'TrainMateHealthClearance',
+        storageNamespace: 'TrainMateHealthClearance',
         preferencesKeyPrefix: 'trainmate_',
       ),
       iOptions: IOSOptions(

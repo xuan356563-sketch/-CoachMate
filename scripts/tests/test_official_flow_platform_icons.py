@@ -63,12 +63,23 @@ class OfficialFlowPlatformIconsTest(unittest.TestCase):
             self.assertLessEqual(box[2], 420)
             self.assertLessEqual(box[3], 420)
 
-    def test三端配置仅指向官方标识(self) -> None:
+    def test_旧官方图标保留且当前配置指向_coachmate官方设备面板(self) -> None:
         project = (ROOT / "ios/Runner.xcodeproj/project.pbxproj").read_text()
-        self.assertEqual(project.count("ASSETCATALOG_COMPILER_APPICON_NAME = OfficialFlowIcon;"), 3)
-        self.assertIn('android:icon="@mipmap/ic_trainmate_official_flow"', (ROOT / "android/app/src/main/AndroidManifest.xml").read_text())
+        self.assertEqual(
+            project.count(
+                "ASSETCATALOG_COMPILER_APPICON_NAME = CoachMateOfficialIcon;"
+            ),
+            3,
+        )
+        self.assertIn(
+            'android:icon="@mipmap/ic_coachmate_official"',
+            (ROOT / "android/app/src/main/AndroidManifest.xml").read_text(),
+        )
         manifest = json.loads((ROOT / "web/manifest.json").read_text())
-        self.assertEqual(manifest["icons"][0]["src"], "icons/official-flow/Icon-192.png")
+        self.assertEqual(
+            manifest["icons"][0]["src"],
+            "icons/coachmate-official/Icon-192.png",
+        )
 
     def test_check模式完全只读(self) -> None:
         before = _snapshot()

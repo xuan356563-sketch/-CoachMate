@@ -23,11 +23,11 @@
       "localizations" : [
         {
           "description" : "AI个性化计划、月度更新和动态重排",
-          "displayName" : "智练 TrainMate 会员",
+          "displayName" : "练搭 CoachMate 会员",
           "locale" : "zh_CN"
         }
       ],
-      "name" : "TrainMate Membership",
+      "name" : "CoachMate Membership",
       "subscriptions" : [
         {
           "adHocOffers" : [

@@ -128,7 +128,7 @@ class _RacePrepPageState extends ConsumerState<RacePrepPage> {
       ),
       phase: focusPhase,
       needsRecovery:
-          state.requiresMedicalAttention || state.readinessScore < 52,
+          state.requiresMedicalAttention || (state.readinessScore != null && state.readinessScore! < 52),
     );
 
     return TrainFlowPage(

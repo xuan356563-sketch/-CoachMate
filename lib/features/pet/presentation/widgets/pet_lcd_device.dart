@@ -36,7 +36,7 @@ class PetLcdDevice extends StatelessWidget {
               stage: companion.stage,
               mood: companion.mood,
               semanticLabel:
-                  '${companion.nickname}，${petStageLabel(companion.stage)}，'
+                  '${companion.displayName}，${petStageLabel(companion.stage)}，'
                   '心情${petMoodLabel(companion.mood)}，今日获得 $todayEnergy 能量，$distance',
               size: 220,
             ),
@@ -45,17 +45,17 @@ class PetLcdDevice extends StatelessWidget {
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: <Widget>[
                 Text(
-                  companion.nickname,
+                  companion.displayName,
                   style: Theme.of(context).textTheme.titleMedium?.copyWith(
                         color: AppColors.petPaper,
-                        fontWeight: FontWeight.w900,
+                        fontWeight: FontWeight.w700,
                       ),
                 ),
                 Text(
                   petStageLabel(companion.stage),
                   style: Theme.of(context).textTheme.labelLarge?.copyWith(
                         color: AppColors.petPeach,
-                        fontWeight: FontWeight.w900,
+                        fontWeight: FontWeight.w700,
                       ),
                 ),
               ],

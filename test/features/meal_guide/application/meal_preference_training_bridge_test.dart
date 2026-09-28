@@ -22,7 +22,7 @@ void main() {
     final TrainingMvpController training =
         container.read(trainingMvpProvider.notifier);
     training.startWorkoutPlayer(workoutDayId: 'workout-week1-day2');
-    training.completeWorkoutPlayerStep();
+    await training.completeWorkoutPlayerStep();
     training.setKnowledgeSearchQuery('跑步');
     training.analyzeMotionCheck(
       container.read(trainingMvpProvider).motionChecks.first.id,
@@ -35,7 +35,7 @@ void main() {
     final UserInsightTableState beforeUserInsightTableState =
         before.userInsightTableState;
 
-    container
+    await container
         .read(mealPreferenceControllerProvider.notifier)
         .saveScenario(MealScenario.homeCooking);
     await Future<void>.delayed(Duration.zero);

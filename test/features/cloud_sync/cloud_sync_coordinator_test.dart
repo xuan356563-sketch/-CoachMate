@@ -1,10 +1,14 @@
 import 'dart:convert';
+import 'dart:async';
 
 import 'package:flutter_test/flutter_test.dart';
 import 'package:trainflow_ai/data/models/cloud_sync.dart';
 import 'package:trainflow_ai/features/cloud_sync/application/cloud_sync_coordinator.dart';
 import 'package:trainflow_ai/features/cloud_sync/data/cloud_sync_api.dart';
 import 'package:trainflow_ai/features/cloud_sync/data/cloud_sync_local_store.dart';
+import 'package:trainflow_ai/plugins/application/plugin_runtime.dart';
+import 'package:trainflow_ai/plugins/assembly/built_in_distribution.dart';
+import 'package:trainflow_ai/plugins/core/plugin_core.dart';
 
 void main() {
   test('未明确确认时不能启用云同步且不会上传既有数据', () async {
@@ -250,12 +254,55 @@ void main() {
       throwsFormatException,
     );
   });
+
+  test('停用期间到达的分页结果不会推进游标或写入本机', () async {
+    final PluginRuntime runtime = PluginRuntime(
+      PluginRegistry(plugins: builtInDistribution()),
+    );
+    await runtime.initialize();
+    final Completer<CloudSyncChangePage> page =
+        Completer<CloudSyncChangePage>();
+    final _FakeLocalStore store = _FakeLocalStore(
+      state: const CloudSyncAccountState(
+        enabled: true,
+        snapshotRequired: false,
+        cursor: 7,
+        hasExistingLocalData: false,
+      ),
+    );
+    final _FakeRemoteGateway remote = _FakeRemoteGateway(deferredPage: page);
+    final Future<CloudSyncRunResult> pending = CloudSyncCoordinator(
+      localStore: store,
+      remoteGateway: remote,
+    ).synchronize(
+      accountId: 'account-a',
+      operation: runtime.beginOperation('feature.cloud_sync'),
+    );
+    while (!remote.events.contains('changes')) {
+      await Future<void>.delayed(Duration.zero);
+    }
+
+    await runtime.disable('feature.cloud_sync');
+    page.complete(const CloudSyncChangePage(
+      changes: <CloudSyncChange>[],
+      nextCursor: 99,
+      hasMore: false,
+    ));
+
+    await expectLater(pending, throwsStateError);
+    expect(store.applyChangesCount, 0);
+    expect(store.state.cursor, 7);
+  });
 }
 
 class _FakeRemoteGateway implements CloudSyncRemoteGateway {
-  _FakeRemoteGateway({this.failMutations = false});
+  _FakeRemoteGateway({
+    this.failMutations = false,
+    this.deferredPage,
+  });
 
   final bool failMutations;
+  final Completer<CloudSyncChangePage>? deferredPage;
   final List<String> events = <String>[];
 
   @override
@@ -270,6 +317,7 @@ class _FakeRemoteGateway implements CloudSyncRemoteGateway {
     int limit = 100,
   }) async {
     events.add('changes');
+    if (deferredPage != null) return deferredPage!.future;
     return CloudSyncChangePage(
       changes: const <CloudSyncChange>[],
       nextCursor: after,
@@ -320,6 +368,7 @@ class _FakeLocalStore implements CloudSyncLocalStore {
   final List<String> retryMutationIds = <String>[];
   String? lastRetryErrorCode;
   final List<String> resolvedConflicts = <String>[];
+  int applyChangesCount = 0;
 
   @override
   Future<CloudSyncAccountState> readAccountState(String accountId) async {
@@ -385,6 +434,7 @@ class _FakeLocalStore implements CloudSyncLocalStore {
     String accountId,
     CloudSyncChangePage page,
   ) async {
+    applyChangesCount += 1;
     state = CloudSyncAccountState(
       enabled: state.enabled,
       snapshotRequired: false,

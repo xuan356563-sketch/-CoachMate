@@ -50,7 +50,7 @@ void main() {
     final String workoutDayId =
         container.read(trainingMvpProvider).todayWorkout.id;
 
-    controller.saveTrainingRecord(
+    await controller.saveTrainingRecord(
       request(
         source: TrainingRecordSource.planned,
         workoutDayId: workoutDayId,
@@ -59,7 +59,7 @@ void main() {
     );
     await Future<void>.delayed(Duration.zero);
     await Future<void>.delayed(Duration.zero);
-    controller.saveTrainingRecord(
+    await controller.saveTrainingRecord(
       request(
         source: TrainingRecordSource.planned,
         workoutDayId: workoutDayId,
@@ -80,13 +80,13 @@ void main() {
     final TrainingMvpController controller =
         container.read(trainingMvpProvider.notifier);
 
-    final TrainingLog first = controller.saveTrainingRecord(
+    final TrainingLog first = await controller.saveTrainingRecord(
       request(
         source: TrainingRecordSource.extra,
         workoutDayId: 'extra-running',
       ),
     );
-    final TrainingLog second = controller.saveTrainingRecord(
+    final TrainingLog second = await controller.saveTrainingRecord(
       request(
         source: TrainingRecordSource.extra,
         workoutDayId: 'extra-running',
@@ -99,13 +99,13 @@ void main() {
     expect(container.read(trainingLogControllerProvider), hasLength(2));
   });
 
-  test('字段校验失败时抛出中文错误且不保存半条记录', () {
+  test('字段校验失败时抛出中文错误且不保存半条记录', () async {
     final ProviderContainer container = buildContainer();
     final TrainingMvpController controller =
         container.read(trainingMvpProvider.notifier);
 
-    expect(
-      () => controller.saveTrainingRecord(
+    await expectLater(
+      controller.saveTrainingRecord(
         request(
           source: TrainingRecordSource.extra,
           workoutDayId: 'extra-custom',

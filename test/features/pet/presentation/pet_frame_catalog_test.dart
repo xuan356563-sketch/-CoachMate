@@ -36,7 +36,7 @@ void main() {
     });
   });
 
-  test('衡衡狸五阶段恰好提供 10 个非空且可区分的主体帧', () {
+  test('袋小满五阶段恰好提供 10 个非空且可区分的主体帧', () {
     final List<PetFormFrames> forms = PetStage.values
         .map(
           (PetStage stage) => PetFrameCatalog.formFor(

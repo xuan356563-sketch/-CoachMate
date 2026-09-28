@@ -1,3 +1,6 @@
+import 'package:trainflow_ai/plugins/sports/sport_capability_directory.dart';
+import 'package:trainflow_ai/plugins/sports/sport_plan_strategy.dart';
+import 'package:trainflow_ai/services/plan_context_digest_service.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 
@@ -14,9 +17,13 @@ import 'package:trainflow_ai/features/training_plan/application/four_week_plan_c
 import 'package:trainflow_ai/features/training_plan/application/pre_exercise_clearance_controller.dart';
 import 'package:trainflow_ai/services/four_week_plan_generator.dart';
 import 'package:trainflow_ai/services/local_storage_service.dart';
+import 'package:trainflow_ai/plugins/application/plugin_runtime.dart';
+import 'package:trainflow_ai/plugins/application/plugin_runtime_provider.dart';
+import 'package:trainflow_ai/plugins/assembly/built_in_distribution.dart';
+import 'package:trainflow_ai/plugins/core/plugin_core.dart';
 
 void main() {
-  test('已确认档案会生成并持久化对应主目标的四周计划', () {
+  test('显式初始化会生成并持久化对应主目标的四周计划', () async {
     final InMemoryLocalStorageService storage = InMemoryLocalStorageService();
     final ProviderContainer container = ProviderContainer(
       overrides: [
@@ -33,6 +40,12 @@ void main() {
     );
     container.read(userProfileControllerProvider.notifier).save(profile);
 
+    expect(container.read(fourWeekPlanControllerProvider).generation.plan.title,
+        contains('健身力量'));
+    expect(GeneratedTrainingPlanRepository(storage).getPlan(), isNull);
+    await container
+        .read(fourWeekPlanControllerProvider.notifier)
+        .initializeDefaultPlan();
     final FourWeekPlanState state =
         container.read(fourWeekPlanControllerProvider);
 
@@ -92,11 +105,12 @@ void main() {
       sessionCount: 4,
     );
 
-    final PlanGenerationDraft draft =
-        container.read(fourWeekPlanControllerProvider.notifier).createDraft(
-              prescription: prescription,
-              artifact: _artifact('artifact-1', prescription),
-            );
+    final PlanGenerationDraft draft = await container
+        .read(fourWeekPlanControllerProvider.notifier)
+        .createDraft(
+          prescription: prescription,
+          artifact: _artifact('artifact-1', prescription),
+        );
 
     expect(
         container.read(fourWeekPlanControllerProvider).activePlan.id, beforeId);
@@ -131,7 +145,7 @@ void main() {
     final AiTrainingPrescription first =
         _prescription(artifactId: 'artifact-1', sessionCount: 4);
     final notifier = container.read(fourWeekPlanControllerProvider.notifier);
-    notifier.createDraft(
+    await notifier.createDraft(
       prescription: first,
       artifact: _artifact('artifact-1', first),
     );
@@ -141,7 +155,7 @@ void main() {
 
     final AiTrainingPrescription second =
         _prescription(artifactId: 'artifact-2', sessionCount: 4);
-    notifier.createDraft(
+    await notifier.createDraft(
       prescription: second,
       artifact: _artifact('artifact-2', second),
     );
@@ -187,7 +201,7 @@ void main() {
         _prescription(artifactId: 'artifact-expired', sessionCount: 4);
     final FourWeekPlanController notifier =
         container.read(fourWeekPlanControllerProvider.notifier);
-    notifier.createDraft(
+    await notifier.createDraft(
       prescription: prescription,
       artifact: _artifact('artifact-expired', prescription),
     );
@@ -221,7 +235,7 @@ void main() {
     for (final String id in <String>['artifact-1', 'artifact-2']) {
       final AiTrainingPrescription prescription =
           _prescription(artifactId: id, sessionCount: 4);
-      notifier.createDraft(
+      await notifier.createDraft(
         prescription: prescription,
         artifact: _artifact(id, prescription),
       );
@@ -261,7 +275,7 @@ void main() {
     final AiTrainingPrescription prescription =
         _prescription(artifactId: 'artifact-fail', sessionCount: 4);
     final notifier = container.read(fourWeekPlanControllerProvider.notifier);
-    notifier.createDraft(
+    await notifier.createDraft(
       prescription: prescription,
       artifact: _artifact('artifact-fail', prescription),
     );
@@ -301,7 +315,7 @@ void main() {
     final AiTrainingPrescription prescription =
         _prescription(artifactId: 'artifact-partial', sessionCount: 4);
     final notifier = container.read(fourWeekPlanControllerProvider.notifier);
-    notifier.createDraft(
+    await notifier.createDraft(
       prescription: prescription,
       artifact: _artifact('artifact-partial', prescription),
     );
@@ -340,7 +354,7 @@ void main() {
     final AiTrainingPrescription prescription =
         _prescription(artifactId: 'artifact-clearance', sessionCount: 4);
     final notifier = container.read(fourWeekPlanControllerProvider.notifier);
-    notifier.createDraft(
+    await notifier.createDraft(
       prescription: prescription,
       artifact: _artifact('artifact-clearance', prescription),
     );
@@ -381,7 +395,7 @@ void main() {
     final AiTrainingPrescription prescription =
         _prescription(artifactId: 'artifact-eligibility', sessionCount: 4);
     final notifier = container.read(fourWeekPlanControllerProvider.notifier);
-    notifier.createDraft(
+    await notifier.createDraft(
       prescription: prescription,
       artifact: _artifact('artifact-eligibility', prescription),
     );
@@ -443,7 +457,7 @@ void main() {
           'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa',
     );
     final notifier = container.read(fourWeekPlanControllerProvider.notifier);
-    notifier.createDraft(
+    await notifier.createDraft(
       prescription: prescription,
       artifact: _artifact('artifact-update', prescription),
     );
@@ -484,7 +498,7 @@ void main() {
     final AiTrainingPrescription prescription =
         _prescription(artifactId: 'artifact-week', sessionCount: 4);
     final notifier = first.read(fourWeekPlanControllerProvider.notifier);
-    notifier.createDraft(
+    await notifier.createDraft(
       prescription: prescription,
       artifact: _artifact('artifact-week', prescription),
     );
@@ -535,7 +549,7 @@ void main() {
     final AiTrainingPrescription prescription =
         _prescription(artifactId: 'artifact-migrate', sessionCount: 4);
     final notifier = container.read(fourWeekPlanControllerProvider.notifier);
-    notifier.createDraft(
+    await notifier.createDraft(
       prescription: prescription,
       artifact: _artifact('artifact-migrate', prescription),
     );
@@ -549,6 +563,269 @@ void main() {
             item.source == GeneratedPlanSource.legacy);
     expect(migrated.plan.toJson(), legacy.toJson());
   });
+  test('来源往返与旧草稿拒激活，旧计划缺来源仍可读', () async {
+    final storage = InMemoryLocalStorageService();
+    final container = _container(storage);
+    addTearDown(container.dispose);
+    await container.read(preExerciseClearanceControllerProvider.future);
+    final profile = container
+        .read(userProfileControllerProvider)
+        .profile
+        .copyWith(
+            mainSports: [MainSport.marathon],
+            weeklyTrainingDays: 3,
+            dailyAvailableMinutes: 60,
+            trainingExperienceLevel: TrainingExperienceLevel.beginner);
+    container.read(userProfileControllerProvider.notifier).save(profile);
+    final notifier = container.read(fourWeekPlanControllerProvider.notifier);
+    final prescription =
+        _prescription(artifactId: 'refs-roundtrip', sessionCount: 3);
+    final draft = await notifier.createDraft(
+        prescription: prescription,
+        artifact: _artifact('refs-roundtrip', prescription));
+    final repository = GeneratedTrainingPlanRepository(storage);
+    expect(repository.getDraft()!.pluginRefs, draft.pluginRefs);
+    final oldDraftJson = draft.toJson()..remove('pluginRefs');
+    final oldDraft = PlanGenerationDraft.fromJson(oldDraftJson);
+    expect(oldDraft.canActivate, isFalse);
+    repository.saveDraft(oldDraft);
+    expect(await notifier.activateDraft(artifactId: draft.artifactId), isFalse);
+    expect(
+        () => repository.commitDraftVersion(oldDraft,
+            activatedAt: DateTime(2026, 7, 14)),
+        throwsStateError);
+    repository.saveDraft(draft);
+    expect(await notifier.activateDraft(artifactId: draft.artifactId), isTrue);
+    final active = repository.getHistory().activeVersion!;
+    expect(active.pluginRefs, draft.pluginRefs);
+    final oldVersionJson = active.toJson()..remove('pluginRefs');
+    expect(GeneratedPlanVersion.fromJson(oldVersionJson).plan.toJson(),
+        active.plan.toJson());
+    expect(container.read(fourWeekPlanControllerProvider).staleReason, isNull);
+  });
+
+  test('相关来源版本变化阻止草稿激活，无关插件更新不影响', () async {
+    final storage = InMemoryLocalStorageService();
+    final container = _container(storage);
+    addTearDown(container.dispose);
+    await container.read(preExerciseClearanceControllerProvider.future);
+    final profile = container
+        .read(userProfileControllerProvider)
+        .profile
+        .copyWith(
+            mainSports: [MainSport.marathon],
+            weeklyTrainingDays: 3,
+            dailyAvailableMinutes: 60,
+            trainingExperienceLevel: TrainingExperienceLevel.beginner);
+    container.read(userProfileControllerProvider.notifier).save(profile);
+    final notifier = container.read(fourWeekPlanControllerProvider.notifier);
+    final prescription =
+        _prescription(artifactId: 'refs-change', sessionCount: 3);
+    await notifier.createDraft(
+        prescription: prescription,
+        artifact: _artifact('refs-change', prescription));
+    _updateDirectory(
+        container, storage, _versionedDirectory('sport.strength', '2.0.0'));
+    expect(container.read(fourWeekPlanControllerProvider).canActivateDraft,
+        isTrue);
+    _updateDirectory(
+        container, storage, _versionedDirectory('sport.marathon', '2.0.0'));
+    expect(container.read(fourWeekPlanControllerProvider).staleReason,
+        'draft_context_changed');
+    expect(await notifier.activateDraft(artifactId: 'refs-change'), isFalse);
+    _updateDirectory(container, storage, SportCapabilityDirectory.builtIn());
+    expect(await notifier.activateDraft(artifactId: 'refs-change'), isTrue);
+    final repository = GeneratedTrainingPlanRepository(storage);
+    final saved = repository.getHistory().toJson();
+    _updateDirectory(container, storage, SportCapabilityDirectory([]));
+    final state = container.read(fourWeekPlanControllerProvider);
+    expect(state.staleReason, isNull);
+    expect(state.activePlan.toJson(),
+        repository.getHistory().activeVersion!.plan.toJson());
+    expect(repository.getHistory().toJson(), saved);
+    await expectLater(
+      notifier.createDraft(
+          prescription: prescription,
+          artifact: _artifact('missing-source', prescription)),
+      throwsStateError,
+    );
+  });
+
+  test('坏来源草稿拒绝，坏来源历史保持可读且不改写版本', () async {
+    final storage = InMemoryLocalStorageService();
+    final container = _container(storage);
+    addTearDown(container.dispose);
+    await container.read(preExerciseClearanceControllerProvider.future);
+    final profile = container
+        .read(userProfileControllerProvider)
+        .profile
+        .copyWith(
+            mainSports: [MainSport.marathon],
+            weeklyTrainingDays: 3,
+            dailyAvailableMinutes: 60,
+            trainingExperienceLevel: TrainingExperienceLevel.beginner);
+    container.read(userProfileControllerProvider.notifier).save(profile);
+    final notifier = container.read(fourWeekPlanControllerProvider.notifier);
+    final prescription = _prescription(artifactId: 'bad-refs', sessionCount: 3);
+    final draft = await notifier.createDraft(
+        prescription: prescription,
+        artifact: _artifact('bad-refs', prescription));
+    for (final bad in [
+      [],
+      [
+        {'id': 'sport.marathon', 'version': 'broken'}
+      ],
+      'broken'
+    ]) {
+      final json = draft.toJson()..['pluginRefs'] = bad;
+      if (bad is List && bad.isEmpty) {
+        expect(PlanGenerationDraft.fromJson(json).canActivate, isFalse);
+      } else {
+        expect(() => PlanGenerationDraft.fromJson(json), throwsFormatException);
+      }
+    }
+    expect(await notifier.activateDraft(artifactId: 'bad-refs'), isTrue);
+    final repository = GeneratedTrainingPlanRepository(storage);
+    final persisted = repository.getHistory().toJson();
+    (persisted['versions'] as List).last['pluginRefs'] = [
+      {'id': 'future', 'version': 'not-semver'}
+    ];
+    storage.saveJson(
+        GeneratedTrainingPlanRepository.versionsStorageKey, persisted);
+    expect(repository.getHistory().activeVersion!.pluginRefs, isNull);
+    container.invalidate(fourWeekPlanControllerProvider);
+    expect(container.read(fourWeekPlanControllerProvider).activePlan.toJson(),
+        draft.plan.toJson());
+    expect(storage.readJson(GeneratedTrainingPlanRepository.versionsStorageKey),
+        persisted);
+  });
+
+  test('发行编译功能来源进入草稿并保持业务摘要分离', () async {
+    final storage = InMemoryLocalStorageService();
+    final container = _container(storage);
+    addTearDown(container.dispose);
+    await container.read(preExerciseClearanceControllerProvider.future);
+    final profile =
+        container.read(userProfileControllerProvider).profile.copyWith(
+              trainingExperienceLevel: TrainingExperienceLevel.intermediate,
+              weeklyTrainingDays: 3,
+              dailyAvailableMinutes: 60,
+            );
+    container.read(userProfileControllerProvider.notifier).save(profile);
+    final compiler = PluginRef(id: 'feature.training_plan', version: '1.0.0');
+    final decorated = ProviderContainer(overrides: [
+      localStorageServiceProvider.overrideWithValue(storage),
+      fourWeekPlanNowProvider.overrideWithValue(DateTime(2026, 7, 14, 8)),
+      preExerciseClearanceControllerProvider
+          .overrideWith(_TestClearanceController.new),
+      planPluginSourceDecoratorProvider
+          .overrideWithValue((sources) => [...sources, compiler]),
+      planPluginSourceResolverProvider.overrideWithValue((sources) => sources),
+    ]);
+    addTearDown(decorated.dispose);
+    await decorated.read(preExerciseClearanceControllerProvider.future);
+    final prescription =
+        _prescription(artifactId: 'compiled-feature-source', sessionCount: 3);
+    final draft = await decorated
+        .read(fourWeekPlanControllerProvider.notifier)
+        .createDraft(
+            prescription: prescription,
+            artifact: _artifact('compiled-feature-source', prescription));
+    expect(draft.pluginRefs!.last, compiler);
+    expect(draft.pluginRefs!.where((ref) => ref.id.startsWith('feature.')),
+        [compiler]);
+    expect(GeneratedTrainingPlanRepository(storage).getDraft()!.pluginRefs,
+        draft.pluginRefs);
+    expect(
+        draft.businessContextFingerprint, isNot(draft.localContextFingerprint));
+  });
+
+  test('本地来源摘要与网络摘要分离，来源排列不改变摘要', () {
+    const service = PlanContextDigestService();
+    final profile = InMemoryUserProfileRepository.defaultProfile;
+    final a = PluginRef(id: 'sport.marathon', version: '1.0.0');
+    final b = PluginRef(id: 'sport.strength', version: '1.0.0');
+    final old = service.buildLocalFingerprint(
+        profile: profile, startsOn: DateTime(2026, 7, 13));
+    final source = service.buildLocalFingerprint(
+        profile: profile, startsOn: DateTime(2026, 7, 13), pluginRefs: [a, b]);
+    expect(source, isNot(old));
+    expect(
+        source,
+        service.buildLocalFingerprint(
+            profile: profile,
+            startsOn: DateTime(2026, 7, 13),
+            pluginRefs: [b, a]));
+    const request = {'primary_sport': 'marathon', 'weekly_training_days': 3};
+    expect(service.buildRequestContextDigest(request),
+        service.buildCanonicalDigest(request));
+    expect(request.containsKey('plugin_refs'), isFalse);
+  });
+
+  test('AI服务关闭立即使相关草稿不可激活且不修改active，纯本地默认仍可用', () async {
+    final runtime =
+        PluginRuntime(PluginRegistry(plugins: builtInDistribution()));
+    await runtime.initialize();
+    final storage = InMemoryLocalStorageService();
+    final container = ProviderContainer(overrides: [
+      pluginRuntimeProvider.overrideWith((ref) => runtime),
+      localStorageServiceProvider.overrideWithValue(storage),
+      preExerciseClearanceControllerProvider
+          .overrideWith(_TestClearanceController.new),
+      fourWeekPlanNowProvider.overrideWithValue(DateTime(2026, 7, 14, 8)),
+    ]);
+    addTearDown(container.dispose);
+    await container.read(preExerciseClearanceControllerProvider.future);
+    container.read(userProfileControllerProvider.notifier).save(
+          container.read(userProfileControllerProvider).profile.copyWith(
+                trainingExperienceLevel: TrainingExperienceLevel.intermediate,
+                weeklyTrainingDays: 3,
+                dailyAvailableMinutes: 60,
+              ),
+        );
+    final notifier = container.read(fourWeekPlanControllerProvider.notifier);
+    final prescription =
+        _prescription(artifactId: 'ai-service-source', sessionCount: 3);
+    await notifier.createDraft(
+        prescription: prescription,
+        artifact: _artifact('ai-service-source', prescription));
+    final activeBefore =
+        container.read(fourWeekPlanControllerProvider).activePlan.toJson();
+    expect(container.read(fourWeekPlanControllerProvider).canActivateDraft,
+        isTrue);
+    await runtime.disable('feature.ai_center');
+    expect(container.read(fourWeekPlanControllerProvider).canActivateDraft,
+        isFalse);
+    expect(container.read(fourWeekPlanControllerProvider).activePlan.toJson(),
+        activeBefore);
+    await notifier.rejectDraft(artifactId: 'ai-service-source');
+    await runtime.enable('feature.ai_center');
+    container.invalidate(fourWeekPlanControllerProvider);
+    expect(
+        container.read(fourWeekPlanControllerProvider).activePlan.workoutDays,
+        isNotEmpty);
+  });
+
+  test('普通读取不写盘，显式初始化保留纯本地默认计划', () async {
+    final runtime =
+        PluginRuntime(PluginRegistry(plugins: builtInDistribution()));
+    await runtime.initialize();
+    await runtime.disable('feature.ai_center');
+    final storage = InMemoryLocalStorageService();
+    final container = ProviderContainer(overrides: [
+      pluginRuntimeProvider.overrideWith((ref) => runtime),
+      localStorageServiceProvider.overrideWithValue(storage),
+    ]);
+    addTearDown(container.dispose);
+    expect(
+        container.read(fourWeekPlanControllerProvider).activePlan.workoutDays,
+        isNotEmpty);
+    expect(GeneratedTrainingPlanRepository(storage).getPlan(), isNull);
+    await container
+        .read(fourWeekPlanControllerProvider.notifier)
+        .initializeDefaultPlan();
+    expect(GeneratedTrainingPlanRepository(storage).getPlan(), isNotNull);
+  });
 }
 
 ProviderContainer _container(
@@ -557,6 +834,8 @@ ProviderContainer _container(
 }) {
   return ProviderContainer(
     overrides: [
+      sportCapabilityDirectoryProvider
+          .overrideWithValue(SportCapabilityDirectory.builtIn()),
       localStorageServiceProvider.overrideWithValue(storage),
       fourWeekPlanNowProvider.overrideWithValue(
         now ?? DateTime(2026, 7, 14, 8),
@@ -611,7 +890,7 @@ class _FailOnSecondFlushStorage extends InMemoryLocalStorageService {
   @override
   Future<void> flush() async {
     flushCount += 1;
-    if (flushCount == 2) throw StateError('测试用镜像写入失败');
+    if (flushCount == 3) throw StateError('测试用镜像写入失败');
   }
 }
 
@@ -690,4 +969,42 @@ AiArtifact _artifact(String id, AiTrainingPrescription prescription) {
     model: 'deepseek-chat',
     generatedAt: DateTime(2026, 7, 14),
   );
+}
+
+SportCapabilityDirectory _versionedDirectory(String id, String version) =>
+    SportCapabilityDirectory([
+      for (final strategy in SportCapabilityDirectory.builtIn().strategies)
+        if (strategy.definition.pluginRef.id == id)
+          _VersionedStrategy(strategy, version)
+        else
+          strategy,
+    ]);
+
+class _VersionedStrategy implements SportPlanStrategy {
+  _VersionedStrategy(this.delegate, this.version);
+  final SportPlanStrategy delegate;
+  final String version;
+  @override
+  SportDefinition get definition => SportDefinition(
+      sport: delegate.definition.sport,
+      pluginRef:
+          PluginRef(id: delegate.definition.pluginRef.id, version: version),
+      cloudSupported: delegate.definition.cloudSupported,
+      specialtyDisplaySupported: delegate.definition.specialtyDisplaySupported);
+  @override
+  dynamic noSuchMethod(Invocation invocation) =>
+      throw StateError('版本校验不应重新编译历史计划');
+}
+
+void _updateDirectory(ProviderContainer container,
+    InMemoryLocalStorageService storage, SportCapabilityDirectory directory) {
+  container.updateOverrides([
+    sportCapabilityDirectoryProvider.overrideWithValue(directory),
+    localStorageServiceProvider.overrideWithValue(storage),
+    fourWeekPlanNowProvider.overrideWithValue(DateTime(2026, 7, 14, 8)),
+    preExerciseClearanceRealtimeClockProvider
+        .overrideWithValue(() => DateTime(2026, 7, 14, 8)),
+    preExerciseClearanceControllerProvider
+        .overrideWith(_TestClearanceController.new),
+  ]);
 }

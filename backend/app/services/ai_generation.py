@@ -4,6 +4,7 @@ import asyncio
 import hashlib
 import json
 import time
+import warnings
 from dataclasses import dataclass
 from io import BytesIO
 from typing import Any, Literal, Protocol
@@ -1014,18 +1015,26 @@ def _sanitize_motion_image(image: bytes) -> tuple[bytes, str]:
             "仅支持 JPEG、PNG、GIF 或 WebP 图片，HEIC 请先转换格式",
         )
     try:
-        with Image.open(BytesIO(image)) as source:
-            source.load()
-            width, height = source.size
-            if width <= 0 or height <= 0 or width * height > 25_000_000:
-                raise ApiError(
-                    413,
-                    "image_dimensions_invalid",
-                    "图片尺寸过大，请选择 2500 万像素以内的照片",
-                )
-            normalized = ImageOps.exif_transpose(source).copy()
+        with warnings.catch_warnings():
+            warnings.simplefilter("error", Image.DecompressionBombWarning)
+            with Image.open(BytesIO(image)) as source:
+                width, height = source.size
+                if width <= 0 or height <= 0 or width * height > 25_000_000:
+                    raise ApiError(
+                        413,
+                        "image_dimensions_invalid",
+                        "图片尺寸过大，请选择 2500 万像素以内的照片",
+                    )
+                source.load()
+                normalized = ImageOps.exif_transpose(source).copy()
     except ApiError:
         raise
+    except (Image.DecompressionBombWarning, Image.DecompressionBombError) as error:
+        raise ApiError(
+            413,
+            "image_dimensions_invalid",
+            "图片尺寸过大，请选择 2500 万像素以内的照片",
+        ) from error
     except (UnidentifiedImageError, OSError, ValueError) as error:
         raise ApiError(
             415,

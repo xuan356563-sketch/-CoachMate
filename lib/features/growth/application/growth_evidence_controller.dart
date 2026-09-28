@@ -7,6 +7,9 @@ import '../../../data/models/training_log.dart';
 import '../../../data/models/user_profile.dart';
 import '../../../data/models/workout_day.dart';
 import '../../../data/repositories/growth_evidence_repository.dart';
+import '../../../plugins/application/feature_access.dart';
+import '../../../plugins/application/feature_controller_binding.dart';
+import '../../../plugins/application/plugin_runtime_provider.dart';
 import '../../../services/growth_engine.dart';
 import '../../../services/local_storage_service.dart';
 
@@ -76,7 +79,10 @@ class GrowthEvidenceController extends Notifier<GrowthEvidenceState> {
   final GrowthEngine _engine = GrowthEngine();
 
   @override
-  GrowthEvidenceState build() => const GrowthEvidenceState.empty();
+  GrowthEvidenceState build() {
+    bindFeatureController(ref, 'feature.growth', 'evidence', this);
+    return const GrowthEvidenceState.empty();
+  }
 
   void acknowledgeLatestReceipt(String eventId) {
     if (state.latestReceipt?.event.eventId != eventId) return;
@@ -92,6 +98,8 @@ class GrowthEvidenceController extends Notifier<GrowthEvidenceState> {
     required WorkoutDay fallbackWorkout,
   }) async {
     if (profile.id.isEmpty) return;
+    final FeatureOperation operation =
+        ref.read(featureAccessProvider).beginOperation('feature.growth');
     state = state.copyWith(
       athleteProfileId: profile.id,
       isSynchronizing: true,
@@ -104,6 +112,7 @@ class GrowthEvidenceController extends Notifier<GrowthEvidenceState> {
         repository,
         profile.id,
       );
+      operation.checkActive();
       if (!ref.mounted) return;
       final Map<String, GrowthEvidenceEvent> bySource =
           <String, GrowthEvidenceEvent>{
@@ -126,7 +135,7 @@ class GrowthEvidenceController extends Notifier<GrowthEvidenceState> {
           painLog: _painForTrainingLog(log, painLogs),
           existingEvent: existingEvent,
         );
-        await repository.saveEvent(event);
+        await operation.commit(() => repository.saveEvent(event));
         if (!ref.mounted) return;
       }
       for (final BodyMetric metric in bodyMetrics) {
@@ -135,14 +144,16 @@ class GrowthEvidenceController extends Notifier<GrowthEvidenceState> {
           metric: metric,
           existingEvent: bySource['health_snapshots:${metric.id}'],
         );
-        await repository.saveEvent(event);
+        await operation.commit(() => repository.saveEvent(event));
         if (!ref.mounted) return;
       }
       await _refresh(
         profileId: profile.id,
         statusMessage: '成长证据已根据真实训练和健康记录更新。',
+        operation: operation,
       );
-    } catch (_) {
+    } catch (error, stackTrace) {
+      _rethrowIfInactive(operation, error, stackTrace);
       if (!ref.mounted) return;
       state = state.copyWith(
         isSynchronizing: false,
@@ -158,6 +169,8 @@ class GrowthEvidenceController extends Notifier<GrowthEvidenceState> {
     PainLog? painLog,
   }) async {
     if (!log.isSessionRecord || profile.id.isEmpty) return;
+    final FeatureOperation operation =
+        ref.read(featureAccessProvider).beginOperation('feature.growth');
     try {
       final GrowthEvidenceRepository repository =
           ref.read(growthEvidenceRepositoryProvider);
@@ -166,10 +179,12 @@ class GrowthEvidenceController extends Notifier<GrowthEvidenceState> {
         sourceTable: 'training_logs',
         sourceId: log.id,
       );
+      operation.checkActive();
       if (existing?.isRevoked == true) {
         await _refresh(
           profileId: profile.id,
           statusMessage: '该训练来源已撤销，未重新计入成长证据。',
+          operation: operation,
         );
         return;
       }
@@ -180,15 +195,17 @@ class GrowthEvidenceController extends Notifier<GrowthEvidenceState> {
         painLog: painLog,
         existingEvent: existing,
       );
-      await repository.saveEvent(event);
+      await operation.commit(() => repository.saveEvent(event));
       final List<GrowthEvidenceEvent> events = await _loadAllEvents(
         repository,
         profile.id,
       );
+      operation.checkActive();
       final GrowthLevelState levelState = await _settleLevel(
         repository: repository,
         athleteProfileId: profile.id,
         events: events,
+        operation: operation,
       );
       final DailyXpSettlement daily = _engine.settleDailyXp(
         occurredOn: event.occurredOn,
@@ -202,6 +219,7 @@ class GrowthEvidenceController extends Notifier<GrowthEvidenceState> {
       );
       final List<WeeklyGrowthReport> reports =
           await repository.listWeeklyReports(athleteProfileId: profile.id);
+      operation.checkActive();
       state = state.copyWith(
         athleteProfileId: profile.id,
         events: events,
@@ -211,7 +229,8 @@ class GrowthEvidenceController extends Notifier<GrowthEvidenceState> {
         statusMessage: '成长回执已生成，可查看本次训练的真实证据。',
         isSynchronizing: false,
       );
-    } catch (_) {
+    } catch (error, stackTrace) {
+      _rethrowIfInactive(operation, error, stackTrace);
       state = state.copyWith(
         statusMessage: '训练已保存，但成长证据暂未生成，将在下次启动时自动补全。',
         isSynchronizing: false,
@@ -224,6 +243,8 @@ class GrowthEvidenceController extends Notifier<GrowthEvidenceState> {
     required BodyMetric metric,
   }) async {
     if (profile.id.isEmpty) return;
+    final FeatureOperation operation =
+        ref.read(featureAccessProvider).beginOperation('feature.growth');
     try {
       final GrowthEvidenceRepository repository =
           ref.read(growthEvidenceRepositoryProvider);
@@ -232,18 +253,21 @@ class GrowthEvidenceController extends Notifier<GrowthEvidenceState> {
         sourceTable: 'health_snapshots',
         sourceId: metric.id,
       );
-      await repository.saveEvent(
-        _engine.buildHealthEvent(
-          athleteProfileId: profile.id,
-          metric: metric,
-          existingEvent: existing,
-        ),
-      );
+      operation.checkActive();
+      await operation.commit(() => repository.saveEvent(
+            _engine.buildHealthEvent(
+              athleteProfileId: profile.id,
+              metric: metric,
+              existingEvent: existing,
+            ),
+          ));
       await _refresh(
         profileId: profile.id,
         statusMessage: '恢复与健康记录已写入成长证据。',
+        operation: operation,
       );
-    } catch (_) {
+    } catch (error, stackTrace) {
+      _rethrowIfInactive(operation, error, stackTrace);
       state = state.copyWith(
         statusMessage: '健康记录已保存，但成长证据将在下次启动时补全。',
       );
@@ -262,9 +286,11 @@ class GrowthEvidenceController extends Notifier<GrowthEvidenceState> {
       sourceId: logId,
       revokedAt: DateTime.now(),
     );
+    final FeatureOperation? operation = _activeGrowthOperation();
     await _refresh(
       profileId: athleteProfileId,
       statusMessage: '来源已删除，对应成长证据已撤销。',
+      operation: operation,
     );
   }
 
@@ -317,11 +343,13 @@ class GrowthEvidenceController extends Notifier<GrowthEvidenceState> {
         updatedAt: revokedAt,
       );
     }
+    final FeatureOperation? operation = _activeGrowthOperation();
     await _refresh(
       profileId: athleteProfileId,
       statusMessage: healthEvents.isEmpty
           ? '当前没有需要撤销的健康成长证据。'
           : '健康来源已删除，关联成长证据和当前有效 XP 已重算。',
+      operation: operation,
     );
     return healthEvents.length;
   }
@@ -331,9 +359,12 @@ class GrowthEvidenceController extends Notifier<GrowthEvidenceState> {
     required String athleteProfileId,
   }) async {
     if (athleteProfileId.isEmpty) return;
+    final FeatureOperation operation =
+        ref.read(featureAccessProvider).beginOperation('feature.growth');
     await _refresh(
       profileId: athleteProfileId,
       statusMessage: '健康来源变化已同步，成长证据和当前有效 XP 已重新核对。',
+      operation: operation,
     );
   }
 
@@ -375,6 +406,7 @@ class GrowthEvidenceController extends Notifier<GrowthEvidenceState> {
   Future<void> _refresh({
     required String profileId,
     required String statusMessage,
+    FeatureOperation? operation,
   }) async {
     final GrowthEvidenceRepository repository =
         ref.read(growthEvidenceRepositoryProvider);
@@ -382,18 +414,23 @@ class GrowthEvidenceController extends Notifier<GrowthEvidenceState> {
       repository,
       profileId,
     );
+    operation?.checkActive();
     if (!ref.mounted) return;
     final GrowthLevelState levelState = await _settleLevel(
       repository: repository,
       athleteProfileId: profileId,
       events: events,
+      operation: operation,
     );
     if (!ref.mounted) return;
     final List<WeeklyGrowthReport> reports =
         await repository.listWeeklyReports(athleteProfileId: profileId);
+    operation?.checkActive();
     if (!ref.mounted) return;
-    final List<WeeklyGrowthReport> lockedReports =
-        await _lockExpiredReports(repository, reports);
+    // 数据权利撤销在成长停用时只刷新历史，不执行周报派生写。
+    final List<WeeklyGrowthReport> lockedReports = operation == null
+        ? reports
+        : await _lockExpiredReports(repository, reports, operation: operation);
     if (!ref.mounted) return;
     state = state.copyWith(
       athleteProfileId: profileId,
@@ -428,6 +465,7 @@ class GrowthEvidenceController extends Notifier<GrowthEvidenceState> {
     required GrowthEvidenceRepository repository,
     required String athleteProfileId,
     required List<GrowthEvidenceEvent> events,
+    FeatureOperation? operation,
   }) async {
     final GrowthLevelState existing =
         await repository.readLevelState(athleteProfileId);
@@ -440,18 +478,28 @@ class GrowthEvidenceController extends Notifier<GrowthEvidenceState> {
       peakLevel: progress.level,
       modelVersion: GrowthEngine.currentModelVersion,
     );
-    await repository.saveLevelState(
-      athleteProfileId: athleteProfileId,
-      state: next,
-      updatedAt: DateTime.now(),
-    );
+    if (operation == null) {
+      await repository.saveLevelState(
+        athleteProfileId: athleteProfileId,
+        state: next,
+        updatedAt: DateTime.now(),
+      );
+    } else {
+      operation.checkActive();
+      await operation.commit(() => repository.saveLevelState(
+            athleteProfileId: athleteProfileId,
+            state: next,
+            updatedAt: DateTime.now(),
+          ));
+    }
     return next;
   }
 
   Future<List<WeeklyGrowthReport>> _lockExpiredReports(
     GrowthEvidenceRepository repository,
-    List<WeeklyGrowthReport> reports,
-  ) async {
+    List<WeeklyGrowthReport> reports, {
+    required FeatureOperation operation,
+  }) async {
     final DateTime currentWeekStart = growthWeekStart(DateTime.now());
     bool changed = false;
     final List<WeeklyGrowthReport> next = <WeeklyGrowthReport>[];
@@ -460,7 +508,8 @@ class GrowthEvidenceController extends Notifier<GrowthEvidenceState> {
         final WeeklyGrowthReport locked = report.copyWith(
           lockedAt: growthAddCalendarDays(report.weekStartsOn, 7),
         );
-        await repository.saveWeeklyReport(locked);
+        operation.checkActive();
+        await operation.commit(() => repository.saveWeeklyReport(locked));
         next.add(locked);
         changed = true;
       } else {
@@ -473,6 +522,12 @@ class GrowthEvidenceController extends Notifier<GrowthEvidenceState> {
           second.weekStartsOn.compareTo(first.weekStartsOn),
     );
     return List<WeeklyGrowthReport>.unmodifiable(next);
+  }
+
+  FeatureOperation? _activeGrowthOperation() {
+    final FeatureAccess access = ref.read(featureAccessProvider);
+    if (!access.isWritable('feature.growth')) return null;
+    return access.beginOperation('feature.growth');
   }
 
   PainLog? _painForTrainingLog(
@@ -515,6 +570,18 @@ class GrowthEvidenceController extends Notifier<GrowthEvidenceState> {
       return '本次有效训练刺激不足，系统保留真实记录，不虚构成长。';
     }
     return '本次训练已转化为可追溯成长证据。';
+  }
+
+  void _rethrowIfInactive(
+    FeatureOperation operation,
+    Object error,
+    StackTrace stackTrace,
+  ) {
+    try {
+      operation.checkActive();
+    } catch (_) {
+      Error.throwWithStackTrace(error, stackTrace);
+    }
   }
 }
 

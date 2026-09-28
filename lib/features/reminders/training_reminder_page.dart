@@ -79,11 +79,14 @@ class _ReminderSettingsCard extends ConsumerWidget {
                 child: Text('20:30 下班后'),
               ),
             ],
-            onChanged: (String? value) {
+            onChanged: (String? value) async {
               if (value != null) {
-                ref
-                    .read(reminderSettingsControllerProvider.notifier)
-                    .setReminderTimeLabel(value);
+                await _runReminderAction(
+                  context,
+                  ref
+                      .read(reminderSettingsControllerProvider.notifier)
+                      .setReminderTimeLabelAsync(value),
+                );
               }
             },
           ),
@@ -98,10 +101,13 @@ class _ReminderSettingsCard extends ConsumerWidget {
           SizedBox(
             width: double.infinity,
             child: OutlinedButton.icon(
-              onPressed: () {
-                ref
-                    .read(reminderSettingsControllerProvider.notifier)
-                    .toggleTrainingReminders();
+              onPressed: () async {
+                await _runReminderAction(
+                  context,
+                  ref
+                      .read(reminderSettingsControllerProvider.notifier)
+                      .toggleTrainingRemindersAsync(),
+                );
               },
               icon: Icon(
                 state.remindersEnabled
@@ -113,6 +119,20 @@ class _ReminderSettingsCard extends ConsumerWidget {
           ),
         ],
       ),
+    );
+  }
+}
+
+Future<void> _runReminderAction(
+  BuildContext context,
+  Future<void> action,
+) async {
+  try {
+    await action;
+  } catch (error) {
+    if (!context.mounted) return;
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text('提醒设置操作失败：$error')),
     );
   }
 }

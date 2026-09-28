@@ -1,9 +1,18 @@
+import '../../features/resource_library/resource_library_page.dart';
+import '../../features/capabilities/assessment_history_page.dart';
+import '../../plugins/application/plugin_runtime_provider.dart';
+import '../../plugins/application/plugin_routes.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../core/theme/trainflow_tokens.dart';
 import '../../features/activity_import/activity_import_page.dart';
+import '../../features/capabilities/capabilities_page.dart';
+import '../../features/capabilities/history_page.dart';
+import '../../features/capabilities/running_history_page.dart';
+import '../../features/motion_check/running/running_video_page.dart';
+import '../../features/motion_check/running/running_video_pose_gateway.dart';
 import '../../features/ai_center/ai_center_page.dart';
 import '../../features/auth/application/auth_controller.dart';
 import '../../features/auth/application/auth_route_refresh.dart';
@@ -98,7 +107,12 @@ final GoRouter router = GoRouter(
             location == AppRoutes.authLoading ||
             location == AppRoutes.accountSwitch ||
             location.startsWith('/welcome/')) {
-          return AppRoutes.companion;
+          return defaultPluginRoute(container.read(pluginRuntimeProvider));
+        }
+        final runtime = container.read(pluginRuntimeProvider);
+        final blocked = disabledRouteOwner(runtime, location);
+        if (blocked != null) {
+          return '${AppRoutes.capabilities}?feature=$blocked';
         }
         return null;
       }
@@ -119,6 +133,13 @@ final GoRouter router = GoRouter(
     return location == AppRoutes.login ? null : AppRoutes.login;
   },
   routes: [
+    GoRoute(
+        path: AppRoutes.capabilities,
+        builder: (context, state) {
+          return CapabilitiesPage(
+            highlightedFeatureId: state.uri.queryParameters['feature'],
+          );
+        }),
     GoRoute(
       path: AppRoutes.authLoading,
       pageBuilder: _page(
@@ -179,7 +200,9 @@ final GoRouter router = GoRouter(
     GoRoute(
       path: '/',
       redirect: (BuildContext context, GoRouterState state) {
-        return AppRoutes.companion;
+        return defaultPluginRoute(
+            ProviderScope.containerOf(context, listen: false)
+                .read(pluginRuntimeProvider));
       },
     ),
     ShellRoute(
@@ -340,7 +363,10 @@ final GoRouter router = GoRouter(
         GoRoute(
           path: AppRoutes.aiCenter,
           redirect: (BuildContext context, GoRouterState state) =>
-              state.uri.queryParameters['section'] == 'chat'
+              state.uri.queryParameters['section'] == 'chat' &&
+                      ProviderScope.containerOf(context, listen: false)
+                          .read(pluginRuntimeProvider)
+                          .isEnabled('feature.companion')
                   ? AppRoutes.companion
                   : null,
           pageBuilder: _page(
@@ -351,7 +377,11 @@ final GoRouter router = GoRouter(
         GoRoute(
           path: AppRoutes.aiCoach,
           redirect: (BuildContext context, GoRouterState state) =>
-              AppRoutes.companion,
+              (ProviderScope.containerOf(context, listen: false)
+                      .read(pluginRuntimeProvider)
+                      .isEnabled('feature.companion')
+                  ? AppRoutes.companion
+                  : AppRoutes.aiCenter),
         ),
         GoRoute(
           path: AppRoutes.knowledge,
@@ -372,6 +402,11 @@ final GoRouter router = GoRouter(
         GoRoute(
           path: AppRoutes.mealGuide,
           pageBuilder: _page((state) => const MealGuidePage()),
+        ),
+        GoRoute(
+          path: '/motion-check/running',
+          redirect: (_, __) => runningVideoPreviewEnabled ? null : AppRoutes.motionCheck,
+          pageBuilder: _page((state) => const RunningVideoPage()),
         ),
         GoRoute(
           path: AppRoutes.motionCheck,
@@ -421,6 +456,34 @@ final GoRouter router = GoRouter(
           pageBuilder: _page(
             (state) => const ProfilePage(),
             transition: TrainMateRouteTransition.tabFade,
+          ),
+        ),
+        GoRoute(
+          path: '/resources',
+          pageBuilder: _page((state) => const ResourceLibraryPage()),
+        ),
+        GoRoute(
+          path: '/resources/:id',
+          pageBuilder: _page((state) => ResourceDetailPage(resourceId: state.pathParameters['id']!)),
+        ),
+        GoRoute(
+          path: '/history/assessments',
+          pageBuilder: _page((state) => const AssessmentHistoryPage()),
+        ),
+        GoRoute(
+          path: '/history/running',
+          pageBuilder: _page((state) => const RunningHistoryPage()),
+        ),
+        GoRoute(
+          path: AppRoutes.history,
+          pageBuilder: _page((state) => const HistoryPage()),
+        ),
+        GoRoute(
+          path: '${AppRoutes.history}/plans/:versionId',
+          pageBuilder: _page(
+            (state) => HistoryPlanDetailPage(
+              versionId: state.pathParameters['versionId']!,
+            ),
           ),
         ),
         GoRoute(

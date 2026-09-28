@@ -61,6 +61,22 @@ class BodyMetric {
   final String moodLabel;
   final BodyMetricSource source;
   final String note;
+  final Set<String>? recordedFields;
+  final bool sourceVerified;
+
+  bool hasValue(String field) {
+    if (!sourceVerified || (recordedFields != null && !recordedFields!.contains(field))) return false;
+    return switch (field) {
+      'weightKg' => weightKg.isFinite && weightKg > 0,
+      'bodyFatPercentage' => bodyFatPercentage.isFinite && bodyFatPercentage > 0,
+      'sleepHours' => sleepHours.isFinite && sleepHours > 0,
+      'hrvMs' => hrvMs > 0,
+      'restingHeartRate' => restingHeartRate > 0,
+      'fatigueLevel' => fatigueLevel >= 0 && fatigueLevel <= 10,
+      'sorenessLevel' => sorenessLevel >= 0 && sorenessLevel <= 10,
+      _ => false,
+    };
+  }
 
   const BodyMetric({
     required this.id,
@@ -75,6 +91,8 @@ class BodyMetric {
     required this.moodLabel,
     required this.source,
     required this.note,
+    this.recordedFields,
+    this.sourceVerified = true,
   });
 
   String get measuredDateLabel {
@@ -82,17 +100,34 @@ class BodyMetric {
   }
 
   factory BodyMetric.fromJson(Map<String, dynamic> json) {
+    // 字段清单只是声明；缺值或类型损坏不能被兼容默认值补成有效观测。
+    const integerFields = {
+      'restingHeartRate', 'hrvMs', 'fatigueLevel', 'sorenessLevel',
+    };
+    final actualFields = json.keys.where((key) {
+      final value = json[key];
+      return value is num && value.isFinite &&
+          (!integerFields.contains(key) || value is int);
+    }).toSet();
+    final declaredFields = json['recordedFields'];
+    final availableFields = declaredFields is List
+        ? declaredFields.whereType<String>().toSet().intersection(actualFields)
+        : actualFields;
+    int integer(String key) => json[key] is int ? json[key] as int : 0;
+    double decimal(String key) => json[key] is num ? (json[key] as num).toDouble() : 0;
     return BodyMetric(
       id: json['id'] as String? ?? '',
+      sourceVerified: json['sourceVerified'] != false && BodyMetricSource.values.any((s) => s.jsonValue == json['source']),
+      recordedFields: availableFields,
       measuredAt: DateTime.tryParse(json['measuredAt'] as String? ?? '') ??
           DateTime(2026),
-      weightKg: (json['weightKg'] as num?)?.toDouble() ?? 0,
-      bodyFatPercentage: (json['bodyFatPercentage'] as num?)?.toDouble() ?? 0,
-      restingHeartRate: json['restingHeartRate'] as int? ?? 0,
-      hrvMs: json['hrvMs'] as int? ?? 0,
-      sleepHours: (json['sleepHours'] as num?)?.toDouble() ?? 0,
-      fatigueLevel: json['fatigueLevel'] as int? ?? 0,
-      sorenessLevel: json['sorenessLevel'] as int? ?? 0,
+      weightKg: decimal('weightKg'),
+      bodyFatPercentage: decimal('bodyFatPercentage'),
+      restingHeartRate: integer('restingHeartRate'),
+      hrvMs: integer('hrvMs'),
+      sleepHours: decimal('sleepHours'),
+      fatigueLevel: integer('fatigueLevel'),
+      sorenessLevel: integer('sorenessLevel'),
       moodLabel: json['moodLabel'] as String? ?? '',
       source: bodyMetricSourceFromJson(json['source'] as String?),
       note: json['note'] as String? ?? '',
@@ -113,6 +148,8 @@ class BodyMetric {
       'moodLabel': moodLabel,
       'source': source.jsonValue,
       'note': note,
+      if (recordedFields != null) 'recordedFields': recordedFields!.toList()..sort(),
+      if (!sourceVerified) 'sourceVerified': false,
     };
   }
 }

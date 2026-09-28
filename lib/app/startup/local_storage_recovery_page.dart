@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:trainflow_ai/core/constants/app_brand.dart';
 import 'package:trainflow_ai/data/local/local_storage_bootstrap_coordinator.dart';
 import 'package:trainflow_ai/data/local/trainflow_database_schema.dart';
 
@@ -76,7 +77,7 @@ class _LocalStorageRecoveryPageState extends State<LocalStorageRecoveryPage> {
                     '本地数据保护模式',
                     textAlign: TextAlign.center,
                     style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-                          fontWeight: FontWeight.w800,
+                          fontWeight: FontWeight.w600,
                         ),
                   ),
                   const SizedBox(height: 12),
@@ -144,7 +145,7 @@ Future<void> _copyWithSystemClipboard(String value) {
 
 String _buildDiagnostics(LocalStorageBootstrapResult result) {
   return <String>[
-    'TrainMate 本地存储诊断',
+    '${AppBrand.displayName} 本地存储诊断',
     '存储后端：${result.backend.name}',
     '数据库版本：${TrainFlowDatabaseSchema.version}',
     '保护原因：${result.fallbackReason ?? '未提供'}',

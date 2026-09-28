@@ -4,7 +4,7 @@ class RaceAutoScheduleService {
   RaceAutoSchedule buildSchedule({
     required RacePlan race,
     required DateTime now,
-    required int readinessScore,
+    required int? readinessScore,
     required bool hasPainRedline,
   }) {
     final DateTime today = _dateOnly(now);
@@ -38,7 +38,7 @@ class RaceAutoScheduleService {
     required int weekOffset,
     required DateTime weekStart,
     required int daysUntilRace,
-    required int readinessScore,
+    required int? readinessScore,
     required bool hasPainRedline,
   }) {
     final RacePhaseType phaseType = _phaseForDaysUntilRace(daysUntilRace);
@@ -123,7 +123,8 @@ class RaceAutoScheduleService {
     }
   }
 
-  String _recoveryRule(int readinessScore, RacePhaseType phaseType) {
+  String _recoveryRule(int? readinessScore, RacePhaseType phaseType) {
+    if (readinessScore == null) return '准备度无法评估，请补充并确认当日记录；未自动修改计划。';
     if (readinessScore < 55) {
       return '准备度偏低：本周减少 30% 总量，强度课改技术课。';
     }

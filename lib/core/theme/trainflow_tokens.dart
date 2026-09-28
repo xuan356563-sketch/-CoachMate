@@ -7,6 +7,39 @@ enum TrainFlowCardTone { paper, ink, peach, outline }
 /// 业务页面的视觉密度与信息层级。
 enum TrainFlowPageLayout { detail, form, report, legal }
 
+/// 参考图模式下的页面主色职责。
+///
+/// 该枚举只控制视觉层，不参与路由、Provider 或业务状态判断。
+enum TrainMatePageAccent { plan, today, companion, exercises, profile }
+
+extension TrainMatePageAccentTokens on TrainMatePageAccent {
+  Color get color => switch (this) {
+        TrainMatePageAccent.plan => TrainFlowTokens.yellow,
+        TrainMatePageAccent.today => TrainFlowTokens.purple,
+        TrainMatePageAccent.companion => TrainFlowTokens.coral,
+        TrainMatePageAccent.exercises => TrainFlowTokens.blue,
+        TrainMatePageAccent.profile => TrainFlowTokens.showcasePaper,
+      };
+
+  Color get foreground => switch (this) {
+        TrainMatePageAccent.plan ||
+        TrainMatePageAccent.profile =>
+          TrainFlowTokens.brandDark,
+        TrainMatePageAccent.today ||
+        TrainMatePageAccent.companion ||
+        TrainMatePageAccent.exercises =>
+          TrainFlowTokens.paper,
+      };
+
+  Color get softColor => switch (this) {
+        TrainMatePageAccent.plan => const Color(0xFFFFF3BF),
+        TrainMatePageAccent.today => TrainFlowTokens.purpleSoft,
+        TrainMatePageAccent.companion => const Color(0xFFFFE1DC),
+        TrainMatePageAccent.exercises => const Color(0xFFDCEAFF),
+        TrainMatePageAccent.profile => TrainFlowTokens.showcasePaper,
+      };
+}
+
 abstract final class TrainFlowTokens {
   /// 品牌主色：深紫（主要操作 / 进度 / 选中态）。
   static const Color accent = Color(0xFF6C3DF4);
@@ -65,6 +98,10 @@ abstract final class TrainFlowTokens {
   static const Color navigationSelectedFace = accent;
   static const Color navigationGlassBorder = Color(0xFFE7E5EB);
   static const Color navigationGlassShadow = Color(0x1F191331);
+  static const Color showcasePaper = Color(0xFFF7F6F2);
+  static const Color showcaseActionSurface = Color(0xFF191331);
+  static const Color showcaseActionRaised = Color(0xFF2C2450);
+  static const Color showcaseShadow = Color(0x1F191331);
 
   static const double pageMaxWidth = 430;
   static const List<double> spacing = <double>[4, 8, 12, 16, 20, 24, 32, 40];
@@ -77,15 +114,30 @@ abstract final class TrainFlowTokens {
   static const double pageGutter = 16;
   static const double mainTabPageGutter = 20;
   static const double mainTabCardGap = 12;
+  static const double mainTabSectionGap = 24;
   static const double mainTabCardPadding = 16;
-  static const double mainTabCardRadius = 16;
+  static const double mainTabCardRadius = 24;
+  static const double mainTabShowcaseRadius = 32;
   static const double mainTabControlRadius = 16;
+  static const double mainTabPrimaryButtonHeight = 56;
+  static const double mainTabFilterHeight = 40;
+  static const double mainTabIconButtonSize = 48;
+  static const double mainTabDoodleOpacity = 0.07;
+  static const double mainTabCarouselPeek = 16;
+  static const double mainTabPageTitleSize = 28;
+  static const double mainTabSectionTitleSize = 21;
+  static const double mainTabMetricValueSize = 36;
+  static const double mainTabBodySize = 15;
+  static const double mainTabSupportingSize = 12;
   static const double bottomNavigationHorizontalInset = 40;
   static const double bottomNavigationMinimumHorizontalInset = 16;
   static const double bottomNavigationMinimumItemWidth = 48;
   static const double bottomNavigationPillHeight = 72;
   static const double bottomNavigationPillRadius = 36;
   static const double bottomNavigationVisualHeight = 96;
+  static const double bottomNavigationHeight = 64;
+  static const double bottomNavigationSelectedPillWidth = 68;
+  static const double bottomNavigationSelectedPillHeight = 56;
   static const double bottomNavigationPillTop = 24;
   static const double bottomNavigationSelectedSize = 56;
   static const double bottomNavigationSelectedInnerSize = 44;
@@ -135,6 +187,7 @@ abstract final class TrainFlowMotion {
   static const Duration sceneEntrance = Duration(milliseconds: 300);
   static const Duration navigationStandardSelection =
       Duration(milliseconds: 150);
+  static const Duration navigation = Duration(milliseconds: 320);
   static const Curve easeOut = Cubic(0.4, 0, 0.2, 1);
 
   static bool isEnabled(BuildContext context) {

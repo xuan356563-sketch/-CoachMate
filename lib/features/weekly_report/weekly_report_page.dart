@@ -1,3 +1,4 @@
+import '../../plugins/application/sport_contribution_label.dart';
 import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
@@ -16,7 +17,6 @@ import '../../data/models/training_log.dart';
 import '../../data/models/training_metrics.dart';
 import '../../data/models/weekly_report.dart';
 import '../../data/models/weekly_psych_check_in.dart';
-import '../../services/local_report_generation_coordinator.dart';
 import '../dashboard/training_mvp_controller.dart';
 import '../growth/application/growth_evidence_controller.dart';
 import '../growth/application/training_metrics_provider.dart';
@@ -75,6 +75,7 @@ class _WeeklyReportPageState extends ConsumerState<WeeklyReportPage> {
         ),
       ),
       children: [
+        SportContributionLabel(sport: state.activePlan.sportType, report: true),
         SegmentedButton<_ReportPeriodView>(
           key: const ValueKey<String>('report-period-selector'),
           segments: const <ButtonSegment<_ReportPeriodView>>[
@@ -99,15 +100,13 @@ class _WeeklyReportPageState extends ConsumerState<WeeklyReportPage> {
           reportTitle: showingMonth ? '本地确定性月报' : '本地确定性周报',
           emptyMessage: showingMonth ? '上一完整自然月的数据仍在积累，达到门槛后会生成不可变月报修订。' : null,
           onGenerate: () async {
-            final bool generated = await LocalReportGenerationCoordinator(
-              repository: ref.read(trainingMetricsRepositoryProvider),
-              metricsPipeline: ref.read(healthSyncMetricsPipelineProvider),
-              monthlySummaryLoader: ref.read(monthlySummaryLoaderProvider),
-            ).ensureClosedPeriod(
-              athleteProfileId: athleteProfileId,
-              period: showingMonth ? MetricPeriod.month : MetricPeriod.week,
-              periodStart: showingMonth ? monthStart : weekStart,
-            );
+            final bool generated = await ref
+                .read(localReportGenerationCoordinatorProvider)
+                .ensureClosedPeriod(
+                  athleteProfileId: athleteProfileId,
+                  period: showingMonth ? MetricPeriod.month : MetricPeriod.week,
+                  periodStart: showingMonth ? monthStart : weekStart,
+                );
             ref.invalidate(trainingReportRevisionsProvider(reportQuery));
             return generated;
           },
@@ -372,6 +371,8 @@ class _PsychologyWeeklyCheckInCardState
   int? _motivation;
   int? _stress;
   int? _recovery;
+  bool _saving = false;
+  String? _saveError;
 
   @override
   void dispose() {
@@ -403,7 +404,7 @@ class _PsychologyWeeklyCheckInCardState
                       ?.copyWith(fontWeight: FontWeight.w700),
                 ),
               ),
-              if (report != null) ToneBadge(label: report.psychRiskLevel.label),
+              if (report != null) ToneBadge(label: report.psychRiskLabel),
             ],
           ),
           const SizedBox(height: 8),
@@ -435,8 +436,8 @@ class _PsychologyWeeklyCheckInCardState
             width: double.infinity,
             child: FilledButton(
               key: const ValueKey<String>('weekly-psych-save'),
-              onPressed: _save,
-              child: const Text('保存本周状态并生成教练周报'),
+              onPressed: _saving ? null : _save,
+              child: Text(_saving ? '正在保存，请稍候…' : '保存本周状态并生成教练周报'),
             ),
           ),
           if (report != null) ...[
@@ -454,7 +455,7 @@ class _PsychologyWeeklyCheckInCardState
                       in report.dimensionExposure)
                     ToneBadge(
                       label:
-                          '${exposure.dimension.label} ${exposure.completedSessions}/${exposure.plannedSessions}',
+                          '${exposure.dimension.label}：实际记录 ${exposure.completedSessions} 次，计划 ${exposure.plannedSessions} 次',
                     ),
                 ],
               ),
@@ -477,14 +478,14 @@ class _PsychologyWeeklyCheckInCardState
                     key: ValueKey<String>('weekly-option-${option.id}'),
                     label: Text(option.label),
                     selected: report.selectedOptionId == option.id,
-                    onSelected: (_) {
-                      ref
-                          .read(trainingMvpProvider.notifier)
-                          .selectWeeklyReportOption(
-                            reportId: report.id,
-                            optionId: option.id,
-                          );
-                    },
+                    onSelected: _saving
+                        ? null
+                        : (_) => _runSave(() => ref
+                            .read(trainingMvpProvider.notifier)
+                            .selectWeeklyReportOption(
+                              reportId: report.id,
+                              optionId: option.id,
+                            )),
                   ),
               ],
             ),
@@ -492,7 +493,7 @@ class _PsychologyWeeklyCheckInCardState
           ],
           const SizedBox(height: 8),
           Text(
-            widget.state.weeklyReportSaveStatusMessage,
+            _saveError ?? widget.state.weeklyReportSaveStatusMessage,
             style: Theme.of(context).textTheme.bodySmall?.copyWith(
                   color: TrainFlowTokens.darkTrainingMuted,
                 ),
@@ -502,8 +503,27 @@ class _PsychologyWeeklyCheckInCardState
     );
   }
 
-  void _save() {
-    ref.read(trainingMvpProvider.notifier).savePsychologyWeeklyReport(
+  Future<void> _runSave(Future<void> Function() save) async {
+    if (_saving) return;
+    setState(() {
+      _saving = true;
+      _saveError = null;
+    });
+    try {
+      await save();
+    } catch (error) {
+      if (mounted) {
+        setState(() => _saveError =
+            error is StateError ? error.message : '周报保存失败，请重试。');
+      }
+    } finally {
+      if (mounted) setState(() => _saving = false);
+    }
+  }
+
+  Future<void> _save() => _runSave(() => ref
+      .read(trainingMvpProvider.notifier)
+      .savePsychologyWeeklyReport(
           psychCheckIn: WeeklyPsychCheckIn(
             motivation: _motivation,
             perceivedStress: _stress,
@@ -512,8 +532,7 @@ class _PsychologyWeeklyCheckInCardState
                 ? null
                 : _noteController.text.trim(),
           ),
-        );
-  }
+        ));
 }
 
 class _TrainingDimensionRadar extends StatelessWidget {
@@ -709,7 +728,8 @@ class _LocalReportRevisionCardState extends State<LocalReportRevisionCard> {
         children: [
           Row(
             children: [
-              const Icon(Icons.description_outlined, color: TrainFlowTokens.accent),
+              const Icon(Icons.description_outlined,
+                  color: TrainFlowTokens.accent),
               const SizedBox(width: 8),
               Expanded(
                 child: Text(
@@ -856,7 +876,8 @@ class _GrowthWeeklyReportCard extends StatelessWidget {
         children: [
           Row(
             children: [
-              const Icon(Icons.query_stats_outlined, color: TrainFlowTokens.accent),
+              const Icon(Icons.query_stats_outlined,
+                  color: TrainFlowTokens.accent),
               const SizedBox(width: 8),
               Expanded(
                 child: Text(

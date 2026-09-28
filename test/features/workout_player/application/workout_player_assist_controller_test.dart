@@ -84,6 +84,7 @@ void main() {
         container.read(workoutPlayerAssistControllerProvider);
     expect(state.screenAwakeRequested, isFalse);
     expect(state.screenAwakeStatusMessage, contains('升级 iOS/Safari'));
+    expect(state.screenAwakeStatusMessage, contains('使用练搭 CoachMate App'));
   });
 }
 

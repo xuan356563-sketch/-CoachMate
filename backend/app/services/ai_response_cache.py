@@ -6,7 +6,7 @@ import json
 import secrets
 import time
 from collections.abc import Awaitable, Callable
-from typing import Any, Protocol
+from typing import Any, Literal, Protocol
 
 import redis.asyncio as async_redis
 from redis.exceptions import RedisError
@@ -75,6 +75,13 @@ def cache_user_domain(user_id: object) -> str:
     return hashlib.sha256(str(user_id).encode("utf-8")).hexdigest()
 
 
+def build_ai_idempotency_key(*, user_id: object, request_id: str) -> str:
+    """构造不暴露用户标识或请求 ID 的幂等绑定键。"""
+    material = f"{user_id}\0{request_id}".encode("utf-8")
+    digest = hashlib.sha256(material).hexdigest()
+    return f"{_CACHE_NAMESPACE}:idempotency:{digest}"
+
+
 class AiResponseCache:
     """Redis 尽力缓存加进程内/跨进程 single-flight。"""
 
@@ -131,6 +138,51 @@ class AiResponseCache:
                 async with self._guard:
                     if self._inflight.get(key) is task:
                         self._inflight.pop(key, None)
+
+    async def bind_request_digest(
+        self,
+        *,
+        key: str,
+        request_digest: str,
+        ttl_seconds: int,
+    ) -> Literal["bound", "matched", "conflict", "unavailable"]:
+        """原子绑定幂等键与请求摘要；Redis 故障时交由调用方本地兜底。"""
+        available, current = await self._read(key)
+        if not available:
+            return "unavailable"
+        if current is not None:
+            return (
+                "matched"
+                if current.get("request_digest") == request_digest
+                else "conflict"
+            )
+
+        value = json.dumps(
+            {"request_digest": request_digest},
+            ensure_ascii=True,
+            sort_keys=True,
+            separators=(",", ":"),
+        )
+        try:
+            bound = await self._redis.set(
+                key,
+                value,
+                ex=ttl_seconds,
+                nx=True,
+            )
+        except (RedisError, OSError, TimeoutError):
+            return "unavailable"
+        if bound:
+            return "bound"
+
+        available, current = await self._read(key)
+        if not available or current is None:
+            return "unavailable"
+        return (
+            "matched"
+            if current.get("request_digest") == request_digest
+            else "conflict"
+        )
 
     async def _compute_with_distributed_lock(
         self,

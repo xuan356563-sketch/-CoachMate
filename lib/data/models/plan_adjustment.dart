@@ -1,3 +1,4 @@
+import 'workout_day.dart';
 enum PlanAdjustmentKind {
   adjusted,
   restored,
@@ -49,6 +50,12 @@ class PlanAdjustment {
   /// 由待确认调整建议产生时记录来源；手动调整保持为空。
   final String? sourceProposalId;
 
+  /// 每日课程调整的本机快照；旧记录没有这些字段时沿用原投影。
+  final WorkoutDay? workoutSnapshot;
+  final String? basePlanFingerprint;
+  final String? baseVersionId;
+  final String? evidenceFingerprint;
+
   const PlanAdjustment({
     required this.id,
     required this.planId,
@@ -62,6 +69,10 @@ class PlanAdjustment {
     required this.kind,
     required this.adjustedAt,
     this.sourceProposalId,
+    this.workoutSnapshot,
+    this.basePlanFingerprint,
+    this.baseVersionId,
+    this.evidenceFingerprint,
   });
 
   factory PlanAdjustment.fromJson(Map<String, dynamic> json) {
@@ -81,6 +92,11 @@ class PlanAdjustment {
       adjustedAt: DateTime.tryParse(json['adjustedAt'] as String? ?? '') ??
           DateTime.fromMillisecondsSinceEpoch(0),
       sourceProposalId: json['sourceProposalId'] as String?,
+      workoutSnapshot: json['workoutSnapshot'] is Map
+          ? WorkoutDay.fromJson(Map<String, dynamic>.from(json['workoutSnapshot'] as Map)) : null,
+      basePlanFingerprint: json['basePlanFingerprint'] as String?,
+      baseVersionId: json['baseVersionId'] as String?,
+      evidenceFingerprint: json['evidenceFingerprint'] as String?,
     );
   }
 
@@ -98,6 +114,10 @@ class PlanAdjustment {
       'kind': kind.jsonValue,
       'adjustedAt': adjustedAt.toIso8601String(),
       if (sourceProposalId != null) 'sourceProposalId': sourceProposalId,
+      if (workoutSnapshot != null) 'workoutSnapshot': workoutSnapshot!.toJson(),
+      if (basePlanFingerprint != null) 'basePlanFingerprint': basePlanFingerprint,
+      if (baseVersionId != null) 'baseVersionId': baseVersionId,
+      if (evidenceFingerprint != null) 'evidenceFingerprint': evidenceFingerprint,
     };
   }
 

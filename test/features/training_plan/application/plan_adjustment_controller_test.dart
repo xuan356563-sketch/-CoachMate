@@ -8,7 +8,7 @@ import 'package:trainflow_ai/data/seed/seed_training_plans.dart';
 import 'package:trainflow_ai/features/training_plan/application/plan_adjustment_controller.dart';
 import 'package:trainflow_ai/services/local_storage_service.dart';
 
-void main() {
+void main() async {
   ProviderContainer createContainer(InMemoryLocalStorageService storage) {
     return ProviderContainer(
       overrides: [
@@ -17,7 +17,7 @@ void main() {
     );
   }
 
-  test('初始状态显示空计划调整记录', () {
+  test('初始状态显示空计划调整记录', () async {
     final InMemoryLocalStorageService storage = InMemoryLocalStorageService();
     final ProviderContainer container = createContainer(storage);
     addTearDown(container.dispose);
@@ -29,13 +29,13 @@ void main() {
     expect(state.statusMessage, '尚未手动调整训练日；可按当天时间和状态微调时长与强度。');
   });
 
-  test('首次调整会记录本地学习信号', () {
+  test('首次调整会记录本地学习信号', () async {
     final InMemoryLocalStorageService storage = InMemoryLocalStorageService();
     final ProviderContainer container = createContainer(storage);
     addTearDown(container.dispose);
     final WorkoutDay workout = _workoutDay(minutes: 45, intensity: '中等');
 
-    container
+    await container
         .read(planAdjustmentControllerProvider.notifier)
         .saveManualAdjustment(
           workout: workout,
@@ -56,7 +56,7 @@ void main() {
     expect(state.statusMessage, '已记录为本地学习信号：低强度有氧跑 调整为 30 分钟 · 轻松。');
   });
 
-  test('连续调整始终保留首条记录的原始计划值', () {
+  test('连续调整始终保留首条记录的原始计划值', () async {
     final InMemoryLocalStorageService storage = InMemoryLocalStorageService();
     final ProviderContainer container = createContainer(storage);
     addTearDown(container.dispose);
@@ -64,13 +64,13 @@ void main() {
         container.read(planAdjustmentControllerProvider.notifier);
     final WorkoutDay workout = _workoutDay(minutes: 45, intensity: '中等');
 
-    controller.saveManualAdjustment(
+    await controller.saveManualAdjustment(
       workout: workout,
       adjustedMinutes: 30,
       adjustedIntensity: '轻松',
       reason: '加班',
     );
-    controller.saveManualAdjustment(
+    await controller.saveManualAdjustment(
       workout: workout.copyWith(estimatedMinutes: 30, intensity: '轻松'),
       adjustedMinutes: 20,
       adjustedIntensity: '恢复',
@@ -85,7 +85,7 @@ void main() {
     expect(latest.adjustedIntensity, '恢复');
   });
 
-  test('恢复原计划会保存 restored 记录', () {
+  test('恢复原计划会保存 restored 记录', () async {
     final InMemoryLocalStorageService storage = InMemoryLocalStorageService();
     final ProviderContainer container = createContainer(storage);
     addTearDown(container.dispose);
@@ -93,13 +93,13 @@ void main() {
         container.read(planAdjustmentControllerProvider.notifier);
     final WorkoutDay workout = _workoutDay(minutes: 45, intensity: '中等');
 
-    controller.saveManualAdjustment(
+    await controller.saveManualAdjustment(
       workout: workout,
       adjustedMinutes: 30,
       adjustedIntensity: '轻松',
       reason: '加班',
     );
-    controller.restoreOriginalPlan(
+    await controller.restoreOriginalPlan(
       workout.copyWith(estimatedMinutes: 30, intensity: '轻松'),
     );
 
@@ -115,12 +115,12 @@ void main() {
     expect(state.statusMessage, '已恢复原计划并记录为本地学习信号：低强度有氧跑。');
   });
 
-  test('调整时长超出范围不会写入记录', () {
+  test('调整时长超出范围不会写入记录', () async {
     final InMemoryLocalStorageService storage = InMemoryLocalStorageService();
     final ProviderContainer container = createContainer(storage);
     addTearDown(container.dispose);
 
-    container
+    await container
         .read(planAdjustmentControllerProvider.notifier)
         .saveManualAdjustment(
           workout: _workoutDay(minutes: 45, intensity: '中等'),
@@ -135,7 +135,7 @@ void main() {
     expect(state.statusMessage, '调整时长需在 5 到 180 分钟之间。');
   });
 
-  test('缺少强度或原因不会写入记录', () {
+  test('缺少强度或原因不会写入记录', () async {
     final InMemoryLocalStorageService storage = InMemoryLocalStorageService();
     final ProviderContainer container = createContainer(storage);
     addTearDown(container.dispose);
@@ -143,13 +143,13 @@ void main() {
         container.read(planAdjustmentControllerProvider.notifier);
     final WorkoutDay workout = _workoutDay(minutes: 45, intensity: '中等');
 
-    controller.saveManualAdjustment(
+    await controller.saveManualAdjustment(
       workout: workout,
       adjustedMinutes: 30,
       adjustedIntensity: '  ',
       reason: '加班',
     );
-    controller.saveManualAdjustment(
+    await controller.saveManualAdjustment(
       workout: workout,
       adjustedMinutes: 30,
       adjustedIntensity: '轻松',
@@ -162,10 +162,10 @@ void main() {
     expect(state.statusMessage, '请补充调整后的强度和原因。');
   });
 
-  test('新的 ProviderContainer 会读取已持久化记录', () {
+  test('新的 ProviderContainer 会读取已持久化记录', () async {
     final InMemoryLocalStorageService storage = InMemoryLocalStorageService();
     final ProviderContainer firstContainer = createContainer(storage);
-    firstContainer
+    await firstContainer
         .read(planAdjustmentControllerProvider.notifier)
         .saveManualAdjustment(
           workout: _workoutDay(minutes: 45, intensity: '中等'),
@@ -185,7 +185,7 @@ void main() {
     expect(restoredState.statusMessage, '已读取 1 条本地计划调整记录。');
   });
 
-  test('保存调整只使用基础训练日的规范字段', () {
+  test('保存调整只使用基础训练日的规范字段', () async {
     final InMemoryLocalStorageService storage = InMemoryLocalStorageService();
     final ProviderContainer container = createContainer(storage);
     addTearDown(container.dispose);
@@ -197,7 +197,7 @@ void main() {
       intensity: '极高',
     );
 
-    container
+    await container
         .read(planAdjustmentControllerProvider.notifier)
         .saveManualAdjustment(
           workout: projected,
@@ -215,7 +215,7 @@ void main() {
     expect(adjustment.originalIntensity, canonical.intensity);
   });
 
-  test('训练日不存在时不会保存或恢复调整', () {
+  test('训练日不存在时不会保存或恢复调整', () async {
     final InMemoryLocalStorageService storage = InMemoryLocalStorageService();
     final ProviderContainer container = createContainer(storage);
     addTearDown(container.dispose);
@@ -226,7 +226,7 @@ void main() {
     final PlanAdjustmentController controller =
         container.read(planAdjustmentControllerProvider.notifier);
 
-    controller.saveManualAdjustment(
+    await controller.saveManualAdjustment(
       workout: missingWorkout,
       adjustedMinutes: 30,
       adjustedIntensity: '轻松',
@@ -238,14 +238,14 @@ void main() {
     expect(state.adjustments, isEmpty);
     expect(state.statusMessage, '无法保存调整：没有找到对应训练日。');
 
-    controller.restoreOriginalPlan(missingWorkout);
+    await controller.restoreOriginalPlan(missingWorkout);
 
     state = container.read(planAdjustmentControllerProvider);
     expect(state.adjustments, isEmpty);
     expect(state.statusMessage, '无法恢复原计划：没有找到对应训练日。');
   });
 
-  test('已确认 ACWR 建议通过计划调整边界应用并可恢复确认前快照', () {
+  test('已确认 ACWR 建议通过计划调整边界应用并可恢复确认前快照', () async {
     final InMemoryLocalStorageService storage = InMemoryLocalStorageService();
     final ProviderContainer container = createContainer(storage);
     addTearDown(container.dispose);
@@ -258,7 +258,7 @@ void main() {
       adjustedIntensity: 'RPE 3-4',
     );
 
-    controller.applyConfirmedProposal(
+    await controller.applyConfirmedProposal(
       proposal: confirmed,
       currentWorkout: workout,
     );
@@ -270,7 +270,7 @@ void main() {
     expect(latest.originalIntensity, workout.intensity);
     expect(latest.adjustedIntensity, 'RPE 3-4');
 
-    controller.undoConfirmedProposal(
+    await controller.undoConfirmedProposal(
       confirmed.copyWith(
         status: AdjustmentProposalStatus.undone,
         undoneAt: DateTime(2026, 7, 15, 11),
@@ -284,7 +284,7 @@ void main() {
     expect(latest.sourceProposalId, confirmed.id);
   });
 
-  test('确认前、模糊强度或已有后续修改时均不会覆盖计划', () {
+  test('确认前、模糊强度或已有后续修改时均不会覆盖计划', () async {
     final InMemoryLocalStorageService storage = InMemoryLocalStorageService();
     final ProviderContainer container = createContainer(storage);
     addTearDown(container.dispose);
@@ -292,15 +292,15 @@ void main() {
     final PlanAdjustmentController controller =
         container.read(planAdjustmentControllerProvider.notifier);
 
-    expect(
-      () => controller.applyConfirmedProposal(
+    await expectLater(
+      controller.applyConfirmedProposal(
         proposal: _proposalForWorkout(workout),
         currentWorkout: workout,
       ),
       throwsA(isA<StateError>()),
     );
-    expect(
-      () => controller.applyConfirmedProposal(
+    await expectLater(
+      controller.applyConfirmedProposal(
         proposal: _proposalForWorkout(
           workout,
           status: AdjustmentProposalStatus.confirmed,
@@ -320,19 +320,19 @@ void main() {
       status: AdjustmentProposalStatus.confirmed,
       adjustedIntensity: 'RPE 3-4',
     );
-    controller.applyConfirmedProposal(
+    await controller.applyConfirmedProposal(
       proposal: confirmed,
       currentWorkout: workout,
     );
-    controller.saveManualAdjustment(
+    await controller.saveManualAdjustment(
       workout: workout,
       adjustedMinutes: 30,
       adjustedIntensity: 'RPE 2-3',
       reason: '用户后续手动修改',
     );
 
-    expect(
-      () => controller.undoConfirmedProposal(confirmed),
+    await expectLater(
+      controller.undoConfirmedProposal(confirmed),
       throwsA(isA<StateError>()),
     );
     final PlanAdjustment latest =

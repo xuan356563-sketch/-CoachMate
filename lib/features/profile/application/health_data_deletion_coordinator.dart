@@ -73,7 +73,7 @@ class HealthDataDeletionCoordinator {
 
   final String Function() currentAthleteId;
   final Future<void> Function() clearHealthFactsAndQueue;
-  final void Function() clearBodyMetrics;
+  final Future<void> Function() clearBodyMetrics;
   final Future<void> Function(String athleteProfileId) clearGrowthData;
   final void Function() clearHealthDerivedPlanAdjustments;
   final void Function() clearCompatibilityReportsAndBadges;
@@ -86,7 +86,7 @@ class HealthDataDeletionCoordinator {
       throw StateError('当前运动员标识为空，无法安全清理本地健康数据。');
     }
     await clearHealthFactsAndQueue();
-    clearBodyMetrics();
+    await clearBodyMetrics();
     await clearGrowthData(athleteProfileId);
     clearHealthDerivedPlanAdjustments();
     clearCompatibilityReportsAndBadges();

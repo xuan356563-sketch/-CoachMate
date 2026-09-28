@@ -17,14 +17,17 @@ class AiLocalStatusSnapshot {
 }
 
 class ChatRouteDecision {
-  const ChatRouteDecision.cloud()
+  const ChatRouteDecision.cloud(this.cloudIntent)
       : sendToCloud = true,
         localReply = null;
 
-  const ChatRouteDecision.local(this.localReply) : sendToCloud = false;
+  const ChatRouteDecision.local(this.localReply)
+      : sendToCloud = false,
+        cloudIntent = null;
 
   final bool sendToCloud;
   final String? localReply;
+  final AiChatCloudIntent? cloudIntent;
 }
 
 class ChatPrivacyRouter {
@@ -49,7 +52,25 @@ class ChatPrivacyRouter {
     'healthkit',
     '血压',
     '血糖',
+    '膝',
+    '腰',
+    '肩',
+    '踝',
+    '胸闷',
+    '眩晕',
+    '头晕',
+    '不舒服',
   ];
+
+  static const Map<String, AiChatCloudIntent> _cloudCommands =
+      <String, AiChatCloudIntent>{
+    '解释今天训练重点': AiChatCloudIntent.explainTodayTraining,
+    '今天训练重点': AiChatCloudIntent.explainTodayTraining,
+    '解释当前计划安排': AiChatCloudIntent.explainPlanStructure,
+    '当前计划安排': AiChatCloudIntent.explainPlanStructure,
+    '解释训练动作重点': AiChatCloudIntent.explainTrainingFocus,
+    '训练动作重点': AiChatCloudIntent.explainTrainingFocus,
+  };
 
   ChatRouteDecision route(String text, AiLocalStatusSnapshot snapshot) {
     final String normalized = text.trim().toLowerCase();
@@ -61,6 +82,14 @@ class ChatPrivacyRouter {
         '本机记录：$facts。这些数据只在本机处理，不会发送给云端 AI。'
         '如果疼痛明显、持续加重或影响日常活动，请停止相关训练并咨询专业人士。',
       );
+    }
+    final String command = normalized.replaceAll(
+      RegExp(r'[\s，。！？!?]+'),
+      '',
+    );
+    final AiChatCloudIntent? cloudIntent = _cloudCommands[command];
+    if (cloudIntent != null) {
+      return ChatRouteDecision.cloud(cloudIntent);
     }
     if (normalized.contains('今天练什么') ||
         normalized.contains('今日训练') ||
@@ -86,30 +115,9 @@ class ChatPrivacyRouter {
         'AI 不会静默修改计划；如有新方案，会先展示差异并由你确认。',
       );
     }
-    return const ChatRouteDecision.cloud();
-  }
-
-  List<AiChatMessage> cloudHistory(List<AiChatMessage> messages) {
-    final List<AiChatMessage> eligible = messages
-        .where(
-          (AiChatMessage item) =>
-              item.cloudEligible &&
-              item.status == AiChatMessageStatus.sent &&
-              (item.role == AiChatMessageRole.user ||
-                  item.role == AiChatMessageRole.assistant),
-        )
-        .toList(growable: false);
-    final List<AiChatMessage> compacted = eligible.length <= 4
-        ? List<AiChatMessage>.from(eligible)
-        : eligible.sublist(eligible.length - 4);
-    while (compacted.length > 1 &&
-        compacted.fold<int>(
-              0,
-              (int total, AiChatMessage item) => total + item.content.length,
-            ) >
-            1200) {
-      compacted.removeAt(0);
-    }
-    return List<AiChatMessage>.unmodifiable(compacted);
+    return const ChatRouteDecision.local(
+      '这段自由文本已保留在本机，没有发送给云端。'
+      '如需云端解释，请选择“解释今天训练重点”“解释当前计划安排”或“解释训练动作重点”。',
+    );
   }
 }

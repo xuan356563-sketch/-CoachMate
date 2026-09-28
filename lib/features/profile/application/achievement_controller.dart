@@ -2,6 +2,9 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../data/models/achievement.dart';
 import '../../../data/repositories/achievement_repository.dart';
+import '../../../plugins/application/feature_access.dart';
+import '../../../plugins/application/feature_controller_binding.dart';
+import '../../../plugins/application/plugin_runtime_provider.dart';
 import '../../../services/local_storage_service.dart';
 
 final achievementRepositoryProvider = Provider<AchievementRepository>(
@@ -35,6 +38,7 @@ class AchievementState {
 class AchievementController extends Notifier<AchievementState> {
   @override
   AchievementState build() {
+    bindFeatureController(ref, 'feature.growth', 'achievement', this);
     final List<AchievementRecord> records =
         ref.read(achievementRecordRepositoryProvider).listRecords();
     return AchievementState(
@@ -46,30 +50,35 @@ class AchievementController extends Notifier<AchievementState> {
     );
   }
 
-  void sync(
+  Future<void> sync(
     List<AchievementProgress> progresses, {
     bool showNoChangeMessage = false,
   }) {
+    final FeatureOperation operation =
+        ref.read(featureAccessProvider).beginOperation('feature.growth');
     final int previousCount = state.records.length;
     final int unlockedCount =
         progresses.where((AchievementProgress item) => item.unlocked).length;
-    final List<AchievementRecord> records = ref
-        .read(achievementRecordRepositoryProvider)
-        .syncUnlockedProgresses(progresses);
-    final int addedCount = records.length - previousCount;
-    String statusMessage = state.statusMessage;
-    if (addedCount > 0) {
-      statusMessage =
-          '已写入 $addedCount 条新成就记录，本地 achievements 表共 ${records.length} 条。';
-    } else if (showNoChangeMessage && unlockedCount == 0) {
-      statusMessage = '还没有可写入的已解锁成就。';
-    } else if (showNoChangeMessage) {
-      statusMessage = '本地 achievements 表已是最新，共 ${records.length} 条。';
-    }
-    state = AchievementState(
-      definitions: state.definitions,
-      records: records,
-      statusMessage: statusMessage,
-    );
+    return operation.commit(() async {
+      final List<AchievementRecord> records = ref
+          .read(achievementRecordRepositoryProvider)
+          .syncUnlockedProgresses(progresses);
+      await ref.read(localStorageServiceProvider).flush();
+      final int addedCount = records.length - previousCount;
+      String statusMessage = state.statusMessage;
+      if (addedCount > 0) {
+        statusMessage =
+            '已写入 $addedCount 条新成就记录，本地 achievements 表共 ${records.length} 条。';
+      } else if (showNoChangeMessage && unlockedCount == 0) {
+        statusMessage = '还没有可写入的已解锁成就。';
+      } else if (showNoChangeMessage) {
+        statusMessage = '本地 achievements 表已是最新，共 ${records.length} 条。';
+      }
+      state = AchievementState(
+        definitions: state.definitions,
+        records: records,
+        statusMessage: statusMessage,
+      );
+    });
   }
 }

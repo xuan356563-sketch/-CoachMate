@@ -23,14 +23,14 @@ void main() {
     final TrainingMvpController training =
         container.read(trainingMvpProvider.notifier);
 
-    training.saveTodayLog(completed: true, rpe: 6, userNote: '桥接测试');
+    await training.saveTodayLog(completed: true, rpe: 6, userNote: '桥接测试');
     expect(container.read(trainingLogControllerProvider), hasLength(1));
     expect(container.read(trainingMvpProvider).logs, hasLength(1));
 
     training.startWorkoutPlayer(
       workoutDayId: container.read(trainingMvpProvider).todayWorkout.id,
     );
-    training.completeWorkoutPlayerStep();
+    await training.completeWorkoutPlayerStep();
     await Future<void>.delayed(Duration.zero);
 
     final TrainingMvpState state = container.read(trainingMvpProvider);
@@ -57,7 +57,7 @@ void main() {
     final TrainingMvpController training =
         container.read(trainingMvpProvider.notifier);
 
-    training.saveWorkoutSessionReview(
+    await training.saveWorkoutSessionReview(
       actualDurationMinutes: 30,
       completionPercentage: 50,
       rpe: 6,

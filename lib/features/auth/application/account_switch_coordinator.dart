@@ -32,12 +32,19 @@ final accountSwitchCoordinatorProvider = Provider<AccountSwitchCoordinator>(
             ),
     confirmDatabaseAccountSwitch: () =>
         ref.read(authControllerProvider.notifier).confirmAccountSwitch(),
+    isScopeAlreadyReplaced: () => switch (ref.read(authControllerProvider)) {
+      AsyncData<AuthState>(:final value) => value.accountScopeReplaced,
+      _ => false,
+    },
     resetInMemoryState: () {
       ref.invalidate(healthSyncControllerProvider);
       ref.invalidate(bodyMetricRepositoryProvider);
+      ref.invalidate(dailyCheckInRepositoryProvider);
       ref.invalidate(bodyMetricControllerProvider);
       ref.invalidate(bodyMetricExportRepositoryProvider);
       ref.invalidate(bodyMetricExportControllerProvider);
+      ref.invalidate(bodyMetricExportTextProvider);
+      ref.invalidate(bodyMetricExportPackageStatusProvider);
       ref.invalidate(growthEvidenceControllerProvider);
       ref.invalidate(growthMetricsControllerProvider);
       ref.invalidate(trainingMetricAggregatesProvider);
@@ -75,18 +82,26 @@ class AccountSwitchCoordinator {
   const AccountSwitchCoordinator({
     required this.clearPendingHealthQueue,
     required this.confirmDatabaseAccountSwitch,
+    required this.isScopeAlreadyReplaced,
     required this.resetInMemoryState,
   });
 
   final Future<void> Function() clearPendingHealthQueue;
   final Future<bool> Function() confirmDatabaseAccountSwitch;
+  final bool Function() isScopeAlreadyReplaced;
   final void Function() resetInMemoryState;
 
   Future<void> confirm() async {
-    // Swift 队列可从 HealthKit 重建，先清队列可避免旧账号批次在换绑后重放。
-    await clearPendingHealthQueue();
+    final bool scopeAlreadyReplaced = isScopeAlreadyReplaced();
+    if (!scopeAlreadyReplaced) {
+      // Swift 队列可从 HealthKit 重建，先清队列可避免旧账号批次在换绑后重放。
+      await clearPendingHealthQueue();
+    }
     final bool switched = await confirmDatabaseAccountSwitch();
     if (!switched) {
+      if (isScopeAlreadyReplaced()) {
+        throw StateError('本地账号数据已切换，新账号功能装配待恢复。重试不会再次清理数据。');
+      }
       throw StateError('本地业务数据原子清理失败，账号尚未切换。');
     }
     resetInMemoryState();

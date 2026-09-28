@@ -1,0 +1,13 @@
+{
+  "baseline_version": 1,
+  "issues": [
+    {
+      "expected_resolution": "素材整理阶段单独迁移并重新生成任务清单，不在本次资源登记中自动改写。",
+      "first_seen_catalog_version": "2026.08.27-v1",
+      "issue_id": "external-exercise-manifest-absolute-paths",
+      "reason": "外部动作素材的历史任务清单仍包含旧桌面目录的绝对路径。",
+      "resource_key": "source_receipt:exercise-media-source",
+      "rule_id": "external_absolute_path"
+    }
+  ]
+}

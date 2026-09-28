@@ -184,7 +184,7 @@ class _MediaFallback extends StatelessWidget {
             label,
             style: Theme.of(context).textTheme.titleMedium?.copyWith(
                   color: AppColors.primary,
-                  fontWeight: FontWeight.w800,
+                  fontWeight: FontWeight.w600,
                 ),
           ),
         ],

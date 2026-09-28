@@ -3,6 +3,9 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:image_picker/image_picker.dart';
 
 import '../../auth/data/authenticated_api_client.dart';
+import '../../../plugins/application/feature_access.dart';
+import '../../../plugins/application/feature_controller_binding.dart';
+import '../../../plugins/application/plugin_runtime_provider.dart';
 
 final raceImagePickerProvider = Provider<RaceImagePicker>(
   (Ref ref) => PlatformRaceImagePicker(ImagePicker()),
@@ -135,6 +138,7 @@ class PlatformRaceImagePicker implements RaceImagePicker {
 
 class RaceImageRecognitionController
     extends AsyncNotifier<RaceImageRecognitionState> {
+  static const String _featureId = 'feature.race_prep';
   static const int maxImageBytes = 10 * 1024 * 1024;
 
   late final RaceImagePicker _picker;
@@ -144,10 +148,19 @@ class RaceImageRecognitionController
   Future<RaceImageRecognitionState> build() async {
     _picker = ref.read(raceImagePickerProvider);
     _apiClient = ref.read(authenticatedApiClientProvider);
+    bindFeatureController(
+      ref,
+      _featureId,
+      'imageRecognition',
+      this,
+      cleanup: clear,
+    );
     return const RaceImageRecognitionState();
   }
 
   Future<void> pickAndRecognize(RaceImageSource source) async {
+    final FeatureOperation operation =
+        ref.read(featureAccessProvider).beginOperation(_featureId);
     _setState(_current.copyWith(
       status: RaceImageRecognitionStatus.picking,
       clearResult: true,
@@ -155,6 +168,7 @@ class RaceImageRecognitionController
     ));
     try {
       final RaceImageFile? image = await _picker.pick(source);
+      operation.checkActive();
       if (image == null) {
         _setState(const RaceImageRecognitionState());
         return;
@@ -171,13 +185,15 @@ class RaceImageRecognitionController
         status: RaceImageRecognitionStatus.recognizing,
         image: image,
       ));
-      await recognizeSelected();
+      await _recognizeSelected(operation);
     } on PlatformException catch (error) {
+      operation.checkActive();
       _setState(RaceImageRecognitionState(
         status: RaceImageRecognitionStatus.failure,
         errorMessage: _permissionMessage(error.code),
       ));
     } catch (_) {
+      operation.checkActive();
       _setState(const RaceImageRecognitionState(
         status: RaceImageRecognitionStatus.failure,
         errorMessage: '无法读取图片，请重新选择',
@@ -186,6 +202,12 @@ class RaceImageRecognitionController
   }
 
   Future<void> recognizeSelected() async {
+    final FeatureOperation operation =
+        ref.read(featureAccessProvider).beginOperation(_featureId);
+    await _recognizeSelected(operation);
+  }
+
+  Future<void> _recognizeSelected(FeatureOperation operation) async {
     final RaceImageFile? image = _current.image;
     if (image == null ||
         _current.isBusy &&
@@ -203,18 +225,21 @@ class RaceImageRecognitionController
         bytes: image.bytes,
         filename: image.name,
       );
+      operation.checkActive();
       _setState(_current.copyWith(
         status: RaceImageRecognitionStatus.success,
         result: RaceImageRecognitionResult.fromJson(payload),
         clearError: true,
       ));
     } on ApiException catch (error) {
+      operation.checkActive();
       _setState(_current.copyWith(
         status: RaceImageRecognitionStatus.failure,
         errorMessage: error.message,
         clearResult: true,
       ));
     } catch (_) {
+      operation.checkActive();
       _setState(_current.copyWith(
         status: RaceImageRecognitionStatus.failure,
         errorMessage: '赛事图片识别失败，请稍后重试',

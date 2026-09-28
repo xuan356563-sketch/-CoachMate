@@ -1,3 +1,4 @@
+import '../daily_adjustment/application/daily_course_adjustment.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -10,7 +11,7 @@ import '../../core/widgets/flow_mascot.dart';
 import '../../core/widgets/trainmate_showcase_widgets.dart';
 import '../../core/widgets/trainflow_widgets.dart';
 import '../../data/models/achievement.dart';
-import '../../data/models/body_metric.dart';
+import '../../services/body_metric_display_service.dart';
 import '../../data/models/cloud_sync.dart';
 import '../../data/models/growth_evidence.dart';
 import '../../data/models/health_snapshot.dart';
@@ -37,7 +38,7 @@ FlowMascotSpec selectProfileMascotSpec({
   required bool profileCompleted,
   required bool isHealthSyncing,
   required bool requiresMedicalAttention,
-  required int readinessScore,
+  required int? readinessScore,
 }) {
   if (!profileCompleted) {
     return const FlowMascotSpec(
@@ -55,7 +56,7 @@ FlowMascotSpec selectProfileMascotSpec({
       durationMilliseconds: 560,
     );
   }
-  if (requiresMedicalAttention || readinessScore < 52) {
+  if (requiresMedicalAttention || (readinessScore != null && readinessScore < 52)) {
     return const FlowMascotSpec(
       action: FlowMascotAction.recover,
       expression: FlowMascotExpression.closed,
@@ -114,19 +115,22 @@ class ProfilePage extends ConsumerWidget {
         state.logs.where((TrainingLog log) => log.isSessionRecord).length;
 
     return TrainMateImmersiveHubPage(
-      mode: TrainMateVisualMode.darkTraining,
+      mode: TrainMateVisualMode.referenceShowcase,
+      showcaseOverviewChildCount: 2,
       hero: ProfileShowcaseHeader(
         name: profile.name,
         trainingGoal: profile.trainingGoal,
-        readinessScore: state.readinessScore,
-        completedSessionCount: completedSessionCount,
-        growthProgress: growthProgress,
-        achievementCount: state.achievementRecords.length,
-        trainingRecordCount: trainingRecordCount,
         onEditProfile: () => context.push(AppRoutes.onboarding),
-        onOpenGrowthEvidence: () => context.push(AppRoutes.growthEvidence),
-        onOpenWeeklyReport: () => context.push(AppRoutes.weeklyReport),
       ),
+      storyChildren: <Widget>[
+        TrainMateShowcaseActionCard(
+          title: '查看成长与周报',
+          subtitle: '基于已记录训练事实，回看等级、证据和本周节奏。',
+          icon: Icons.insights_rounded,
+          color: TrainFlowTokens.yellow,
+          onTap: () => context.push(AppRoutes.growthEvidence),
+        ),
+      ],
       children: [
         ProfileImmersiveOverview(
           readinessScore: state.readinessScore,
@@ -138,7 +142,9 @@ class ProfilePage extends ConsumerWidget {
           onOpenWeeklyReport: () => context.push(AppRoutes.weeklyReport),
         ),
         const SizedBox(height: 20),
+        const SectionTitle(title: '训练档案'),
         TrainFlowCard(
+          key: const ValueKey<String>('profile-training-profile-card'),
           tone: TrainFlowCardTone.peach,
           cornerCharacterAction:
               trainMateActionForFlowMascot(mascotSpec.action),
@@ -147,49 +153,23 @@ class ProfilePage extends ConsumerWidget {
             children: [
               Row(
                 children: [
-                  Container(
-                    width: 72,
-                    height: 72,
-                    decoration: BoxDecoration(
-                      shape: BoxShape.circle,
-                      color: TrainFlowTokens.darkTrainingRaised,
-                      border: Border.all(
-                        color: TrainFlowTokens.pink,
-                        width: 3,
-                      ),
-                    ),
-                    child: const Icon(
-                      Icons.person,
-                      color: TrainFlowTokens.accent,
-                      size: 40,
+                  Expanded(
+                    child: Text(
+                      '训练安排与现实约束',
+                      style: Theme.of(context)
+                          .textTheme
+                          .titleMedium
+                          ?.copyWith(fontWeight: FontWeight.w700),
                     ),
                   ),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          profile.name,
-                          style: Theme.of(context)
-                              .textTheme
-                              .titleLarge
-                              ?.copyWith(fontWeight: FontWeight.w600),
-                        ),
-                        const SizedBox(height: 4),
-                        Text(
-                          profile.trainingGoal,
-                          style:
-                              Theme.of(context).textTheme.bodyMedium?.copyWith(
-                                    color: TrainFlowTokens.darkTrainingMuted,
-                                  ),
-                        ),
-                      ],
-                    ),
+                  IconButton(
+                    tooltip: '编辑训练档案',
+                    onPressed: () => context.push(AppRoutes.onboarding),
+                    icon: const Icon(Icons.edit_outlined),
                   ),
                 ],
               ),
-              const SizedBox(height: 14),
+              const SizedBox(height: 10),
               Wrap(
                 spacing: 8,
                 runSpacing: 8,
@@ -251,98 +231,15 @@ class ProfilePage extends ConsumerWidget {
             ],
           ),
         ),
-        if (showPilotValidation)
-          TrainFlowCard(
-            tone: TrainFlowCardTone.peach,
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  '7–14 天假设卡验证',
-                  style: Theme.of(context)
-                      .textTheme
-                      .titleMedium
-                      ?.copyWith(fontWeight: FontWeight.w600),
-                ),
-                const SizedBox(height: 8),
-                const Text('匿名记录承诺、每日履约、线下押金状态和第 14 天继续决定。'),
-                const SizedBox(height: 10),
-                Align(
-                  alignment: Alignment.centerRight,
-                  child: TextButton.icon(
-                    onPressed: () => context.push(AppRoutes.pilotValidation),
-                    icon: const Icon(Icons.science_outlined),
-                    label: const Text('打开内测记录'),
-                  ),
-                ),
-              ],
-            ),
-          ),
-        const SectionTitle(title: '账号'),
-        const _AccountCard(),
-        const SectionTitle(title: '训练知识'),
-        TrainFlowCard(
-          child: ListTile(
-            contentPadding: EdgeInsets.zero,
-            leading: const Icon(
-              Icons.verified_outlined,
-              color: TrainFlowTokens.accent,
-            ),
-            title: const Text('内部已审核训练知识'),
-            subtitle: const Text('查看可追溯原则与模板；草稿和停用内容不会参与 AI 生成。'),
-            trailing: const Icon(Icons.chevron_right),
-            onTap: () => context.push(AppRoutes.knowledge),
-          ),
-        ),
         const SectionTitle(title: '训练日程'),
         const _TrainingCalendarCard(),
         const SectionTitle(title: '健康管理'),
         const _AppleHealthCard(),
         _RehabStatusCard(state: state),
-        _BodyDataPreviewCard(metric: state.latestBodyMetric, state: state),
+        _BodyDataPreviewCard(state: state),
         _NutritionPreviewCard(guide: state.activeMealGuide),
         const SectionTitle(title: '训练负荷'),
         TrainingLoadCard(state: state),
-        const SectionTitle(title: '自用验收'),
-        TrainFlowCard(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Row(
-                children: [
-                  const Icon(Icons.fact_check_outlined,
-                      color: TrainFlowTokens.accent),
-                  const SizedBox(width: 8),
-                  Expanded(
-                    child: Text(
-                      '14 天真实使用记录',
-                      style: Theme.of(context)
-                          .textTheme
-                          .titleMedium
-                          ?.copyWith(fontWeight: FontWeight.w600),
-                    ),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 8),
-              Text(
-                '每天记录身体数据、训练执行、反馈和阻断问题，完成后再进行人工 Gate A 验收。',
-                style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                      color: TrainFlowTokens.darkTrainingMuted,
-                    ),
-              ),
-              const SizedBox(height: 10),
-              Align(
-                alignment: Alignment.centerRight,
-                child: TextButton.icon(
-                  onPressed: () => context.push(AppRoutes.selfUseAcceptance),
-                  icon: const Icon(Icons.open_in_new),
-                  label: const Text('打开验收记录'),
-                ),
-              ),
-            ],
-          ),
-        ),
         const SectionTitle(title: '用户画像'),
         _UserInsightPreviewCard(state: state),
         const SectionTitle(title: '本周成长报告'),
@@ -376,7 +273,9 @@ class ProfilePage extends ConsumerWidget {
                     children: [
                       Expanded(
                         child: Text(
-                          log.completed ? '已完成训练' : '未完成训练',
+                          log.kind == TrainingLogKind.playerStep
+                              ? (log.completed ? '已完成跟练步骤' : '未完成跟练步骤')
+                              : (log.completed ? '已完成训练' : '未完成训练'),
                           style: Theme.of(context)
                               .textTheme
                               .titleMedium
@@ -396,6 +295,120 @@ class ProfilePage extends ConsumerWidget {
                 ],
               ),
             ),
+        const SectionTitle(title: '更多'),
+        TrainFlowCard(child: ListTile(leading: const Icon(Icons.collections_bookmark_outlined), title: const Text('运动资源库'), subtitle: const Text('基础评估与训练计划模板'), onTap: () => context.push('/resources'))),
+        TrainFlowCard(
+          child: ListTile(
+            key: const ValueKey<String>('profile-capabilities-entry'),
+            contentPadding: EdgeInsets.zero,
+            leading: const Icon(
+              Icons.tune,
+              color: TrainFlowTokens.accent,
+            ),
+            title: const Text('运动与功能'),
+            subtitle: const Text('管理本机启用的运动、目标支持与可选功能。'),
+            trailing: const Icon(Icons.chevron_right),
+            onTap: () => context.push(AppRoutes.capabilities),
+          ),
+        ),
+        TrainFlowCard(
+          child: ListTile(
+            key: const ValueKey<String>('profile-history-entry'),
+            contentPadding: EdgeInsets.zero,
+            leading: const Icon(
+              Icons.history,
+              color: TrainFlowTokens.accent,
+            ),
+            title: const Text('历史记录'),
+            subtitle: const Text('查看已保存计划版本、训练记录和各类报告。'),
+            trailing: const Icon(Icons.chevron_right),
+            onTap: () => context.push(AppRoutes.history),
+          ),
+        ),
+        TrainFlowCard(
+          child: ListTile(
+            contentPadding: EdgeInsets.zero,
+            leading: const Icon(
+              Icons.verified_outlined,
+              color: TrainFlowTokens.accent,
+            ),
+            title: const Text('内部已审核训练知识'),
+            subtitle: const Text('查看可追溯原则与模板；草稿和停用内容不会参与 AI 生成。'),
+            trailing: const Icon(Icons.chevron_right),
+            onTap: () => context.push(AppRoutes.knowledge),
+          ),
+        ),
+        const _AccountCard(),
+        if (showPilotValidation) ...[
+          const SectionTitle(title: '本地预览工具'),
+          TrainFlowCard(
+            tone: TrainFlowCardTone.peach,
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  '7–14 天假设卡验证',
+                  style: Theme.of(context)
+                      .textTheme
+                      .titleMedium
+                      ?.copyWith(fontWeight: FontWeight.w600),
+                ),
+                const SizedBox(height: 8),
+                const Text('匿名记录承诺、每日履约、线下押金状态和第 14 天继续决定。'),
+                const SizedBox(height: 10),
+                Align(
+                  alignment: Alignment.centerRight,
+                  child: TextButton.icon(
+                    onPressed: () => context.push(AppRoutes.pilotValidation),
+                    icon: const Icon(Icons.science_outlined),
+                    label: const Text('打开内测记录'),
+                  ),
+                ),
+              ],
+            ),
+          ),
+          TrainFlowCard(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  children: [
+                    const Icon(
+                      Icons.fact_check_outlined,
+                      color: TrainFlowTokens.accent,
+                    ),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: Text(
+                        '14 天真实使用记录',
+                        style: Theme.of(context)
+                            .textTheme
+                            .titleMedium
+                            ?.copyWith(fontWeight: FontWeight.w600),
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 8),
+                Text(
+                  '每天记录身体数据、训练执行、反馈和阻断问题，完成后再进行人工 Gate A 验收。',
+                  style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                        color: TrainFlowTokens.darkTrainingMuted,
+                      ),
+                ),
+                const SizedBox(height: 10),
+                Align(
+                  alignment: Alignment.centerRight,
+                  child: TextButton.icon(
+                    onPressed: () => context.push(AppRoutes.selfUseAcceptance),
+                    icon: const Icon(Icons.open_in_new),
+                    label: const Text('打开验收记录'),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
       ],
     );
   }
@@ -415,7 +428,7 @@ class _TrainingCalendarCardState extends ConsumerState<_TrainingCalendarCard> {
   @override
   Widget build(BuildContext context) {
     final TrainingScheduleState schedule =
-        ref.watch(trainingScheduleControllerProvider);
+        ref.watch(effectiveTrainingScheduleProvider);
     final List<TrainingAvailabilitySlot> slots =
         schedule.slotsFor(_selectedDate);
     final ScheduledWorkout? workout = schedule.workoutFor(_selectedDate);
@@ -484,9 +497,18 @@ class _TrainingCalendarCardState extends ConsumerState<_TrainingCalendarCard> {
                     Text('${slot.period.label} · ${slot.durationMinutes} 分钟'),
                 trailing: IconButton(
                   tooltip: '删除时间段',
-                  onPressed: () => ref
-                      .read(trainingScheduleControllerProvider.notifier)
-                      .removeSlot(slot.id),
+                  onPressed: () async {
+                    try {
+                      await ref
+                          .read(trainingScheduleControllerProvider.notifier)
+                          .removeSlot(slot.id);
+                    } on Object catch (error) {
+                      if (!context.mounted) return;
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        SnackBar(content: Text('删除时间段失败：$error，请重试。')),
+                      );
+                    }
+                  },
                   icon: const Icon(Icons.delete_outline),
                 ),
               ),
@@ -572,12 +594,19 @@ class _TrainingCalendarCardState extends ConsumerState<_TrainingCalendarCard> {
       },
     );
     if (confirmed != true || !mounted) return;
-    ref.read(trainingScheduleControllerProvider.notifier).addSlot(
-          date: _selectedDate,
-          startMinute: start.hour * 60 + start.minute,
-          endMinute: end.hour * 60 + end.minute,
-          repeatWeekly: repeatWeekly,
-        );
+    try {
+      await ref.read(trainingScheduleControllerProvider.notifier).addSlot(
+            date: _selectedDate,
+            startMinute: start.hour * 60 + start.minute,
+            endMinute: end.hour * 60 + end.minute,
+            repeatWeekly: repeatWeekly,
+          );
+    } on Object catch (error) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('可训练时间保存失败：$error，请重试。')),
+      );
+    }
   }
 }
 
@@ -954,7 +983,7 @@ class _WeeklyReportPreviewCard extends StatelessWidget {
 
 class _AchievementSummaryCard extends StatelessWidget {
   final TrainingMvpState state;
-  final VoidCallback onSyncRecords;
+  final Future<void> Function() onSyncRecords;
 
   const _AchievementSummaryCard({
     required this.state,
@@ -1059,7 +1088,16 @@ class _AchievementSummaryCard extends StatelessWidget {
                   SizedBox(
                     width: double.infinity,
                     child: OutlinedButton.icon(
-                      onPressed: onSyncRecords,
+                      onPressed: () async {
+                        try {
+                          await onSyncRecords();
+                        } catch (error) {
+                          if (!context.mounted) return;
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            SnackBar(content: Text('同步成就记录失败：$error')),
+                          );
+                        }
+                      },
                       icon: const Icon(Icons.sync),
                       label: const Text('同步成就记录'),
                     ),
@@ -1540,17 +1578,15 @@ class _RehabStatusCard extends StatelessWidget {
 }
 
 class _BodyDataPreviewCard extends StatelessWidget {
-  final BodyMetric? metric;
   final TrainingMvpState state;
 
-  const _BodyDataPreviewCard({
-    required this.metric,
-    required this.state,
-  });
+  const _BodyDataPreviewCard({required this.state});
 
   @override
   Widget build(BuildContext context) {
+    final report = BodyMetricDisplayService().build(metrics: state.bodyMetrics);
     return TrainFlowCard(
+      key: const ValueKey('profile-body-summary'),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -1561,29 +1597,26 @@ class _BodyDataPreviewCard extends StatelessWidget {
               Expanded(
                 child: Text(
                   '身体数据',
-                  style: Theme.of(context)
-                      .textTheme
-                      .titleMedium
-                      ?.copyWith(fontWeight: FontWeight.w600),
+                  style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                    fontWeight: FontWeight.w600,
+                  ),
                 ),
               ),
               const ToneBadge(label: '7 日趋势'),
             ],
           ),
           const SizedBox(height: 10),
-          if (metric == null)
-            const Text('还没有身体数据，先完成一次 10 秒快录。')
-          else
+          Text('观察窗口：${report.periodLabel}；仅汇总记录，不代表今日状态。'),
+          for (final field in BodyMetricDisplayField.values.where(
+            (f) => f != BodyMetricDisplayField.fatigue,
+          )) ...[
+            const SizedBox(height: 8),
+            Text('${field.label}记录日均值：${report[field].meanLabel}'),
             Text(
-              '${metric!.measuredDateLabel} · 体重 ${metric!.weightKg.toStringAsFixed(1)} kg · HRV ${metric!.hrvMs} ms · 睡眠 ${metric!.sleepHours.toStringAsFixed(1)} h',
+              report[field].evidenceLabel,
+              style: Theme.of(context).textTheme.bodySmall,
             ),
-          const SizedBox(height: 8),
-          Text(
-            '7 日均值：体重 ${state.averageWeight7d.toStringAsFixed(1)} kg，静息心率 ${state.averageRestingHr7d.round()} bpm。',
-            style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                  color: TrainFlowTokens.darkTrainingMuted,
-                ),
-          ),
+          ],
           const SizedBox(height: 12),
           Align(
             alignment: Alignment.centerRight,

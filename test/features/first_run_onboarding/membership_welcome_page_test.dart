@@ -15,6 +15,7 @@ void main() {
       );
 
       expect(find.text('暂不订阅，进入浏览模式'), findsOneWidget);
+      expect(find.text('练搭 CoachMate 月度会员'), findsOneWidget);
       expect(find.text('恢复购买'), findsNothing);
       expect(find.text('管理订阅'), findsNothing);
       expect(find.textContaining('以App Store 实际价格/月订阅'), findsNothing);

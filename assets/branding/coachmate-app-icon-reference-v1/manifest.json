@@ -1,0 +1,35 @@
+{
+  "version": "coachmate-app-icon-reference-v1",
+  "status": "approved-for-runtime",
+  "generatedBy": "OpenAI built-in image generation and deterministic platform derivation",
+  "promptVersion": "coachmate-badge-compact-app-icon-v1.1-transparent",
+  "reference": {
+    "path": "assets/branding/coachmate-app-icon-reference-v1/source/coachmate-badge-reference.png",
+    "width": 1254,
+    "height": 1254,
+    "mode": "RGB",
+    "sha256": "bf458039a10957dbbd7e67045c7a4290aa9411cf518e4f541d792b6182a34586"
+  },
+  "generatedSource": {
+    "path": "assets/branding/coachmate-app-icon-reference-v1/source/coachmate-app-icon-generated-transparent-1254.png",
+    "width": 1254,
+    "height": 1254,
+    "mode": "RGBA",
+    "sha256": "ed54c8022d0408527a0ca98f9bd0181be790227108d6c17d2ef7d8b6c1f2d103"
+  },
+  "runtimeMaster": {
+    "path": "assets/branding/coachmate-app-icon-reference-v1/exports/png/coachmate-app-icon-artwork-1024.png",
+    "width": 1024,
+    "height": 1024,
+    "mode": "RGBA",
+    "sha256": "2d6a98f81e5bed99f7450b0b9d9084fefd453b502035883ab17e4fbb04cde382"
+  },
+  "platformBackground": "#191331",
+  "identityContract": [
+    "平顶牛皮纸袋与纸张折痕完整",
+    "陶土红绑带横贯纸袋且右侧结与飘带清晰",
+    "宴席印花在 128px 下可辨识",
+    "琥珀双眼与爱心舌头在 44px 下优先可辨识",
+    "平台图标不包含文字、翅膀、卷轴或预制圆角"
+  ]
+}

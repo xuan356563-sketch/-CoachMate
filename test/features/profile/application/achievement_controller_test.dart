@@ -26,7 +26,7 @@ void main() {
     expect(state.statusMessage, contains('尚未同步成就记录'));
   });
 
-  test('同步解锁成就会持久化、去重并保留首次解锁时间', () {
+  test('同步解锁成就会持久化、去重并保留首次解锁时间', () async {
     final InMemoryLocalStorageService storage = InMemoryLocalStorageService();
     final ProviderContainer first = createContainer(storage);
     final AchievementDefinition definition =
@@ -38,10 +38,10 @@ void main() {
       ),
     ];
 
-    first.read(achievementControllerProvider.notifier).sync(progresses);
+    await first.read(achievementControllerProvider.notifier).sync(progresses);
     final DateTime unlockedAt =
         first.read(achievementControllerProvider).records.single.unlockedAt;
-    first.read(achievementControllerProvider.notifier).sync(
+    await first.read(achievementControllerProvider.notifier).sync(
           progresses,
           showNoChangeMessage: true,
         );
@@ -63,14 +63,14 @@ void main() {
     );
   });
 
-  test('没有解锁进度时显示原有提示', () {
+  test('没有解锁进度时显示原有提示', () async {
     final ProviderContainer container =
         createContainer(InMemoryLocalStorageService());
     addTearDown(container.dispose);
     final AchievementDefinition definition =
         container.read(achievementControllerProvider).definitions.first;
 
-    container.read(achievementControllerProvider.notifier).sync(
+    await container.read(achievementControllerProvider.notifier).sync(
       [AchievementProgress(definition: definition, currentValue: 0)],
       showNoChangeMessage: true,
     );

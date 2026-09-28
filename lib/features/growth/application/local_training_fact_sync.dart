@@ -1,3 +1,4 @@
+import '../../daily_adjustment/application/daily_course_adjustment.dart';
 import 'dart:convert';
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -6,6 +7,9 @@ import '../../../data/local/trainmate_structured_database_gateway.dart';
 import '../../../data/models/training_log.dart';
 import '../../../data/models/training_metrics.dart';
 import '../../../data/models/training_schedule.dart';
+import '../../../plugins/application/feature_access.dart';
+import '../../../plugins/application/feature_controller_binding.dart';
+import '../../../plugins/application/plugin_runtime_provider.dart';
 import '../../../services/training_metrics_engine.dart';
 import '../../../services/training_metrics_pipeline.dart';
 import '../../dashboard/training_mvp_controller.dart';
@@ -52,8 +56,41 @@ class LocalTrainingFactSyncState {
   }
 }
 
+final localTrainingFactSyncCoordinatorProvider =
+    Provider<LocalTrainingFactSyncCoordinator>((Ref ref) {
+  final TrainMateStructuredDatabaseGateway? database =
+      ref.watch(healthSyncStructuredDatabaseGatewayProvider);
+  if (database == null) {
+    throw StateError('结构化训练存储暂不可用。');
+  }
+  final LocalTrainingFactSyncCoordinator coordinator =
+      LocalTrainingFactSyncCoordinator(
+    database: database,
+    featureAccess: ref.watch(featureAccessProvider),
+  );
+  bindFeatureController(
+    ref,
+    'feature.growth',
+    'localFactSync',
+    coordinator,
+  );
+  return coordinator;
+});
+
 final localTrainingFactSyncProvider =
     FutureProvider.autoDispose<LocalTrainingFactSyncState>((Ref ref) async {
+  final bool featureEnabled =
+      ref.watch(featureWritableProvider('feature.growth'));
+  if (!featureEnabled) {
+    return const LocalTrainingFactSyncState(
+      status: LocalTrainingFactSyncStatus.unavailable,
+      savedCount: 0,
+      skippedCount: 0,
+      message: '成长功能已停用；已有结构化训练事实保持可读，未执行补算。',
+    );
+  }
+  final FeatureOperation operation =
+      ref.read(featureAccessProvider).beginOperation('feature.growth');
   final TrainMateStructuredDatabaseGateway? database =
       ref.watch(healthSyncStructuredDatabaseGatewayProvider);
   if (database == null) {
@@ -75,15 +112,21 @@ final localTrainingFactSyncProvider =
     ),
   );
   final List<ScheduledWorkout> schedule = ref.watch(
-    trainingScheduleControllerProvider.select(
+    effectiveTrainingScheduleProvider.select(
       (TrainingScheduleState state) => state.workouts,
     ),
   );
   final TrainingMetricsPipeline? pipeline =
       ref.watch(healthSyncMetricsPipelineProvider);
   try {
-    final LocalTrainingFactSyncState persisted =
-        await LocalTrainingFactSyncCoordinator(database: database).synchronize(
+    final LocalTrainingFactSyncCoordinator coordinator =
+        readFeatureController<LocalTrainingFactSyncCoordinator>(
+      ref,
+      'feature.growth',
+      'localFactSync',
+      () => ref.read(localTrainingFactSyncCoordinatorProvider),
+    );
+    final LocalTrainingFactSyncState persisted = await coordinator.synchronize(
       athleteProfileId: athleteProfileId,
       logs: logs,
       scheduledWorkouts: schedule,
@@ -94,6 +137,7 @@ final localTrainingFactSyncProvider =
       athleteProfileId: athleteProfileId,
       logs: logs,
       persisted: persisted,
+      operation: operation,
     );
     if (ref.mounted && analyzed.analyzedCount > 0) {
       ref.invalidate(trainingMetricAggregatesProvider);
@@ -116,6 +160,7 @@ Future<LocalTrainingFactSyncState> _analyzeLocalFacts({
   required String athleteProfileId,
   required List<TrainingLog> logs,
   required LocalTrainingFactSyncState persisted,
+  required FeatureOperation operation,
 }) async {
   final Set<DateTime> analyzedDays = <DateTime>{};
   int analyzedCount = 0;
@@ -123,9 +168,11 @@ Future<LocalTrainingFactSyncState> _analyzeLocalFacts({
   for (final TrainingLog log in logs) {
     if (!log.isSessionRecord || log.actualDurationMinutes <= 0) continue;
     try {
-      final WorkoutAnalysisOutcome outcome = await pipeline.analyzeWorkout(
-        athleteProfileId: athleteProfileId,
-        workoutId: _localWorkoutId(athleteProfileId, log.id),
+      final WorkoutAnalysisOutcome outcome = await operation.commit(
+        () => pipeline.analyzeWorkout(
+          athleteProfileId: athleteProfileId,
+          workoutId: _localWorkoutId(athleteProfileId, log.id),
+        ),
       );
       analyzedDays.add(DateTime(
         outcome.occurredOn.year,
@@ -159,11 +206,11 @@ Future<LocalTrainingFactSyncState> _analyzeLocalFacts({
   for (final String key in orderedKeys) {
     final ({MetricPeriod period, DateTime start}) window = periods[key]!;
     try {
-      await pipeline.aggregatePeriod(
-        athleteProfileId: athleteProfileId,
-        period: window.period,
-        periodStart: window.start,
-      );
+      await operation.commit(() => pipeline.aggregatePeriod(
+            athleteProfileId: athleteProfileId,
+            period: window.period,
+            periodStart: window.start,
+          ));
     } catch (_) {
       failureCount += 1;
     }
@@ -227,30 +274,19 @@ class L1ScheduledResultReadState {
       source == L1ScheduledResultReadSource.structured;
 }
 
-/// 先提交当前排期与训练日志，再从 SQLite 读取首页要展示的 L1 唯一事实。
+/// 只从 SQLite 读取首页要展示的 L1 唯一事实。
 ///
-/// 结构化存储不可用或失败时返回显式兼容状态；调用方不得把兼容重算结果描述为
-/// 已持久化事实。
+/// 结构化存储不可用或失败时返回显式兼容状态；读取不会隐式同步、补算或写入。
 final l1ScheduledResultReadProvider = FutureProvider.autoDispose
     .family<L1ScheduledResultReadState, L1ScheduledResultQuery>(
   (Ref ref, L1ScheduledResultQuery query) async {
     final TrainMateStructuredDatabaseGateway? database =
         ref.watch(healthSyncStructuredDatabaseGatewayProvider);
-    final LocalTrainingFactSyncState sync =
-        await ref.watch(localTrainingFactSyncProvider.future);
-    if (database == null ||
-        sync.status == LocalTrainingFactSyncStatus.unavailable) {
-      return L1ScheduledResultReadState(
+    if (database == null) {
+      return const L1ScheduledResultReadState(
         source: L1ScheduledResultReadSource.compatibilityUnavailable,
-        results: const <StructuredScheduledWorkoutResult>[],
-        message: sync.message,
-      );
-    }
-    if (sync.status == LocalTrainingFactSyncStatus.failed) {
-      return L1ScheduledResultReadState(
-        source: L1ScheduledResultReadSource.compatibilityFailed,
-        results: const <StructuredScheduledWorkoutResult>[],
-        message: sync.message,
+        results: <StructuredScheduledWorkoutResult>[],
+        message: '结构化训练存储暂不可用，已切换为明确的兼容预览。',
       );
     }
     try {
@@ -278,10 +314,13 @@ final l1ScheduledResultReadProvider = FutureProvider.autoDispose
 class LocalTrainingFactSyncCoordinator {
   LocalTrainingFactSyncCoordinator({
     required this.database,
+    FeatureAccess? featureAccess,
     DateTime Function()? clock,
-  }) : _clock = clock ?? DateTime.now;
+  })  : _featureAccess = featureAccess,
+        _clock = clock ?? DateTime.now;
 
   final TrainMateStructuredDatabaseGateway database;
+  final FeatureAccess? _featureAccess;
   final DateTime Function() _clock;
 
   Future<LocalTrainingFactSyncState> synchronize({
@@ -289,6 +328,8 @@ class LocalTrainingFactSyncCoordinator {
     required List<TrainingLog> logs,
     required List<ScheduledWorkout> scheduledWorkouts,
   }) async {
+    final FeatureOperation? operation =
+        _featureAccess?.beginOperation('feature.growth');
     if (athleteProfileId.trim().isEmpty) {
       throw const FormatException('本地训练事实缺少运动员资料 ID。');
     }
@@ -352,20 +393,21 @@ class LocalTrainingFactSyncCoordinator {
           ),
         )
         .toList(growable: false);
-    final L1ScheduleProjectionWriteResult persisted =
-        await database.saveL1ScheduleProjection(
-      L1ScheduleProjectionWrite(
-        planVersionRow: _planVersionRow(
-          athleteProfileId: athleteProfileId,
-          planVersionId: planVersionId,
-          scheduledWorkouts: scheduledWorkouts,
-          evaluatedAt: evaluatedAt,
-        ),
-        scheduledWorkoutRows: scheduledRows,
-        localTrainingFacts: localFacts,
-        unmatchedScheduledResultRows: unmatchedScheduledResults,
+    final L1ScheduleProjectionWrite write = L1ScheduleProjectionWrite(
+      planVersionRow: _planVersionRow(
+        athleteProfileId: athleteProfileId,
+        planVersionId: planVersionId,
+        scheduledWorkouts: scheduledWorkouts,
+        evaluatedAt: evaluatedAt,
       ),
+      scheduledWorkoutRows: scheduledRows,
+      localTrainingFacts: localFacts,
+      unmatchedScheduledResultRows: unmatchedScheduledResults,
     );
+    final L1ScheduleProjectionWriteResult persisted = operation == null
+        ? await database.saveL1ScheduleProjection(write)
+        : await operation
+            .commit(() => database.saveL1ScheduleProjection(write));
     return LocalTrainingFactSyncState(
       status: LocalTrainingFactSyncStatus.ready,
       savedCount: persisted.workoutCount,

@@ -46,7 +46,7 @@ void main() {
               find.byType(IllustratedPetRenderer),
             )
             .semanticLabel,
-        '衡衡狸，萌芽体，心情开心，今日获得 138 能量，距离下一阶段 712',
+        '袋小满，萌芽体，心情开心，今日获得 138 能量，距离下一阶段 712',
       );
     } finally {
       semantics.dispose();

@@ -6,6 +6,7 @@ import 'package:trainflow_ai/data/models/training_log.dart';
 import 'package:trainflow_ai/data/models/training_metrics.dart';
 import 'package:trainflow_ai/data/models/training_schedule.dart';
 import 'package:trainflow_ai/features/growth/application/local_training_fact_sync.dart';
+import 'package:trainflow_ai/features/profile/application/health_sync_controller.dart';
 
 void main() {
   test('真实 session 原子投影为无外部 UUID 的 workout、L1 判定和力量组次', () async {
@@ -258,6 +259,29 @@ void main() {
     expect(state.status, LocalTrainingFactSyncStatus.unavailable);
     expect(state.message, contains('继续使用本地兼容数据'));
   });
+
+  test('L1 读取 Provider 只读结构化事实，不隐式触发同步或补写', () async {
+    final _RecordingStructuredGateway database = _RecordingStructuredGateway();
+    final ProviderContainer container = ProviderContainer(overrides: [
+      healthSyncStructuredDatabaseGatewayProvider.overrideWithValue(database),
+    ]);
+    addTearDown(container.dispose);
+
+    final L1ScheduledResultReadState state = await container.read(
+      l1ScheduledResultReadProvider(
+        L1ScheduledResultQuery(
+          athleteProfileId: 'athlete-a',
+          startLocalDate: DateTime(2026, 7, 14),
+          endExclusiveLocalDate: DateTime(2026, 7, 21),
+        ),
+      ).future,
+    );
+
+    expect(state.source, L1ScheduledResultReadSource.structured);
+    expect(state.results, isEmpty);
+    expect(database.resultReads, 1);
+    expect(database.projectionWrites, isEmpty);
+  });
 }
 
 ScheduledWorkout _scheduled({
@@ -314,6 +338,7 @@ TrainingLog _log({
 
 class _RecordingStructuredGateway
     implements TrainMateStructuredDatabaseGateway {
+  int resultReads = 0;
   final List<L1ScheduleProjectionWrite> projectionWrites =
       <L1ScheduleProjectionWrite>[];
 
@@ -351,6 +376,16 @@ class _RecordingStructuredGateway
           write.scheduledWorkoutResultRow['id']! as String,
       strengthSetCount: write.strengthSetRows.length,
     );
+  }
+
+  @override
+  Future<List<StructuredScheduledWorkoutResult>> listScheduledWorkoutResults({
+    required String athleteProfileId,
+    required DateTime startLocalDate,
+    required DateTime endExclusiveLocalDate,
+  }) async {
+    resultReads += 1;
+    return const <StructuredScheduledWorkoutResult>[];
   }
 
   @override

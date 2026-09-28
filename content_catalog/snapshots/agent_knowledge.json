@@ -1,0 +1,327 @@
+{
+  "catalog_version": "2026.09.12-v1",
+  "content_hash": "60b42725c717faa24fb96395082c457093c2a5b12447605d4860cdb9f87dfaa2",
+  "contract_version": 1,
+  "resource_count": 11,
+  "resources": [
+    {
+      "catalog_status": "pending_review",
+      "id": "self-improving-20260829-agent-auto-review",
+      "license_status": "user_provided_internal",
+      "online_distribution_status": "ineligible",
+      "payload": {
+        "byte_count": 4645,
+        "category": "domain_knowledge",
+        "id": "self-improving-20260829-agent-auto-review",
+        "instruction_handling": "data_only",
+        "line_count": 117,
+        "media_type": "text/markdown",
+        "original_sha256": "9c253ac5254a5c987c85b86d8f8dbadd968094a722bd1655eb0535d39cc83f5c",
+        "path": "content_catalog/source_documents/self_improving_20260829/domains/agent-auto-review.md",
+        "redactions": {
+          "absolute_user_path": 0,
+          "email": 0
+        },
+        "sha256": "9c253ac5254a5c987c85b86d8f8dbadd968094a722bd1655eb0535d39cc83f5c"
+      },
+      "resource_key": "agent_knowledge_document:self-improving-20260829-agent-auto-review",
+      "resource_type": "agent_knowledge_document",
+      "review_receipt": null,
+      "runtime_status": "catalog_only",
+      "schema_version": 1,
+      "source_receipts": [
+        "self-improving-distillation-20260829"
+      ]
+    },
+    {
+      "catalog_status": "pending_review",
+      "id": "self-improving-20260829-agent-ops",
+      "license_status": "user_provided_internal",
+      "online_distribution_status": "ineligible",
+      "payload": {
+        "byte_count": 218875,
+        "category": "domain_knowledge",
+        "id": "self-improving-20260829-agent-ops",
+        "instruction_handling": "data_only",
+        "line_count": 1982,
+        "media_type": "text/markdown",
+        "original_sha256": "5ec856482173efe2a6f6eede2f59e4351dcb2a88f2c08fec4239c58b5d3e493b",
+        "path": "content_catalog/source_documents/self_improving_20260829/domains/agent-ops.md",
+        "redactions": {
+          "absolute_user_path": 7,
+          "email": 11
+        },
+        "sha256": "828ad81cb2be039f1f82d0334d78d5a252c0f7cc4941ecc08819a0a06b370807"
+      },
+      "resource_key": "agent_knowledge_document:self-improving-20260829-agent-ops",
+      "resource_type": "agent_knowledge_document",
+      "review_receipt": null,
+      "runtime_status": "catalog_only",
+      "schema_version": 1,
+      "source_receipts": [
+        "self-improving-distillation-20260829"
+      ]
+    },
+    {
+      "catalog_status": "pending_review",
+      "id": "self-improving-20260829-ai-news-speed-report",
+      "license_status": "user_provided_internal",
+      "online_distribution_status": "ineligible",
+      "payload": {
+        "byte_count": 5001,
+        "category": "evaluation",
+        "id": "self-improving-20260829-ai-news-speed-report",
+        "instruction_handling": "data_only",
+        "line_count": 149,
+        "media_type": "text/markdown",
+        "original_sha256": "3b6b02230f5c8311b3cb479a1e05680ed7ae2675e78740a0b88b019423f384c2",
+        "path": "content_catalog/source_documents/self_improving_20260829/eval/ai-news-speed-report.md",
+        "redactions": {
+          "absolute_user_path": 0,
+          "email": 0
+        },
+        "sha256": "3b6b02230f5c8311b3cb479a1e05680ed7ae2675e78740a0b88b019423f384c2"
+      },
+      "resource_key": "agent_knowledge_document:self-improving-20260829-ai-news-speed-report",
+      "resource_type": "agent_knowledge_document",
+      "review_receipt": null,
+      "runtime_status": "catalog_only",
+      "schema_version": 1,
+      "source_receipts": [
+        "self-improving-distillation-20260829"
+      ]
+    },
+    {
+      "catalog_status": "pending_review",
+      "id": "self-improving-20260829-corrections",
+      "license_status": "user_provided_internal",
+      "online_distribution_status": "ineligible",
+      "payload": {
+        "byte_count": 1280,
+        "category": "correction_log",
+        "id": "self-improving-20260829-corrections",
+        "instruction_handling": "data_only",
+        "line_count": 10,
+        "media_type": "text/markdown",
+        "original_sha256": "3356e41d0b578031dae0ff8e5a189804783059bbc0b0aafce9573a4544b571d6",
+        "path": "content_catalog/source_documents/self_improving_20260829/corrections.md",
+        "redactions": {
+          "absolute_user_path": 0,
+          "email": 0
+        },
+        "sha256": "3356e41d0b578031dae0ff8e5a189804783059bbc0b0aafce9573a4544b571d6"
+      },
+      "resource_key": "agent_knowledge_document:self-improving-20260829-corrections",
+      "resource_type": "agent_knowledge_document",
+      "review_receipt": null,
+      "runtime_status": "catalog_only",
+      "schema_version": 1,
+      "source_receipts": [
+        "self-improving-distillation-20260829"
+      ]
+    },
+    {
+      "catalog_status": "pending_review",
+      "id": "self-improving-20260829-cron-config",
+      "license_status": "user_provided_internal",
+      "online_distribution_status": "ineligible",
+      "payload": {
+        "byte_count": 919,
+        "category": "domain_knowledge",
+        "id": "self-improving-20260829-cron-config",
+        "instruction_handling": "data_only",
+        "line_count": 15,
+        "media_type": "text/markdown",
+        "original_sha256": "e7c5cb1825676329e660365ad05405db486b3b7add8c4ed0d42fc83f4ce1b601",
+        "path": "content_catalog/source_documents/self_improving_20260829/domains/cron-config.md",
+        "redactions": {
+          "absolute_user_path": 0,
+          "email": 0
+        },
+        "sha256": "e7c5cb1825676329e660365ad05405db486b3b7add8c4ed0d42fc83f4ce1b601"
+      },
+      "resource_key": "agent_knowledge_document:self-improving-20260829-cron-config",
+      "resource_type": "agent_knowledge_document",
+      "review_receipt": null,
+      "runtime_status": "catalog_only",
+      "schema_version": 1,
+      "source_receipts": [
+        "self-improving-distillation-20260829"
+      ]
+    },
+    {
+      "catalog_status": "pending_review",
+      "id": "self-improving-20260829-cron-prompt-template",
+      "license_status": "user_provided_internal",
+      "online_distribution_status": "ineligible",
+      "payload": {
+        "byte_count": 3935,
+        "category": "template",
+        "id": "self-improving-20260829-cron-prompt-template",
+        "instruction_handling": "data_only",
+        "line_count": 129,
+        "media_type": "text/markdown",
+        "original_sha256": "52b5efd953360523540e28b24bfa72d0b8eefb02ff133645be819caaee524e6d",
+        "path": "content_catalog/source_documents/self_improving_20260829/templates/cron-prompt-template.md",
+        "redactions": {
+          "absolute_user_path": 0,
+          "email": 0
+        },
+        "sha256": "52b5efd953360523540e28b24bfa72d0b8eefb02ff133645be819caaee524e6d"
+      },
+      "resource_key": "agent_knowledge_document:self-improving-20260829-cron-prompt-template",
+      "resource_type": "agent_knowledge_document",
+      "review_receipt": null,
+      "runtime_status": "catalog_only",
+      "schema_version": 1,
+      "source_receipts": [
+        "self-improving-distillation-20260829"
+      ]
+    },
+    {
+      "catalog_status": "pending_review",
+      "id": "self-improving-20260829-cron-recovery-state",
+      "license_status": "user_provided_internal",
+      "online_distribution_status": "ineligible",
+      "payload": {
+        "byte_count": 140,
+        "category": "runtime_state_snapshot",
+        "id": "self-improving-20260829-cron-recovery-state",
+        "instruction_handling": "data_only",
+        "line_count": 7,
+        "media_type": "application/json",
+        "original_sha256": "bff5d95923280ced633055492af46a58bb153de7bcf91a2171b5f012c14d8a8c",
+        "path": "content_catalog/source_documents/self_improving_20260829/runtime/cron-recovery-state.json",
+        "redactions": {
+          "absolute_user_path": 0,
+          "email": 0
+        },
+        "sha256": "bff5d95923280ced633055492af46a58bb153de7bcf91a2171b5f012c14d8a8c"
+      },
+      "resource_key": "agent_knowledge_document:self-improving-20260829-cron-recovery-state",
+      "resource_type": "agent_knowledge_document",
+      "review_receipt": null,
+      "runtime_status": "catalog_only",
+      "schema_version": 1,
+      "source_receipts": [
+        "self-improving-distillation-20260829"
+      ]
+    },
+    {
+      "catalog_status": "pending_review",
+      "id": "self-improving-20260829-heartbeat-state",
+      "license_status": "user_provided_internal",
+      "online_distribution_status": "ineligible",
+      "payload": {
+        "byte_count": 115667,
+        "category": "operational_state_history",
+        "id": "self-improving-20260829-heartbeat-state",
+        "instruction_handling": "data_only",
+        "line_count": 682,
+        "media_type": "text/markdown",
+        "original_sha256": "76bd56326a899b8e8821095ebe8dd43ac9f5a7945bc3b3d697111350033836f1",
+        "path": "content_catalog/source_documents/self_improving_20260829/heartbeat-state.md",
+        "redactions": {
+          "absolute_user_path": 2,
+          "email": 0
+        },
+        "sha256": "f45ab25109d25d9888b23a9647bf8fd008b617059669b0bfa7e13cb10a73b6c5"
+      },
+      "resource_key": "agent_knowledge_document:self-improving-20260829-heartbeat-state",
+      "resource_type": "agent_knowledge_document",
+      "review_receipt": null,
+      "runtime_status": "catalog_only",
+      "schema_version": 1,
+      "source_receipts": [
+        "self-improving-distillation-20260829"
+      ]
+    },
+    {
+      "catalog_status": "pending_review",
+      "id": "self-improving-20260829-index",
+      "license_status": "user_provided_internal",
+      "online_distribution_status": "ineligible",
+      "payload": {
+        "byte_count": 1868,
+        "category": "index",
+        "id": "self-improving-20260829-index",
+        "instruction_handling": "data_only",
+        "line_count": 32,
+        "media_type": "text/markdown",
+        "original_sha256": "554f8f5846c5f2ed5ffe91938160e78f226edb9c3549f2a3f05a7e8faf6896b8",
+        "path": "content_catalog/source_documents/self_improving_20260829/index.md",
+        "redactions": {
+          "absolute_user_path": 0,
+          "email": 0
+        },
+        "sha256": "554f8f5846c5f2ed5ffe91938160e78f226edb9c3549f2a3f05a7e8faf6896b8"
+      },
+      "resource_key": "agent_knowledge_document:self-improving-20260829-index",
+      "resource_type": "agent_knowledge_document",
+      "review_receipt": null,
+      "runtime_status": "catalog_only",
+      "schema_version": 1,
+      "source_receipts": [
+        "self-improving-distillation-20260829"
+      ]
+    },
+    {
+      "catalog_status": "pending_review",
+      "id": "self-improving-20260829-information-curation",
+      "license_status": "user_provided_internal",
+      "online_distribution_status": "ineligible",
+      "payload": {
+        "byte_count": 10052,
+        "category": "domain_knowledge",
+        "id": "self-improving-20260829-information-curation",
+        "instruction_handling": "data_only",
+        "line_count": 211,
+        "media_type": "text/markdown",
+        "original_sha256": "671c7f38ad34d21244fe0ecc2e31c5466dd1132d5e0f720f7ed1f0cfa6fb9677",
+        "path": "content_catalog/source_documents/self_improving_20260829/domains/information-curation.md",
+        "redactions": {
+          "absolute_user_path": 0,
+          "email": 0
+        },
+        "sha256": "671c7f38ad34d21244fe0ecc2e31c5466dd1132d5e0f720f7ed1f0cfa6fb9677"
+      },
+      "resource_key": "agent_knowledge_document:self-improving-20260829-information-curation",
+      "resource_type": "agent_knowledge_document",
+      "review_receipt": null,
+      "runtime_status": "catalog_only",
+      "schema_version": 1,
+      "source_receipts": [
+        "self-improving-distillation-20260829"
+      ]
+    },
+    {
+      "catalog_status": "pending_review",
+      "id": "self-improving-20260829-memory",
+      "license_status": "user_provided_internal",
+      "online_distribution_status": "ineligible",
+      "payload": {
+        "byte_count": 5225,
+        "category": "distilled_memory",
+        "id": "self-improving-20260829-memory",
+        "instruction_handling": "data_only",
+        "line_count": 33,
+        "media_type": "text/markdown",
+        "original_sha256": "c39046eb0d3503b6bc9320368cafc1a501cab0745d4a7beecab6d319e761cd90",
+        "path": "content_catalog/source_documents/self_improving_20260829/memory.md",
+        "redactions": {
+          "absolute_user_path": 0,
+          "email": 0
+        },
+        "sha256": "c39046eb0d3503b6bc9320368cafc1a501cab0745d4a7beecab6d319e761cd90"
+      },
+      "resource_key": "agent_knowledge_document:self-improving-20260829-memory",
+      "resource_type": "agent_knowledge_document",
+      "review_receipt": null,
+      "runtime_status": "catalog_only",
+      "schema_version": 1,
+      "source_receipts": [
+        "self-improving-distillation-20260829"
+      ]
+    }
+  ]
+}

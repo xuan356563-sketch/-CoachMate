@@ -1250,7 +1250,7 @@ void main() {
         container.read(trainingMvpProvider.notifier);
     controller.startWorkoutPlayer(workoutDayId: 'workout-week1-day2');
     for (int index = 0; index < 3; index += 1) {
-      controller.completeWorkoutPlayerStep();
+      await controller.completeWorkoutPlayerStep();
     }
 
     await tester.pumpWidget(
@@ -1276,7 +1276,7 @@ void main() {
         container.read(trainingMvpProvider.notifier);
     controller.startWorkoutPlayer(workoutDayId: 'workout-week1-day1');
     for (int index = 0; index < 5; index += 1) {
-      controller.completeWorkoutPlayerStep();
+      await controller.completeWorkoutPlayerStep();
     }
 
     await tester.pumpWidget(
@@ -1367,7 +1367,7 @@ void main() {
         container.read(trainingMvpProvider.notifier);
     controller.startWorkoutPlayer(workoutDayId: 'workout-week1-day2');
     for (int index = 0; index < 6; index += 1) {
-      controller.completeWorkoutPlayerStep();
+      await controller.completeWorkoutPlayerStep();
     }
 
     await tester.pumpWidget(
@@ -1810,7 +1810,8 @@ void main() {
     await tester.tap(find.widgetWithText(FilledButton, '暂停计时'));
     await tester.pump();
 
-    await tester.tap(find.byKey(const Key('bottom-nav-item-1')));
+    expect(find.byKey(const Key('bottom-nav-item-1')), findsNothing);
+    await tester.tap(find.byTooltip('返回'));
     await tester.pumpAndSettle();
 
     expect(find.text('晨间报告'), findsNothing);
@@ -1861,13 +1862,13 @@ void main() {
     await tester.pumpAndSettle();
 
     await tester.scrollUntilVisible(
-      find.textContaining('已按画像预填完成今日签到'),
+      find.textContaining('已按昨日记录完成今日签到'),
       -300,
       scrollable: find.byType(Scrollable).first,
     );
     await tester.pumpAndSettle();
 
-    expect(find.textContaining('已按画像预填完成今日签到'), findsOneWidget);
+    expect(find.textContaining('已按昨日记录完成今日签到'), findsOneWidget);
 
     await tester.scrollUntilVisible(
       find.text('主动提醒'),
@@ -1879,7 +1880,11 @@ void main() {
     expect(find.text('主动提醒'), findsOneWidget);
     expect(find.text('跟随训练日程'), findsOneWidget);
 
-    await tester.tap(find.byKey(const Key('bottom-nav-item-1')));
+    tester
+        .widget<Semantics>(find.byKey(const Key('bottom-nav-item-1')))
+        .properties
+        .onTap
+        ?.call();
     await tester.pumpAndSettle();
 
     expect(find.text('恢复倒计时'), findsNothing);
@@ -1953,9 +1958,9 @@ void main() {
     );
     await tester.pumpAndSettle();
 
-    expect(find.text('训练状态趋势'), findsOneWidget);
-    expect(find.text('ATL 急性负荷'), findsOneWidget);
-    expect(find.text('CTL 慢性体能'), findsOneWidget);
+    expect(find.text('训练负荷工程估算'), findsOneWidget);
+    expect(find.text('ATL 急性负荷估算'), findsOneWidget);
+    expect(find.text('CTL 慢性负荷估算'), findsOneWidget);
     expect(find.text('CTL / ATL / TSB 训练负荷曲线'), findsOneWidget);
     expect(find.textContaining('当前 TSB'), findsOneWidget);
     expect(find.text('CTL'), findsOneWidget);
@@ -2858,7 +2863,11 @@ void main() {
     final Finder raceEntry = find.byKey(
       const ValueKey<String>('race-prep-entry'),
     );
-    await tester.ensureVisible(raceEntry);
+    await tester.scrollUntilVisible(
+      raceEntry,
+      300,
+      scrollable: find.byType(Scrollable).first,
+    );
     await tester.pumpAndSettle();
     await tester.tap(raceEntry);
     await tester.pumpAndSettle();
@@ -3095,6 +3104,8 @@ void main() {
       find.byType(Scrollable).first,
       const Offset(0, 100),
     );
+    await tester.pumpAndSettle();
+    await tester.ensureVisible(find.text('打开验收记录'));
     await tester.pumpAndSettle();
     await tester.tap(find.text('打开验收记录'));
     await tester.pumpAndSettle();

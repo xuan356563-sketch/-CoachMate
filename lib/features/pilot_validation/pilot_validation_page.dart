@@ -7,8 +7,7 @@ import '../../core/constants/app_colors.dart';
 import '../../core/widgets/trainmate_action_character.dart';
 import '../../core/widgets/trainflow_widgets.dart';
 import '../../data/models/pilot_validation.dart';
-import '../../data/repositories/pilot_validation_repository.dart';
-import '../../services/local_storage_service.dart';
+import 'application/pilot_validation_service.dart';
 
 class PilotValidationPage extends ConsumerStatefulWidget {
   const PilotValidationPage({super.key});
@@ -19,7 +18,7 @@ class PilotValidationPage extends ConsumerStatefulWidget {
 }
 
 class _PilotValidationPageState extends ConsumerState<PilotValidationPage> {
-  late final PersistedPilotValidationRepository _repository;
+  late final PilotValidationService _service;
   List<PilotParticipantRecord> _participants = const <PilotParticipantRecord>[];
   PilotScenario _newScenario = PilotScenario.raceRunning;
   String? _selectedId;
@@ -31,9 +30,7 @@ class _PilotValidationPageState extends ConsumerState<PilotValidationPage> {
   @override
   void initState() {
     super.initState();
-    _repository = PersistedPilotValidationRepository(
-      ref.read(localStorageServiceProvider),
-    );
+    _service = ref.read(pilotValidationServiceProvider);
     _refresh();
   }
 
@@ -47,7 +44,7 @@ class _PilotValidationPageState extends ConsumerState<PilotValidationPage> {
   }
 
   void _refresh([String? preferredId]) {
-    final List<PilotParticipantRecord> values = _repository.listParticipants();
+    final List<PilotParticipantRecord> values = _service.listParticipants();
     setState(() {
       _participants = values;
       _selectedId = preferredId ??
@@ -57,9 +54,9 @@ class _PilotValidationPageState extends ConsumerState<PilotValidationPage> {
     });
   }
 
-  void _addParticipant() {
+  Future<void> _addParticipant() async {
     try {
-      final PilotParticipantRecord created = _repository.addParticipant(
+      final PilotParticipantRecord created = await _service.addParticipant(
         scenario: _newScenario,
         startedOn: DateTime.now(),
       );
@@ -69,23 +66,35 @@ class _PilotValidationPageState extends ConsumerState<PilotValidationPage> {
     }
   }
 
-  void _save(PilotParticipantRecord participant) {
-    _repository.save(participant);
-    _refresh(participant.id);
+  Future<void> _save(PilotParticipantRecord participant) async {
+    try {
+      await _service.save(participant);
+      _refresh(participant.id);
+    } on StateError catch (error) {
+      _showMessage(error.message);
+    }
   }
 
-  void _markCheckIn() {
+  Future<void> _markCheckIn() async {
     final PilotParticipantRecord? participant = _selected;
     if (participant == null) return;
-    _repository.markCheckIn(participant.id, DateTime.now());
-    _refresh(participant.id);
+    try {
+      await _service.markCheckIn(participant.id, DateTime.now());
+      _refresh(participant.id);
+    } on StateError catch (error) {
+      _showMessage(error.message);
+    }
   }
 
-  void _markFeedback() {
+  Future<void> _markFeedback() async {
     final PilotParticipantRecord? participant = _selected;
     if (participant == null) return;
-    _repository.markFeedback(participant.id, DateTime.now());
-    _refresh(participant.id);
+    try {
+      await _service.markFeedback(participant.id, DateTime.now());
+      _refresh(participant.id);
+    } on StateError catch (error) {
+      _showMessage(error.message);
+    }
   }
 
   Future<void> _copyInvitation() async {
@@ -166,7 +175,7 @@ class _InvitationCard extends StatelessWidget {
             style: Theme.of(context)
                 .textTheme
                 .titleMedium
-                ?.copyWith(fontWeight: FontWeight.w900),
+                ?.copyWith(fontWeight: FontWeight.w700),
           ),
           const SizedBox(height: 8),
           const SelectableText(_PilotValidationPageState.invitationMessage),
@@ -213,7 +222,7 @@ class _CohortCard extends StatelessWidget {
             style: Theme.of(context)
                 .textTheme
                 .titleMedium
-                ?.copyWith(fontWeight: FontWeight.w900),
+                ?.copyWith(fontWeight: FontWeight.w700),
           ),
           const SizedBox(height: 10),
           SegmentedButton<PilotScenario>(
@@ -290,7 +299,7 @@ class _ParticipantProgressCard extends StatelessWidget {
                   style: Theme.of(context)
                       .textTheme
                       .titleMedium
-                      ?.copyWith(fontWeight: FontWeight.w900),
+                      ?.copyWith(fontWeight: FontWeight.w700),
                 ),
               ),
               ToneBadge(

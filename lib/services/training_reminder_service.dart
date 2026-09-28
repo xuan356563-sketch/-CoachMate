@@ -15,7 +15,7 @@ class TrainingReminderService {
     required BodyMetric? latestBodyMetric,
     required int remainingRecoveryHours,
     required String recoveryAdvice,
-    required int readinessScore,
+    required int? readinessScore,
     required String trainingStatusLabel,
     required String morningReportAdvice,
   }) {
@@ -87,8 +87,8 @@ class TrainingReminderService {
           id: 'recovery-check',
           type: TrainingReminderType.recoveryCheck,
           title: '恢复检查提醒',
-          timeLabel: '恢复倒计时结束前',
-          reason: '$recoveryAdvice 当前距下次高强度课还需约 $remainingRecoveryHours 小时。',
+          timeLabel: '恢复时间工程估算',
+          reason: '$recoveryAdvice 估算时段剩余约 $remainingRecoveryHours 小时，不代表届时已恢复。',
           actionLabel: '查看恢复',
           priorityLabel: '安全约束',
           enabled: enabled,
@@ -114,25 +114,25 @@ class TrainingReminderService {
 
   bool _needsLightVersion({
     required BodyMetric? latestBodyMetric,
-    required int readinessScore,
+    required int? readinessScore,
     required String trainingStatusLabel,
   }) {
-    if (trainingStatusLabel == '过度风险' || readinessScore < 60) {
+    if (trainingStatusLabel == '过度风险' || (readinessScore != null && readinessScore < 60)) {
       return true;
     }
     if (latestBodyMetric == null) {
       return false;
     }
-    return latestBodyMetric.sleepHours < 6.5 ||
-        latestBodyMetric.fatigueLevel >= 7 ||
-        latestBodyMetric.sorenessLevel >= 7;
+    return (latestBodyMetric.hasValue('sleepHours') && latestBodyMetric.sleepHours < 6.5) ||
+        (latestBodyMetric.hasValue('fatigueLevel') && latestBodyMetric.fatigueLevel >= 7) ||
+        (latestBodyMetric.hasValue('sorenessLevel') && latestBodyMetric.sorenessLevel >= 7);
   }
 
   bool _isProtectionState({
-    required int readinessScore,
+    required int? readinessScore,
     required String trainingStatusLabel,
   }) {
-    return trainingStatusLabel == '过度风险' && readinessScore < 50;
+    return trainingStatusLabel == '过度风险' && (readinessScore != null && readinessScore < 50);
   }
 
   String _starterReminderTime({

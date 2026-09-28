@@ -15,6 +15,7 @@ class TodayShowcaseHeader extends StatelessWidget {
     required this.growthXp,
     required this.nextLevelXp,
     required this.completionRate,
+    required this.readinessScore,
     required this.weeklyConsistencyLabel,
     required this.workout,
     required this.onOpenCoach,
@@ -26,10 +27,11 @@ class TodayShowcaseHeader extends StatelessWidget {
   final int growthXp;
   final int nextLevelXp;
   final double completionRate;
+  final int? readinessScore;
   final String weeklyConsistencyLabel;
   final WorkoutDay workout;
-  final VoidCallback onOpenCoach;
-  final VoidCallback onStartWorkout;
+  final VoidCallback? onOpenCoach;
+  final VoidCallback? onStartWorkout;
 
   @override
   Widget build(BuildContext context) {
@@ -42,9 +44,21 @@ class TodayShowcaseHeader extends StatelessWidget {
       key: const ValueKey<String>('today-showcase-header'),
       container: true,
       label: '今日训练，$safeName，$taskSubtitle',
-      child: Stack(
-        children: <Widget>[
-          TrainMateSceneHero(
+      child: LayoutBuilder(
+        builder: (BuildContext context, BoxConstraints constraints) {
+          final bool compact = constraints.maxWidth < 360;
+          final double metricWidth = compact ? 176 : 204;
+          final double firstWidth = compact ? 106 : 124;
+          final double secondWidth = compact ? 88 : 104;
+          return TrainMateSceneHero(
+            style: TrainMateSceneHeroStyle.referenceShowcase,
+            referenceBackgroundColor: TrainFlowTokens.purple,
+            characterInsets: EdgeInsets.fromLTRB(
+              compact ? 180 : 214,
+              70,
+              compact ? 18 : 20,
+              108,
+            ),
             sceneAsset:
                 'assets/images/immersive_scenes/trainmate_today_training_room.png',
             greeting: '你好，$safeName',
@@ -53,7 +67,8 @@ class TodayShowcaseHeader extends StatelessWidget {
               action: TrainMateAction.running,
               size: 178,
               backgroundColor: AppColors.transparent,
-              semanticLabel: 'Flow 正在陪你开始今日训练',
+              style: TrainMateCharacterStyle.flatShowcase,
+              semanticLabel: 'CoachMate 正在陪你开始今日训练',
             ),
             taskTitle: workout.title,
             taskSubtitle: taskSubtitle,
@@ -70,32 +85,120 @@ class TodayShowcaseHeader extends StatelessWidget {
               ),
               child: const Text('开始'),
             ),
-          ),
-          Positioned(
-            key: const ValueKey<String>('today-showcase-metric-capsule'),
-            left: 20,
-            top: 72,
-            child: ExcludeSemantics(
-              child: DecoratedBox(
-                decoration: BoxDecoration(
-                  color: TrainFlowTokens.darkTrainingRaised,
-                  borderRadius: BorderRadius.circular(14),
-                ),
-                child: Padding(
-                  padding:
-                      const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-                  child: Text(
-                    '$growthLabel · $growthXp/$nextLevelXp XP · $completionPercent%',
-                    style: Theme.of(context).textTheme.labelSmall?.copyWith(
-                          color: TrainFlowTokens.accent,
-                          fontWeight: FontWeight.w700,
+            metricOverlay: Positioned(
+              key: const ValueKey<String>('today-showcase-metric-capsule'),
+              left: 20,
+              top: 78,
+              child: Semantics(
+                label: '今日完成 $completionPercent%，准备度 ${readinessScore ?? '无法评估'}，'
+                    '预计 ${workout.estimatedMinutes} 分钟，$weeklyConsistencyLabel，'
+                    '$growthLabel，$growthXp/$nextLevelXp XP',
+                child: ExcludeSemantics(
+                  child: SizedBox(
+                    width: metricWidth,
+                    height: 68,
+                    child: Stack(
+                      children: <Widget>[
+                        Positioned(
+                          left: 0,
+                          top: 0,
+                          bottom: 0,
+                          width: firstWidth,
+                          child: DecoratedBox(
+                            decoration: BoxDecoration(
+                              color: TrainFlowTokens.pink,
+                              borderRadius: BorderRadius.circular(24),
+                            ),
+                            child: Padding(
+                              padding: const EdgeInsets.fromLTRB(14, 8, 18, 8),
+                              child: FittedBox(
+                                alignment: Alignment.centerLeft,
+                                fit: BoxFit.scaleDown,
+                                child: Column(
+                                  mainAxisSize: MainAxisSize.min,
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: <Widget>[
+                                    Text(
+                                      '$completionPercent% 完成',
+                                      style: Theme.of(context)
+                                          .textTheme
+                                          .titleMedium
+                                          ?.copyWith(
+                                            color: TrainFlowTokens.brandDark,
+                                            fontWeight: FontWeight.w700,
+                                          ),
+                                    ),
+                                    Text(
+                                      '预计 ${workout.estimatedMinutes} 分钟',
+                                      style: Theme.of(context)
+                                          .textTheme
+                                          .labelSmall
+                                          ?.copyWith(
+                                            color: TrainFlowTokens.brandDark
+                                                .withValues(alpha: 0.78),
+                                          ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ),
+                          ),
                         ),
+                        Positioned(
+                          right: 0,
+                          top: 4,
+                          bottom: 4,
+                          width: secondWidth,
+                          child: DecoratedBox(
+                            decoration: BoxDecoration(
+                              color: TrainFlowTokens.showcaseActionSurface,
+                              borderRadius: BorderRadius.circular(22),
+                            ),
+                            child: Padding(
+                              padding: const EdgeInsets.fromLTRB(18, 8, 10, 8),
+                              child: FittedBox(
+                                alignment: Alignment.centerLeft,
+                                fit: BoxFit.scaleDown,
+                                child: Column(
+                                  mainAxisSize: MainAxisSize.min,
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: <Widget>[
+                                    Text(
+                                      '${readinessScore ?? '无法评估'} 准备度',
+                                      style: Theme.of(context)
+                                          .textTheme
+                                          .titleSmall
+                                          ?.copyWith(
+                                            color: TrainFlowTokens.yellow,
+                                            fontWeight: FontWeight.w700,
+                                          ),
+                                    ),
+                                    Text(
+                                      weeklyConsistencyLabel,
+                                      maxLines: 1,
+                                      overflow: TextOverflow.ellipsis,
+                                      style: Theme.of(context)
+                                          .textTheme
+                                          .labelSmall
+                                          ?.copyWith(
+                                            color: TrainFlowTokens.paper
+                                                .withValues(alpha: 0.76),
+                                          ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
                   ),
                 ),
               ),
             ),
-          ),
-        ],
+          );
+        },
       ),
     );
   }

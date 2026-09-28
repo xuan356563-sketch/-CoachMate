@@ -26,16 +26,16 @@ void main() {
     final TrainingMvpController trainingController =
         container.read(trainingMvpProvider.notifier);
     trainingController.startWorkoutPlayer(workoutDayId: 'workout-week1-day2');
-    trainingController.completeWorkoutPlayerStep();
+    await trainingController.completeWorkoutPlayerStep();
     trainingController.setKnowledgeSearchQuery('跑步');
     final TrainingMvpState sessionState = container.read(trainingMvpProvider);
     final DailyAdjustmentController dailyController =
         container.read(dailyAdjustmentControllerProvider.notifier);
 
-    dailyController.setDailyAvailableMinutes(20);
-    dailyController.setDailyWorkStress(WorkStressLevel.high);
-    dailyController.setDailyTrainingEnvironment(TrainingEnvironment.home);
-    dailyController.setDailyWeather(WeatherCondition.rain);
+    await dailyController.setDailyAvailableMinutes(20);
+    await dailyController.setDailyWorkStress(WorkStressLevel.high);
+    await dailyController.setDailyTrainingEnvironment(TrainingEnvironment.home);
+    await dailyController.setDailyWeather(WeatherCondition.rain);
     await Future<void>.delayed(Duration.zero);
 
     TrainingMvpState state = container.read(trainingMvpProvider);
@@ -48,7 +48,8 @@ void main() {
     expect(state.dailyAdjustmentDecision.environment, TrainingEnvironment.home);
     expect(state.dailyAdjustmentDecision.weather, WeatherCondition.rain);
 
-    dailyController.applyDailyAdjustmentDecision(state.dailyAdjustmentDecision);
+    await dailyController
+        .applyDailyAdjustmentDecision(state.dailyAdjustmentDecision);
     await Future<void>.delayed(Duration.zero);
 
     state = container.read(trainingMvpProvider);
@@ -89,9 +90,9 @@ void main() {
       ),
     );
     await tester.pump();
-    await tester.ensureVisible(find.text('应用今日调整'));
+    await tester.ensureVisible(find.text('记录今日建议'));
     await tester.pumpAndSettle();
-    await tester.tap(find.text('应用今日调整'));
+    await tester.tap(find.text('记录今日建议'));
     await tester.pump();
     await tester.pump();
 
@@ -102,7 +103,7 @@ void main() {
     );
     expect(
       container.read(dailyAdjustmentControllerProvider).statusMessage,
-      contains('已应用'),
+      contains('建议已记录，计划未改变'),
     );
     final PetState petState =
         container.read(petControllerProvider).requireValue;

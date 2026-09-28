@@ -18,6 +18,17 @@ enum PetSpecies {
   }
 }
 
+const String balanceRaccoonDisplayName = '袋小满';
+const String legacyBalanceRaccoonDisplayName = '衡衡狸';
+
+String normalizeBalanceRaccoonDisplayName(String value) {
+  final String trimmed = value.trim();
+  if (trimmed.isEmpty || trimmed == legacyBalanceRaccoonDisplayName) {
+    return balanceRaccoonDisplayName;
+  }
+  return trimmed;
+}
+
 enum PetStage {
   patternEgg('pattern_egg'),
   sprout('sprout'),
@@ -153,6 +164,10 @@ class PetCompanion {
   final PetStage stage;
   final int partnerStars;
   final PetMood mood;
+
+  String get displayName => species == PetSpecies.balanceRaccoon
+      ? normalizeBalanceRaccoonDisplayName(nickname)
+      : nickname.trim();
 
   Map<String, Object?> toJson() => <String, Object?>{
         'id': id,

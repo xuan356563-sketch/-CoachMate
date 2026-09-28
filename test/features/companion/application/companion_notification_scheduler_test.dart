@@ -1,7 +1,10 @@
+import 'dart:async';
+
 import 'package:flutter_test/flutter_test.dart';
 import 'package:timezone/data/latest_10y.dart' as timezone_data;
 import 'package:timezone/timezone.dart' as timezone;
 
+import 'package:trainflow_ai/core/constants/app_brand.dart';
 import 'package:trainflow_ai/features/companion/application/companion_notification_scheduler.dart';
 import 'package:trainflow_ai/features/companion/domain/companion_models.dart';
 import 'package:trainflow_ai/services/system_training_notification_service.dart';
@@ -24,7 +27,7 @@ void main() {
       ),
     )!;
 
-    expect(request.title, 'TrainMate');
+    expect(request.title, AppBrand.shortName);
     expect(request.body, '你的运动搭子有一条新消息。');
     expect(request.payload, '/companion?messageId=message+with+space');
     expect(request.id, companionNotificationId('message with space'));
@@ -41,7 +44,7 @@ void main() {
       ),
     )!;
 
-    expect(request.title, '衡衡狸');
+    expect(request.title, '袋小满');
     expect(request.body, '今天的计划已准备好。');
   });
 
@@ -73,7 +76,7 @@ void main() {
       ),
     )!;
 
-    expect(request.title, 'TrainMate');
+    expect(request.title, AppBrand.shortName);
     expect(request.body, '你的运动搭子有一条新消息。');
   });
 
@@ -136,6 +139,111 @@ void main() {
     expect(denied.status, CompanionNotificationSyncStatus.permissionDenied);
     expect(gateway.requests, isEmpty);
   });
+
+  for (final String waitAt in ['权限', '时区']) {
+    test('伙伴旧$waitAt返回不能删除新一代已安排提醒', () async {
+      final gateway = _ReorderedCompanionGateway(location: location, waitAt: waitAt);
+      final scheduler = CompanionNotificationScheduler(gateway);
+      bool oldActive = true;
+      Future<CompanionNotificationSyncResult> sync(int day, {bool old = false}) =>
+          scheduler.synchronize(
+        enabled: true,
+        requests: [_request('message-$day', DateTime(2026, 9, day, 9))],
+        requestPermission: old,
+        now: DateTime(2026, 9, 4),
+        isActive: () => !old || oldActive,
+      );
+      final pending = sync(6, old: true);
+      await gateway.entered.future;
+      oldActive = false;
+      await scheduler.cancel();
+      final newer = await sync(7);
+      expect(newer.status, CompanionNotificationSyncStatus.scheduled);
+      final newRequests = List.of(gateway.requests);
+      expect(newRequests, hasLength(1));
+      gateway.released.complete();
+      expect((await pending).status, CompanionNotificationSyncStatus.disabled);
+      expect(gateway.requests, orderedEquals(newRequests));
+    });
+  }
+
+  test('伙伴停用等待旧安排返回并清理后才允许新代替换', () async {
+    final gateway = _ReorderedCompanionGateway(location: location, waitAt: '安排');
+    final scheduler = CompanionNotificationScheduler(gateway);
+    Future<CompanionNotificationSyncResult> sync(int day) => scheduler.synchronize(
+      enabled: true,
+        requests: [_request('message-$day', DateTime(2026, 9, day, 9))],
+      now: DateTime(2026, 9, 4),
+    );
+    final pending = sync(6);
+    await gateway.entered.future;
+    bool stopped = false;
+    final stopping = scheduler.cancel().then((_) => stopped = true);
+    final newer = sync(7);
+    await Future<void>.delayed(Duration.zero);
+    expect(stopped, isFalse, reason: '平台旧安排未返回前不能误报资源已经停止。');
+    gateway.released.complete();
+    expect((await pending).status, CompanionNotificationSyncStatus.disabled);
+    await stopping;
+    expect((await newer).status, CompanionNotificationSyncStatus.scheduled);
+    expect(gateway.requests, hasLength(1));
+    expect(gateway.requests.single.scheduledAt.day, 7);
+  });
+
+  test('停用期间迟到的时区结果只清理伙伴提醒且不再调度', () async {
+    final Completer<timezone.Location> deferred =
+        Completer<timezone.Location>();
+    final _DeferredCompanionGateway gateway =
+        _DeferredCompanionGateway(deferred);
+    bool active = true;
+    final Future<CompanionNotificationSyncResult> pending =
+        CompanionNotificationScheduler(gateway).synchronize(
+      enabled: true,
+      requests: <CompanionNotificationRequest>[
+        _request('late', DateTime(2026, 8, 12, 9)),
+      ],
+      now: DateTime(2026, 8, 11, 9),
+      isActive: () => active,
+    );
+    await gateway.called.future;
+    active = false;
+    deferred.complete(location);
+
+    final CompanionNotificationSyncResult result = await pending;
+    expect(result.status, CompanionNotificationSyncStatus.disabled);
+    expect(gateway.cancelCount, 1);
+    expect(gateway.requests, isEmpty);
+  });
+}
+
+class _DeferredCompanionGateway implements CompanionNotificationGateway {
+  _DeferredCompanionGateway(this.location);
+
+  final Completer<timezone.Location> location;
+  final Completer<void> called = Completer<void>();
+  final List<CompanionNotificationRequest> requests =
+      <CompanionNotificationRequest>[];
+  int cancelCount = 0;
+
+  @override
+  Future<void> cancelCompanionNotifications() async {
+    cancelCount += 1;
+    requests.clear();
+  }
+
+  @override
+  Future<timezone.Location> loadLocalLocation() {
+    called.complete();
+    return location.future;
+  }
+
+  @override
+  Future<bool> requestPermission() async => true;
+
+  @override
+  Future<void> scheduleCompanion(CompanionNotificationRequest request) async {
+    requests.add(request);
+  }
 }
 
 CompanionMessage _message({
@@ -203,5 +311,38 @@ class _FakeCompanionNotificationGateway
   @override
   Future<void> scheduleCompanion(CompanionNotificationRequest request) async {
     requests.add(request);
+  }
+}
+
+class _ReorderedCompanionGateway extends _FakeCompanionNotificationGateway {
+  _ReorderedCompanionGateway({required super.location, required this.waitAt});
+  final String waitAt;
+  final entered = Completer<void>();
+  final released = Completer<void>();
+  bool _waited = false;
+
+  Future<void> _wait(String phase) async {
+    if (waitAt != phase || _waited) return;
+    _waited = true;
+    entered.complete();
+    await released.future;
+  }
+
+  @override
+  Future<bool> requestPermission() async {
+    await _wait('权限');
+    return super.requestPermission();
+  }
+
+  @override
+  Future<timezone.Location> loadLocalLocation() async {
+    await _wait('时区');
+    return location;
+  }
+
+  @override
+  Future<void> scheduleCompanion(CompanionNotificationRequest request) async {
+    await _wait('安排');
+    await super.scheduleCompanion(request);
   }
 }

@@ -1,0 +1,340 @@
+{
+  "catalog_version": "2026.09.12-v1",
+  "content_hash": "f159eb57797a052eaaa3cdd92f83f45291dc80176c6efff6f2595412d12cdb61",
+  "contract_version": 1,
+  "resource_count": 8,
+  "resources": [
+    {
+      "catalog_status": "registered",
+      "id": "ai_skill_manifest",
+      "license_status": "internal_owned",
+      "online_distribution_status": "ineligible",
+      "payload": {
+        "description": "主 AI Skill 审核与运行时文件清单。",
+        "id": "ai_skill_manifest",
+        "locator": "backend/app/ai_skills/training-plan-builder/trainmate.skill.json",
+        "locator_type": "repository_relative"
+      },
+      "resource_key": "source_receipt:ai_skill_manifest",
+      "resource_type": "source_receipt",
+      "review_receipt": null,
+      "runtime_status": "catalog_only",
+      "schema_version": 1,
+      "source_receipts": [
+        "ai_skill_manifest"
+      ]
+    },
+    {
+      "catalog_status": "registered",
+      "id": "ai_skill_source_catalog",
+      "license_status": "internal_owned",
+      "online_distribution_status": "ineligible",
+      "payload": {
+        "description": "外部 Skill 模块来源回执，不包含原始来源正文。",
+        "id": "ai_skill_source_catalog",
+        "locator": "backend/app/ai_skills/training-plan-builder/source-catalog.json",
+        "locator_type": "repository_relative"
+      },
+      "resource_key": "source_receipt:ai_skill_source_catalog",
+      "resource_type": "source_receipt",
+      "review_receipt": null,
+      "runtime_status": "catalog_only",
+      "schema_version": 1,
+      "source_receipts": [
+        "ai_skill_source_catalog"
+      ]
+    },
+    {
+      "catalog_status": "registered",
+      "id": "backend_knowledge_seed",
+      "license_status": "internal_owned",
+      "online_distribution_status": "ineligible",
+      "payload": {
+        "description": "后端知识原则与训练模板权威源。",
+        "id": "backend_knowledge_seed",
+        "locator": "backend/app/services/knowledge_catalog.py",
+        "locator_type": "repository_relative"
+      },
+      "resource_key": "source_receipt:backend_knowledge_seed",
+      "resource_type": "source_receipt",
+      "review_receipt": null,
+      "runtime_status": "catalog_only",
+      "schema_version": 1,
+      "source_receipts": [
+        "backend_knowledge_seed"
+      ]
+    },
+    {
+      "catalog_status": "registered",
+      "id": "exercise-media-source",
+      "license_status": "unverified",
+      "online_distribution_status": "ineligible",
+      "payload": {
+        "availability": "external_optional",
+        "description": "男女模特 4K 动作图、身份锚点、审核记录与生成任务清单的仓库外来源目录。",
+        "expected_file_count": 3082,
+        "expected_total_bytes": 13654522789,
+        "id": "exercise-media-source",
+        "inventory_fingerprint": "537786fb375f3d603c273c303a780aefb743b148f705481379dd6847a072147f",
+        "inventory_fingerprint_algorithm": "sha256(relative_path_and_size_v1)",
+        "legacy_manifest_relative_path": "输出/全量_男女_4K_标准版/任务清单.json",
+        "license_status": "unverified",
+        "locator_type": "repository_sibling",
+        "root_relative_to_repository": "../动作库生成",
+        "variants": [
+          "female",
+          "male"
+        ]
+      },
+      "resource_key": "source_receipt:exercise-media-source",
+      "resource_type": "source_receipt",
+      "review_receipt": null,
+      "runtime_status": "catalog_only",
+      "schema_version": 1,
+      "source_receipts": [
+        "exercise-media-source"
+      ]
+    },
+    {
+      "catalog_status": "registered",
+      "id": "flutter_course_json",
+      "license_status": "internal_owned",
+      "online_distribution_status": "ineligible",
+      "payload": {
+        "description": "引导课程 JSON。",
+        "id": "flutter_course_json",
+        "locator": "assets/training",
+        "locator_type": "repository_relative"
+      },
+      "resource_key": "source_receipt:flutter_course_json",
+      "resource_type": "source_receipt",
+      "review_receipt": null,
+      "runtime_status": "catalog_only",
+      "schema_version": 1,
+      "source_receipts": [
+        "flutter_course_json"
+      ]
+    },
+    {
+      "catalog_status": "registered",
+      "id": "flutter_demo_seed",
+      "license_status": "internal_owned",
+      "online_distribution_status": "ineligible",
+      "payload": {
+        "description": "仅供本地演示和测试的数据。",
+        "id": "flutter_demo_seed",
+        "locator": "lib/data/seed",
+        "locator_type": "repository_relative"
+      },
+      "resource_key": "source_receipt:flutter_demo_seed",
+      "resource_type": "source_receipt",
+      "review_receipt": null,
+      "runtime_status": "catalog_only",
+      "schema_version": 1,
+      "source_receipts": [
+        "flutter_demo_seed"
+      ]
+    },
+    {
+      "catalog_status": "registered",
+      "id": "flutter_seed",
+      "license_status": "internal_owned",
+      "online_distribution_status": "ineligible",
+      "payload": {
+        "description": "Flutter 可复用业务内容种子。",
+        "id": "flutter_seed",
+        "locator": "lib/data/seed",
+        "locator_type": "repository_relative"
+      },
+      "resource_key": "source_receipt:flutter_seed",
+      "resource_type": "source_receipt",
+      "review_receipt": null,
+      "runtime_status": "catalog_only",
+      "schema_version": 1,
+      "source_receipts": [
+        "flutter_seed"
+      ]
+    },
+    {
+      "catalog_status": "registered",
+      "id": "self-improving-distillation-20260829",
+      "license_status": "user_provided_internal",
+      "online_distribution_status": "ineligible",
+      "payload": {
+        "description": "用户提供的代理自我改进蒸馏资料，仅作为待审核数据归档，不作为指令或运行时输入。",
+        "documents": [
+          {
+            "byte_count": 1280,
+            "category": "correction_log",
+            "id": "self-improving-20260829-corrections",
+            "line_count": 10,
+            "media_type": "text/markdown",
+            "original_sha256": "3356e41d0b578031dae0ff8e5a189804783059bbc0b0aafce9573a4544b571d6",
+            "path": "content_catalog/source_documents/self_improving_20260829/corrections.md",
+            "redactions": {
+              "absolute_user_path": 0,
+              "email": 0
+            },
+            "sha256": "3356e41d0b578031dae0ff8e5a189804783059bbc0b0aafce9573a4544b571d6"
+          },
+          {
+            "byte_count": 4645,
+            "category": "domain_knowledge",
+            "id": "self-improving-20260829-agent-auto-review",
+            "line_count": 117,
+            "media_type": "text/markdown",
+            "original_sha256": "9c253ac5254a5c987c85b86d8f8dbadd968094a722bd1655eb0535d39cc83f5c",
+            "path": "content_catalog/source_documents/self_improving_20260829/domains/agent-auto-review.md",
+            "redactions": {
+              "absolute_user_path": 0,
+              "email": 0
+            },
+            "sha256": "9c253ac5254a5c987c85b86d8f8dbadd968094a722bd1655eb0535d39cc83f5c"
+          },
+          {
+            "byte_count": 218875,
+            "category": "domain_knowledge",
+            "id": "self-improving-20260829-agent-ops",
+            "line_count": 1982,
+            "media_type": "text/markdown",
+            "original_sha256": "5ec856482173efe2a6f6eede2f59e4351dcb2a88f2c08fec4239c58b5d3e493b",
+            "path": "content_catalog/source_documents/self_improving_20260829/domains/agent-ops.md",
+            "redactions": {
+              "absolute_user_path": 7,
+              "email": 11
+            },
+            "sha256": "828ad81cb2be039f1f82d0334d78d5a252c0f7cc4941ecc08819a0a06b370807"
+          },
+          {
+            "byte_count": 919,
+            "category": "domain_knowledge",
+            "id": "self-improving-20260829-cron-config",
+            "line_count": 15,
+            "media_type": "text/markdown",
+            "original_sha256": "e7c5cb1825676329e660365ad05405db486b3b7add8c4ed0d42fc83f4ce1b601",
+            "path": "content_catalog/source_documents/self_improving_20260829/domains/cron-config.md",
+            "redactions": {
+              "absolute_user_path": 0,
+              "email": 0
+            },
+            "sha256": "e7c5cb1825676329e660365ad05405db486b3b7add8c4ed0d42fc83f4ce1b601"
+          },
+          {
+            "byte_count": 10052,
+            "category": "domain_knowledge",
+            "id": "self-improving-20260829-information-curation",
+            "line_count": 211,
+            "media_type": "text/markdown",
+            "original_sha256": "671c7f38ad34d21244fe0ecc2e31c5466dd1132d5e0f720f7ed1f0cfa6fb9677",
+            "path": "content_catalog/source_documents/self_improving_20260829/domains/information-curation.md",
+            "redactions": {
+              "absolute_user_path": 0,
+              "email": 0
+            },
+            "sha256": "671c7f38ad34d21244fe0ecc2e31c5466dd1132d5e0f720f7ed1f0cfa6fb9677"
+          },
+          {
+            "byte_count": 5001,
+            "category": "evaluation",
+            "id": "self-improving-20260829-ai-news-speed-report",
+            "line_count": 149,
+            "media_type": "text/markdown",
+            "original_sha256": "3b6b02230f5c8311b3cb479a1e05680ed7ae2675e78740a0b88b019423f384c2",
+            "path": "content_catalog/source_documents/self_improving_20260829/eval/ai-news-speed-report.md",
+            "redactions": {
+              "absolute_user_path": 0,
+              "email": 0
+            },
+            "sha256": "3b6b02230f5c8311b3cb479a1e05680ed7ae2675e78740a0b88b019423f384c2"
+          },
+          {
+            "byte_count": 115667,
+            "category": "operational_state_history",
+            "id": "self-improving-20260829-heartbeat-state",
+            "line_count": 682,
+            "media_type": "text/markdown",
+            "original_sha256": "76bd56326a899b8e8821095ebe8dd43ac9f5a7945bc3b3d697111350033836f1",
+            "path": "content_catalog/source_documents/self_improving_20260829/heartbeat-state.md",
+            "redactions": {
+              "absolute_user_path": 2,
+              "email": 0
+            },
+            "sha256": "f45ab25109d25d9888b23a9647bf8fd008b617059669b0bfa7e13cb10a73b6c5"
+          },
+          {
+            "byte_count": 1868,
+            "category": "index",
+            "id": "self-improving-20260829-index",
+            "line_count": 32,
+            "media_type": "text/markdown",
+            "original_sha256": "554f8f5846c5f2ed5ffe91938160e78f226edb9c3549f2a3f05a7e8faf6896b8",
+            "path": "content_catalog/source_documents/self_improving_20260829/index.md",
+            "redactions": {
+              "absolute_user_path": 0,
+              "email": 0
+            },
+            "sha256": "554f8f5846c5f2ed5ffe91938160e78f226edb9c3549f2a3f05a7e8faf6896b8"
+          },
+          {
+            "byte_count": 5225,
+            "category": "distilled_memory",
+            "id": "self-improving-20260829-memory",
+            "line_count": 33,
+            "media_type": "text/markdown",
+            "original_sha256": "c39046eb0d3503b6bc9320368cafc1a501cab0745d4a7beecab6d319e761cd90",
+            "path": "content_catalog/source_documents/self_improving_20260829/memory.md",
+            "redactions": {
+              "absolute_user_path": 0,
+              "email": 0
+            },
+            "sha256": "c39046eb0d3503b6bc9320368cafc1a501cab0745d4a7beecab6d319e761cd90"
+          },
+          {
+            "byte_count": 140,
+            "category": "runtime_state_snapshot",
+            "id": "self-improving-20260829-cron-recovery-state",
+            "line_count": 7,
+            "media_type": "application/json",
+            "original_sha256": "bff5d95923280ced633055492af46a58bb153de7bcf91a2171b5f012c14d8a8c",
+            "path": "content_catalog/source_documents/self_improving_20260829/runtime/cron-recovery-state.json",
+            "redactions": {
+              "absolute_user_path": 0,
+              "email": 0
+            },
+            "sha256": "bff5d95923280ced633055492af46a58bb153de7bcf91a2171b5f012c14d8a8c"
+          },
+          {
+            "byte_count": 3935,
+            "category": "template",
+            "id": "self-improving-20260829-cron-prompt-template",
+            "line_count": 129,
+            "media_type": "text/markdown",
+            "original_sha256": "52b5efd953360523540e28b24bfa72d0b8eefb02ff133645be819caaee524e6d",
+            "path": "content_catalog/source_documents/self_improving_20260829/templates/cron-prompt-template.md",
+            "redactions": {
+              "absolute_user_path": 0,
+              "email": 0
+            },
+            "sha256": "52b5efd953360523540e28b24bfa72d0b8eefb02ff133645be819caaee524e6d"
+          }
+        ],
+        "id": "self-improving-distillation-20260829",
+        "instruction_handling": "data_only",
+        "license_status": "user_provided_internal",
+        "locator": "content_catalog/source_documents/self_improving_20260829",
+        "locator_type": "repository_relative",
+        "redaction_policy": "email_and_absolute_user_path_v1",
+        "source_archive_name": "self-improving_蒸馏沉淀_20260829.zip",
+        "source_archive_sha256": "8a651f551c46468e6dc639c7031ef11a6c57fc6ca10169a349ada362d645aeaf"
+      },
+      "resource_key": "source_receipt:self-improving-distillation-20260829",
+      "resource_type": "source_receipt",
+      "review_receipt": null,
+      "runtime_status": "catalog_only",
+      "schema_version": 1,
+      "source_receipts": [
+        "self-improving-distillation-20260829"
+      ]
+    }
+  ]
+}

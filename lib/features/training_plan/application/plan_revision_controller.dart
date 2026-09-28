@@ -1,3 +1,5 @@
+import '../../../plugins/application/feature_controller_binding.dart';
+import '../../../plugins/application/plugin_runtime_provider.dart';
 import 'dart:convert';
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -60,10 +62,9 @@ class PlanRevisionState {
 }
 
 class PlanRevisionController extends Notifier<PlanRevisionState> {
-  static const String _lastNoticeKey = 'trainmate.plan_revision.last_notice.v1';
-
   @override
   PlanRevisionState build() {
+    bindFeatureController(ref, 'feature.training_plan', 'revision', this);
     final FourWeekPlanState planState =
         ref.watch(fourWeekPlanControllerProvider);
     final GeneratedPlanVersion? activeVersion = planState.history
@@ -86,14 +87,6 @@ class PlanRevisionController extends Notifier<PlanRevisionState> {
       latestWeeklyReport: reports.firstOrNull,
       now: DateTime.now(),
     );
-    final String? lastNotice =
-        storage.readJson(_lastNoticeKey)?['dedupeKey'] as String?;
-    if (snapshot.shouldSuggest && lastNotice != snapshot.dedupeKey) {
-      storage.saveJson(_lastNoticeKey, <String, dynamic>{
-        'dedupeKey': snapshot.dedupeKey,
-        'createdAt': DateTime.now().toIso8601String(),
-      });
-    }
     return PlanRevisionState(
       proposal: null,
       triggerSnapshot: snapshot,
@@ -112,10 +105,21 @@ class PlanRevisionController extends Notifier<PlanRevisionState> {
     bool? equipmentChanged,
     bool? remainingCycleConflict,
   }) async {
+    final operation = ref
+        .read(featureAccessProvider)
+        .beginOperation('feature.training_plan', dependencies: [
+      'feature.ai_center',
+      ...ref
+          .read(fourWeekPlanControllerProvider)
+          .generation
+          .pluginRefs
+          .map((source) => source.id)
+    ]);
     if (state.isBusy) return false;
     if (paidPlanGenerationGateEnabled) {
       final MembershipUiState membership =
           await ref.read(membershipControllerProvider.future);
+      operation.checkActive();
       if (!membership.entitlement.canGeneratePlan) {
         state = state.copyWith(
           statusMessage: '动态重排需要有效会员；当前计划不会改变。',
@@ -191,34 +195,48 @@ class PlanRevisionController extends Notifier<PlanRevisionState> {
       clearProposal: true,
       statusMessage: '正在生成剩余周期差异…',
     );
-    final PlanRevisionProposal? proposal = await ref
-        .read(aiArtifactControllerProvider.notifier)
-        .generatePlanRevision(
-          PlanRevisionRequest(
-            clientContextDigest:
-                currentPrescription.generationMeta.clientContextDigest,
-            remainingDates: remainingDates,
-            completedSessions: (trigger?.completedSessions ?? 0).clamp(0, 28),
-            missedSessions: actualMissed.clamp(0, 28),
-            scheduleChangeDates: trigger?.changedScheduleDates ??
-                remainingDates
-                    .take(actualScheduleChanges.clamp(0, 14))
-                    .toList(),
-            availableMinutes: profile.dailyAvailableMinutes,
-            equipmentAccess: _equipmentCodes(profile.equipmentAccessType),
-            equipmentChanged: actualEquipmentChanged,
-            safetyConstraintCodes: safetyCodes,
-            adaptationSignals: trigger == null
-                ? null
-                : AdaptationSignals(
-                    completionRateBand: trigger.completionRateBand,
-                    loadTrendCode: trigger.loadTrendCode,
-                    recoveryRiskCode: trigger.recoveryRiskCode,
-                    selectedDirectionCode: trigger.selectedDirectionCode,
-                  ),
-            currentPrescription: currentPrescription,
-          ),
+    PlanRevisionProposal? proposal;
+    try {
+      proposal = await readFeatureController<AiArtifactController>(
+              ref,
+              'feature.ai_center',
+              'controller',
+              () => ref.read(aiArtifactControllerProvider.notifier))
+          .generatePlanRevision(
+        PlanRevisionRequest(
+          clientContextDigest:
+              currentPrescription.generationMeta.clientContextDigest,
+          remainingDates: remainingDates,
+          completedSessions: (trigger?.completedSessions ?? 0).clamp(0, 28),
+          missedSessions: actualMissed.clamp(0, 28),
+          scheduleChangeDates: trigger?.changedScheduleDates ??
+              remainingDates.take(actualScheduleChanges.clamp(0, 14)).toList(),
+          availableMinutes: profile.dailyAvailableMinutes,
+          equipmentAccess: _equipmentCodes(profile.equipmentAccessType),
+          equipmentChanged: actualEquipmentChanged,
+          safetyConstraintCodes: safetyCodes,
+          adaptationSignals: trigger == null
+              ? null
+              : AdaptationSignals(
+                  completionRateBand: trigger.completionRateBand,
+                  loadTrendCode: trigger.loadTrendCode,
+                  recoveryRiskCode: trigger.recoveryRiskCode,
+                  selectedDirectionCode: trigger.selectedDirectionCode,
+                ),
+          currentPrescription: currentPrescription,
+        ),
+        sourceOperation: operation,
+      );
+      operation.checkActive();
+    } on Object catch (error) {
+      if (ref.mounted) {
+        state = state.copyWith(
+          isBusy: false,
+          statusMessage: _revisionFailureMessage(error, action: '生成重排'),
         );
+      }
+      return false;
+    }
     if (proposal == null) {
       state = state.copyWith(
         isBusy: false,
@@ -226,10 +244,25 @@ class PlanRevisionController extends Notifier<PlanRevisionState> {
       );
       return false;
     }
-    ref.read(fourWeekPlanControllerProvider.notifier).createDraft(
-          prescription: proposal.revisedPrescription,
-          artifact: proposal.artifact,
+    try {
+      await readFeatureController<FourWeekPlanController>(
+          ref,
+          'feature.training_plan',
+          'fourWeek',
+          () => ref.read(fourWeekPlanControllerProvider.notifier)).createDraft(
+        prescription: proposal.revisedPrescription,
+        artifact: proposal.artifact,
+        sourceOperation: operation,
+      );
+    } on Object catch (error) {
+      if (ref.mounted) {
+        state = state.copyWith(
+          isBusy: false,
+          statusMessage: _revisionFailureMessage(error, action: '保存重排草稿'),
         );
+      }
+      return false;
+    }
     state = state.copyWith(
       proposal: proposal,
       isBusy: false,
@@ -239,14 +272,40 @@ class PlanRevisionController extends Notifier<PlanRevisionState> {
   }
 
   Future<bool> confirm() async {
+    final operation = ref
+        .read(featureAccessProvider)
+        .beginOperation('feature.training_plan', dependencies: [
+      'feature.ai_center',
+      ...ref
+          .read(fourWeekPlanControllerProvider)
+          .generation
+          .pluginRefs
+          .map((source) => source.id)
+    ]);
     final PlanRevisionProposal? proposal = state.proposal;
     if (proposal == null || state.isBusy) return false;
     state = state.copyWith(isBusy: true, statusMessage: '正在确认并激活重排版本…');
-    final AiArtifact? accepted =
-        await ref.read(aiArtifactControllerProvider.notifier).decide(
-              artifact: proposal.artifact,
-              decision: AiArtifactDecision.accepted,
-            );
+    AiArtifact? accepted;
+    try {
+      accepted = await operation.commit(() =>
+          readFeatureController<AiArtifactController>(
+              ref,
+              'feature.ai_center',
+              'controller',
+              () => ref.read(aiArtifactControllerProvider.notifier)).decide(
+            artifact: proposal.artifact,
+            decision: AiArtifactDecision.accepted,
+          ));
+      operation.checkActive();
+    } on Object catch (error) {
+      if (ref.mounted) {
+        state = state.copyWith(
+          isBusy: false,
+          statusMessage: _revisionFailureMessage(error, action: '确认重排'),
+        );
+      }
+      return false;
+    }
     if (accepted == null ||
         accepted.id != proposal.artifact.id ||
         accepted.artifactType != 'plan_revision_v1' ||
@@ -259,9 +318,21 @@ class PlanRevisionController extends Notifier<PlanRevisionState> {
       );
       return false;
     }
-    final bool activated = await ref
-        .read(fourWeekPlanControllerProvider.notifier)
-        .activateDraft(artifactId: accepted.id);
+    bool activated;
+    try {
+      activated = await ref
+          .read(fourWeekPlanControllerProvider.notifier)
+          .activateDraft(artifactId: accepted.id);
+      operation.checkActive();
+    } on Object catch (error) {
+      if (ref.mounted) {
+        state = state.copyWith(
+          isBusy: false,
+          statusMessage: _revisionFailureMessage(error, action: '激活重排'),
+        );
+      }
+      return false;
+    }
     state = state.copyWith(
       isBusy: false,
       clearProposal: activated,
@@ -273,14 +344,40 @@ class PlanRevisionController extends Notifier<PlanRevisionState> {
   }
 
   Future<void> reject() async {
+    final operation = ref
+        .read(featureAccessProvider)
+        .beginOperation('feature.training_plan', dependencies: [
+      'feature.ai_center',
+      ...ref
+          .read(fourWeekPlanControllerProvider)
+          .generation
+          .pluginRefs
+          .map((source) => source.id)
+    ]);
     final PlanRevisionProposal? proposal = state.proposal;
     if (proposal == null || state.isBusy) return;
     state = state.copyWith(isBusy: true, statusMessage: '正在拒绝重排草稿…');
-    final AiArtifact? rejected =
-        await ref.read(aiArtifactControllerProvider.notifier).decide(
-              artifact: proposal.artifact,
-              decision: AiArtifactDecision.rejected,
-            );
+    AiArtifact? rejected;
+    try {
+      rejected = await operation.commit(() =>
+          readFeatureController<AiArtifactController>(
+              ref,
+              'feature.ai_center',
+              'controller',
+              () => ref.read(aiArtifactControllerProvider.notifier)).decide(
+            artifact: proposal.artifact,
+            decision: AiArtifactDecision.rejected,
+          ));
+      operation.checkActive();
+    } on Object catch (error) {
+      if (ref.mounted) {
+        state = state.copyWith(
+          isBusy: false,
+          statusMessage: _revisionFailureMessage(error, action: '拒绝重排'),
+        );
+      }
+      return;
+    }
     if (rejected == null) {
       state = state.copyWith(
         isBusy: false,
@@ -288,13 +385,50 @@ class PlanRevisionController extends Notifier<PlanRevisionState> {
       );
       return;
     }
-    ref.read(fourWeekPlanControllerProvider.notifier).rejectDraft();
+    final bool matches = rejected.id == proposal.artifact.id &&
+        rejected.artifactType == proposal.artifact.artifactType &&
+        rejected.schemaVersion == proposal.artifact.schemaVersion &&
+        rejected.contextDigest == proposal.artifact.contextDigest &&
+        rejected.decision == AiArtifactDecision.rejected &&
+        jsonEncode(rejected.payload) == jsonEncode(proposal.artifact.payload);
+    if (!matches) {
+      state = state.copyWith(
+        isBusy: false,
+        statusMessage: '服务端拒绝结果与当前重排草稿不一致，草稿已保留，请重试。',
+      );
+      return;
+    }
+    try {
+      await readFeatureController<FourWeekPlanController>(
+          ref,
+          'feature.training_plan',
+          'fourWeek',
+          () => ref.read(fourWeekPlanControllerProvider.notifier)).rejectDraft(
+        artifactId: proposal.artifact.id,
+        sourceOperation: operation,
+      );
+    } on Object catch (error) {
+      if (ref.mounted) {
+        state = state.copyWith(
+          isBusy: false,
+          statusMessage: _revisionFailureMessage(error, action: '清理重排草稿'),
+        );
+      }
+      return;
+    }
     state = state.copyWith(
       clearProposal: true,
       isBusy: false,
       statusMessage: '已拒绝重排草稿，当前计划未改变。',
     );
   }
+}
+
+String _revisionFailureMessage(Object error, {required String action}) {
+  if (error is StateError) {
+    return '${error.message}；$action未完成，请重新操作。';
+  }
+  return '$action失败，重排草稿与当前计划均已保留，请重试。';
 }
 
 List<String> _equipmentCodes(EquipmentAccessType value) => switch (value) {

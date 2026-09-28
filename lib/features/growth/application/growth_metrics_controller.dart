@@ -1,6 +1,7 @@
 import '../../../data/models/monthly_summary.dart';
 import '../../../data/models/training_metrics.dart';
 import '../../../data/repositories/training_metrics_repository.dart';
+import '../../../plugins/application/feature_access.dart';
 import '../../../services/growth_narrative_builder.dart';
 
 class GrowthMetricsState {
@@ -37,9 +38,11 @@ class GrowthMetricsController {
   GrowthMetricsController({
     required TrainingMetricsRepository repository,
     required GrowthNarrativeBuilder narrativeBuilder,
+    FeatureAccess? featureAccess,
     DateTime Function()? clock,
   })  : _repository = repository,
         _narrativeBuilder = narrativeBuilder,
+        _featureAccess = featureAccess,
         _clock = clock ?? DateTime.now;
 
   static const String narrativeAlgorithmVersion =
@@ -47,6 +50,7 @@ class GrowthMetricsController {
 
   final TrainingMetricsRepository _repository;
   final GrowthNarrativeBuilder _narrativeBuilder;
+  final FeatureAccess? _featureAccess;
   final DateTime Function() _clock;
   GrowthMetricsState _state = const GrowthMetricsState.initial();
 
@@ -156,6 +160,8 @@ class GrowthMetricsController {
     required String Function(List<MetricAggregate> metrics) buildNarrative,
     MonthlySummary? monthlySummarySnapshot,
   }) async {
+    final FeatureOperation? operation =
+        _featureAccess?.beginOperation('feature.weekly_report');
     final String? athleteProfileId = _state.athleteProfileId;
     final MetricPeriod? period = _state.period;
     final DateTime? periodStart = _state.periodStart;
@@ -178,6 +184,7 @@ class GrowthMetricsController {
       period: period,
       periodStart: periodStart,
     );
+    operation?.checkActive();
     final int revision = existing.isEmpty ? 1 : existing.first.revision + 1;
     final ReportRevision? previous = existing.isEmpty ? null : existing.first;
     final ReportRevision report = ReportRevision(
@@ -198,7 +205,12 @@ class GrowthMetricsController {
       previousRevisionId: previous?.id,
       monthlySummarySnapshot: monthlySummarySnapshot,
     );
-    await _repository.saveReportRevision(report);
+    if (operation == null) {
+      await _repository.saveReportRevision(report);
+    } else {
+      await operation.commit(() => _repository.saveReportRevision(report));
+      operation.checkActive();
+    }
     final List<ReportRevision> updated = <ReportRevision>[report, ...existing];
     _state = GrowthMetricsState(
       status: _state.status,
