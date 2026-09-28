@@ -69,3 +69,6 @@ app.*.map.json
 /android/app/upload-keystore.keystore
 /android/*.jks
 /android/*.keystore
+
+# Golden 失败对比图（flutter test 自动生成，不入库）
+/test/goldens/failures/
